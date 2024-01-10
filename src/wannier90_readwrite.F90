@@ -48,16 +48,12 @@ module w90_wannier90_readwrite
 contains
 
   !================================================!
-  subroutine w90_wannier90_readwrite_read_special(settings, atom_data, &
-                                                  kmesh_input, kmesh_info, kpt_latt, &
-                                                  wann_control, proj, proj_input, &
-                                                  select_proj, w90_system, &
-                                                  w90_calculation, &
-                                                  real_lattice, bohr, &
-                                                  mp_grid, num_bands, num_kpts, num_proj, &
-                                                  num_wann, &
-                                                  gamma_only, lhasproj, use_bloch_phases, &
-                                                  stdout, error, comm)
+  subroutine w90_wannier90_readwrite_read_special(settings, atom_data, kmesh_input, kmesh_info, &
+                                                  kpt_latt, wann_control, proj, proj_input, &
+                                                  select_proj, w90_system, w90_calculation, &
+                                                  real_lattice, bohr, mp_grid, num_bands, &
+                                                  num_kpts, num_proj, num_wann, gamma_only, &
+                                                  lhasproj, use_bloch_phases, stdout, error, comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -97,15 +93,14 @@ contains
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
 
-    real(kind=dp) :: inv_lattice(3, 3)
-    !Projections
     logical, intent(out) :: lhasproj
-    ! RS: symmetry-adapted Wannier functions
     logical, intent(out) :: use_bloch_phases
     logical, intent(inout) :: gamma_only
 
     ! local variables
     logical :: disentanglement
+    real(kind=dp) :: inv_lattice(3, 3)
+    integer :: ip
 
     call w90_readwrite_read_lattice(settings, real_lattice, bohr, error, comm)
     if (allocated(error)) return
@@ -142,6 +137,14 @@ contains
                                                   select_proj, num_proj, atom_data, inv_lattice, &
                                                   num_wann, gamma_only, w90_system%spinors, bohr, &
                                                   stdout, error, comm)
+    if (allocated(proj)) then
+      !if (allocated(wann_control%guiding_centres%centres)) &
+      ! deallocate (wann_control%guiding_centres%centres)
+      allocate (wann_control%guiding_centres%centres(3, num_proj))
+      do ip = 1, num_proj
+        wann_control%guiding_centres%centres(:, ip) = proj(ip)%site(:)
+      enddo
+    endif
     if (allocated(error)) return
   end subroutine w90_wannier90_readwrite_read_special
 
@@ -152,7 +155,7 @@ contains
                                           output_file, wvfn_read, wann_control, &
                                           real_space_ham, kpoint_path, w90_system, &
                                           tran, print_output, wann_plot, w90_extra_io, ws_region, &
-                                          w90_calculation, bohr, &
+                                          real_lattice, w90_calculation, bohr, &
                                           symmetrize_eps, num_bands, num_kpts, &
                                           num_wann, optimisation, calc_only_A, cp_pp, &
                                           gamma_only, lsitesymmetry, use_bloch_phases, &
@@ -203,6 +206,7 @@ contains
 
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
     real(kind=dp), intent(in) :: bohr
+    real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: symmetrize_eps
 
     character(len=*), intent(in)  :: seedname
@@ -361,22 +365,14 @@ contains
       !                                              w90_system%spinors, bohr, stdout, error, comm)
       !if (allocated(error)) return
 
-!JJGC      if (allocated(proj)) then
-!JJGC        if (allocated(wann_control%guiding_centres%centres)) &
-!JJGC          deallocate (wann_control%guiding_centres%centres)
-!JJGC        allocate (wann_control%guiding_centres%centres(3, num_proj))
-!JJGC        do ip = 1, num_proj
-!JJGC          wann_control%guiding_centres%centres(:, ip) = proj(ip)%site(:)
-!JJGC        enddo
-!JJGC      endif
-!JJGC      ! projections needs to be allocated before reading constrained centres
-!JJGC      if (wann_control%constrain%constrain) then
-!JJGC        call w90_wannier90_readwrite_read_constrained_centres(settings, w90_extra_io%ccentres_frac, &
-!JJGC                                                              wann_control, real_lattice, &
-!JJGC                                                              num_wann, print_output%iprint, &
-!JJGC                                                              stdout, error, comm)
-!JJGC        if (allocated(error)) return
-!JJGC      endif
+      ! projections needs to be allocated before reading constrained centres
+      if (wann_control%constrain%constrain) then
+        call w90_wannier90_readwrite_read_constrained_centres(settings, w90_extra_io%ccentres_frac, &
+                                                              wann_control, real_lattice, &
+                                                              num_wann, print_output%iprint, &
+                                                              stdout, error, comm)
+        if (allocated(error)) return
+      endif
     endif
   end subroutine w90_wannier90_readwrite_read
 
@@ -1769,360 +1765,363 @@ contains
     logical :: disentanglement
 
     disentanglement = (num_bands > num_wann)
-    if (w90_calculation%transport .and. tran%read_ht) goto 401
+    if (w90_calculation%transport .and. tran%read_ht) goto 401 !really?  fixme jj
 
     ! System
-    write (stdout, *)
-    write (stdout, '(36x,a6)') '------'
-    write (stdout, '(36x,a6)') 'SYSTEM'
-    write (stdout, '(36x,a6)') '------'
-    write (stdout, *)
-    if (print_output%lenconfac .eq. 1.0_dp) then
-      write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
-    else
-      write (stdout, '(28x,a22)') 'Lattice Vectors (Bohr)'
-    endif
-    write (stdout, 101) 'a_1', (real_lattice(1, I)*print_output%lenconfac, i=1, 3)
-    write (stdout, 101) 'a_2', (real_lattice(2, I)*print_output%lenconfac, i=1, 3)
-    write (stdout, 101) 'a_3', (real_lattice(3, I)*print_output%lenconfac, i=1, 3)
-    write (stdout, *)
-    cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
-                  real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
-                  real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
-    write (stdout, '(19x,a17,3x,f11.5)', advance='no') &
-      'Unit Cell Volume:', cell_volume*print_output%lenconfac**3
-    if (print_output%lenconfac .eq. 1.0_dp) then
-      write (stdout, '(2x,a7)') '(Ang^3)'
-    else
-      write (stdout, '(2x,a8)') '(Bohr^3)'
-    endif
-    write (stdout, *)
-    if (print_output%lenconfac .eq. 1.0_dp) then
-      write (stdout, '(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
-    else
-      write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
-    endif
-    call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
-    write (stdout, 101) 'b_1', (recip_lattice(1, I)/print_output%lenconfac, i=1, 3)
-    write (stdout, 101) 'b_2', (recip_lattice(2, I)/print_output%lenconfac, i=1, 3)
-    write (stdout, 101) 'b_3', (recip_lattice(3, I)/print_output%lenconfac, i=1, 3)
-    write (stdout, *) ' '
-    ! Atoms
-    if (atom_data%num_atoms > 0) then
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+    if (print_output%iprint > 0) then
+      write (stdout, *)
+      write (stdout, '(36x,a6)') '------'
+      write (stdout, '(36x,a6)') 'SYSTEM'
+      write (stdout, '(36x,a6)') '------'
+      write (stdout, *)
       if (print_output%lenconfac .eq. 1.0_dp) then
-        write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+        write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
       else
-        write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+        write (stdout, '(28x,a22)') 'Lattice Vectors (Bohr)'
       endif
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      call utility_inverse_mat(real_lattice, inv_lattice)
-      do nsp = 1, atom_data%num_species
-        do nat = 1, atom_data%species_num(nsp)
-          call utility_cart_to_frac(atom_data%pos_cart(:, nat, nsp), pos_frac, inv_lattice)
-          write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-  &                 '|', atom_data%symbol(nsp), nat, pos_frac(:),&
-  &                 '|', atom_data%pos_cart(:, nat, nsp)*print_output%lenconfac, '|'
-        end do
-      end do
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-    else
-      write (stdout, '(25x,a)') 'No atom positions specified'
-    end if
-    ! Constrained centres
-    if (wann_control%constrain%selective_loc .and. &
-        wann_control%constrain%constrain) then
-      write (stdout, *) ' '
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-      write (stdout, '(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      do i = 1, wann_control%constrain%slwf_num
-        write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-  &                    '|', i, w90_extra_io%ccentres_frac(i, :), '|', wannier_data%centres(:, i), '|'
-      end do
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-    end if
-    ! Projections
-    if (print_output%iprint > 1 .and. allocated(proj_input)) then
-      write (stdout, '(32x,a)') '-----------'
-      write (stdout, '(32x,a)') 'PROJECTIONS'
-      write (stdout, '(32x,a)') '-----------'
-      write (stdout, *) ' '
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      do nsp = 1, num_proj
-        write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)') &
-          '|', proj_input(nsp)%site(1), proj_input(nsp)%site(2), &
-          proj_input(nsp)%site(3), proj_input(nsp)%l, &
-          proj_input(nsp)%m, proj_input(nsp)%radial, &
-          proj_input(nsp)%z(1), proj_input(nsp)%z(2), &
-          proj_input(nsp)%z(3), proj_input(nsp)%x(1), &
-          proj_input(nsp)%x(2), proj_input(nsp)%x(3), &
-          proj_input(nsp)%zona, '|'
-      end do
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      write (stdout, *) ' '
-    end if
-
-    if (print_output%iprint > 1 .and. select_proj%lselproj .and. &
-        allocated(wann_control%guiding_centres%centres)) then
-      write (stdout, '(30x,a)') '--------------------'
-      write (stdout, '(30x,a)') 'SELECTED PROJECTIONS'
-      write (stdout, '(30x,a)') '--------------------'
-      write (stdout, *) ' '
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      do nsp = 1, num_wann
-        if (select_proj%proj2wann_map(nsp) < 0) cycle
-        write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
-            &              '|', wann_control%guiding_centres%centres(1, nsp), &
-            wann_control%guiding_centres%centres(2, nsp), &
-            wann_control%guiding_centres%centres(3, nsp), proj(nsp)%l, &
-            proj(nsp)%m, proj(nsp)%radial, &
-             proj(nsp)%z(1), proj(nsp)%z(2), proj(nsp)%z(3), proj(nsp)%x(1), &
-             proj(nsp)%x(2), proj(nsp)%x(3), proj(nsp)%zona, '|'
-      end do
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      write (stdout, *) ' '
-    end if
-
-    ! K-points
-    write (stdout, '(32x,a)') '------------'
-    write (stdout, '(32x,a)') 'K-POINT GRID'
-    write (stdout, '(32x,a)') '------------'
-    write (stdout, *) ' '
-    write (stdout, '(13x,a,i3,1x,a1,i3,1x,a1,i3,6x,a,i5)') 'Grid size =', mp_grid(1), 'x', mp_grid(2), 'x', mp_grid(3), &
-      'Total points =', num_kpts
-    write (stdout, *) ' '
-    if (print_output%iprint > 1) then
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+      write (stdout, 101) 'a_1', (real_lattice(1, I)*print_output%lenconfac, i=1, 3)
+      write (stdout, 101) 'a_2', (real_lattice(2, I)*print_output%lenconfac, i=1, 3)
+      write (stdout, 101) 'a_3', (real_lattice(3, I)*print_output%lenconfac, i=1, 3)
+      write (stdout, *)
+      cell_volume = real_lattice(1, 1)*(real_lattice(2, 2)*real_lattice(3, 3) - real_lattice(3, 2)*real_lattice(2, 3)) + &
+                    real_lattice(1, 2)*(real_lattice(2, 3)*real_lattice(3, 1) - real_lattice(3, 3)*real_lattice(2, 1)) + &
+                    real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
+      write (stdout, '(19x,a17,3x,f11.5)', advance='no') &
+        'Unit Cell Volume:', cell_volume*print_output%lenconfac**3
       if (print_output%lenconfac .eq. 1.0_dp) then
-        write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
+        write (stdout, '(2x,a7)') '(Ang^3)'
       else
-        write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
+        write (stdout, '(2x,a8)') '(Bohr^3)'
       endif
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-      do nkp = 1, num_kpts
-        call utility_frac_to_cart(kpt_latt(:, nkp), kpt_cart, recip_lattice)
-        write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, kpt_latt(:, nkp), '|', &
-          kpt_cart(:)/print_output%lenconfac, '|'
-      end do
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+      write (stdout, *)
+      if (print_output%lenconfac .eq. 1.0_dp) then
+        write (stdout, '(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
+      else
+        write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
+      endif
+      call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
+      write (stdout, 101) 'b_1', (recip_lattice(1, I)/print_output%lenconfac, i=1, 3)
+      write (stdout, 101) 'b_2', (recip_lattice(2, I)/print_output%lenconfac, i=1, 3)
+      write (stdout, 101) 'b_3', (recip_lattice(3, I)/print_output%lenconfac, i=1, 3)
       write (stdout, *) ' '
-    end if
-    ! Main
-    write (stdout, *) ' '
-    write (stdout, '(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :', num_wann, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :', &
-      wann_control%constrain%slwf_num, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :', num_bands, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', print_output%iprint, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', print_output%timing_level, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', optimisation, '|'
-    write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(print_output%length_unit), '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', &
-      w90_calculation%postproc_setup, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', gamma_only, '|'
-    !YN: RS:
-    if (lsitesymmetry) then
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using symmetry-adapted WF mode            :', lsitesymmetry, '|'
-      write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :', symmetrize_eps, '|'
-    endif
-
-    if (cp_pp .or. print_output%iprint > 2) &
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
-      cp_pp, '|'
-    if (w90_calculation%wannier_plot .or. print_output%iprint > 2) then
-      if (wvfn_read%formatted) then
-        write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
-      else
-        write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'unformatted', '|'
-      endif
-      if (wvfn_read%spin_channel == 1) then
-        write (stdout, '(1x,a46,16x,a2,13x,a1)') '|  Wavefunction spin channel                 :', 'up', '|'
-      else
-        write (stdout, '(1x,a46,14x,a4,13x,a1)') '|  Wavefunction spin channel                 :', 'down', '|'
-      endif
-    endif
-
-    write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-
-    ! Wannierise
-    write (stdout, '(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', &
-      wann_control%num_iter, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of CG steps before reset           :', &
-      wann_control%num_cg_steps, '|'
-    if (wann_control%lfixstep) then
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fixed step length for minimisation        :', &
-        wann_control%fixed_step, '|'
-    else
-      write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Trial step length for line search         :', &
-        wann_control%trial_step, '|'
-    endif
-    write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :', &
-      wann_control%conv_tol, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', &
-      wann_control%conv_window, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between writing output         :', &
-      wann_control%num_print_cycles, '|'
-    write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between backing up to disk     :', &
-      wann_control%num_dump_cycles, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write r^2_nm to file                      :', &
-      output_file%write_r2mn, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', &
-      output_file%write_xyz, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', &
-      output_file%write_hr_diag, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', &
-      wann_control%guiding_centres%enable, '|'
-    write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
-      use_bloch_phases, '|'
-    if (wann_control%guiding_centres%enable .or. print_output%iprint > 2) then
-      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations before starting guiding centres:', &
-        wann_control%guiding_centres%num_no_guide_iter, '|'
-      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between using guiding centres  :', &
-        wann_control%guiding_centres%num_guide_cycles, '|'
-    end if
-    if (wann_control%constrain%selective_loc .or. print_output%iprint > 2) then
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', &
-        wann_control%constrain%selective_loc, '|'
-    end if
-    if (wann_control%constrain%constrain .or. print_output%iprint > 2) then
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use constrains in selective localization  :', &
-        wann_control%constrain%constrain, '|'
-      write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Value of the Lagrange multiplier          :',&
-           &wann_control%constrain%lambda, '|'
-    end if
-    write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    !
-    ! Disentanglement
-    !
-    if (disentanglement .or. print_output%iprint > 2) then
-      write (stdout, '(1x,a78)') '*------------------------------- DISENTANGLE --------------------------------*'
-      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using band disentanglement                :', &
-        disentanglement, '|'
-      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', dis_control%num_iter, '|'
-      write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :', dis_control%mix_ratio, '|'
-      write (stdout, '(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :', dis_control%conv_tol, '|'
-      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', dis_control%conv_window, '|'
-      ! GS-start
-      if (dis_spheres%num .gt. 0) then
-        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :', dis_spheres%num, '|'
-        do nkp = 1, dis_spheres%num
-          write (stdout, '(1x,a13,I4,a2,2x,3F8.3,a15,F8.3,9x,a1)') &
-            '|   center n.', nkp, ' :', dis_spheres%spheres(1:3, nkp), ',    radius   =', dis_spheres%spheres(4, nkp), '|'
-        enddo
-        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :', &
-          dis_spheres%first_wann, '|'
-      endif
-      ! GS-end
-      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    end if
-    !
-    ! Plotting
-    !
-    if (w90_calculation%wannier_plot .or. w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot &
-        .or. output_file%write_hr .or. print_output%iprint > 2) then
-      !
-      write (stdout, '(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
-      !
-      if (w90_calculation%wannier_plot .or. print_output%iprint > 2) then
-        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :', w90_calculation%wannier_plot, '|'
-        write (stdout, '(1x,a46,1x,I5,a1,I5,a1,I5,13x,a1)') &
-          '|   Size of supercell for plotting           :', &
-          wann_plot%supercell(1), 'x', wann_plot%supercell(2), 'x', wann_plot%supercell(3), '|'
-
-        if (real_space_ham%translate_home_cell) then
-          write (stdout, '(1x,a46,10x,L8,13x,a1)') &
-            '|  Translating WFs to home cell              :', real_space_ham%translate_home_cell, '|'
-        end if
-
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
-          trim(wann_plot%mode), '|'
-        if (spinors) then
-          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :', &
-            trim(wann_plot%spinor_mode), '|'
-          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|   Include phase for spinor WFs             :', &
-            wann_plot%spinor_phase, '|'
-        end if
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :', &
-          trim(wann_plot%format), '|'
-        if (index(wann_plot%format, 'cub') > 0 .or. print_output%iprint > 2) then
-          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :', &
-            wann_plot%radius, '|'
-          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :', &
-            wann_plot%scale, '|'
-        endif
-        write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-      end if
-      !
-      if (w90_calculation%fermi_surface_plot .or. print_output%iprint > 2) then
-        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Fermi surface                    :', &
-          w90_calculation%fermi_surface_plot, '|'
-        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of plotting points (along b_1)    :', &
-          fermi_surface_data%num_points, '|'
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :', &
-          trim(fermi_surface_data%plot_format), '|'
-        write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-      end if
-      !
-      if (w90_calculation%bands_plot .or. print_output%iprint > 2) then
-        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting interpolated bandstructure       :', w90_calculation%bands_plot, '|'
-        bands_num_spec_points = 0
-        if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
-        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :', &
-          bands_num_spec_points/2, '|'
-        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :', &
-          kpoint_path%num_points_first_segment, '|'
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output format                            :', &
-          trim(band_plot%format), '|'
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :', &
-          trim(band_plot%mode), '|'
-        if (index(band_plot%mode, 'cut') .ne. 0) then
-          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
-            real_space_ham%system_dim, '|'
-          if (real_space_ham%system_dim .eq. 1) &
-            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
-            trim(w90_extra_io%one_dim_axis), '|'
-          if (real_space_ham%system_dim .eq. 2) &
-            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
-            trim(w90_extra_io%one_dim_axis), '|'
-          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
-            real_space_ham%hr_cutoff, '|'
-          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
-            real_space_ham%dist_cutoff, '|'
-          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian cut-off distance mode        :', &
-            trim(real_space_ham%dist_cutoff_mode), '|'
-        endif
-        write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-        write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
-        if (bands_num_spec_points == 0) then
-          write (stdout, '(1x,a78)') '|     None defined                                                           |'
+      ! Atoms
+      if (atom_data%num_atoms > 0) then
+        write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+        if (print_output%lenconfac .eq. 1.0_dp) then
+          write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
         else
-          do loop = 1, bands_num_spec_points, 2
-            write (stdout, '(1x,a10,1x,a5,1x,3F7.3,5x,a3,1x,a5,1x,3F7.3,3x,a1)') '|    From:', &
-              kpoint_path%labels(loop), (kpoint_path%points(i, loop), i=1, 3), &
-              'To:', kpoint_path%labels(loop + 1), (kpoint_path%points(i, loop + 1), i=1, 3), '|'
+          write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+        endif
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        call utility_inverse_mat(real_lattice, inv_lattice)
+        do nsp = 1, atom_data%num_species
+          do nat = 1, atom_data%species_num(nsp)
+            call utility_cart_to_frac(atom_data%pos_cart(:, nat, nsp), pos_frac, inv_lattice)
+            write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+    &                 '|', atom_data%symbol(nsp), nat, pos_frac(:),&
+    &                 '|', atom_data%pos_cart(:, nat, nsp)*print_output%lenconfac, '|'
           end do
-        end if
+        end do
+        write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+      else
+        write (stdout, '(25x,a)') 'No atom positions specified'
+      end if
+      ! Constrained centres
+      if (wann_control%constrain%selective_loc .and. &
+          wann_control%constrain%constrain) then
+        write (stdout, *) ' '
+        write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+        write (stdout, '(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        do i = 1, wann_control%constrain%slwf_num
+          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+    &                    '|', i, w90_extra_io%ccentres_frac(i, :), '|', wannier_data%centres(:, i), '|'
+        end do
+        write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+      end if
+      ! Projections
+      if (print_output%iprint > 1 .and. allocated(proj_input)) then
+        write (stdout, '(32x,a)') '-----------'
+        write (stdout, '(32x,a)') 'PROJECTIONS'
+        write (stdout, '(32x,a)') '-----------'
+        write (stdout, *) ' '
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        write (stdout, '(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        do nsp = 1, num_proj
+          write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)') &
+            '|', proj_input(nsp)%site(1), proj_input(nsp)%site(2), &
+            proj_input(nsp)%site(3), proj_input(nsp)%l, &
+            proj_input(nsp)%m, proj_input(nsp)%radial, &
+            proj_input(nsp)%z(1), proj_input(nsp)%z(2), &
+            proj_input(nsp)%z(3), proj_input(nsp)%x(1), &
+            proj_input(nsp)%x(2), proj_input(nsp)%x(3), &
+            proj_input(nsp)%zona, '|'
+        end do
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        write (stdout, *) ' '
+      end if
+
+      if (print_output%iprint > 1 .and. select_proj%lselproj .and. &
+          allocated(wann_control%guiding_centres%centres)) then
+        write (stdout, '(30x,a)') '--------------------'
+        write (stdout, '(30x,a)') 'SELECTED PROJECTIONS'
+        write (stdout, '(30x,a)') '--------------------'
+        write (stdout, *) ' '
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        write (stdout, '(1x,a)') '|     Frac. Coord.   l mr  r        z-axis               x-axis          Z/a |'
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        do nsp = 1, num_wann
+          if (select_proj%proj2wann_map(nsp) < 0) cycle
+          write (stdout, '(1x,a1,3(1x,f5.2),1x,i2,1x,i2,1x,i2,3(1x,f6.3),3(1x,f6.3),2x,f4.1,1x,a1)')&
+              &              '|', wann_control%guiding_centres%centres(1, nsp), &
+              wann_control%guiding_centres%centres(2, nsp), &
+              wann_control%guiding_centres%centres(3, nsp), proj(nsp)%l, &
+              proj(nsp)%m, proj(nsp)%radial, &
+               proj(nsp)%z(1), proj(nsp)%z(2), proj(nsp)%z(3), proj(nsp)%x(1), &
+               proj(nsp)%x(2), proj(nsp)%x(3), proj(nsp)%zona, '|'
+        end do
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        write (stdout, *) ' '
+      end if
+
+      ! K-points
+      write (stdout, '(32x,a)') '------------'
+      write (stdout, '(32x,a)') 'K-POINT GRID'
+      write (stdout, '(32x,a)') '------------'
+      write (stdout, *) ' '
+      write (stdout, '(13x,a,i3,1x,a1,i3,1x,a1,i3,6x,a,i5)') 'Grid size =', mp_grid(1), 'x', mp_grid(2), 'x', mp_grid(3), &
+        'Total points =', num_kpts
+      write (stdout, *) ' '
+      if (print_output%iprint > 1) then
+        write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+        if (print_output%lenconfac .eq. 1.0_dp) then
+          write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
+        else
+          write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
+        endif
+        write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+        do nkp = 1, num_kpts
+          call utility_frac_to_cart(kpt_latt(:, nkp), kpt_cart, recip_lattice)
+          write (stdout, '(1x,a1,i6,1x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') '|', nkp, kpt_latt(:, nkp), '|', &
+            kpt_cart(:)/print_output%lenconfac, '|'
+        end do
+        write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+        write (stdout, *) ' '
+      end if
+      ! Main
+      write (stdout, *) ' '
+      write (stdout, '(1x,a78)') '*---------------------------------- MAIN ------------------------------------*'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Wannier Functions               :', num_wann, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of Objective Wannier Functions     :', &
+        wann_control%constrain%slwf_num, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of input Bloch states              :', num_bands, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Output verbosity (1=low, 5=high)          :', print_output%iprint, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Timing Level (1=low, 5=high)              :', print_output%timing_level, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Optimisation (0=memory, 3=speed)          :', optimisation, '|'
+      write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Length Unit                               :', trim(print_output%length_unit), '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', &
+        w90_calculation%postproc_setup, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', gamma_only, '|'
+      !YN: RS:
+      if (lsitesymmetry) then
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using symmetry-adapted WF mode            :', lsitesymmetry, '|'
+        write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :', symmetrize_eps, '|'
+      endif
+
+      if (cp_pp .or. print_output%iprint > 2) &
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
+        cp_pp, '|'
+      if (w90_calculation%wannier_plot .or. print_output%iprint > 2) then
+        if (wvfn_read%formatted) then
+          write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
+        else
+          write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'unformatted', '|'
+        endif
+        if (wvfn_read%spin_channel == 1) then
+          write (stdout, '(1x,a46,16x,a2,13x,a1)') '|  Wavefunction spin channel                 :', 'up', '|'
+        else
+          write (stdout, '(1x,a46,14x,a4,13x,a1)') '|  Wavefunction spin channel                 :', 'down', '|'
+        endif
+      endif
+
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+
+      ! Wannierise
+      write (stdout, '(1x,a78)') '*------------------------------- WANNIERISE ---------------------------------*'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', &
+        wann_control%num_iter, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of CG steps before reset           :', &
+        wann_control%num_cg_steps, '|'
+      if (wann_control%lfixstep) then
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Fixed step length for minimisation        :', &
+          wann_control%fixed_step, '|'
+      else
+        write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Trial step length for line search         :', &
+          wann_control%trial_step, '|'
+      endif
+      write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :', &
+        wann_control%conv_tol, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', &
+        wann_control%conv_window, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between writing output         :', &
+        wann_control%num_print_cycles, '|'
+      write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between backing up to disk     :', &
+        wann_control%num_dump_cycles, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write r^2_nm to file                      :', &
+        output_file%write_r2mn, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write xyz WF centres to file              :', &
+        output_file%write_xyz, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write on-site energies <0n|H|0n> to file  :', &
+        output_file%write_hr_diag, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use guiding centre to control phases      :', &
+        wann_control%guiding_centres%enable, '|'
+      write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use phases for initial projections        :', &
+        use_bloch_phases, '|'
+      if (wann_control%guiding_centres%enable .or. print_output%iprint > 2) then
+        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations before starting guiding centres:', &
+          wann_control%guiding_centres%num_no_guide_iter, '|'
+        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Iterations between using guiding centres  :', &
+          wann_control%guiding_centres%num_guide_cycles, '|'
+      end if
+      if (wann_control%constrain%selective_loc .or. print_output%iprint > 2) then
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Perform selective localization            :', &
+          wann_control%constrain%selective_loc, '|'
+      end if
+      if (wann_control%constrain%constrain .or. print_output%iprint > 2) then
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Use constrains in selective localization  :', &
+          wann_control%constrain%constrain, '|'
+        write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Value of the Lagrange multiplier          :',&
+             &wann_control%constrain%lambda, '|'
+      end if
+      write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+      !
+      ! Disentanglement
+      !
+      if (disentanglement .or. print_output%iprint > 2) then
+        write (stdout, '(1x,a78)') '*------------------------------- DISENTANGLE --------------------------------*'
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using band disentanglement                :', &
+          disentanglement, '|'
+        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Total number of iterations                :', dis_control%num_iter, '|'
+        write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|  Mixing ratio                              :', dis_control%mix_ratio, '|'
+        write (stdout, '(1x,a46,8x,ES10.3,13x,a1)') '|  Convergence tolerence                     :', dis_control%conv_tol, '|'
+        write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', dis_control%conv_window, '|'
+        ! GS-start
+        if (dis_spheres%num .gt. 0) then
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Number of spheres in k-space              :', dis_spheres%num, '|'
+          do nkp = 1, dis_spheres%num
+            write (stdout, '(1x,a13,I4,a2,2x,3F8.3,a15,F8.3,9x,a1)') &
+              '|   center n.', nkp, ' :', dis_spheres%spheres(1:3, nkp), ',    radius   =', dis_spheres%spheres(4, nkp), '|'
+          enddo
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :', &
+            dis_spheres%first_wann, '|'
+        endif
+        ! GS-end
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
       !
-      if (output_file%write_hr .or. print_output%iprint > 2) then
-        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', output_file%write_hr, '|'
-        write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-      endif
-      if (output_file%write_vdw_data .or. print_output%iprint > 2) then
-        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
-          output_file%write_vdw_data, '|'
-        write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-      endif
+      ! Plotting
       !
-    endif
+      if (w90_calculation%wannier_plot .or. w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot &
+          .or. output_file%write_hr .or. print_output%iprint > 2) then
+        !
+        write (stdout, '(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
+        !
+        if (w90_calculation%wannier_plot .or. print_output%iprint > 2) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Wannier functions                :', &
+            w90_calculation%wannier_plot, '|'
+          write (stdout, '(1x,a46,1x,I5,a1,I5,a1,I5,13x,a1)') &
+            '|   Size of supercell for plotting           :', &
+            wann_plot%supercell(1), 'x', wann_plot%supercell(2), 'x', wann_plot%supercell(3), '|'
+
+          if (real_space_ham%translate_home_cell) then
+            write (stdout, '(1x,a46,10x,L8,13x,a1)') &
+              '|  Translating WFs to home cell              :', real_space_ham%translate_home_cell, '|'
+          end if
+
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode (molecule or crystal)      :', &
+            trim(wann_plot%mode), '|'
+          if (spinors) then
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting mode for spinor WFs             :', &
+              trim(wann_plot%spinor_mode), '|'
+            write (stdout, '(1x,a46,10x,L8,13x,a1)') '|   Include phase for spinor WFs             :', &
+              wann_plot%spinor_phase, '|'
+          end if
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :', &
+            trim(wann_plot%format), '|'
+          if (index(wann_plot%format, 'cub') > 0 .or. print_output%iprint > 2) then
+            write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot radius                              :', &
+              wann_plot%radius, '|'
+            write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :', &
+              wann_plot%scale, '|'
+          endif
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        end if
+        !
+        if (w90_calculation%fermi_surface_plot .or. print_output%iprint > 2) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Fermi surface                    :', &
+            w90_calculation%fermi_surface_plot, '|'
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of plotting points (along b_1)    :', &
+            fermi_surface_data%num_points, '|'
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Plotting format                          :', &
+            trim(fermi_surface_data%plot_format), '|'
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        end if
+        !
+        if (w90_calculation%bands_plot .or. print_output%iprint > 2) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting interpolated bandstructure       :', w90_calculation%bands_plot, '|'
+          bands_num_spec_points = 0
+          if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Number of K-path sections                :', &
+            bands_num_spec_points/2, '|'
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Divisions along first K-path section     :', &
+            kpoint_path%num_points_first_segment, '|'
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output format                            :', &
+            trim(band_plot%format), '|'
+          write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Output mode                              :', &
+            trim(band_plot%mode), '|'
+          if (index(band_plot%mode, 'cut') .ne. 0) then
+            write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
+              real_space_ham%system_dim, '|'
+            if (real_space_ham%system_dim .eq. 1) &
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+              trim(w90_extra_io%one_dim_axis), '|'
+            if (real_space_ham%system_dim .eq. 2) &
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
+              trim(w90_extra_io%one_dim_axis), '|'
+            write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
+              real_space_ham%hr_cutoff, '|'
+            write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
+              real_space_ham%dist_cutoff, '|'
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian cut-off distance mode        :', &
+              trim(real_space_ham%dist_cutoff_mode), '|'
+          endif
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+          write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
+          if (bands_num_spec_points == 0) then
+            write (stdout, '(1x,a78)') '|     None defined                                                           |'
+          else
+            do loop = 1, bands_num_spec_points, 2
+              write (stdout, '(1x,a10,1x,a5,1x,3F7.3,5x,a3,1x,a5,1x,3F7.3,3x,a1)') '|    From:', &
+                kpoint_path%labels(loop), (kpoint_path%points(i, loop), i=1, 3), &
+                'To:', kpoint_path%labels(loop + 1), (kpoint_path%points(i, loop + 1), i=1, 3), '|'
+            end do
+          end if
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        end if
+        !
+        if (output_file%write_hr .or. print_output%iprint > 2) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', output_file%write_hr, '|'
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        endif
+        if (output_file%write_vdw_data .or. print_output%iprint > 2) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
+            output_file%write_vdw_data, '|'
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        endif
+        !
+      endif
+    endif !iprint > 0
 
 401 continue
     !

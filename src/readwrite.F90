@@ -3126,16 +3126,16 @@ contains
     !if (.not.allocated(settings%in_data)) then
     !  call set_error_fatal(error, 'w90_readwrite_get_range_vector TTT with no input file (seeking '//trim(keyword)//')', comm)
     !  return
-    if (allocated(settings%entries)) then
-      if (lcount) then
-        call w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
-        return
-      else
-        call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
-                                              c_value, l_value, i_value, r_value)
-        return
-      endif
+    !if (allocated(settings%entries)) then
+    if (lcount) then
+      call w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
+      return
+    else
+      call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
+                                            c_value, l_value, i_value, r_value)
+      return
     endif
+    !endif
 
     if (lcount .and. present(i_value)) then
       call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call', comm)
