@@ -29,7 +29,7 @@ contains
   !================================================!
 
   subroutine dis_main(dis_control, dis_spheres, dis_manifold, kmesh_info, kpt_latt, sitesym, &
-                      print_output, a_matrix, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
+                      print_output, m_matrix_orig_local, u_matrix, u_matrix_opt, eigval, &
                       real_lattice, omega_invariant, num_bands, num_kpts, num_wann, gamma_only, &
                       lsitesymmetry, stdout, timer, dist_k, error, comm)
     !================================================!
@@ -60,7 +60,7 @@ contains
     real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
+    !complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :) ! this is the only "m matrix" here now
@@ -83,6 +83,7 @@ contains
     integer :: ndimfroz(num_kpts)             !! number of frozen bands at nkp-th k point
     integer :: indxfroz(num_bands, num_kpts)  !! number of bands inside outer window at nkp-th k point
     integer :: indxnfroz(num_bands, num_kpts) !! outer-window band index for the i-th non-frozen state
+    complex(kind=dp), allocatable :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     !! (equals 1 if it is the bottom of outer window)
 
     real(kind=dp), allocatable :: eigval_opt(:, :)  !! At input it contains a large set of eigenvalues. At
@@ -99,6 +100,7 @@ contains
     on_root = (my_node_id == 0)
     nkloc = count(dist_k == my_node_id)
     if (nkloc == 0) return
+    allocate (a_matrix(num_bands, num_wann, num_kpts)); a_matrix = u_matrix_opt !fixme jj check allocation
 
     allocate (global_k(nkloc), stat=ierr)
     if (ierr /= 0) then
@@ -264,6 +266,11 @@ contains
       call set_error_dealloc(error, 'Error in deallocating global_k in dis_main', comm)
       return
     endif
+    deallocate (a_matrix, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating a_matrix in dis_main', comm)
+      return
+    endif
 
     if (print_output%timing_level > 0 .and. on_root) call io_stopwatch_stop('dis: main', timer)
 
@@ -354,7 +361,7 @@ contains
         if (optimisation < 0) then
           write (page_unit) cww(:, :)
         else
-          m_matrix_local(:, :, nn, nkp) = cww(:, :)
+          m_matrix_local(1:num_wann, 1:num_wann, nn, nkp) = cww(:, :)
         endif
       enddo
     enddo

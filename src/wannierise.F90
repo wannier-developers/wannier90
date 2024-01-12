@@ -1740,11 +1740,11 @@ contains
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
           ! tmp_cdq = cdq^{dagger} . M
-          call utility_zgemm(tmp_cdq, cdq(:, :, nkp), 'C', m_matrix_loc(:, :, nn, nkp_loc), 'N', &
+          call utility_zgemm(tmp_cdq, cdq(:, :, nkp), 'C', m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc), 'N', &  !jj fixme
                              num_wann)
           ! cmtmp = tmp_cdq . cdq
           call utility_zgemm(cmtmp, tmp_cdq, 'N', cdq(:, :, nkp2), 'N', num_wann)
-          m_matrix_loc(:, :, nn, nkp_loc) = cmtmp(:, :)
+          m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc) = cmtmp(:, :) !jj fixme
         enddo
       enddo
 
@@ -2426,8 +2426,8 @@ contains
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann ! R^{k,b} and R~^{k,b} have columns of zeroes for the non-objective Wannier functions
           mnn = m_matrix_loc(n, n, nn, nkp_loc)
-          crt(:, n) = m_matrix_loc(:, n, nn, nkp_loc)/mnn !JJ potential for division by zero
-          cr(:, n) = m_matrix_loc(:, n, nn, nkp_loc)*conjg(mnn)
+          crt(:, n) = m_matrix_loc(1:num_wann, n, nn, nkp_loc)/mnn !JJ potential for division by zero
+          cr(:, n) = m_matrix_loc(1:num_wann, n, nn, nkp_loc)*conjg(mnn)
         enddo
         if (wann_slwf%selective_loc) then
           do n = 1, num_wann

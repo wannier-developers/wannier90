@@ -175,7 +175,7 @@ contains
     call c_f_pointer(wannier_cptr, wannier_fptr)
     call c_f_pointer(m_cptr, m_fptr, [common_fptr%num_wann, common_fptr%num_wann, &
                                       common_fptr%kmesh_info%nntot, common_fptr%num_kpts])
-    call set_m_matrix_local(wannier_fptr, m_fptr)
+    !fixme jj call set_m_matrix_local(wannier_fptr, m_fptr)
   end subroutine cset_m_matrix_local
 
   subroutine cset_m_orig(common_cptr, wannier_cptr, m_cptr) bind(c)
