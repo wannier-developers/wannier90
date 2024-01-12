@@ -131,8 +131,8 @@ module w90_library
   public :: set_constant_bohr_to_ang
   public :: set_eigval
   public :: set_kpoint_distribution
-  public :: set_m_matrix
-  public :: set_m_matrix_local
+  !public :: set_m_matrix
+  !public :: set_m_matrix_local
   public :: set_m_orig
   public :: set_parallel_comms
   public :: set_u_matrix
@@ -250,7 +250,7 @@ contains
       ikg = global_k(ikl)
       u(:, :, ikg) = common_data%u_matrix(:, :, ikl)
       uopt(:, :, ikg) = common_data%u_opt(:, :, ikl)
-      m(:, :, :, ikg) = wannier_data%m_matrix_local(:, :, :, ikl)
+      m(:, :, :, ikg) = wannier_data%m_matrix_local(1:nw, 1:nw, :, ikl)
     enddo
     call comms_reduce(u(1, 1, 1), nw*nw*nk, 'SUM', error, common_data%comm)
     call comms_reduce(uopt(1, 1, 1), nb*nw*nk, 'SUM', error, common_data%comm)
@@ -810,6 +810,7 @@ contains
 
     ! local
     type(w90_error_type), allocatable :: error
+    integer :: ik
     ! integer :: optimisation = 3 ! why was this shadowing the usual variable? jj fixme
 
     ierr = 0
@@ -818,8 +819,8 @@ contains
       call set_error_fatal(error, 'm_orig not set for disentangle call', common_data%comm)
     else if (.not. associated(wannier_data%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
       call set_error_fatal(error, 'm_matrix_local not set for disentangle call', common_data%comm)
-    else if (.not. associated(wannier_data%a_matrix)) then
-      call set_error_fatal(error, 'a_matrix not set for disentangle call', common_data%comm)
+      !else if (.not. associated(wannier_data%a_matrix)) then
+      !  call set_error_fatal(error, 'a_matrix not set for disentangle call', common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'u_matrix not set for disentangle call', common_data%comm)
     else if (.not. associated(common_data%u_opt)) then
@@ -835,7 +836,8 @@ contains
     endif
 
     call dis_main(wannier_data%dis_control, wannier_data%dis_spheres, common_data%dis_manifold, common_data%kmesh_info, &
-                  common_data%kpt_latt, wannier_data%sitesym, common_data%print_output, wannier_data%a_matrix, &
+                  !common_data%kpt_latt, wannier_data%sitesym, common_data%print_output, wannier_data%a_matrix, &
+                  common_data%kpt_latt, wannier_data%sitesym, common_data%print_output, &
                   wannier_data%m_orig, common_data%u_matrix, common_data%u_opt, common_data%eigval, &
                   common_data%real_lattice, wannier_data%omega%invariant, common_data%num_bands, common_data%num_kpts, &
                   common_data%num_wann, common_data%gamma_only, wannier_data%lsitesymmetry, istdout, common_data%timer, &
@@ -1079,27 +1081,28 @@ contains
     common_data%exclude_bands = exclude_bands
   end subroutine set_exclude
 
-  subroutine set_m_matrix(common_data, m_matrix)
-    implicit none
-    type(lib_wannier_type), intent(inout) :: common_data
-    complex(kind=dp), intent(inout), target :: m_matrix(:, :, :, :)
+!  subroutine set_m_matrix(common_data, m_matrix)
+!    implicit none
+!    type(lib_wannier_type), intent(inout) :: common_data
+!    complex(kind=dp), intent(inout), target :: m_matrix(:, :, :, :)
+!
+!    common_data%m_matrix => m_matrix
+!  end subroutine set_m_matrix
 
-    common_data%m_matrix => m_matrix
-  end subroutine set_m_matrix
-
-  subroutine set_m_matrix_local(common_data, m_matrix_local) ! scattered m-matrix
-    implicit none
-    type(lib_wannier_type), intent(inout) :: common_data
-    complex(kind=dp), intent(inout), target :: m_matrix_local(:, :, :, :)
-
-    common_data%m_matrix_local => m_matrix_local
-  end subroutine set_m_matrix_local
+!  subroutine set_m_matrix_local(common_data, m_matrix_local) ! scattered m-matrix
+!    implicit none
+!    type(lib_wannier_type), intent(inout) :: common_data
+!    complex(kind=dp), intent(inout), target :: m_matrix_local(:, :, :, :)
+!
+!    common_data%m_matrix_local => m_matrix_local
+!  end subroutine set_m_matrix_local
 
   subroutine set_m_orig(common_data, m_orig) ! m_matrix_local_orig
     implicit none
     type(lib_wannier_type), intent(inout) :: common_data
     complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
 
+    common_data%m_matrix_local => m_orig
     common_data%m_orig => m_orig
   end subroutine set_m_orig
 
