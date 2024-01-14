@@ -12,7 +12,7 @@ void ccreate_kmesh(void*);
 
 void cinput_reader_special(void*, void*, CFI_cdesc_t*);
 void cinput_reader(void*, void*, CFI_cdesc_t*);
-void cinput_setopt(void*, void*, CFI_cdesc_t*);
+void cinput_setopt(void*, void*, CFI_cdesc_t*, int);
 void cset_option_float33(void*, CFI_cdesc_t*, void*);
 void cset_option_float(void*, CFI_cdesc_t*, double);
 void cset_option_floatxy(void*, CFI_cdesc_t*, void*, int, int);
@@ -24,7 +24,8 @@ void coverlaps(void*, void*);
 void cdisentangle(void*, void*);
 void cwannierise(void*, void*);
 
-void* getglob(CFI_cdesc_t*);
+//void* getglob(CFI_cdesc_t*);
+void* getglob();
 void* getwann();
 
 void cset_kpoint_distribution(void*, int*);
@@ -85,11 +86,12 @@ void cset_option(void* blob, std::string key, double* x, int i1, int i2) {
         CFI_establish(&stringdesc, keyc, CFI_attribute_other, CFI_type_char, strlen(keyc), 0, NULL);
         cset_option_floatxy(blob, &stringdesc, x, i1, i2);
 }
-void cinput_setopt(void* blob, void* blob2, std::string seed) {
+void cinput_setopt(void* blob, void* blob2, std::string seed, MPI_Comm comm) {
+        int fcomm = MPI_Comm_c2f(comm);
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_setopt(blob, blob2, &stringdesc);
+        cinput_setopt(blob, blob2, &stringdesc, fcomm);
 }
 void cinput_reader(void* blob, void* blob2, std::string seed) {
         CFI_cdesc_t stringdesc;
@@ -103,12 +105,12 @@ void cinput_reader_special(void* blob, void* blob2, std::string seed) {
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
         cinput_reader_special(blob, blob2, &stringdesc);
 }
-void* getglob(const std::string seed) {
+/*void* getglob(const std::string seed) {
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
         return getglob(&stringdesc);
-}
+}*/
 void cchkpt(void* blob, void* blob2, std::string seed, std::string text2) {
         CFI_cdesc_t stringdesc, desc2;
         char* seedc = (char*)seed.c_str(); // discarding constness

@@ -70,7 +70,7 @@ program libv2
   if (ierr /= 0) stop
 
   ! write useful info (includes jazzy header info)
-  call input_print_details(common_data, wannier_data, seedname, stdout, stderr, ierr)
+  call input_print_details(common_data, wannier_data, stdout, stderr, ierr)
   if (ierr /= 0) stop
 
   ! test mpi error handling using "unlucky" input token
