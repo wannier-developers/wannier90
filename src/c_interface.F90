@@ -89,18 +89,26 @@ contains
     call input_reader_special(common_fptr, wannier_fptr, seedname, istdout, istderr, ierr)
   end subroutine cinput_reader_special
 
-  subroutine cinput_setopt(common_cptr, wannier_cptr, seedname) bind(c)
+  subroutine cinput_setopt(common_cptr, wannier_cptr, seedname, comm) bind(c)
+#ifdef MPI08
+    use mpi_f08
+#endif
     implicit none
     type(c_ptr), value :: common_cptr, wannier_cptr
     character(*, kind=c_char) :: seedname
     type(lib_common_type), pointer :: common_fptr
     type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istderr, istdout, ierr
+#ifdef MPI08
+    type(mpi_comm), value :: comm
+#else
+    integer(kind=c_int), value :: comm
+#endif
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(wannier_cptr, wannier_fptr)
-    call input_setopt(common_fptr, wannier_fptr, seedname, istdout, istderr, ierr)
+    call input_setopt(common_fptr, wannier_fptr, seedname, comm, istdout, istderr, ierr)
   end subroutine cinput_setopt
 
   subroutine coverlaps(common_cptr, wannier_cptr) bind(c)

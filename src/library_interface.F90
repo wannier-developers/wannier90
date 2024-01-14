@@ -45,8 +45,9 @@ module w90_library
     real(kind=dp) :: real_lattice(3, 3)
 
     type(w90_comm_type) :: comm
-    integer, pointer :: dist_kpoints(:) => null()
-    !! dist_kpoints(i) = rank operating on k-point i
+    integer, allocatable :: dist_kpoints(:)
+    !integer, pointer :: dist_kpoints(:) => null()
+    !dist_kpoints(i) = rank operating on k-point i
 
     integer, allocatable :: exclude_bands(:)
     integer :: mp_grid(3)
@@ -339,11 +340,14 @@ contains
     deallocate (m)
   end subroutine read_chkpt
 
-  subroutine input_setopt(common_data, wannier_data, seedname, istdout, istderr, ierr)
+  subroutine input_setopt(common_data, wannier_data, seedname, comm, istdout, istderr, ierr)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_wannier90_readwrite_read_special, w90_extra_io_type
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_alloc
     use w90_comms, only: mpirank, comms_sync_err
+#ifdef MPI08
+    use mpi_f08
+#endif
 
     implicit none
 
@@ -353,6 +357,11 @@ contains
     integer, intent(out) :: ierr
     type(lib_common_type), intent(inout) :: common_data
     type(lib_wannier_type), intent(inout) :: wannier_data
+#ifdef MPI08
+    type(mpi_comm), intent(in) :: comm
+#else
+    integer, intent(in) :: comm
+#endif
 
     ! local
     type(w90_error_type), allocatable :: error
@@ -367,6 +376,8 @@ contains
       write (istderr, *) ' setopt called with no input?'
       return
     endif
+
+    common_data%comm%comm = comm
 
     ierr = 0
     call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, &
@@ -441,7 +452,8 @@ contains
                                       common_data%num_kpts, common_data%num_wann, &
                                       wannier_data%optimisation, wannier_data%calc_only_A, cp_pp, &
                                       common_data%gamma_only, wannier_data%lsitesymmetry, &
-                                      wannier_data%use_bloch_phases, seedname, istdout, error, &
+                                      wannier_data%use_bloch_phases, common_data%dist_kpoints, &
+                                      seedname, istdout, error, &
                                       common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
@@ -510,7 +522,8 @@ contains
                                       common_data%num_kpts, common_data%num_wann, &
                                       wannier_data%optimisation, wannier_data%calc_only_A, cp_pp, &
                                       common_data%gamma_only, wannier_data%lsitesymmetry, &
-                                      wannier_data%use_bloch_phases, seedname, istdout, error, &
+                                      wannier_data%use_bloch_phases, common_data%dist_kpoints, &
+                                      seedname, istdout, error, &
                                       common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
@@ -757,11 +770,11 @@ contains
 
     ierr = 0
 
-    if (.not. associated(common_data%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for overlap call', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
+!    if (.not. associated(common_data%dist_kpoints)) then
+!      call set_error_fatal(error, 'dist_kpoints not set for overlap call', common_data%comm)
+!      call prterr(error, ierr, istdout, istderr, common_data%comm)
+!      return
+!    endif
 
     if (common_data%num_bands > common_data%num_wann) then ! disentanglement case
       if ((.not. associated(wannier_data%a_matrix)) .or. (.not. associated(wannier_data%m_orig))) then
@@ -825,8 +838,8 @@ contains
       call set_error_fatal(error, 'u_matrix not set for disentangle call', common_data%comm)
     else if (.not. associated(common_data%u_opt)) then
       call set_error_fatal(error, 'u_opt not set for disentangle call', common_data%comm)
-    else if (.not. associated(common_data%dist_kpoints)) then
-      call set_error_fatal(error, 'kpt decomp not set for disentangle call', common_data%comm)
+      !else if (.not. associated(common_data%dist_kpoints)) then
+      !  call set_error_fatal(error, 'kpt decomp not set for disentangle call', common_data%comm)
     else if (.not. associated(common_data%eigval)) then
       call set_error_fatal(error, 'eigval not set for disentangle call', common_data%comm)
     endif
@@ -881,8 +894,8 @@ contains
       call set_error_fatal(error, 'm_matrix_local not set for disentangle call', common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'u_matrix not set for disentangle call', common_data%comm)
-    else if (.not. associated(common_data%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for disentangle call', common_data%comm)
+      !else if (.not. associated(common_data%dist_kpoints)) then
+      !  call set_error_fatal(error, 'dist_kpoints not set for disentangle call', common_data%comm)
     endif
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
@@ -928,8 +941,8 @@ contains
       call set_error_fatal(error, 'u_opt not set for wannierise', common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'u_matrix not set for wannierise', common_data%comm)
-    else if (.not. associated(common_data%dist_kpoints)) then
-      call set_error_fatal(error, 'dist_kpoints not set for wannierise', common_data%comm)
+      !else if (.not. associated(common_data%dist_kpoints)) then
+      !  call set_error_fatal(error, 'dist_kpoints not set for wannierise', common_data%comm)
     endif
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
@@ -1180,7 +1193,7 @@ contains
       return
     endif
 
-    common_data%dist_kpoints => dist
+    !common_data%dist_kpoints => dist
   end subroutine set_kpoint_distribution
 
   subroutine set_constant_bohr_to_ang(common_data, bohr_to_angstrom)
