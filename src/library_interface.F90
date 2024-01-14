@@ -641,7 +641,7 @@ contains
     if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
   end subroutine input_reader_special
 
-  subroutine input_print_details(common_data, wannier_data, seedname, istdout, istderr, ierr)
+  subroutine input_print_details(common_data, wannier_data, istdout, istderr, ierr)
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write, w90_extra_io_type
     use w90_readwrite, only: w90_readwrite_write_header
@@ -652,7 +652,6 @@ contains
     implicit none
 
     ! arguments
-    character(len=*), intent(in) :: seedname
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
     type(lib_common_type), intent(inout) :: common_data

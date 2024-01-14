@@ -8,13 +8,20 @@ module w90_library_c
   public
 contains
 
-  type(c_ptr) function getglob(seedname) bind(c)
+!  type(c_ptr) function getglob(seedname) bind(c)
+!    type(lib_common_type), pointer :: common_data
+!    character(*, kind=c_char) :: seedname
+!    allocate (common_data)
+!    common_data%seedname = seedname
+!    getglob = c_loc(common_data)
+!  end function
+
+  type(c_ptr) function getglob() bind(c)
     type(lib_common_type), pointer :: common_data
-    character(*, kind=c_char) :: seedname
     allocate (common_data)
-    common_data%seedname = seedname
     getglob = c_loc(common_data)
   end function
+
   ! fixme needs "destructor"
 
   type(c_ptr) function getwann() bind(c)
