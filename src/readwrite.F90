@@ -82,6 +82,7 @@ contains
   !================================================!
   subroutine w90_readwrite_read_verbosity(settings, print_output, error, comm)
     use w90_error, only: w90_error_type
+    use w90_comms, only: mpirank
     implicit none
     type(print_output_type), intent(inout) :: print_output
     logical :: found
@@ -107,6 +108,8 @@ contains
     call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm, &
                                    i_value=print_output%iprint)
     if (allocated(error)) return
+
+    if (mpirank(comm) /= 0) print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine w90_readwrite_read_verbosity
 
   subroutine w90_readwrite_read_algorithm_control(settings, optimisation, error, comm)
@@ -185,6 +188,7 @@ contains
   end subroutine w90_readwrite_read_num_wann
 
   subroutine w90_readwrite_read_distk(settings, distk, nkin, error, comm)
+    ! read distribution of kpoints
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
@@ -194,22 +198,31 @@ contains
     type(settings_type), intent(inout) :: settings
     integer, intent(in) :: nkin
 
-    integer :: ierr, nk
+    integer :: nk
     logical :: found
 
-    !fixme jj, is this to be done only by set_options?  What about standalone mode?  What about readinput?
-    if (allocated(distk)) deallocate (distk)
-    allocate (distk(nkin))
-    distk = 1
     call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .true., error, comm)
     if (allocated(error)) return
 
     if (found) then
+      if (nk /= nkin) then
+        call set_error_input(error, 'incorrect length of k-distribution', comm)
+        return
+      endif
+
+      allocate (distk(nkin))
+
       call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
       if (allocated(error)) return
-      write (*, *) "at read: ", nk
+    else
+      allocate (distk(nkin))
+
+      distk = 0 ! default to no distribution if not specified !jj fixme check this strategy
+
+      !if (common_data%print_output%iprint > 2) then
+      !  write(istdout,*)' no distribution of k-points (serial execution)'
+      !endif
     end if
-    write (*, *) distk
   endsubroutine w90_readwrite_read_distk
 
   subroutine w90_readwrite_read_exclude_bands(settings, exclude_bands, num_exclude_bands, error, &
@@ -224,7 +237,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     integer :: ierr
-    logical :: found
+    logical :: found = .false.
 
     num_exclude_bands = 0
     call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, num_exclude_bands, &
@@ -3146,30 +3159,21 @@ contains
     character(len=5), parameter :: c_punc = " ,;-:"
     character(len=5)  :: c_num1, c_num2
 
-    character(len=0) :: c_value(0)
-    real(8) :: r_value(0)
-    logical :: l_value(0)
-
-    ! get_range_vector only is meaningful for human text in input file
-    ! not suitable for data passed via library interface (data in settings%entries)
-    !if (.not.allocated(settings%in_data)) then
-    !  call set_error_fatal(error, 'w90_readwrite_get_range_vector TTT with no input file (seeking '//trim(keyword)//')', comm)
-    !  return
-    !if (allocated(settings%entries)) then
-    if (lcount) then
-      call w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
-      return
-    else
-      call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
-                                            c_value, l_value, i_value, r_value)
-      return
-    endif
-    !endif
-
     if (lcount .and. present(i_value)) then
       call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call', comm)
       return
     endif
+
+    if (allocated(settings%entries)) then ! shortcut for library case
+      if (lcount) then
+        call w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
+        return
+      else
+        call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
+                                              i_value=i_value)
+        return
+      endif
+    endif ! end library branch
 
     kl = len_trim(keyword)
 
@@ -3179,7 +3183,8 @@ contains
       in = index(settings%in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
+        call set_error_input(error, 'Error: Found keyword '//trim(keyword) &
+                             //' more than once in input file', comm)
         return
       endif
       found = .true.

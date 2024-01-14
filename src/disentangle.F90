@@ -92,17 +92,17 @@ contains
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
 
     ! pllel setup
-    integer :: nkloc, ikg, ikl, my_node_id
+    integer :: nkrank, ikg, ikl, my_node_id
     integer, allocatable :: global_k(:)
     logical :: on_root = .false.
 
     my_node_id = mpirank(comm)
     on_root = (my_node_id == 0)
-    nkloc = count(dist_k == my_node_id)
-    if (nkloc == 0) return
+    nkrank = count(dist_k == my_node_id)
+    if (nkrank == 0) return
     allocate (a_matrix(num_bands, num_wann, num_kpts)); a_matrix = u_matrix_opt !fixme jj check allocation
 
-    allocate (global_k(nkloc), stat=ierr)
+    allocate (global_k(nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating global_k in dis_main', comm)
       return
@@ -197,7 +197,7 @@ contains
       call dis_extract(dis_control, kmesh_info, sitesym, print_output, dis_manifold, &
                        m_matrix_orig_local, u_matrix_opt, eigval_opt, omega_invariant, indxnfroz, &
                        ndimfroz, my_node_id, num_bands, num_kpts, num_wann, lsitesymmetry, timer, &
-                       nkloc, global_k, error, stdout, comm)
+                       nkrank, global_k, error, stdout, comm)
       if (allocated(error)) return
     end if
 
@@ -215,7 +215,7 @@ contains
 
     ! Find the num_wann x num_wann overlap matrices between
     ! the basis states of the optimal subspaces
-    do nkp = 1, nkloc
+    do nkp = 1, nkrank
       nkp_global = global_k(nkp)
       do nn = 1, kmesh_info%nntot
         nkp2 = kmesh_info%nnlist(nkp_global, nn)
@@ -309,14 +309,16 @@ contains
 
     ! internal variables
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
-    integer :: nkp, nkp2, nn, ierr, page_unit, nkp_global, nkloc
+    integer :: nkp, nkp2, nn, ierr, page_unit, nkp_global, nkrank
     integer, allocatable :: global_k(:)
     integer :: ikg, ikl, my_node_id
 
+    if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
+
     ! local-global k index mapping
     my_node_id = mpirank(comm)
-    nkloc = count(dist_k == my_node_id)
-    allocate (global_k(nkloc), stat=ierr)
+    nkrank = count(dist_k == my_node_id)
+    allocate (global_k(nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating global_k in dis_main', comm)
       return
@@ -329,10 +331,6 @@ contains
       endif
     enddo
 
-    if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
-
-    nkloc = count(dist_k == my_node_id)
-
     allocate (cwb(num_wann, num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cwb in dis_main', comm)
@@ -344,11 +342,7 @@ contains
       return
     endif
 
-    if (optimisation <= 0) then
-      open (newunit=page_unit, form='unformatted', status='scratch')
-    endif
-
-    do nkp = 1, nkloc
+    do nkp = 1, nkrank
       nkp_global = global_k(nkp)
 
       do nn = 1, kmesh_info%nntot
@@ -358,24 +352,10 @@ contains
         call zgemm('N', 'N', num_wann, num_wann, num_wann, cmplx_1, cwb, num_wann, &
                    u_matrix(:, :, nkp2), num_wann, cmplx_0, cww, num_wann)
 
-        if (optimisation < 0) then
-          write (page_unit) cww(:, :)
-        else
-          m_matrix_local(1:num_wann, 1:num_wann, nn, nkp) = cww(:, :)
-        endif
+        m_matrix_local(1:num_wann, 1:num_wann, nn, nkp) = cww(:, :)
       enddo
     enddo
     ! at this point m_matrix_orig_local may be deassociated/deallocated
-
-    if (optimisation < 0) then
-      rewind (page_unit)
-      do nkp = 1, nkloc
-        do nn = 1, kmesh_info%nntot
-          read (page_unit) m_matrix_local(:, :, nn, nkp)
-        end do
-      end do
-      close (page_unit)
-    endif
 
     deallocate (cwb)
     deallocate (cww)
@@ -498,18 +478,21 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
 
     ! local variables
-    integer :: nkp, nkp2, nn, i, j, m, n, ierr, nkp_global
+    integer :: nkp, nkp2, nn, i, j, m, n, ierr, nkp_global, nkrank, my_node_id
 
     complex(kind=dp), allocatable :: cmtmp(:, :)
 
     if (timing_level > 1) call io_stopwatch_start('dis: main: slim_m', timer)
+
+    my_node_id = mpirank(comm)
+    nkrank = count(dist_k == my_node_id) ! number of k points this rank
 
     allocate (cmtmp(num_bands, num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cmtmp in dis_main', comm)
       return
     endif
-    do nkp = 1, count(dist_k == mpirank(comm))
+    do nkp = 1, nkrank
       nkp_global = global_k(nkp)
       do nn = 1, nntot
         nkp2 = nnlist(nkp_global, nn)

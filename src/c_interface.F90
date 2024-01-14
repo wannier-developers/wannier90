@@ -7,29 +7,13 @@ module w90_library_c
   implicit none
   public
 contains
-
-!  type(c_ptr) function getglob(seedname) bind(c)
-!    type(lib_common_type), pointer :: common_data
-!    character(*, kind=c_char) :: seedname
-!    allocate (common_data)
-!    common_data%seedname = seedname
-!    getglob = c_loc(common_data)
-!  end function
-
   type(c_ptr) function getglob() bind(c)
     type(lib_common_type), pointer :: common_data
     allocate (common_data)
     getglob = c_loc(common_data)
   end function
-
   ! fixme needs "destructor"
 
-  type(c_ptr) function getwann() bind(c)
-    type(lib_wannier_type), pointer :: wannier_data
-    allocate (wannier_data)
-    getwann = c_loc(wannier_data)
-  end function
-  ! fixme needs "destructor"
   subroutine ccreate_kmesh(common_cptr) bind(c)
     implicit none
     type(c_ptr), value :: common_cptr
@@ -41,70 +25,60 @@ contains
     call create_kmesh(common_fptr, istdout, istderr, ierr)
   end subroutine ccreate_kmesh
 
-  subroutine cchkpt(common_cptr, wannier_cptr, label, seedname) bind(c)
+  subroutine cchkpt(common_cptr, label) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
+    type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
-    character(*, kind=c_char) :: seedname, label
+    character(*, kind=c_char) :: label
     integer(kind=c_int) :: istderr, istdout, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call write_chkpt(common_fptr, wannier_fptr, label, seedname, istdout, istderr, ierr)
+    call write_chkpt(common_fptr, label, istdout, istderr, ierr)
   end subroutine cchkpt
 
-  subroutine cdisentangle(common_cptr, wannier_cptr) bind(c)
+  subroutine cdisentangle(common_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
+    type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istdout, istderr, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call disentangle(common_fptr, wannier_fptr, istdout, istderr, ierr)
+    call disentangle(common_fptr, istdout, istderr, ierr)
   end subroutine cdisentangle
 
-  subroutine cinput_reader(common_cptr, wannier_cptr, seedname) bind(c)
+  subroutine cinput_reader(common_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
-    character(*, kind=c_char) :: seedname
+    type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istderr, istdout, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call input_reader(common_fptr, wannier_fptr, seedname, istdout, istderr, ierr)
+    call input_reader(common_fptr, istdout, istderr, ierr)
   end subroutine cinput_reader
 
-  subroutine cinput_reader_special(common_cptr, wannier_cptr, seedname) bind(c)
+  subroutine cinput_reader_special(common_cptr, seedname) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
+    type(c_ptr), value :: common_cptr
     character(*, kind=c_char) :: seedname
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istderr, istdout, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call input_reader_special(common_fptr, wannier_fptr, seedname, istdout, istderr, ierr)
+    call input_reader_special(common_fptr, seedname, istdout, istderr, ierr)
   end subroutine cinput_reader_special
 
-  subroutine cinput_setopt(common_cptr, wannier_cptr, seedname, comm) bind(c)
+  subroutine cinput_setopt(common_cptr, seedname, comm) bind(c)
 #ifdef MPI08
     use mpi_f08
 #endif
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
+    type(c_ptr), value :: common_cptr
     character(*, kind=c_char) :: seedname
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istderr, istdout, ierr
 #ifdef MPI08
     type(mpi_comm), value :: comm
@@ -114,45 +88,29 @@ contains
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call input_setopt(common_fptr, wannier_fptr, seedname, comm, istdout, istderr, ierr)
+    call input_setopt(common_fptr, seedname, comm, istdout, istderr, ierr)
   end subroutine cinput_setopt
 
-  subroutine coverlaps(common_cptr, wannier_cptr) bind(c)
+  subroutine coverlaps(common_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
+    type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istderr, istdout, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call overlaps(common_fptr, wannier_fptr, istdout, istderr, ierr)
+    call overlaps(common_fptr, istdout, istderr, ierr)
   end subroutine coverlaps
 
-  subroutine cset_a_matrix(common_cptr, wannier_cptr, a_cptr) bind(c)
-    implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr, a_cptr
-    complex(kind=dp), pointer :: a_fptr(:, :, :)
-    type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
-    call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call c_f_pointer(a_cptr, a_fptr, [common_fptr%num_bands, common_fptr%num_wann, common_fptr%num_kpts])
-    call set_a_matrix(wannier_fptr, a_fptr)
-  end subroutine cset_a_matrix
-
-  subroutine cset_exclude(common_cptr, exclude, nexc) bind(c)
-    implicit none
-    type(c_ptr), value :: common_cptr, exclude
-    integer(kind=c_int), pointer :: exclude_fptr(:)
-    type(lib_common_type), pointer :: common_fptr
-    integer(kind=c_int), value :: nexc
-    call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(exclude, exclude_fptr, [nexc])
-    call set_exclude(common_fptr, exclude_fptr, nexc)
-  end subroutine cset_exclude
+!  subroutine cset_a_matrix(common_cptr, a_cptr) bind(c)
+!    implicit none
+!    type(c_ptr), value :: common_cptr, a_cptr
+!    complex(kind=dp), pointer :: a_fptr(:, :, :)
+!    type(lib_common_type), pointer :: common_fptr
+!    call c_f_pointer(common_cptr, common_fptr)
+!    call c_f_pointer(a_cptr, a_fptr, [common_fptr%num_bands, common_fptr%num_wann, common_fptr%num_kpts])
+!    call set_a_matrix(common_fptr, a_fptr)
+!  end subroutine cset_a_matrix
 
   subroutine cset_eigval(common_cptr, eigval_cptr) bind(c)
     implicit none
@@ -179,31 +137,26 @@ contains
     call set_kpoint_distribution(common_fptr, dist_fptr, istdout, istderr, ierr)
   end subroutine cset_kpoint_distribution
 
-  subroutine cset_m_matrix_local(common_cptr, wannier_cptr, m_cptr) bind(c)
+  subroutine cset_m_matrix_local(common_cptr, m_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr, m_cptr
+    type(c_ptr), value :: common_cptr, m_cptr
     complex(kind=dp), pointer :: m_fptr(:, :, :, :)
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
 
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
     call c_f_pointer(m_cptr, m_fptr, [common_fptr%num_wann, common_fptr%num_wann, &
                                       common_fptr%kmesh_info%nntot, common_fptr%num_kpts])
-    !fixme jj call set_m_matrix_local(wannier_fptr, m_fptr)
   end subroutine cset_m_matrix_local
 
-  subroutine cset_m_orig(common_cptr, wannier_cptr, m_cptr) bind(c)
+  subroutine cset_m_orig(common_cptr, m_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr, m_cptr
+    type(c_ptr), value :: common_cptr, m_cptr
     complex(kind=dp), pointer :: m_fptr(:, :, :, :)
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
     call c_f_pointer(m_cptr, m_fptr, [common_fptr%num_bands, common_fptr%num_bands, &
                                       common_fptr%kmesh_info%nntot, common_fptr%num_kpts])
-    call set_m_orig(wannier_fptr, m_fptr)
+    call set_m_orig(common_fptr, m_fptr)
   end subroutine cset_m_orig
 
   subroutine cset_option_int(common_cptr, keyword, ival) bind(c)
@@ -293,14 +246,12 @@ contains
     call set_parallel_comms(common_fptr, comm)
   end subroutine cset_parallel_comms
 
-  subroutine cset_u_matrix(common_cptr, wannier_cptr, a_cptr) bind(c)
+  subroutine cset_u_matrix(common_cptr, a_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr, a_cptr
+    type(c_ptr), value :: common_cptr, a_cptr
     complex(kind=dp), pointer :: a_fptr(:, :, :)
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
     call c_f_pointer(a_cptr, a_fptr, [common_fptr%num_wann, common_fptr%num_wann, &
                                       common_fptr%num_kpts])
     call set_u_matrix(common_fptr, a_fptr)
@@ -311,9 +262,12 @@ contains
     type(c_ptr), value :: common_cptr, n
     type(lib_common_type), pointer :: common_fptr
     integer(kind=c_int), pointer :: ndat
+    integer(kind=c_int) :: istderr, istdout, ierr
+    call get_fortran_stderr(istderr)
+    call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(n, ndat)
-    call get_nn(common_fptr, ndat)
+    call get_nn(common_fptr, istdout, istderr, ndat, ierr)
   end subroutine cget_nn
 
   subroutine cget_nnkp(common_cptr, nnkp) bind(c)
@@ -321,9 +275,13 @@ contains
     type(c_ptr), value :: common_cptr, nnkp
     type(lib_common_type), pointer :: common_fptr
     integer(kind=c_int), pointer :: nfptr(:, :)
+
+    integer(kind=c_int) :: istderr, istdout, ierr
+    call get_fortran_stderr(istderr)
+    call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(nnkp, nfptr, [common_fptr%num_kpts, common_fptr%kmesh_info%nntot])
-    call get_nnkp(common_fptr, nfptr)
+    call get_nnkp(common_fptr, istdout, istderr, nfptr, ierr)
   end subroutine cget_nnkp
 
   subroutine cget_spreads(common_cptr, spreads) bind(c)
@@ -346,14 +304,12 @@ contains
     call get_centres(common_fptr, fcentres)
   end subroutine cget_centres
 
-  subroutine cset_u_opt(common_cptr, wannier_cptr, a_cptr) bind(c)
+  subroutine cset_u_opt(common_cptr, a_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr, a_cptr
+    type(c_ptr), value :: common_cptr, a_cptr
     complex(kind=dp), pointer :: a_fptr(:, :, :)
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
     call c_f_pointer(a_cptr, a_fptr, [common_fptr%num_bands, common_fptr%num_wann, &
                                       common_fptr%num_kpts])
     call set_u_opt(common_fptr, a_fptr)
@@ -372,16 +328,14 @@ contains
     call read_eigvals(common_fptr, eig_fptr, istdout, istderr, ierr)
   end subroutine cread_eigvals
 
-  subroutine cwannierise(common_cptr, wannier_cptr) bind(c)
+  subroutine cwannierise(common_cptr) bind(c)
     implicit none
-    type(c_ptr), value :: common_cptr, wannier_cptr
+    type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
-    type(lib_wannier_type), pointer :: wannier_fptr
     integer(kind=c_int) :: istdout, istderr, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(wannier_cptr, wannier_fptr)
-    call wannierise(common_fptr, wannier_fptr, istdout, istderr, ierr)
+    call wannierise(common_fptr, istdout, istderr, ierr)
   end subroutine cwannierise
 end module w90_library_c

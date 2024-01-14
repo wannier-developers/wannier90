@@ -184,7 +184,7 @@ contains
           if (dist > dnn(nlist)) nlarge = nlarge + 1
           nlist = nlist + 1
         enddo
-        if (nlist == counter .and. nlarge < kmesh_input%search_shells) then
+        if (nlist == counter .and. nlarge < kmesh_input%search_shells + 1) then
           dnn(nlist) = dist
           multi(nlist) = 1
           counter = counter + 1
