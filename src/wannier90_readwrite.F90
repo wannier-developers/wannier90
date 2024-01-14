@@ -159,7 +159,7 @@ contains
                                           symmetrize_eps, num_bands, num_kpts, &
                                           num_wann, optimisation, calc_only_A, cp_pp, &
                                           gamma_only, lsitesymmetry, use_bloch_phases, &
-                                          seedname, stdout, error, comm)
+                                          distk, seedname, stdout, error, comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -198,6 +198,7 @@ contains
     type(wvfn_read_type), intent(inout) :: wvfn_read
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
+    integer, allocatable, intent(inout) :: distk(:)
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_kpts
     integer, intent(inout) :: num_wann
@@ -374,6 +375,8 @@ contains
         if (allocated(error)) return
       endif
     endif
+    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
+
   end subroutine w90_wannier90_readwrite_read
 
   !================================================!

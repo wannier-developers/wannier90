@@ -25,12 +25,13 @@ module w90_readwrite
 
   use w90_constants, only: dp, maxlen
   use w90_types
-  use w90_comms, only: w90_comm_type
+  use w90_comms, only: w90_comm_type, mpisize
 
   implicit none
 
   private
 
+  public :: w90_readwrite_read_distk
   public :: w90_readwrite_chkpt_dist
   public :: w90_readwrite_dealloc
   public :: w90_readwrite_get_convention_type
@@ -182,6 +183,34 @@ contains
       return
     endif
   end subroutine w90_readwrite_read_num_wann
+
+  subroutine w90_readwrite_read_distk(settings, distk, nkin, error, comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
+    implicit none
+
+    integer, allocatable, intent(inout) :: distk(:)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+    integer, intent(in) :: nkin
+
+    integer :: ierr, nk
+    logical :: found
+
+    !fixme jj, is this to be done only by set_options?  What about standalone mode?  What about readinput?
+    if (allocated(distk)) deallocate (distk)
+    allocate (distk(nkin))
+    distk = 1
+    call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .true., error, comm)
+    if (allocated(error)) return
+
+    if (found) then
+      call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
+      if (allocated(error)) return
+      write (*, *) "at read: ", nk
+    end if
+    write (*, *) distk
+  endsubroutine w90_readwrite_read_distk
 
   subroutine w90_readwrite_read_exclude_bands(settings, exclude_bands, num_exclude_bands, error, &
                                               comm)
