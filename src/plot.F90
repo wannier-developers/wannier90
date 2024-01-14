@@ -2662,11 +2662,11 @@ contains
     complex(kind=dp), allocatable :: cpad1(:)
     real(kind=dp), allocatable :: singvd(:)
 
-    integer :: ierr, info, ranknk
+    integer :: ierr, info, nkrank
     integer :: nkp, nn, nb, na, ind
     real(kind=dp) :: omt1, omt2, omt3
 
-    ranknk = count(dist_k == mpirank(comm)) ! number k this rank, for dimensioning
+    nkrank = count(dist_k == mpirank(comm)) ! number k this rank, for dimensioning
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
       call io_stopwatch_start('wann: svd_omega_i', timer)
@@ -2708,7 +2708,7 @@ contains
 
     ! singular value decomposition
     omt1 = 0.0_dp; omt2 = 0.0_dp; omt3 = 0.0_dp
-    do nkp = 1, ranknk
+    do nkp = 1, nkrank
       do nn = 1, kmesh_info%nntot
         ind = 1
         do nb = 1, num_wann

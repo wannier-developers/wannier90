@@ -7,12 +7,12 @@
 #include <mpi.h>
 
 extern "C" {
-void cchkpt(void*, void*, CFI_cdesc_t*, CFI_cdesc_t*);
+void cchkpt(void*, CFI_cdesc_t*);
 void ccreate_kmesh(void*);
 
-void cinput_reader_special(void*, void*, CFI_cdesc_t*);
-void cinput_reader(void*, void*, CFI_cdesc_t*);
-void cinput_setopt(void*, void*, CFI_cdesc_t*, int);
+void cinput_reader_special(void*, CFI_cdesc_t*);
+void cinput_reader(void*);
+void cinput_setopt(void*, CFI_cdesc_t*, int);
 void cset_option_float33(void*, CFI_cdesc_t*, void*);
 void cset_option_float(void*, CFI_cdesc_t*, double);
 void cset_option_floatxy(void*, CFI_cdesc_t*, void*, int, int);
@@ -20,9 +20,9 @@ void cset_option_int3(void*, CFI_cdesc_t*, void*);
 void cset_option_int(void*, CFI_cdesc_t*, int);
 void cset_option_intx(void*, CFI_cdesc_t*, int*, int);
 
-void coverlaps(void*, void*);
-void cdisentangle(void*, void*);
-void cwannierise(void*, void*);
+void coverlaps(void*);
+void cdisentangle(void*);
+void cwannierise(void*);
 
 //void* getglob(CFI_cdesc_t*);
 void* getglob();
@@ -31,15 +31,15 @@ void* getwann();
 void cset_kpoint_distribution(void*, int*);
 void cset_parallel_comms(void*, int);
 
-void cset_a_matrix(void*, void*, std::complex<double>*);
+void cset_a_matrix(void*, std::complex<double>*);
 void cset_eigval(void*, double*);
-void cset_m_matrix_local(void*, void*, std::complex<double>*);
-void cset_m_orig(void*, void*, std::complex<double>*);
-void cset_u_matrix(void*, void*, std::complex<double>*);
-void cset_u_opt(void*, void*, std::complex<double>*);
+void cset_m_matrix_local(void*, std::complex<double>*);
+void cset_m_orig(void*, std::complex<double>*);
+void cset_u_matrix(void*, std::complex<double>*);
+void cset_u_opt(void*, std::complex<double>*);
 
-void cget_nn(void*, void*);
-void cget_nnkp(void*, void*);
+void cget_nn(void*, int&);
+void cget_nnkp(void*, int*);
 void cget_centres(void*, void*);
 void cget_spreads(void*, void*);
 }
@@ -86,24 +86,18 @@ void cset_option(void* blob, std::string key, double* x, int i1, int i2) {
         CFI_establish(&stringdesc, keyc, CFI_attribute_other, CFI_type_char, strlen(keyc), 0, NULL);
         cset_option_floatxy(blob, &stringdesc, x, i1, i2);
 }
-void cinput_setopt(void* blob, void* blob2, std::string seed, MPI_Comm comm) {
+void cinput_setopt(void* blob, std::string seed, MPI_Comm comm) {
         int fcomm = MPI_Comm_c2f(comm);
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_setopt(blob, blob2, &stringdesc, fcomm);
+        cinput_setopt(blob, &stringdesc, fcomm);
 }
-void cinput_reader(void* blob, void* blob2, std::string seed) {
+void cinput_reader_special(void* blob, std::string seed) {
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_reader(blob, blob2, &stringdesc);
-}
-void cinput_reader_special(void* blob, void* blob2, std::string seed) {
-        CFI_cdesc_t stringdesc;
-        char* seedc = (char*)seed.c_str(); // discarding constness
-        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_reader_special(blob, blob2, &stringdesc);
+        cinput_reader_special(blob, &stringdesc);
 }
 /*void* getglob(const std::string seed) {
         CFI_cdesc_t stringdesc;
@@ -111,12 +105,10 @@ void cinput_reader_special(void* blob, void* blob2, std::string seed) {
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
         return getglob(&stringdesc);
 }*/
-void cchkpt(void* blob, void* blob2, std::string seed, std::string text2) {
-        CFI_cdesc_t stringdesc, desc2;
-        char* seedc = (char*)seed.c_str(); // discarding constness
+void cchkpt(void* blob, std::string text2) {
+        CFI_cdesc_t desc2;
         char* text2c = (char*)text2.c_str(); // discarding constness
-        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
         CFI_establish(&desc2, text2c, CFI_attribute_other, CFI_type_char, strlen(text2c), 0, NULL);
-        cchkpt(blob, blob2, &stringdesc, &desc2);
+        cchkpt(blob, &desc2);
 }
 #endif

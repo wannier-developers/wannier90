@@ -53,7 +53,8 @@ contains
                                                   select_proj, w90_system, w90_calculation, &
                                                   real_lattice, bohr, mp_grid, num_bands, &
                                                   num_kpts, num_proj, num_wann, gamma_only, &
-                                                  lhasproj, use_bloch_phases, stdout, error, comm)
+                                                  lhasproj, use_bloch_phases, distk, stdout, &
+                                                  error, comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -82,6 +83,7 @@ contains
     type(wann_control_type), intent(inout) :: wann_control
     type(w90_calculation_type), intent(inout) :: w90_calculation !check if really needed??
 
+    integer, allocatable, intent(inout) :: distk(:)
     integer, intent(inout) :: mp_grid(3)
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_kpts
@@ -146,6 +148,9 @@ contains
       enddo
     endif
     if (allocated(error)) return
+
+    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
+
   end subroutine w90_wannier90_readwrite_read_special
 
   !================================================!
@@ -159,7 +164,7 @@ contains
                                           symmetrize_eps, num_bands, num_kpts, &
                                           num_wann, optimisation, calc_only_A, cp_pp, &
                                           gamma_only, lsitesymmetry, use_bloch_phases, &
-                                          distk, seedname, stdout, error, comm)
+                                          seedname, stdout, error, comm)
     !================================================!
     !
     !! Read parameters and calculate derived values
@@ -198,7 +203,6 @@ contains
     type(wvfn_read_type), intent(inout) :: wvfn_read
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
-    integer, allocatable, intent(inout) :: distk(:)
     integer, intent(inout) :: num_bands
     integer, intent(inout) :: num_kpts
     integer, intent(inout) :: num_wann
@@ -367,15 +371,16 @@ contains
       !if (allocated(error)) return
 
       ! projections needs to be allocated before reading constrained centres
+
       if (wann_control%constrain%constrain) then
         call w90_wannier90_readwrite_read_constrained_centres(settings, w90_extra_io%ccentres_frac, &
                                                               wann_control, real_lattice, &
                                                               num_wann, print_output%iprint, &
                                                               stdout, error, comm)
+        !fixme, ccentres_frac is not available for printing later...
         if (allocated(error)) return
       endif
     endif
-    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
 
   end subroutine w90_wannier90_readwrite_read
 
@@ -1837,8 +1842,9 @@ contains
         write (stdout, '(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         do i = 1, wann_control%constrain%slwf_num
-          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-    &                    '|', i, w90_extra_io%ccentres_frac(i, :), '|', wannier_data%centres(:, i), '|'
+!fixme JJ ccentres_frac is not available (only temporary read) cart is available in control or so
+!          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+!    &                    '|', i, w90_extra_io%ccentres_frac(i, :), '|', wannier_data%centres(:, i), '|'
         end do
         write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       end if

@@ -163,7 +163,7 @@ contains
     integer :: i, n, iter, ind, ierr, iw, ncg, nkp, nkp_loc
     integer :: irguide
     integer :: irpt, loop_kpt
-    integer :: ranknk
+    integer :: nkrank
     logical :: lconverged, lrandom, lfirst
     logical :: lprint, ldump, lquad
     real(kind=dp) :: doda0
@@ -185,13 +185,13 @@ contains
 
     first_pass = .true.
 
-    ranknk = count(dist_k == my_node_id) ! number k this rank, for dimensioning
+    nkrank = count(dist_k == my_node_id) ! number k this rank, for dimensioning
     ! there is no need to round up to 1, but less than zero is nonsense
-    if (ranknk < 0) then
+    if (nkrank < 0) then
       call set_error_fatal(error, 'kpt decomposition nonsensical in wann_main', comm)
       return
     endif
-    allocate (global_k(ranknk), stat=ierr)
+    allocate (global_k(nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating local kpoint distribution in wann_main', comm)
       return
@@ -215,6 +215,7 @@ contains
       call set_error_alloc(error, 'Error in allocating rnkb in wann_main', comm)
       return
     endif
+    rnkb = 0.0_dp
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main', comm)
@@ -227,8 +228,6 @@ contains
         return
       endif
     end if
-
-    rnkb = 0.0_dp
 
     ! sub vars passed into other subs
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
@@ -321,23 +320,23 @@ contains
       call set_error_alloc(error, 'Error in allocating cdq in wann_main', comm)
       return
     endif
-    allocate (rnkb_loc(num_wann, kmesh_info%nntot, ranknk), stat=ierr)
+    allocate (rnkb_loc(num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rnkb_loc in wann_main', comm)
       return
     endif
-    allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, ranknk), stat=ierr)
+    allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp_loc in wann_main', comm)
       return
     endif
-    allocate (u_matrix_loc(num_wann, num_wann, ranknk), stat=ierr)
+    allocate (u_matrix_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix_loc in wann_main', comm)
       return
     endif
     if (wann_control%precond) then
-      allocate (cdodq_precond_loc(num_wann, num_wann, ranknk), stat=ierr)
+      allocate (cdodq_precond_loc(num_wann, num_wann, nkrank), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating cdodq_precond_loc in wann_main', comm)
         return
@@ -345,35 +344,36 @@ contains
     end if
 
     ! initialize local u matrix with global one
-    do nkp_loc = 1, ranknk
+    ! fixme!!! jj, is this necessary now??
+    do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       u_matrix_loc(:, :, nkp_loc) = u_matrix(:, :, nkp)
       u_matrix(:, :, nkp_loc) = u_matrix(:, :, nkp)
     end do
 
-    allocate (cdq_loc(num_wann, num_wann, ranknk), stat=ierr)
+    allocate (cdq_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdq_loc in wann_main', comm)
       return
     endif
-    allocate (cdodq_loc(num_wann, num_wann, ranknk), stat=ierr)
+    allocate (cdodq_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdodq_loc in wann_main', comm)
       return
     endif
-    allocate (cdqkeep_loc(num_wann, num_wann, ranknk), stat=ierr)
+    allocate (cdqkeep_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdqkeep_loc in wann_main', comm)
       return
     endif
     if (optimisation > 0) then
-      allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, ranknk), stat=ierr)
+      allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     end if
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m0_loc in wann_main', comm)
       return
     endif
-    allocate (u0_loc(num_wann, num_wann, ranknk), stat=ierr)
+    allocate (u0_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u0_loc in wann_main', comm)
       return
@@ -438,7 +438,7 @@ contains
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
-                       ranknk, global_k, error, comm)
+                       nkrank, global_k, error, comm)
       if (allocated(error)) return
 
       irguide = 1
@@ -453,7 +453,7 @@ contains
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                     num_kpts, print_output, wann_control%constrain, omega%invariant, ln_tmp_loc, &
-                    m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, error, comm)
+                    m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, error, comm)
     if (allocated(error)) return
 
     ! public variables
@@ -550,7 +550,7 @@ contains
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
         call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                          m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, &
-                         timer, ranknk, global_k, error, comm)
+                         timer, nkrank, global_k, error, comm)
         if (allocated(error)) return
 
         irguide = 1
@@ -561,14 +561,14 @@ contains
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, sitesym, &
-                         timer, ranknk, global_k, error, comm, print_output%iprint, cdodq)
+                         timer, nkrank, global_k, error, comm, print_output%iprint, cdodq)
         if (allocated(error)) return
 
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
                          wann_control%constrain, lsitesymmetry, ln_tmp_loc, m_matrix_loc, &
                          rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, sitesym, &
-                         timer, ranknk, global_k, error, comm, print_output%iprint)
+                         timer, nkrank, global_k, error, comm, print_output%iprint)
         if (allocated(error)) return
 
       endif
@@ -620,14 +620,14 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
-                                  print_output%timing_level, stdout, sitesym, timer, ranknk, &
+                                  print_output%timing_level, stdout, sitesym, timer, nkrank, &
                                   global_k, error, comm)
         if (allocated(error)) return
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_control%constrain, omega%invariant, &
-                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, &
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, &
                         error, comm)
         if (allocated(error)) return
 
@@ -681,7 +681,7 @@ contains
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                   lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
-                                  print_output%timing_level, stdout, sitesym, timer, ranknk, &
+                                  print_output%timing_level, stdout, sitesym, timer, nkrank, &
                                   global_k, error, comm)
         if (allocated(error)) return
 
@@ -690,7 +690,7 @@ contains
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_control%constrain, omega%invariant, &
-                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, &
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, &
                         error, comm)
         if (allocated(error)) return
 
@@ -776,7 +776,7 @@ contains
 !JJ        ! it's printed by the root node only
 !JJ        u_matrix(:, :, :) = 0.0_dp
 !JJ        m_matrix(:, :, :, :) = 0.0_dp
-!JJ        do nkp_loc = 1, ranknk
+!JJ        do nkp_loc = 1, nkrank
 !JJ          nkp = displs(my_node_id) + nkp_loc
 !JJ          u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
 !JJ          m_matrix(:, :, :, nkp) = m_matrix_loc(:, :, :, nkp_loc)
@@ -819,7 +819,7 @@ contains
     ! end of the minimization loop
 
     u_matrix(:, :, :) = 0.0_dp
-    do nkp_loc = 1, ranknk
+    do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
     enddo
@@ -883,7 +883,7 @@ contains
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
-                       ranknk, global_k, error, comm)
+                       nkrank, global_k, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1165,7 +1165,7 @@ contains
     end subroutine internal_test_convergence
 
     !================================================!
-    subroutine internal_random_noise(conv_noise_amp, num_wann, ranknk, cdq_loc)
+    subroutine internal_random_noise(conv_noise_amp, num_wann, nkrank, cdq_loc)
       !================================================!
       !
       !! Add some random noise to the search direction
@@ -1179,7 +1179,7 @@ contains
 
       ! arguments
       integer, intent(in) :: num_wann
-      integer, intent(in) :: ranknk
+      integer, intent(in) :: nkrank
       real(kind=dp), intent(in) :: conv_noise_amp
       complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
 
@@ -1211,7 +1211,7 @@ contains
       ! cdq is a num_wann x num_wann x num_kpts anti-hermitian array
       ! to which we add a random anti-hermitian matrix
 
-      do ikp = 1, ranknk
+      do ikp = 1, nkrank
         do iw = 1, num_wann
           call random_seed()
           call random_number(noise_real(:, iw))
@@ -1361,7 +1361,7 @@ contains
           enddo
         enddo
       end if
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         cdodq_precond_loc(:, :, nkp_loc) = cdodq_precond(:, :, nkp)
       enddo
@@ -1469,7 +1469,7 @@ contains
         if (print_output%iprint > 0) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', &
           wann_control%conv_noise_num, ' ]'
-        call internal_random_noise(wann_control%conv_noise_amp, num_wann, ranknk, cdq_loc)
+        call internal_random_noise(wann_control%conv_noise_amp, num_wann, nkrank, cdq_loc)
       endif
 
       ! calculate gradient along search direction - Tr[gradient . search direction]
@@ -1489,7 +1489,7 @@ contains
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
           if (lrandom) then
-            call internal_random_noise(wann_control%conv_noise_amp, num_wann, ranknk, cdq_loc)
+            call internal_random_noise(wann_control%conv_noise_amp, num_wann, nkrank, cdq_loc)
           endif
           ncg = 0
           gcfac = 0.0_dp
@@ -1600,7 +1600,7 @@ contains
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
                                     lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
-                                    timing_level, stdout, sitesym, timer, ranknk, global_k, error, &
+                                    timing_level, stdout, sitesym, timer, nkrank, global_k, error, &
                                     comm)
       !================================================!
       !
@@ -1634,7 +1634,7 @@ contains
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
       complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
 
-      integer, intent(in) :: ranknk
+      integer, intent(in) :: nkrank
       integer, intent(in) :: global_k(:)
       integer, intent(in) :: timing_level
       integer, intent(in) :: num_wann, num_kpts
@@ -1653,7 +1653,7 @@ contains
 
       if (timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: main: u_and_m', timer)
 
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         if (lsitesymmetry) then
           if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle
@@ -1693,7 +1693,7 @@ contains
 
       ! each process communicates its result to other processes
       cdq(:, :, :) = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
       enddo
@@ -1720,14 +1720,14 @@ contains
       if (lsitesymmetry) then
         call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, error, comm)
         if (allocated(error)) return
-        do nkp_loc = 1, ranknk
+        do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           cdq_loc(:, :, nkp_loc) = cdq(:, :, nkp)
         enddo
       endif
 
       ! the orbitals are rotated
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         ! cmtmp = U(k) . cdq(k)
         call utility_zgemm(cmtmp, u_matrix_loc(:, :, nkp_loc), 'N', cdq_loc(:, :, nkp_loc), 'N', &
                            num_wann)
@@ -1735,7 +1735,7 @@ contains
       enddo
 
       ! and the M_ij are updated
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
@@ -1755,7 +1755,7 @@ contains
   !================================================!
 
   subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
-                         m_matrix_loc, rnkb, timing_level, iprint, timer, ranknk, global_k, error, &
+                         m_matrix_loc, rnkb, timing_level, iprint, timer, nkrank, global_k, error, &
                          comm, m_w)
     !================================================!
     !! Uses guiding centres to pick phases which give a
@@ -1782,7 +1782,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: irguide !! Zero if first call to this routine
     integer, intent(in) :: iprint
-    integer, intent(in) :: ranknk
+    integer, intent(in) :: nkrank
     integer, intent(in) :: global_k(:)
 
     real(kind=dp), intent(out) :: sheet(:, :, :) !! Choice of branch cut
@@ -1818,7 +1818,7 @@ contains
         ! get average phase for each unique bk direction
         do na = 1, kmesh_info%nnh
           csum(na) = cmplx_0
-          do nkp_loc = 1, ranknk
+          do nkp_loc = 1, nkrank
             nkp = global_k(nkp_loc)
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
@@ -1829,7 +1829,7 @@ contains
 
         do na = 1, kmesh_info%nnh
           csum(na) = cmplx_0
-          do nkp_loc = 1, ranknk
+          do nkp_loc = 1, nkrank
             nkp = global_k(nkp_loc)
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) &
@@ -1979,7 +1979,7 @@ contains
   !================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
                         num_kpts, print_output, wann_slwf, omega_invariant, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, timer, ranknk, global_k, error, comm)
+                        m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, error, comm)
     !================================================!
     !
     !!   Calculate the Wannier Function spread
@@ -2005,7 +2005,7 @@ contains
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: ranknk, global_k(:)
+    integer, intent(in) :: nkrank, global_k(:)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
 
@@ -2032,7 +2032,7 @@ contains
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: omega', timer)
 
-    do nkp_loc = 1, ranknk
+    do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
@@ -2046,7 +2046,7 @@ contains
     rave = 0.0_dp
     do iw = 1, num_wann
       do ind = 1, 3
-        do nkp_loc = 1, ranknk
+        do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
@@ -2076,7 +2076,7 @@ contains
 
     r2ave = 0.0_dp
     do iw = 1, num_wann
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         do nn = 1, kmesh_info%nntot
           mnn2 = real(m_matrix_loc(iw, iw, nn, nkp_loc) &
                       *conjg(m_matrix_loc(iw, iw, nn, nkp_loc)), kind=dp)
@@ -2144,7 +2144,7 @@ contains
 
     if (wann_slwf%selective_loc) then
       wann_spread%om_iod = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         do nn = 1, kmesh_info%nntot
           summ = 0.0_dp
           do n = 1, wann_slwf%slwf_num
@@ -2167,7 +2167,7 @@ contains
       wann_spread%om_iod = wann_spread%om_iod/real(num_kpts, dp)
 
       wann_spread%om_d = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, wann_slwf%slwf_num
@@ -2186,7 +2186,7 @@ contains
       wann_spread%om_nu = 0.0_dp
       !! Contribution from constrains on centres
       if (wann_slwf%constrain) then
-        do nkp_loc = 1, ranknk
+        do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             do n = 1, wann_slwf%slwf_num
@@ -2215,7 +2215,7 @@ contains
       if (first_pass) then
         wann_spread%om_i = 0.0_dp
         !nkp = nkp_loc + displs(my_node_id)
-        do nkp_loc = 1, ranknk
+        do nkp_loc = 1, nkrank
           do nn = 1, kmesh_info%nntot
             summ = 0.0_dp
             do m = 1, num_wann
@@ -2240,7 +2240,7 @@ contains
       endif
 
       wann_spread%om_od = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         !nkp = nkp_loc + displs(my_node_id)
         do nn = 1, kmesh_info%nntot
           do m = 1, num_wann
@@ -2259,7 +2259,7 @@ contains
       wann_spread%om_od = wann_spread%om_od/real(num_kpts, dp)
 
       wann_spread%om_d = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
@@ -2287,7 +2287,7 @@ contains
   !================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
                          lsitesymmetry, ln_tmp_loc, m_matrix_loc, rnkb_loc, cdodq_loc, &
-                         lambda_loc, timing_level, sitesym, timer, ranknk, global_k, error, comm, &
+                         lambda_loc, timing_level, sitesym, timer, nkrank, global_k, error, comm, &
                          iprint, cdodq)
     !================================================!
     !
@@ -2318,7 +2318,7 @@ contains
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: timing_level, iprint
-    integer, intent(in) :: ranknk
+    integer, intent(in) :: nkrank
     integer, intent(in) :: global_k(:)
 
     real(kind=dp), intent(in)  :: sheet(:, :, :)
@@ -2364,7 +2364,7 @@ contains
       endif
     end if
 
-    do nkp_loc = 1, ranknk
+    do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
@@ -2379,7 +2379,7 @@ contains
     rave = 0.0_dp
     do iw = 1, num_wann
       do ind = 1, 3
-        do nkp_loc = 1, ranknk
+        do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%bk(ind, nn, nkp) &
@@ -2396,7 +2396,7 @@ contains
     ! b.r_0n are calculated
     if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       r0kb = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
@@ -2408,7 +2408,7 @@ contains
     endif
 
     rnkb_loc = 0.0_dp
-    do nkp_loc = 1, ranknk
+    do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
@@ -2421,7 +2421,7 @@ contains
     cdodq_loc = cmplx_0
     cr = cmplx_0
     crt = cmplx_0
-    do nkp_loc = 1, ranknk
+    do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann ! R^{k,b} and R~^{k,b} have columns of zeroes for the non-objective Wannier functions
@@ -2534,7 +2534,7 @@ contains
     if (present(cdodq)) then
       ! each process communicates its result to other processes
       cdodq(:, :, :) = 0.0_dp
-      do nkp_loc = 1, ranknk
+      do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
       enddo
@@ -2545,7 +2545,7 @@ contains
         ! correct behaviour is reproduced if algorithm 1 (mode 1) is followed by algorithm 2
         call sitesym_symmetrize_gradient(sitesym, cdodq, 1, num_kpts, num_wann, error, comm)
         call sitesym_symmetrize_gradient(sitesym, cdodq, 2, num_kpts, num_wann, error, comm)
-        do nkp_loc = 1, ranknk
+        do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           cdodq_loc(:, :, nkp_loc) = cdodq(:, :, nkp)
         enddo
@@ -2881,11 +2881,12 @@ contains
     !  weight m_matrix first to reduce number of operations
     !  m_w : weighted real matrix
     ! m_matrix is only avbl on root, but no mpi here
+    ! jj cleanup this documentation/notes
     !if (on_root) then
     do nn = 1, kmesh_info%nntot
       sqwb = sqrt(kmesh_info%wb(nn))
-      m_w(:, :, 2*nn - 1) = sqwb*real(m_matrix(:, :, nn, 1), dp)
-      m_w(:, :, 2*nn) = sqwb*aimag(m_matrix(:, :, nn, 1))
+      m_w(:, :, 2*nn - 1) = sqwb*real(m_matrix(1:num_wann, 1:num_wann, nn, 1), dp)
+      m_w(:, :, 2*nn) = sqwb*aimag(m_matrix(1:num_wann, 1:num_wann, nn, 1))
     end do
     !endif
     !call comms_bcast(m_w, num_wann*num_wann*tnntot, error, comm)
@@ -3042,7 +3043,7 @@ contains
     ! update M
     do nn = 1, kmesh_info%nntot
       sqwb = 1.0_dp/sqrt(kmesh_info%wb(nn))
-      m_matrix(:, :, nn, 1) = sqwb*cmplx(m_w(:, :, 2*nn - 1), m_w(:, :, 2*nn), dp)
+      m_matrix(1:num_wann, 1:num_wann, nn, 1) = sqwb*cmplx(m_w(:, :, 2*nn - 1), m_w(:, :, 2*nn), dp)
     end do
     ! update U
     uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
