@@ -18,6 +18,7 @@ void cset_option_float(void*, CFI_cdesc_t*, double);
 void cset_option_floatxy(void*, CFI_cdesc_t*, void*, int, int);
 void cset_option_int3(void*, CFI_cdesc_t*, void*);
 void cset_option_int(void*, CFI_cdesc_t*, int);
+void cset_option_intx(void*, CFI_cdesc_t*, int*, int);
 
 void coverlaps(void*, void*);
 void cdisentangle(void*, void*);
@@ -59,6 +60,12 @@ void cset_option(void* blob, std::string key, int x[3]) {
         char* keyc = (char*)key.c_str(); // discarding constness
         CFI_establish(&stringdesc, keyc, CFI_attribute_other, CFI_type_char, strlen(keyc), 0, NULL);
         cset_option_int3(blob, &stringdesc, &x);
+}
+void cset_option(void* blob, std::string key, int *x, int y) {
+        CFI_cdesc_t stringdesc;
+        char* keyc = (char*)key.c_str(); // discarding constness
+        CFI_establish(&stringdesc, keyc, CFI_attribute_other, CFI_type_char, strlen(keyc), 0, NULL);
+        cset_option_intx(blob, &stringdesc, x, y);
 }
 void cset_option(void* blob, std::string key, double x[][3]) {
         CFI_cdesc_t stringdesc;

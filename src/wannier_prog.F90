@@ -131,8 +131,8 @@ program libv2
   allocate (u(nw, nw, nk))
   allocate (uopt(nb, nw, nk))
 
-  call set_m_matrix_local(wannier_data, mloc)
-  !call set_m_matrix(wannier_data, m)  ! we don't need global m
+  !jj fixme call set_m_matrix_local(wannier_data, mloc)
+  call set_m_orig(wannier_data, mloc)  ! we don't need global m
   call set_u_matrix(common_data, u)
   call set_u_opt(common_data, uopt)
 

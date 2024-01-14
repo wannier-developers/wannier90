@@ -213,6 +213,19 @@ contains
     call set_option(common_fptr, keyword, m_fptr)
   end subroutine cset_option_int3
 
+  subroutine cset_option_intx(common_cptr, keyword, ival, ict) bind(c)
+    implicit none
+    type(c_ptr), value :: common_cptr
+    type(c_ptr), value ::  ival
+    character(*, kind=c_char) :: keyword
+    integer(kind=c_int), value  :: ict
+    integer(kind=c_int), pointer :: m_fptr(:)
+    type(lib_common_type), pointer :: common_fptr
+    call c_f_pointer(common_cptr, common_fptr)
+    call c_f_pointer(ival, m_fptr, [ict])
+    call set_option(common_fptr, keyword, m_fptr)
+  end subroutine cset_option_intx
+
   subroutine cset_option_float(common_cptr, keyword, ival) bind(c)
     implicit none
     type(c_ptr), value :: common_cptr
