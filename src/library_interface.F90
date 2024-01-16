@@ -95,7 +95,7 @@ module w90_library
     type(wvfn_read_type) :: wvfn_read
   end type lib_common_type
 
-  private :: prterr
+  public :: prterr
   public :: create_kmesh
   public :: disentangle
   public :: get_centres

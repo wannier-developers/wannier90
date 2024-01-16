@@ -22,7 +22,8 @@ void coverlaps(void*);
 void cdisentangle(void*);
 void cwannierise(void*);
 
-void* getglob();
+void* w90_create();
+void w90_delete(void*);
 
 void cset_kpoint_distribution(void*, int*);
 void cset_parallel_comms(void*, int);

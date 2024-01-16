@@ -100,7 +100,13 @@ contains
     on_root = (my_node_id == 0)
     nkrank = count(dist_k == my_node_id)
     if (nkrank == 0) return
-    allocate (a_matrix(num_bands, num_wann, num_kpts)); a_matrix = u_matrix_opt !fixme jj check allocation
+
+    allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr) ! a_matrix is local to disentangle()
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating a_matrix in dis_main', comm)
+      return
+    endif
+    a_matrix = u_matrix_opt ! initial projections are passed to this routine via u_matrix_opt
 
     allocate (global_k(nkrank), stat=ierr)
     if (ierr /= 0) then
