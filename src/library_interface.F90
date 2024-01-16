@@ -820,8 +820,8 @@ contains
     ! copy to m_matrix_local from m_matrix_orig_local (aka m_orig)
     call setup_m_loc(common_data%kmesh_info, common_data%print_output, common_data%m_matrix_local, &
                      common_data%m_orig, common_data%u_matrix, common_data%num_bands, &
-                     common_data%num_kpts, common_data%num_wann, common_data%optimisation, &
-                     common_data%timer, common_data%dist_kpoints, error, common_data%comm)
+                     common_data%num_kpts, common_data%num_wann, common_data%timer, &
+                     common_data%dist_kpoints, error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return

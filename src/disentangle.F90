@@ -279,7 +279,7 @@ contains
   end subroutine dis_main
 
   subroutine setup_m_loc(kmesh_info, print_output, m_matrix_local, m_matrix_orig_local, u_matrix, &
-                         num_bands, num_kpts, num_wann, optimisation, timer, dist_k, error, comm)
+                         num_bands, num_kpts, num_wann, timer, dist_k, error, comm)
     !================================================!
     !
     ! map m_matrix_orig_local to m_matrix_local
@@ -294,7 +294,6 @@ contains
 
     ! arguments
     integer, intent(in) :: num_bands, num_kpts, num_wann
-    integer, intent(in) :: optimisation
     integer, intent(in) :: dist_k(:)
 
     complex(kind=dp), intent(in) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts) -- full array duplicated on all ranks
@@ -309,7 +308,7 @@ contains
 
     ! internal variables
     complex(kind=dp), allocatable :: cwb(:, :), cww(:, :)
-    integer :: nkp, nkp2, nn, ierr, page_unit, nkp_global, nkrank
+    integer :: nkp, nkp2, nn, ierr, nkp_global, nkrank
     integer, allocatable :: global_k(:)
     integer :: ikg, ikl, my_node_id
 
