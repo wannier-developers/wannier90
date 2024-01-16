@@ -63,7 +63,7 @@ program postw90
   character(len=20) :: checkpoint
   character(len=:), allocatable :: prog
   character(len=:), allocatable :: seednamedyn
-  character(len=50), allocatable :: seedname
+  character(len=50) :: seedname
   character(len=9) :: stat, pos
   integer :: nkp, len_seedname
   integer :: stdout, stderr
@@ -231,6 +231,7 @@ program postw90
     seedname = seednamedyn(1:len(seednamedyn))
     len_seedname = len(seedname)
   end if
+
   call comms_bcast(len_seedname, 1, error, comm)
   if (allocated(error)) call prterr(error, stdout, stderr, comm)
   call comms_bcast(seedname, len_seedname, error, comm)
@@ -269,28 +270,27 @@ program postw90
   ! Read onto the root node all the input parameters from seendame.win,
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
 
+  ! copy input file to in_data structure
+  call w90_readwrite_in_file(settings, seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+  call w90_postw90_readwrite_read(settings, ws_region, system, exclude_bands, verbose, &
+                                  kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
+                                  atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
+                                  spec_points, pw90_calcs, postw90_oper, scissors_shift, &
+                                  effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
+                                  berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
+                                  write_data, gamma_only, physics%bohr, optimisation, stdout, &
+                                  seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+  call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
+                                      num_bands, num_kpts, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
   if (on_root) then
-
-    ! copy input file to in_data structure
-    call w90_readwrite_in_file(settings, seedname, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
-    call w90_postw90_readwrite_read(settings, ws_region, system, exclude_bands, verbose, &
-                                    kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
-                                    atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
-                                    spec_points, pw90_calcs, postw90_oper, scissors_shift, &
-                                    effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
-                                    berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
-                                    write_data, gamma_only, physics%bohr, optimisation, stdout, &
-                                    seedname, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
-    call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
-    call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
-                                        num_bands, num_kpts, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
                                      real_lattice, spec_points, pw90_calcs, postw90_oper, &
                                      scissors_shift, pw90_spin, kpath, kslice, dos_data, berry, &
@@ -313,15 +313,17 @@ program postw90
       ! the position operator in reciprocal space. Also need
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
-
-      call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                     num_kpts, gamma_only, stdout, timer, error, comm)
-      if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
-      time2 = io_time()
-      write (stdout, '(1x,a25,f11.3,a)') &
-        'Time to get kmesh        ', time2 - time1, ' (sec)'
     endif
+  endif ! on_root
+
+  call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
+                 num_kpts, gamma_only, stdout, timer, error, comm)
+  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+
+  if (on_root) then
+    time2 = io_time()
+    write (stdout, '(1x,a25,f11.3,a)') &
+      'Time to get kmesh        ', time2 - time1, ' (sec)'
 
     ! GP, May 10, 2012: for the moment I leave this commented
     ! since we need first to tune that routine so that it doesn't
@@ -344,16 +346,16 @@ program postw90
 
   ! We now distribute a subset of the parameters to the other nodes
   ! surely this function name is toooo long? --JJ fixme
-  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, &
-                                                      num_kpts, dis_window, system, &
-                                                      fermi_energy_list, num_bands, num_wann, &
-                                                      eigval, mp_grid, real_lattice, pw90_calcs, &
-                                                      scissors_shift, effective_model, pw90_spin, &
-                                                      pw90_ham, kpath, kslice, dos_data, berry, &
-                                                      spin_hall, gyrotropic, geninterp, &
-                                                      boltz, eig_found, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
-
+!  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, &
+!                                                      num_kpts, dis_window, system, &
+!                                                      fermi_energy_list, num_bands, num_wann, &
+!                                                      eigval, mp_grid, real_lattice, pw90_calcs, &
+!                                                      scissors_shift, effective_model, pw90_spin, &
+!                                                      pw90_ham, kpath, kslice, dos_data, berry, &
+!                                                      spin_hall, gyrotropic, geninterp, &
+!                                                      boltz, eig_found, error, comm)
+!  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+!
   fermi_n = 0
   if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
 
@@ -373,16 +375,16 @@ program postw90
     !m_matrix = cmplx_0
     !-----------------JJ
 
-    if (on_root) then
-      num_exclude_bands = 0
-      if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, &
-                                    m_matrix, u_matrix, u_matrix_opt, real_lattice, &
-                                    omega_invariant, mp_grid, num_bands, num_exclude_bands, &
-                                    num_kpts, num_wann, checkpoint, have_disentangled, .true., &
-                                    seedname, stdout, error, comm)
-      if (allocated(error)) call prterr(error, stdout, stderr, comm)
-    endif
+    !if (on_root) then
+    num_exclude_bands = 0
+    if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
+    call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, &
+                                  m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                                  omega_invariant, mp_grid, num_bands, num_exclude_bands, &
+                                  num_kpts, num_wann, checkpoint, have_disentangled, .true., &
+                                  seedname, stdout, error, comm)
+    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    !endif
 
     ! Distribute the information in the um and chk files to the other nodes
     !

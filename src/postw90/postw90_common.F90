@@ -805,18 +805,18 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (.not. on_root) then
-      ! wannier_centres is allocated in w90_wannier90_readwrite_read, so only on root node
-      ! It is then read in w90_wannier90_readwrite_read_chpkt
-      ! Therefore, now we need to allocate it on all nodes, and then broadcast it
-      allocate (wannier_data%centres(3, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist', comm)
-        return
-      endif
-    end if
-    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
-    if (allocated(error)) return
+!    if (.not. on_root) then
+!      ! wannier_centres is allocated in w90_wannier90_readwrite_read, so only on root node
+!      ! It is then read in w90_wannier90_readwrite_read_chpkt
+!      ! Therefore, now we need to allocate it on all nodes, and then broadcast it
+!      allocate (wannier_data%centres(3, num_wann), stat=ierr)
+!      if (ierr /= 0) then
+!        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist', comm)
+!        return
+!      endif
+!    end if
+!    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
+!    if (allocated(error)) return
 
     ! -------------------
     ! Ivo: added 8april11
