@@ -4,11 +4,9 @@
 #include <ISO_Fortran_binding.h>
 #include <complex>
 #include <cstring>
-#include <mpi.h>
 
 extern "C" {
 void cchkpt(void*, CFI_cdesc_t*);
-void ccreate_kmesh(void*);
 
 void cinput_reader_special(void*, CFI_cdesc_t*);
 void cinput_reader(void*);
@@ -24,9 +22,7 @@ void coverlaps(void*);
 void cdisentangle(void*);
 void cwannierise(void*);
 
-//void* getglob(CFI_cdesc_t*);
 void* getglob();
-void* getwann();
 
 void cset_kpoint_distribution(void*, int*);
 void cset_parallel_comms(void*, int);
@@ -44,10 +40,27 @@ void cget_centres(void*, void*);
 void cget_spreads(void*, void*);
 }
 
+#ifdef MPI_VERSION
+#include <mpi.h>
 void cset_parallel_comms(void* blob, MPI_Comm comm) {
         int fcomm = MPI_Comm_c2f(comm);
         cset_parallel_comms(blob, fcomm); // translate to fortran integer and set communicator
 }
+void cinput_setopt(void* blob, std::string seed, MPI_Comm comm) {
+        int fcomm = MPI_Comm_c2f(comm);
+        CFI_cdesc_t stringdesc;
+        char* seedc = (char*)seed.c_str(); // discarding constness
+        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
+        cinput_setopt(blob, &stringdesc, fcomm);
+}
+#else
+void cinput_setopt(void* blob, std::string seed, int comm) {
+        CFI_cdesc_t stringdesc;
+        char* seedc = (char*)seed.c_str(); // discarding constness
+        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
+        cinput_setopt(blob, &stringdesc, 0);
+}
+#endif
 
 // see https://community.intel.com/t5/Intel-Fortran-Compiler/C-interoperablilty-and-character-strings/td-p/1084167
 void cset_option(void* blob, std::string key, int x) {
@@ -86,13 +99,7 @@ void cset_option(void* blob, std::string key, double* x, int i1, int i2) {
         CFI_establish(&stringdesc, keyc, CFI_attribute_other, CFI_type_char, strlen(keyc), 0, NULL);
         cset_option_floatxy(blob, &stringdesc, x, i1, i2);
 }
-void cinput_setopt(void* blob, std::string seed, MPI_Comm comm) {
-        int fcomm = MPI_Comm_c2f(comm);
-        CFI_cdesc_t stringdesc;
-        char* seedc = (char*)seed.c_str(); // discarding constness
-        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_setopt(blob, &stringdesc, fcomm);
-}
+
 void cinput_reader_special(void* blob, std::string seed) {
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
