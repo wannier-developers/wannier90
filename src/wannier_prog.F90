@@ -13,7 +13,7 @@ program libv2
   use w90_io, only: io_print_timings, io_commandline
   use w90_readwrite, only: w90_readwrite_write_header
   use w90_sitesym, only: sitesym_read
-  use w90_error, only: w90_error_type
+  use w90_error, only: w90_error_type, set_error_input
 
   implicit none
 
@@ -69,17 +69,20 @@ program libv2
   call input_print_details(common_data, stdout, stderr, ierr)
   if (ierr /= 0) stop
 
-!  ! test mpi error handling using "unlucky" input token
-!  if (common_data%print_output%timing_level < 0 &
-!      .and. rank == abs(common_data%print_output%timing_level)) then
-!    call set_error_input(error, 'received unlucky_rank', common_data%comm)
-!  else
-!    call comms_sync_err(common_data%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
-!  endif
-!  if (allocated(error)) then ! applies (is t) for all ranks now
-!    call prterr(error, ierr, istdout, istderr, common_data%comm)
-!  endif
-!  !!!!! end unlucky code
+  ! test mpi error handling using "unlucky" input token
+  if (rank == -common_data%print_output%timing_level) then
+    call set_error_input(error, 'received unlucky_rank', common_data%comm)
+  else
+    call comms_sync_err(common_data%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
+  endif
+  if (allocated(error)) then ! applies (is t) for all ranks now
+    call prterr(error, ierr, stdout, stderr, common_data%comm)
+#ifdef MPI
+    call mpi_finalize(ierr) ! let's be nice
+#endif
+    stop
+  endif
+  !!!!! end unlucky code
 
   ! setup kpoint distribution
   allocate (distk(nk))

@@ -1001,6 +1001,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'tran_win_min', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tran_write_ht', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'trial_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'wannier_plot_format', found, error, comm)
