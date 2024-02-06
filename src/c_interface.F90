@@ -103,19 +103,7 @@ contains
     call set_eigval(common_fptr, eigval_fptr)
   end subroutine cset_eigval
 
-  subroutine cset_m_matrix_local(common_cptr, m_cptr) bind(c)
-! copy a pointer to m-matrix data
-    implicit none
-    type(c_ptr), value :: common_cptr, m_cptr
-    complex(kind=dp), pointer :: m_fptr(:, :, :, :)
-    type(lib_common_type), pointer :: common_fptr
-
-    call c_f_pointer(common_cptr, common_fptr)
-    call c_f_pointer(m_cptr, m_fptr, [common_fptr%num_wann, common_fptr%num_wann, &
-                                      common_fptr%kmesh_info%nntot, common_fptr%num_kpts])
-  end subroutine cset_m_matrix_local
-
-  subroutine cset_m_orig(common_cptr, m_cptr) bind(c)
+  subroutine cset_m_local(common_cptr, m_cptr) bind(c)
 ! copy a pointer to m-matrix data
     implicit none
     type(c_ptr), value :: common_cptr, m_cptr
@@ -124,8 +112,8 @@ contains
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(m_cptr, m_fptr, [common_fptr%num_bands, common_fptr%num_bands, &
                                       common_fptr%kmesh_info%nntot, common_fptr%num_kpts])
-    call set_m_orig(common_fptr, m_fptr)
-  end subroutine cset_m_orig
+    call set_m_local(common_fptr, m_fptr)
+  end subroutine cset_m_local
 
   subroutine cset_u_matrix(common_cptr, a_cptr) bind(c)
 ! copy pointer to u-matrix
