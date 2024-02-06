@@ -98,8 +98,7 @@ contains
 
     my_node_id = mpirank(comm)
     on_root = (my_node_id == 0)
-    nkrank = count(dist_k == my_node_id)
-    if (nkrank == 0) return
+    nkrank = count(dist_k == my_node_id) ! this routine must proceed also in the case of zero k-points this rank, to ensure collective communications are matched
 
     allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr) ! a_matrix is local to disentangle()
     if (ierr /= 0) then
