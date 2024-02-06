@@ -103,7 +103,7 @@ program libv2
   ! special branch for writing nnkp file
   if (pp) then
     ! please only invoke on rank 0
-    call write_kmesh(common_data, stdout, stderr, ierr)
+    if (rank == 0) call write_kmesh(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
     if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
@@ -130,8 +130,7 @@ program libv2
   allocate (u(nw, nw, nk))
   allocate (uopt(nb, nw, nk))
 
-  !jj fixme call set_m_matrix_local(mloc)
-  call set_m_orig(common_data, mloc)  ! we don't need global m
+  call set_m_local(common_data, mloc)  ! we don't need global m
   call set_u_matrix(common_data, u)
   call set_u_opt(common_data, uopt)
 
@@ -178,14 +177,6 @@ program libv2
   endif
   ltran = (ltran .or. common_data%w90_calculation%transport)
   ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
-
-  !if (ldsnt) then
-  ! setup arrays before overlap reads
-  !allocate (a(nb, nw, nk))
-  !allocate (morig(nb, nb, nn, nkl))
-  !call set_a_matrix(common_data, a)
-  !call set_m_orig(common_data, morig)
-  !endif
 
   ! circumstances where eigenvalues are needed are a little overcomplicated
   need_eigvals = .false.

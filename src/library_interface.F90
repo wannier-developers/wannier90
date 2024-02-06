@@ -29,7 +29,6 @@ module w90_library
     complex(kind=dp), pointer :: a_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: m_matrix_local(:, :, :, :) => null()
     complex(kind=dp), pointer :: m_matrix(:, :, :, :) => null()
-    complex(kind=dp), pointer :: m_orig(:, :, :, :) => null()  !m_matrix_orig_local
     complex(kind=dp), pointer :: u_matrix(:, :, :) => null()
     complex(kind=dp), pointer :: u_opt(:, :, :) => null()
     real(kind=dp), pointer :: eigval(:, :) => null()
@@ -95,7 +94,6 @@ module w90_library
     type(wvfn_read_type) :: wvfn_read
   end type lib_common_type
 
-  public :: prterr
   public :: create_kmesh
   public :: disentangle
   public :: get_centres
@@ -111,13 +109,13 @@ module w90_library
   public :: plot_files
   public :: print_times
   public :: projovlp
+  public :: prterr
   public :: read_chkpt
   public :: read_eigvals
-  !public :: set_a_matrix
   public :: set_constant_bohr_to_ang
   public :: set_eigval
   public :: set_kpoint_distribution
-  public :: set_m_orig
+  public :: set_m_local
   public :: set_option ! interface for setting vars using library
   public :: set_parallel_comms
   public :: set_u_matrix
@@ -193,13 +191,14 @@ contains
 
     if (.not. associated(common_data%u_opt)) then
       call set_error_fatal(error, 'u_opt not set for write_chkpt call', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'u_matrix not set for write_chkpt call', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     else if (.not. associated(common_data%m_matrix_local)) then
       call set_error_fatal(error, 'm_matrix_local not set for write_chkpt call', common_data%comm)
+    endif
+    if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
 
     nkrank = count(common_data%dist_kpoints == rank)
@@ -207,6 +206,7 @@ contains
     if (istat /= 0) then
       call set_error_alloc(error, 'Error allocating global_k in write_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
     global_k = huge(1); ikl = 1
     do ikg = 1, nk
@@ -221,19 +221,14 @@ contains
     ! or, if required only for checkpoint file writing, then use mpi-io (but needs to be ordered io, alas)
     ! or, even better, use parallel hdf5. JJ Nov 22
     allocate (u(nw, nw, nk), stat=istat) ! all kpts
-    if (istat /= 0) then
-      call set_error_alloc(error, 'Error allocating u in write_chkpt', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-    endif
+    if (istat /= 0) call set_error_alloc(error, 'Error allocating u in write_chkpt', common_data%comm)
     allocate (uopt(nb, nw, nk), stat=istat) ! all kpts
-    if (istat /= 0) then
-      call set_error_alloc(error, 'Error allocating uopt in write_chkpt', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-    endif
+    if (istat /= 0) call set_error_alloc(error, 'Error allocating uopt in write_chkpt', common_data%comm)
     allocate (m(nw, nw, nn, nk), stat=istat) ! all kpts
-    if (istat /= 0) then
-      call set_error_alloc(error, 'Error allocating m in write_chkpt', common_data%comm)
+    if (istat /= 0) call set_error_alloc(error, 'Error allocating m in write_chkpt', common_data%comm)
+    if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
 
     u(:, :, :) = 0.d0
@@ -270,17 +265,18 @@ contains
     deallocate (u, stat=istat)
     if (istat /= 0) then
       call set_error_dealloc(error, 'Error deallocating u in write_chkpt', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     endif
     deallocate (uopt, stat=istat)
     if (istat /= 0) then
       call set_error_dealloc(error, 'Error deallocating uopt in write_chkpt', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     endif
     deallocate (m, stat=istat)
     if (istat /= 0) then
       call set_error_dealloc(error, 'Error deallocating m in write_chkpt', common_data%comm)
+    endif
+    if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
   end subroutine write_chkpt
 
@@ -322,6 +318,7 @@ contains
     if (istat /= 0) then
       call set_error_alloc(error, 'Error allocating m in read_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
 
     if (rank == 0) then
@@ -356,6 +353,7 @@ contains
     if (istat /= 0) then
       call set_error_alloc(error, 'Error deallocating m in read_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
   end subroutine read_chkpt
 
@@ -392,9 +390,11 @@ contains
     if (allocated(common_data%settings%in_data)) then
       call set_error_fatal(error, ' readinput and setopt clash at input_setopt call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     else if (.not. allocated(common_data%settings%entries)) then
       call set_error_fatal(error, ' input_setopt called with no input', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
 
     common_data%comm%comm = comm ! set communicator
@@ -486,6 +486,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in deallocating entries data in input_setopt() library call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
   end subroutine input_setopt
 
@@ -788,7 +789,7 @@ contains
 
     if (common_data%num_bands > common_data%num_wann) then ! disentanglement case
       call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%sitesym, common_data%u_opt, &
-                        common_data%m_orig, common_data%num_bands, common_data%num_kpts, common_data%num_proj, &
+                        common_data%m_matrix_local, common_data%num_bands, common_data%num_kpts, common_data%num_proj, &
                         common_data%num_wann, common_data%print_output, common_data%print_output%timing_level, cp_pp, &
                         common_data%gamma_only, common_data%lsitesymmetry, common_data%use_bloch_phases, &
                         common_data%seedname, istdout, common_data%timer, common_data%dist_kpoints, error, &
@@ -836,11 +837,8 @@ contains
 
     ierr = 0
 
-    if (.not. associated(common_data%m_orig)) then  ! m_matrix_orig_local (nband*nwann for disentangle)
-      call set_error_fatal(error, 'm_orig not associated for disentangle call', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    else if (.not. associated(common_data%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
+    ! m_matrix_orig_local (nband*nwann for disentangle)
+    if (.not. associated(common_data%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
       call set_error_fatal(error, 'm_matrix_local not associated for disentangle call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
@@ -860,7 +858,7 @@ contains
 
     call dis_main(common_data%dis_control, common_data%dis_spheres, common_data%dis_manifold, &
                   common_data%kmesh_info, common_data%kpt_latt, common_data%sitesym, &
-                  common_data%print_output, common_data%m_orig, common_data%u_matrix, &
+                  common_data%print_output, common_data%m_matrix_local, common_data%u_matrix, &
                   common_data%u_opt, common_data%eigval, common_data%real_lattice, &
                   common_data%omega%invariant, common_data%num_bands, common_data%num_kpts, &
                   common_data%num_wann, common_data%gamma_only, common_data%lsitesymmetry, &
@@ -870,9 +868,8 @@ contains
       return
     endif
 
-    ! copy to m_matrix_local from m_matrix_orig_local (aka m_orig)
     call setup_m_loc(common_data%kmesh_info, common_data%print_output, common_data%m_matrix_local, &
-                     common_data%m_orig, common_data%u_matrix, common_data%num_bands, &
+                     common_data%m_matrix_local, common_data%u_matrix, common_data%num_bands, &
                      common_data%num_kpts, common_data%num_wann, common_data%timer, &
                      common_data%dist_kpoints, error, common_data%comm)
     if (allocated(error)) then
@@ -1082,15 +1079,15 @@ contains
     if (common_data%print_output%iprint > 0) call io_print_timings(common_data%timer, istdout)
   end subroutine print_times
 
-  subroutine set_m_orig(common_data, m_orig) ! m_matrix_local_orig
+  subroutine set_m_local(common_data, m_orig) ! m_matrix_local_orig
     implicit none
 
     type(lib_common_type), intent(inout) :: common_data
     complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
 
     common_data%m_matrix_local => m_orig
-    common_data%m_orig => m_orig
-  end subroutine set_m_orig
+    !common_data%m_orig => m_orig
+  end subroutine set_m_local
 
   subroutine set_u_matrix(common_data, u_matrix)
     implicit none

@@ -30,8 +30,7 @@ void cset_parallel_comms(void*, int);
 
 void cset_a_matrix(void*, std::complex<double>*);
 void cset_eigval(void*, double*);
-void cset_m_matrix_local(void*, std::complex<double>*);
-void cset_m_orig(void*, std::complex<double>*);
+void cset_m_local(void*, std::complex<double>*);
 void cset_u_matrix(void*, std::complex<double>*);
 void cset_u_opt(void*, std::complex<double>*);
 
