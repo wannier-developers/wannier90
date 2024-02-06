@@ -24,7 +24,7 @@ program libv2
   complex(kind=dp), allocatable :: uopt(:, :, :)
   real(kind=dp), allocatable :: eigval(:, :)
   integer, allocatable :: distk(:)
-  integer :: i
+  integer :: i, ctr
   integer :: mpisize, rank, ierr, nkl
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
@@ -86,10 +86,14 @@ program libv2
 
   ! setup kpoint distribution
   allocate (distk(nk))
-  nkl = nk/mpisize ! number of kpoints per rank
-  if (mod(nk, mpisize) > 0) nkl = nkl + 1
-  do i = 1, nk
-    distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
+  ctr = 0
+  do i = 0, mpisize - 1
+    nkl = nk/mpisize ! number of kpoints per rank
+    if (mod(nk, mpisize) > i) nkl = nkl + 1
+    if (nkl > 0) then
+      distk(ctr + 1:ctr + nkl) = i
+      ctr = ctr + nkl
+    endif
   enddo
 
   ! copy distribution to library
