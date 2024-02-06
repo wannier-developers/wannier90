@@ -217,11 +217,7 @@ contains
     else
       allocate (distk(nkin))
 
-      distk = 0 ! default to no distribution if not specified !jj fixme check this strategy
-
-      !if (common_data%print_output%iprint > 2) then
-      !  write(istdout,*)' no distribution of k-points (serial execution)'
-      !endif
+      distk = 0 ! default to no distribution if not specified
     end if
   endsubroutine w90_readwrite_read_distk
 
@@ -280,10 +276,10 @@ contains
     integer :: i_temp
     logical :: found
 
-    !fixme(jj) consider pw90_effective model case
-
     call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm, i_value=i_temp)
     if (allocated(error)) return
+
+    ! in the pw90_effective_model case, this variable is ignored
     if (.not. pw90_effective_model) then
       if (found) then
         num_bands = i_temp
@@ -333,11 +329,11 @@ contains
     integer :: iv_temp(3)
     logical :: found
 
-    !fixme(jj) consider pw90_effective_model case
-
     call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 3, error, comm, &
                                           i_value=iv_temp)
     if (allocated(error)) return
+
+    ! ignored in pw90_effective_model case
     if (.not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
       if (.not. found) then
@@ -639,6 +635,7 @@ contains
     use w90_error, only: w90_error_type, set_error_input
     implicit none
 
+    ! arguments
     logical, intent(in) :: eig_found
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
@@ -648,7 +645,6 @@ contains
     ! local
     logical :: found, found2
 
-    !fixme(jj) shouldn't we check for both min and max?
     call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm, &
                                    r_value=dis_manifold%win_min)
     if (allocated(error)) return
@@ -656,7 +652,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm, &
                                    r_value=dis_manifold%win_max)
     if (allocated(error)) return
-    !fixme(jj) why does the following depend on having read the .eig file?
+    ! eig_found check because eigenvalue reading may reset win_min,max limits
     if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
       call set_error_input(error, &
                            'Error: w90_readwrite_read_dis_manifold: check disentanglement windows (win_max < win_min !)', comm)
@@ -668,7 +664,6 @@ contains
     if (allocated(error)) return
     if (found) then
       dis_manifold%frozen_states = .true.
-      !dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
     call w90_readwrite_get_keyword(settings, 'dis_froz_min', found2, error, comm, &
                                    r_value=dis_manifold%froz_min)
@@ -765,44 +760,46 @@ contains
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
+    ! arguments
     integer, intent(in) :: num_kpts
     logical, intent(in) :: pw90_effective_model
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
+    real(kind=dp), allocatable, intent(out) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
+    ! local variables
     real(kind=dp), allocatable :: kpt_cart(:, :)
     integer :: ierr
     logical :: found
 
-    !fixme(jj) consider pw90_effective_model case case
+    ! pw90_effective_model ignores kpt_cart
+    ! this routine allocates the intent(out) kpt_latt
 
     ierr = 0
-    if (.not. pw90_effective_model) then
-      allocate (kpt_cart(3, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
-        return
-      endif
-    endif
+
     allocate (kpt_latt(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_kpoints', comm)
       return
     endif
 
-    call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
-                                         comm, r_value=kpt_cart)
-    if (allocated(error)) return
     if (.not. pw90_effective_model) then
-      kpt_latt = kpt_cart
-      !fixme(jj) why is this only an error if not pw90_effective_model?
+      allocate (kpt_cart(3, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
+        return
+      endif
+
+      call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
+                                           comm, r_value=kpt_cart)
+      if (allocated(error)) return
       if (.not. found) then
         call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
         return
       endif
+      kpt_latt = kpt_cart
 
       deallocate (kpt_cart, stat=ierr)
       if (ierr /= 0) then
@@ -2079,12 +2076,13 @@ contains
     call comms_bcast(checkpoint, len(checkpoint), error, comm)
     if (allocated(error)) return
 
-    !fixme jj document strategy here + warning
     ! assumes u is alloc'd on all nodes
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+    if (allocated(error)) return
 
     ! assumes m is alloc'd on all nodes
     call comms_bcast(m_matrix(1, 1, 1, 1), num_wann*num_wann*nntot*num_kpts, error, comm)
+    if (allocated(error)) return
 
     ! copy global m into local m
     nkl = count(distk(:) == rank)
@@ -2101,14 +2099,6 @@ contains
 
     if (have_disentangled) then
       if (.not. on_root) then
-
-        !if (.not. allocated(u_matrix_opt)) then
-        !  allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        !  if (ierr /= 0) then
-        !    call set_error_alloc(error, 'Error allocating u_matrix_opt in w90_readwrite_chkpt_dist', comm)
-        !    return
-        !  endif
-        !endif
 
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
