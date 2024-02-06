@@ -178,6 +178,7 @@ contains
 
     logical :: pl_warning
 
+    ! fixme jj printout guards as elsewhere please (even if not yet parallel)
     if (print_output%timing_level > 0) call io_stopwatch_start('tran: main', timer)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'

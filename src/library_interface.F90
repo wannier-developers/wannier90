@@ -145,7 +145,6 @@ contains
     use iso_fortran_env, only: output_unit
     implicit none
     integer, intent(out) :: istdout
-
     istdout = output_unit
   end subroutine get_fortran_stdout
 
@@ -153,7 +152,6 @@ contains
     use iso_fortran_env, only: error_unit
     implicit none
     integer, intent(out) :: istdout
-
     istdout = error_unit
   end subroutine get_fortran_stderr
 
@@ -161,15 +159,14 @@ contains
     implicit none
     integer, intent(out) :: output
     character(len=*), intent(in) :: name
-
     open (newunit=output, file=name, form='formatted', status='unknown')
   end subroutine get_fortran_file
 
   subroutine write_chkpt(common_data, label, istdout, istderr, ierr)
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_comms, only: comms_reduce, mpirank
     use w90_error_base, only: w90_error_type
-    use w90_error, only: set_error_fatal
+    use w90_error, only: set_error_alloc, set_error_dealloc, set_error_fatal
+    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
 
     implicit none
 
@@ -183,7 +180,7 @@ contains
     complex(kind=dp), allocatable :: u(:, :, :), uopt(:, :, :), m(:, :, :, :)
     integer, allocatable :: global_k(:)
     integer, pointer :: nw, nb, nk, nn
-    integer :: rank, nkrank, ikg, ikl
+    integer :: rank, nkrank, ikg, ikl, istat
     type(w90_error_type), allocatable :: error
 
     ierr = 0
@@ -206,7 +203,11 @@ contains
     endif
 
     nkrank = count(common_data%dist_kpoints == rank)
-    allocate (global_k(nkrank))
+    allocate (global_k(nkrank), stat=istat)
+    if (istat /= 0) then
+      call set_error_alloc(error, 'Error allocating global_k in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
     global_k = huge(1); ikl = 1
     do ikg = 1, nk
       if (rank == common_data%dist_kpoints(ikg)) then
@@ -215,23 +216,37 @@ contains
       endif
     enddo
 
-    ! fixme!!
     ! allocating and partially assigning the full matrix on all ranks and reducing is a terrible idea
     ! alternatively, allocate on root and use point-to-point
     ! or, if required only for checkpoint file writing, then use mpi-io (but needs to be ordered io, alas)
     ! or, even better, use parallel hdf5. JJ Nov 22
-    allocate (u(nw, nw, nk)) ! all kpts
-    allocate (uopt(nb, nw, nk)) ! all kpts
-    allocate (m(nw, nw, nn, nk)) ! all kpts
+    allocate (u(nw, nw, nk), stat=istat) ! all kpts
+    if (istat /= 0) then
+      call set_error_alloc(error, 'Error allocating u in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
+    allocate (uopt(nb, nw, nk), stat=istat) ! all kpts
+    if (istat /= 0) then
+      call set_error_alloc(error, 'Error allocating uopt in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
+    allocate (m(nw, nw, nn, nk), stat=istat) ! all kpts
+    if (istat /= 0) then
+      call set_error_alloc(error, 'Error allocating m in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
+
     u(:, :, :) = 0.d0
     uopt(:, :, :) = 0.d0
     m(:, :, :, :) = 0.d0
+
     do ikl = 1, nkrank
       ikg = global_k(ikl)
       u(:, :, ikg) = common_data%u_matrix(:, :, ikl)
       uopt(:, :, ikg) = common_data%u_opt(:, :, ikl)
       m(:, :, :, ikg) = common_data%m_matrix_local(1:nw, 1:nw, :, ikl)
     enddo
+
     call comms_reduce(u(1, 1, 1), nw*nw*nk, 'SUM', error, common_data%comm)
     call comms_reduce(uopt(1, 1, 1), nb*nw*nk, 'SUM', error, common_data%comm)
     call comms_reduce(m(1, 1, 1, 1), nw*nw*nn*nk, 'SUM', error, common_data%comm)
@@ -251,14 +266,28 @@ contains
                                                common_data%print_output%iprint, istdout, &
                                                common_data%seedname)
     endif
-    deallocate (u)
-    deallocate (uopt)
-    deallocate (m)
+
+    deallocate (u, stat=istat)
+    if (istat /= 0) then
+      call set_error_dealloc(error, 'Error deallocating u in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
+    deallocate (uopt, stat=istat)
+    if (istat /= 0) then
+      call set_error_dealloc(error, 'Error deallocating uopt in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
+    deallocate (m, stat=istat)
+    if (istat /= 0) then
+      call set_error_dealloc(error, 'Error deallocating m in write_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
   end subroutine write_chkpt
 
   subroutine read_chkpt(common_data, checkpoint, istdout, istderr, ierr)
     use w90_comms, only: mpirank
     use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_alloc, set_error_dealloc
     use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_chkpt_dist
 
     implicit none
@@ -272,7 +301,7 @@ contains
     ! local variables
     complex(kind=dp), allocatable :: m(:, :, :, :)
     integer, pointer :: nw, nb, nk, nn
-    integer :: rank, nexclude = 0
+    integer :: rank, nexclude = 0, istat
     logical :: ispostw90 = .false. ! ispostw90 is used to print a different error message in case the chk file is missing (did you run w90 first?)
     type(w90_error_type), allocatable :: error
 
@@ -288,8 +317,12 @@ contains
     ! alternatively, allocate on root and use point-to-point
     ! or, if required only for checkpoint file writing, then use mpi-io (but needs to be ordered io, alas)
     ! or, even better, use parallel hdf5
-    ! fixme.  JJ Nov 22
-    allocate (m(nw, nw, nn, nk)) ! all kpts
+    ! fixme, check allocation status of u, uopt?
+    allocate (m(nw, nw, nn, nk), stat=istat) ! all kpts
+    if (istat /= 0) then
+      call set_error_alloc(error, 'Error allocating m in read_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
 
     if (rank == 0) then
       if (allocated(common_data%exclude_bands)) nexclude = size(common_data%exclude_bands)
@@ -318,7 +351,12 @@ contains
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    deallocate (m)
+
+    deallocate (m, stat=istat)
+    if (istat /= 0) then
+      call set_error_alloc(error, 'Error deallocating m in read_chkpt', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
   end subroutine read_chkpt
 
   subroutine input_setopt(common_data, seedname, comm, istdout, istderr, ierr)
@@ -326,10 +364,11 @@ contains
     use mpi_f08
 #endif
     use w90_error_base, only: w90_error_type
-    use w90_error, only: set_error_alloc
+    use w90_error, only: set_error_alloc, set_error_dealloc, set_error_fatal
     use w90_kmesh, only: kmesh_get
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
       w90_wannier90_readwrite_read_special, w90_extra_io_type
+
     implicit none
 
     ! arguments
@@ -348,16 +387,15 @@ contains
     type(w90_extra_io_type) :: io_params
     logical :: cp_pp, disentanglement
 
-    ! fixme JJ use error method
-    if (allocated(common_data%settings%in_data)) then
-      write (istderr, *) ' readinput and setopt clash'
-      stop
-    else if (.not. allocated(common_data%settings%entries)) then
-      write (istderr, *) ' setopt called with no input?'
-      return
-    endif
-
     ierr = 0
+
+    if (allocated(common_data%settings%in_data)) then
+      call set_error_fatal(error, ' readinput and setopt clash at input_setopt call', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    else if (.not. allocated(common_data%settings%entries)) then
+      call set_error_fatal(error, ' input_setopt called with no input', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
 
     common_data%comm%comm = comm ! set communicator
     common_data%seedname = seedname ! set seedname for input/output files
@@ -406,7 +444,7 @@ contains
 
     allocate (common_data%wannier_data%centres(3, common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating wannier_centres in wannierise', common_data%comm)
+      call set_error_alloc(error, 'Error allocating wannier_centres in input_setopt() library call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
@@ -414,7 +452,7 @@ contains
 
     allocate (common_data%wannier_data%spreads(common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating wannier_spreads in wannierise', common_data%comm)
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in input_setopt() library call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
@@ -443,8 +481,12 @@ contains
       return
     endif
 
-    ! clear any settings (from settings interface --entries--)
-    deallocate (common_data%settings%entries)
+    ! clear any settings (from settings interface not .win file)
+    deallocate (common_data%settings%entries, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in deallocating entries data in input_setopt() library call', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+    endif
   end subroutine input_setopt
 
   subroutine input_reader(common_data, istdout, istderr, ierr)
@@ -587,14 +629,14 @@ contains
     endif
     allocate (common_data%wannier_data%centres(3, common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating wannier_centres in wannierise', common_data%comm)
+      call set_error_alloc(error, 'Error allocating wannier_centres in input_reader_special() call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
     common_data%wannier_data%centres = 0.0_dp
     allocate (common_data%wannier_data%spreads(common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating wannier_spreads in wannierise', common_data%comm)
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in input_reader_special() call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
@@ -704,7 +746,7 @@ contains
 
     if (.not. common_data%setup_complete) then
       call create_kmesh(common_data, istdout, istderr, ierr)
-      ! fixme check ierr
+      if (ierr > 0) return
     endif
 
     if (mpirank(common_data%comm) == 0) then
@@ -741,15 +783,10 @@ contains
 
     if (.not. common_data%setup_complete) then
       call create_kmesh(common_data, istdout, istderr, ierr)
-      ! fixme check ierr
+      if (ierr > 0) return
     endif
 
     if (common_data%num_bands > common_data%num_wann) then ! disentanglement case
-      !if ((.not. associated(common_data%a_matrix)) .or. (.not. associated(common_data%m_orig))) then
-      !  write (istderr, *) 'Matrices not set for overlap call (disentanglement case)'
-      !  ierr = 1
-      !  return
-      !endif
       call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%sitesym, common_data%u_opt, &
                         common_data%m_orig, common_data%num_bands, common_data%num_kpts, common_data%num_proj, &
                         common_data%num_wann, common_data%print_output, common_data%print_output%timing_level, cp_pp, &
@@ -757,11 +794,17 @@ contains
                         common_data%seedname, istdout, common_data%timer, common_data%dist_kpoints, error, &
                         common_data%comm)
     else
-      if ((.not. associated(common_data%u_matrix)) .or. (.not. associated(common_data%m_matrix_local))) then
-        write (istderr, *) 'Matrices not set for overlap call'
-        ierr = 1
+      if (.not. associated(common_data%u_matrix)) then
+        call set_error_fatal(error, 'u_matrix not associated at overlaps library call', common_data%comm)
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
       endif
+      if (.not. associated(common_data%m_matrix_local)) then
+        call set_error_fatal(error, 'm_matrix_local not associated at overlaps library call', common_data%comm)
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      endif
+
       call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%sitesym, &
                         common_data%u_matrix, common_data%m_matrix_local, common_data%num_bands, &
                         common_data%num_kpts, common_data%num_proj, common_data%num_wann, &
@@ -794,20 +837,25 @@ contains
     ierr = 0
 
     if (.not. associated(common_data%m_orig)) then  ! m_matrix_orig_local (nband*nwann for disentangle)
-      call set_error_fatal(error, 'm_orig not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'm_orig not associated for disentangle call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     else if (.not. associated(common_data%m_matrix_local)) then ! (nband*nwann*nknode for wannierise)
-      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'm_matrix_local not associated for disentangle call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     else if (.not. associated(common_data%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'u_matrix not associated for disentangle call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     else if (.not. associated(common_data%u_opt)) then
-      call set_error_fatal(error, 'u_opt not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'u_opt not associated for disentangle call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     else if (.not. associated(common_data%eigval)) then
-      call set_error_fatal(error, 'eigval not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'eigval not associated for disentangle call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
 
     call dis_main(common_data%dis_control, common_data%dis_spheres, common_data%dis_manifold, &
@@ -853,11 +901,13 @@ contains
     ierr = 0
 
     if (.not. associated(common_data%m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'm_matrix_local not set for projovlp call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     else if (.not. associated(common_data%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for disentangle call', common_data%comm)
+      call set_error_fatal(error, 'u_matrix not set for projovlp call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
     endif
 
     if (.not. common_data%have_disentangled) then
@@ -895,13 +945,10 @@ contains
 
     if (.not. associated(common_data%m_matrix_local)) then
       call set_error_fatal(error, 'm_matrix_local not set for wannierise', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     else if (.not. associated(common_data%u_opt)) then
       call set_error_fatal(error, 'u_opt not set for wannierise', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'u_matrix not set for wannierise', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
     endif
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
@@ -1035,15 +1082,6 @@ contains
     if (common_data%print_output%iprint > 0) call io_print_timings(common_data%timer, istdout)
   end subroutine print_times
 
-  !subroutine set_a_matrix(common_data, a_matrix)
-  !  implicit none
-!
-!    type(lib_common_type), intent(inout) :: common_data
-!    complex(kind=dp), intent(inout), target :: a_matrix(:, :, :)
-!
-!    common_data%a_matrix => a_matrix
-!  end subroutine set_a_matrix
-
   subroutine set_m_orig(common_data, m_orig) ! m_matrix_local_orig
     implicit none
 
@@ -1092,10 +1130,7 @@ contains
 #ifdef MPI08
     use mpi_f08
 #endif
-
     implicit none
-
-    ! arguments
     type(lib_common_type), intent(inout) :: common_data
 #ifdef MPI08
     type(mpi_comm), intent(in) :: comm

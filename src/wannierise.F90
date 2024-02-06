@@ -344,11 +344,9 @@ contains
     end if
 
     ! initialize local u matrix with global one
-    ! fixme!!! jj, is this necessary now??
     do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       u_matrix_loc(:, :, nkp_loc) = u_matrix(:, :, nkp)
-      u_matrix(:, :, nkp_loc) = u_matrix(:, :, nkp)
     end do
 
     allocate (cdq_loc(num_wann, num_wann, nkrank), stat=ierr)
@@ -818,6 +816,7 @@ contains
     enddo
     ! end of the minimization loop
 
+    ! copy from local u matrix back to full matrix & reduce
     u_matrix(:, :, :) = 0.0_dp
     do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
@@ -2849,7 +2848,7 @@ contains
 
 !~    lguide = .false.
     ! guiding centres are not neede for orthorhombic systems
-    if (kmesh_info%nntot .eq. 3) wann_control%guiding_centres%enable = .false. ! JJ fixme, this requires more documentation
+    if (kmesh_info%nntot .eq. 3) wann_control%guiding_centres%enable = .false. ! fixme, this requires explanation...
 
     if (wann_control%guiding_centres%enable) then
       do n = 1, num_wann

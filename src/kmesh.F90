@@ -87,23 +87,21 @@ contains
     logical, intent(in) :: gamma_only
 
     ! local variables
-    real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
     real(kind=dp), allocatable :: bvec_tmp(:, :)
+    real(kind=dp), allocatable :: dnn(:)
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
     real(kind=dp) :: bweight(max_shells)
     real(kind=dp) :: dist, bb1, bbn, ddelta
-    !real(kind=dp) :: dnn(kmesh_input%search_shells)
-    real(kind=dp), allocatable :: dnn(:)
+    real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
     real(kind=dp) :: recip_lattice(3, 3), volume
     real(kind=dp) :: vkpp(3), vkpp2(3)
     real(kind=dp) :: wb_local(num_nnmax)
 
+    integer, allocatable :: multi(:)
     integer, allocatable :: nnlist_tmp(:, :), nncell_tmp(:, :, :) ![ysl]
     integer :: ifound, counter, na, nap, loop_s, loop_b, shell !, nbvec, bnum
     integer :: ifpos, ifneg, ierr
-    !integer :: multi(kmesh_input%search_shells)
-    integer, allocatable :: multi(:)
     integer :: lmn(3, (2*nsupcell + 1)**3) ! Order in which to search the cells (ordered in dist from origin)
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnshell(num_kpts, kmesh_input%search_shells)
@@ -160,8 +158,18 @@ contains
     !enddo
 
     nstar = (2*nsupcell + 1)**3
-    allocate (dnn(nstar*num_kpts)) ! vastly more than necessary, JJ fixme
-    allocate (multi(nstar*num_kpts)) ! vastly more than necessary, JJ fixme
+    allocate (dnn(nstar*num_kpts), stat=ierr) ! max necessary size fixme (jj) -- too large!
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating dnn in kmesh_get', comm)
+      return
+    endif
+
+    allocate (multi(nstar*num_kpts)) ! max necessary size fixme (jj) -- too large!
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating multi in kmesh_get', comm)
+      return
+    endif
+
     dnn(:) = eta
     multi(:) = 0
     counter = 1
@@ -171,7 +179,6 @@ contains
         ! v = k1 - k'
         vkpp = kpt_cart(:, 1) - kpt_cart(:, nkp) - matmul(lmn(:, loop), recip_lattice)
         dist = sqrt(sum(vkpp*vkpp))
-
         if (dist < kmesh_input%tol) cycle ! ignore zeros
 
         nlist = 1
@@ -192,6 +199,7 @@ contains
       enddo
     enddo
 
+    ! fixme(jj): brutish sorting
     do i = 1, counter
       do j = i + 1, counter
         if (dnn(j) < dnn(i)) then
@@ -205,10 +213,6 @@ contains
       enddo
     enddo
     ndnntot = min(counter, kmesh_input%search_shells)
-!    write(*,*) counter
-!    do i = 1, counter
-!      write(*,*) dnn(i),multi(i)
-!    enddo
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
@@ -778,6 +782,18 @@ contains
 
     endif
 ![ysl-e]
+
+    deallocate (dnn, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating dnn in kmesh_get', comm)
+      return
+    endif
+
+    deallocate (multi, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating multi in kmesh_get', comm)
+      return
+    endif
 
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then

@@ -130,13 +130,12 @@ contains
 
     if (my_node_id == 0) on_root = .true.
 
-! fixme JJ
 !    ! write extra info regarding omega_invariant
-!    if (output_file%svd_omega) then
-!      call plot_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-!                            dist_k, error, comm, stdout)
-!      if (allocated(error)) return
-!    endif
+    if (output_file%svd_omega) then
+      call plot_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+                            dist_k, error, comm, stdout)
+      if (allocated(error)) return
+    endif
 
     if (on_root) then
       if (print_output%timing_level > 0) call io_stopwatch_start('plot: main', timer)
