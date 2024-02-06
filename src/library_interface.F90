@@ -11,13 +11,15 @@ module w90_library
   !   which are inconsistent with the integer unit numbers used here.
   !   (The slightly 77 style naming here has no particular significance.)
 
-  use w90_constants
+  use w90_constants, only: dp, w90_physical_constants_type
   use w90_types
   use w90_wannier90_types
   use w90_comms, only: w90_comm_type
   use iso_c_binding
 
   implicit none
+
+  private :: dp ! avoid polluting calling program's namespace (dp is defined in w90_constants)
 
   ! datatype encapsulating types used by wannier90
   type lib_common_type
