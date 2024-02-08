@@ -747,10 +747,10 @@ contains
 
     ierr = 0
 
-    if (.not. common_data%setup_complete) then
-      call create_kmesh(common_data, istdout, istderr, ierr)
-      if (ierr > 0) return
-    endif
+    !if (.not. common_data%setup_complete) then
+    !  call create_kmesh(common_data, istdout, istderr, ierr)
+    !  if (ierr > 0) return
+    !endif
 
     if (mpirank(common_data%comm) == 0) then
       call kmesh_write(common_data%exclude_bands, common_data%kmesh_info, &

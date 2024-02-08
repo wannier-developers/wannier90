@@ -17,6 +17,8 @@ program libv2
 
   implicit none
 
+  integer, parameter :: dp = kind(0.d0)
+
   character(len=:), allocatable :: seedname, progname, cpstatus
   character(len=:), pointer :: restart
   complex(kind=dp), allocatable :: mloc(:, :, :, :)
