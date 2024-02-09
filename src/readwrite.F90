@@ -80,11 +80,12 @@ module w90_readwrite
 
 contains
   !================================================!
-  subroutine w90_readwrite_read_verbosity(settings, print_output, error, comm)
+  subroutine w90_readwrite_read_verbosity(settings, print_output, svd_omega, error, comm)
     use w90_error, only: w90_error_type
     use w90_comms, only: mpirank
     implicit none
     type(print_output_type), intent(inout) :: print_output
+    logical, intent(inout) :: svd_omega
     logical :: found
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
@@ -108,6 +109,8 @@ contains
     call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm, &
                                    i_value=print_output%iprint)
     if (allocated(error)) return
+
+    if (print_output%iprint >= 2) svd_omega = .true. ! a printout that does not have its own option flag
 
     if (mpirank(comm) /= 0) print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine w90_readwrite_read_verbosity
