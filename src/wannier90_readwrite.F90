@@ -132,16 +132,16 @@ contains
                                                     num_kpts, bohr, error, comm)
     if (allocated(error)) return
 
-    call utility_inverse_mat(real_lattice, inv_lattice)
+    call w90_readwrite_read_system(settings, w90_system, error, comm)
+    if (allocated(error)) return
 
+    call utility_inverse_mat(real_lattice, inv_lattice)
     call w90_wannier90_readwrite_read_projections(settings, proj, proj_input, use_bloch_phases, &
                                                   lhasproj, wann_control%guiding_centres%enable, &
                                                   select_proj, num_proj, atom_data, inv_lattice, &
                                                   num_wann, gamma_only, w90_system%spinors, bohr, &
                                                   stdout, error, comm)
     if (allocated(proj)) then
-      !if (allocated(wann_control%guiding_centres%centres)) &
-      ! deallocate (wann_control%guiding_centres%centres)
       allocate (wann_control%guiding_centres%centres(3, num_proj))
       do ip = 1, num_proj
         wann_control%guiding_centres%centres(:, ip) = proj(ip)%site(:)
@@ -286,8 +286,8 @@ contains
       call w90_wannier90_readwrite_read_restart(settings, w90_calculation, seedname, error, comm)
       if (allocated(error)) return
 
-      call w90_readwrite_read_system(settings, w90_system, error, comm)
-      if (allocated(error)) return
+      !call w90_readwrite_read_system(settings, w90_system, error, comm)
+      !if (allocated(error)) return
 
       call w90_readwrite_read_kpath(settings, kpoint_path, has_kpath, w90_calculation%bands_plot, &
                                     error, comm)
