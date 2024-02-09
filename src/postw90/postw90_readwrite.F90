@@ -142,7 +142,7 @@ contains
     integer :: num_exclude_bands
     logical :: dos_plot
     logical :: found_fermi_energy
-    logical :: disentanglement, ok
+    logical :: disentanglement, ok, svd_omega
     character(len=20) :: energy_unit
 
     pw90_kslice%corner = 0.0_dp
@@ -150,7 +150,8 @@ contains
     pw90_kslice%b2 = [0.0_dp, 1.0_dp, 0.0_dp]
     pw90_kslice%kmesh2d = 50
 
-    call w90_readwrite_read_verbosity(settings, print_output, error, comm)
+    call w90_readwrite_read_verbosity(settings, print_output, svd_omega, error, comm)
+    ! svd omega is not used in pw90, but depens on print_output
     if (allocated(error)) return
     call w90_readwrite_read_algorithm_control(settings, optimisation, error, comm)
     if (allocated(error)) return

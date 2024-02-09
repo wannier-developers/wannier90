@@ -95,8 +95,8 @@ contains
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
 
-    logical, intent(out) :: lhasproj
-    logical, intent(out) :: use_bloch_phases
+    logical, intent(inout) :: lhasproj
+    logical, intent(inout) :: use_bloch_phases
     logical, intent(inout) :: gamma_only
 
     ! local variables
@@ -234,9 +234,8 @@ contains
     call w90_wannier90_readwrite_read_sym(settings, symmetrize_eps, lsitesymmetry, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_verbosity(settings, print_output, error, comm)
+    call w90_readwrite_read_verbosity(settings, print_output, output_file%svd_omega, error, comm)
     if (allocated(error)) return
-    if (print_output%iprint >= 2) output_file%svd_omega = .true. ! a printout that does not have its own option flag
 
     call w90_readwrite_read_algorithm_control(settings, optimisation, error, comm)
     if (allocated(error)) return

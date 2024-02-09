@@ -105,7 +105,7 @@ program libv2
   ! special branch for writing nnkp file
   if (pp) then
     ! please only invoke on rank 0
-    if (rank == 0) call write_kmesh(common_data, stdout, stderr, ierr)
+    call write_kmesh(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
     if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
