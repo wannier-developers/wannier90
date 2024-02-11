@@ -123,7 +123,7 @@ program libv2
     endif
   endif
 
-  call get_nn(common_data, stdout, stderr, nn, ierr)
+  call get_nn(common_data, nn, stdout, stderr, ierr)
   nkl = count(distk == rank) ! number of kpoints this rank
   write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 

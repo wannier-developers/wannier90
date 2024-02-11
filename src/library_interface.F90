@@ -1356,10 +1356,14 @@ contains
         mesg = error%message
       endif
 
-      write (istderr, *) 'Error encountered...'
+      write (istdout, *) 'Exiting.......'
+      write (istdout, '(1x,a)') trim(mesg)
+      write (istdout, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+
+      write (istderr, *) 'Exiting.......'
       write (istderr, '(1x,a)') trim(mesg)
       write (istderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
-      !write (istdout, '(1x,a)') ' error encountered; check error .werr error log'
+      write (istderr, '(1x,a)') ' error encountered; check .wout log'
 
     else ! non 0 ranks
       je = error%code
