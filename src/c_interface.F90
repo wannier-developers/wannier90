@@ -24,7 +24,7 @@ contains
     common_cptr = C_NULL_PTR
   end subroutine w90_delete
 
-  subroutine cdisentangle(common_cptr) bind(c)
+  subroutine cdisentangle(common_cptr, ierr) bind(c)
     implicit none
     type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
@@ -35,7 +35,7 @@ contains
     call disentangle(common_fptr, istdout, istderr, ierr)
   end subroutine cdisentangle
 
-  subroutine cwannierise(common_cptr) bind(c)
+  subroutine cwannierise(common_cptr, ierr) bind(c)
     implicit none
     type(c_ptr), value :: common_cptr
     type(lib_common_type), pointer :: common_fptr
@@ -46,7 +46,7 @@ contains
     call wannierise(common_fptr, istdout, istderr, ierr)
   end subroutine cwannierise
 
-  subroutine cinput_setopt(common_cptr, seedname, comm) bind(c)
+  subroutine cinput_setopt(common_cptr, seedname, ierr, comm) bind(c)
 ! specify parameters through the library interface
 #ifdef MPI08
     use mpi_f08
@@ -67,7 +67,7 @@ contains
     call input_setopt(common_fptr, seedname, comm, istdout, istderr, ierr)
   end subroutine cinput_setopt
 
-  subroutine cinput_reader(common_cptr) bind(c)
+  subroutine cinput_reader(common_cptr, ierr) bind(c)
 ! read (optional) parameters from .win file
     implicit none
     type(c_ptr), value :: common_cptr
@@ -79,7 +79,7 @@ contains
     call input_reader(common_fptr, istdout, istderr, ierr)
   end subroutine cinput_reader
 
-  subroutine cinput_reader_special(common_cptr, seedname) bind(c)
+  subroutine cinput_reader_special(common_cptr, seedname, ierr) bind(c)
 ! read (non-optional/special) parameters from .win file
     implicit none
     type(c_ptr), value :: common_cptr
@@ -96,7 +96,7 @@ contains
 ! copy a pointer to eigenvalue data
     implicit none
     type(c_ptr), value :: common_cptr, eigval_cptr
-    real(kind=dp), pointer :: eigval_fptr(:, :)
+    real(8), pointer :: eigval_fptr(:, :)
     type(lib_common_type), pointer :: common_fptr
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(eigval_cptr, eigval_fptr, [common_fptr%num_bands, common_fptr%num_kpts])
@@ -107,7 +107,7 @@ contains
 ! copy a pointer to m-matrix data
     implicit none
     type(c_ptr), value :: common_cptr, m_cptr
-    complex(kind=dp), pointer :: m_fptr(:, :, :, :)
+    complex(8), pointer :: m_fptr(:, :, :, :)
     type(lib_common_type), pointer :: common_fptr
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(m_cptr, m_fptr, [common_fptr%num_bands, common_fptr%num_bands, &
@@ -119,7 +119,7 @@ contains
 ! copy pointer to u-matrix
     implicit none
     type(c_ptr), value :: common_cptr, a_cptr
-    complex(kind=dp), pointer :: a_fptr(:, :, :)
+    complex(8), pointer :: a_fptr(:, :, :)
     type(lib_common_type), pointer :: common_fptr
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(a_cptr, a_fptr, [common_fptr%num_wann, common_fptr%num_wann, &
@@ -131,7 +131,7 @@ contains
 ! copy pointer to u-matrix (also used for initial projections)
     implicit none
     type(c_ptr), value :: common_cptr, a_cptr
-    complex(kind=dp), pointer :: a_fptr(:, :, :)
+    complex(kind=8), pointer :: a_fptr(:, :, :)
     type(lib_common_type), pointer :: common_fptr
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(a_cptr, a_fptr, [common_fptr%num_bands, common_fptr%num_wann, &
@@ -150,7 +150,7 @@ contains
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(n, ndat)
-    call get_nn(common_fptr, istdout, istderr, ndat, ierr)
+    call get_nn(common_fptr, ndat, istdout, istderr, ierr)
   end subroutine cget_nn
 
   subroutine cget_nnkp(common_cptr, nnkp) bind(c)
@@ -164,7 +164,7 @@ contains
     call get_fortran_stdout(istdout)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(nnkp, nfptr, [common_fptr%num_kpts, common_fptr%kmesh_info%nntot])
-    call get_nnkp(common_fptr, istdout, istderr, nfptr, ierr)
+    call get_nnkp(common_fptr, nfptr, istdout, istderr, ierr)
   end subroutine cget_nnkp
 
   subroutine cget_spreads(common_cptr, spreads) bind(c)
@@ -172,7 +172,7 @@ contains
     implicit none
     type(c_ptr), value :: common_cptr, spreads
     type(lib_common_type), pointer :: common_fptr
-    real(kind=dp), pointer :: fspreads(:)
+    real(kind=8), pointer :: fspreads(:)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(spreads, fspreads, [common_fptr%num_wann])
     call get_spreads(common_fptr, fspreads)
@@ -183,7 +183,7 @@ contains
     implicit none
     type(c_ptr), value :: common_cptr, centres
     type(lib_common_type), pointer :: common_fptr
-    real(kind=dp), pointer :: fcentres(:, :)
+    real(kind=8), pointer :: fcentres(:, :)
     call c_f_pointer(common_cptr, common_fptr)
     call c_f_pointer(centres, fcentres, [3, common_fptr%num_wann])
     call get_centres(common_fptr, fcentres)
@@ -194,7 +194,7 @@ contains
     implicit none
     type(c_ptr), value :: common_cptr, eig_cptr
     type(lib_common_type), pointer :: common_fptr
-    real(kind=dp), pointer :: eig_fptr(:, :)
+    real(kind=8), pointer :: eig_fptr(:, :)
     integer(kind=c_int) :: istderr, istdout, ierr
     call get_fortran_stderr(istderr)
     call get_fortran_stdout(istdout)
@@ -326,7 +326,7 @@ contains
     character(*, kind=c_char) :: keyword
     type(c_ptr)  :: ival
     type(lib_common_type), pointer :: common_fptr
-    real(kind=dp), pointer :: m_fptr(:, :)
+    real(kind=8), pointer :: m_fptr(:, :)
     call c_f_pointer(ival, m_fptr, [3, 3])
     call c_f_pointer(common_cptr, common_fptr)
     call set_option(common_fptr, keyword, m_fptr)
@@ -339,7 +339,7 @@ contains
     type(c_ptr), value  :: ival
     integer(kind=c_int), value :: x, y
     type(lib_common_type), pointer :: common_fptr
-    real(kind=dp), pointer :: m_fptr(:, :)
+    real(kind=8), pointer :: m_fptr(:, :)
     call c_f_pointer(ival, m_fptr, [y, x]) ! these are reversed wrt c
     call c_f_pointer(common_cptr, common_fptr)
     call set_option(common_fptr, keyword, m_fptr)
