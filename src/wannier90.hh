@@ -8,9 +8,9 @@
 extern "C" {
 void cchkpt(void*, CFI_cdesc_t*);
 
-void cinput_reader_special(void*, CFI_cdesc_t*);
-void cinput_reader(void*);
-void cinput_setopt(void*, CFI_cdesc_t*, int);
+void cinput_reader_special(void*, CFI_cdesc_t*, int&);
+void cinput_reader(void*, int&);
+void cinput_setopt(void*, CFI_cdesc_t*, int&, int);
 void cset_option_float33(void*, CFI_cdesc_t*, void*);
 void cset_option_float(void*, CFI_cdesc_t*, double);
 void cset_option_floatxy(void*, CFI_cdesc_t*, void*, int, int);
@@ -18,9 +18,9 @@ void cset_option_int3(void*, CFI_cdesc_t*, void*);
 void cset_option_int(void*, CFI_cdesc_t*, int);
 void cset_option_intx(void*, CFI_cdesc_t*, int*, int);
 
-void coverlaps(void*);
-void cdisentangle(void*);
-void cwannierise(void*);
+void coverlaps(void*, int&);
+void cdisentangle(void*, int&);
+void cwannierise(void*, int&);
 
 void* w90_create();
 void w90_delete(void*);
@@ -46,19 +46,21 @@ void cset_parallel_comms(void* blob, MPI_Comm comm) {
         int fcomm = MPI_Comm_c2f(comm);
         cset_parallel_comms(blob, fcomm); // translate to fortran integer and set communicator
 }
-void cinput_setopt(void* blob, std::string seed, MPI_Comm comm) {
+void cinput_setopt(void* blob, std::string seed, int ierr, MPI_Comm comm) {
         int fcomm = MPI_Comm_c2f(comm);
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_setopt(blob, &stringdesc, fcomm);
+        ierr = 0;
+        cinput_setopt(blob, &stringdesc, ierr, fcomm);
 }
 #else
-void cinput_setopt(void* blob, std::string seed, int comm) {
+void cinput_setopt(void* blob, std::string seed, int ierr) {
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_setopt(blob, &stringdesc, 0);
+        ierr = 0;
+        cinput_setopt(blob, &stringdesc, ierr, 0);
 }
 #endif
 
@@ -100,11 +102,11 @@ void cset_option(void* blob, std::string key, double* x, int i1, int i2) {
         cset_option_floatxy(blob, &stringdesc, x, i1, i2);
 }
 
-void cinput_reader_special(void* blob, std::string seed) {
+void cinput_reader_special(void* blob, std::string seed, int ierr) {
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_reader_special(blob, &stringdesc);
+        cinput_reader_special(blob, &stringdesc, ierr);
 }
 /*void* getglob(const std::string seed) {
         CFI_cdesc_t stringdesc;

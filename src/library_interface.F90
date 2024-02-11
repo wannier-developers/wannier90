@@ -1356,12 +1356,10 @@ contains
         mesg = error%message
       endif
 
-      !if (ie == 0) write (istderr, *) "logic error" ! to arrive here requires this
-
-      write (istderr, *) 'Exiting.......'
+      write (istderr, *) 'Error encountered...'
       write (istderr, '(1x,a)') trim(mesg)
       write (istderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
-      write (istdout, '(1x,a)') ' error encountered; check error .werr error log'
+      !write (istdout, '(1x,a)') ' error encountered; check error .werr error log'
 
     else ! non 0 ranks
       je = error%code
@@ -1413,7 +1411,7 @@ contains
     endif
   end subroutine read_eigvals
 
-  subroutine get_nn(common_data, istdout, istderr, nn, ierr)
+  subroutine get_nn(common_data, nn, istdout, istderr, ierr)
     implicit none
 
     ! arguments
@@ -1429,7 +1427,7 @@ contains
     nn = common_data%kmesh_info%nntot
   end subroutine get_nn
 
-  subroutine get_nnkp(common_data, istdout, istderr, nnkp, ierr)
+  subroutine get_nnkp(common_data, nnkp, istdout, istderr, ierr)
     implicit none
 
     integer, intent(out) :: nnkp(:, :), ierr
