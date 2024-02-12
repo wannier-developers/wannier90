@@ -36,6 +36,7 @@ module w90_io
   public :: io_print_timings
   public :: io_time
   public :: io_wallclocktime
+  public :: prterr
 
 contains
 
@@ -390,4 +391,62 @@ contains
     endif
     return
   end function io_wallclocktime
+
+  subroutine prterr(error, ie, istdout, istderr, comm)
+    use w90_comms, only: comms_no_sync_send, comms_no_sync_recv, w90_comm_type, mpirank, mpisize
+    use w90_error_base, only: code_remote, w90_error_type
+
+    ! arguments
+    integer, intent(inout) :: ie ! global error value to be returned
+    integer, intent(in) :: istderr, istdout
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(in) :: error
+
+    ! local variables
+    type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
+    integer :: je ! error value on remote ranks
+    integer :: j ! rank index
+    integer :: failrank ! lowest rank reporting an error
+    character(len=128) :: mesg ! only print 128 chars of error
+
+    ie = 0
+    mesg = 'not set'
+
+    if (mpirank(comm) == 0) then
+      ! fixme, report all failing ranks instead of lowest failing rank (current stand)
+      do j = mpisize(comm) - 1, 1, -1
+        call comms_no_sync_recv(je, 1, j, le, comm)
+
+        if (je /= code_remote .and. je /= 0) then
+          failrank = j
+          ie = je
+          call comms_no_sync_recv(mesg, 128, j, le, comm)
+        endif
+      enddo
+      ! if the error is on rank0
+      if (error%code /= code_remote .and. error%code /= 0) then
+        failrank = 0
+        ie = error%code
+        mesg = error%message
+      endif
+
+      write (istdout, *) 'Exiting.......'
+      write (istdout, '(1x,a)') trim(mesg)
+      write (istdout, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+
+      write (istderr, *) 'Exiting.......'
+      write (istderr, '(1x,a)') trim(mesg)
+      write (istderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+      write (istderr, '(1x,a)') ' error encountered; check .wout log'
+
+    else ! non 0 ranks
+      je = error%code
+      call comms_no_sync_send(je, 1, 0, le, comm)
+      if (je /= code_remote .and. je /= 0) then
+        mesg = error%message
+        call comms_no_sync_send(mesg, 128, 0, le, comm)
+      endif
+    endif
+  end subroutine prterr
+
 end module w90_io

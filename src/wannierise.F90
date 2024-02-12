@@ -16,7 +16,7 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module w90_wannierise
+module w90_wannierise_mod
 
   !! Main routines for the minimisation of the spread
 
@@ -3484,4 +3484,4 @@ contains
 
   end subroutine wann_omega_gamma
 
-end module w90_wannierise
+end module w90_wannierise_mod

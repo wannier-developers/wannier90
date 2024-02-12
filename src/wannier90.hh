@@ -42,10 +42,6 @@ void cget_spreads(void*, void*);
 
 #ifdef MPI_VERSION
 #include <mpi.h>
-void cset_parallel_comms(void* blob, MPI_Comm comm) {
-        int fcomm = MPI_Comm_c2f(comm);
-        cset_parallel_comms(blob, fcomm); // translate to fortran integer and set communicator
-}
 void cinput_setopt(void* blob, std::string seed, int ierr, MPI_Comm comm) {
         int fcomm = MPI_Comm_c2f(comm);
         CFI_cdesc_t stringdesc;
@@ -100,24 +96,5 @@ void cset_option(void* blob, std::string key, double* x, int i1, int i2) {
         char* keyc = (char*)key.c_str(); // discarding constness
         CFI_establish(&stringdesc, keyc, CFI_attribute_other, CFI_type_char, strlen(keyc), 0, NULL);
         cset_option_floatxy(blob, &stringdesc, x, i1, i2);
-}
-
-void cinput_reader_special(void* blob, std::string seed, int ierr) {
-        CFI_cdesc_t stringdesc;
-        char* seedc = (char*)seed.c_str(); // discarding constness
-        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        cinput_reader_special(blob, &stringdesc, ierr);
-}
-/*void* getglob(const std::string seed) {
-        CFI_cdesc_t stringdesc;
-        char* seedc = (char*)seed.c_str(); // discarding constness
-        CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);
-        return getglob(&stringdesc);
-}*/
-void cchkpt(void* blob, std::string text2) {
-        CFI_cdesc_t desc2;
-        char* text2c = (char*)text2.c_str(); // discarding constness
-        CFI_establish(&desc2, text2c, CFI_attribute_other, CFI_type_char, strlen(text2c), 0, NULL);
-        cchkpt(blob, &desc2);
 }
 #endif

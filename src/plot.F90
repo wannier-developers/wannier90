@@ -16,7 +16,7 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module w90_plot
+module w90_plot_mod
 
   !! This module handles various plots
 
@@ -2861,5 +2861,4 @@ contains
 
   end subroutine plot_write_xyz
 
-end module w90_plot
-
+end module w90_plot_mod
