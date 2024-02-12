@@ -54,7 +54,7 @@
 ! tran_group_threshold = distance defining the grouping of WFs          !
 !=======================================================================!
 
-module w90_transport
+module w90_transport_mod
 
   !! Module to handle ballistic transport.
   !! Based on
@@ -4528,5 +4528,4 @@ contains
 
   end subroutine tran_lcr_2c2_build_ham
 
-end module w90_transport
-
+end module w90_transport_mod

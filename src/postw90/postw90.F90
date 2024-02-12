@@ -206,7 +206,7 @@ program postw90
   call mpi_init(ierr)
   if (ierr .ne. 0) then
     call set_error_fatal(error, 'MPI initialisation error', comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   endif
 #endif
 
@@ -233,11 +233,11 @@ program postw90
   end if
 
   call comms_bcast(len_seedname, 1, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   call comms_bcast(seedname, len_seedname, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   call comms_bcast(dryrun, 1, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
     ! new error handler: only root writes error to logfile
@@ -272,7 +272,7 @@ program postw90
 
   ! copy input file to in_data structure
   call w90_readwrite_in_file(settings, seedname, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   call w90_postw90_readwrite_read(settings, ws_region, system, exclude_bands, verbose, &
                                   kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
@@ -282,13 +282,13 @@ program postw90
                                   berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
                                   write_data, gamma_only, physics%bohr, optimisation, stdout, &
                                   seedname, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
                                       num_bands, num_kpts, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
@@ -318,7 +318,7 @@ program postw90
 
   call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
                  num_kpts, gamma_only, stdout, timer, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
     time2 = io_time()
@@ -354,7 +354,7 @@ program postw90
 !                                                      pw90_ham, kpath, kslice, dos_data, berry, &
 !                                                      spin_hall, gyrotropic, geninterp, &
 !                                                      boltz, eig_found, error, comm)
-!  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+!  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 !
   fermi_n = 0
   if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
@@ -383,7 +383,7 @@ program postw90
                                   omega_invariant, mp_grid, num_bands, num_exclude_bands, &
                                   num_kpts, num_wann, checkpoint, have_disentangled, .true., &
                                   seedname, stdout, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
     !endif
 
     ! Distribute the information in the um and chk files to the other nodes
@@ -395,7 +395,7 @@ program postw90
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                      dis_window, wann_data, scissors_shift, v_matrix, &
                                      system%num_valence_bands, have_disentangled, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   end if
   ! Read list of k-points in irreducible BZ and their weights
@@ -404,14 +404,14 @@ program postw90
   !
   if (berry%wanint_kpoint_file) then
     call pw90common_wanint_get_kpoint_file(kpt_dist, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   endif
 
   ! Setup a number of common variables for all interpolation tasks
 
   call pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, effective_model, &
                                ws_vec, stdout, seedname, timer, error, comm)
-  if (allocated(error)) call prterr(error, stdout, stderr, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
     time1 = io_time()
@@ -431,7 +431,7 @@ program postw90
                   SS_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
                   mp_grid, num_bands, num_kpts, num_wann, effective_model, have_disentangled, &
                   pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   endif
 
 ! find_fermi_level commented for the moment in dos.F90
@@ -447,7 +447,7 @@ program postw90
                 SBB_R, v_matrix, u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, &
                 mp_grid, fermi_n, num_wann, num_bands, num_kpts, system%num_valence_bands, &
                 effective_model, have_disentangled, seedname, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   ! ---------------------------------------------------------------------------
@@ -461,7 +461,7 @@ program postw90
                  u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, &
                  num_bands, num_kpts, num_wann, system%num_valence_bands, effective_model, &
                  have_disentangled, seedname, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   ! --------------------
@@ -475,7 +475,7 @@ program postw90
                          num_wann, num_bands, num_kpts, system%num_valence_bands, effective_model, &
                          have_disentangled, berry%wanint_kpoint_file, seedname, stdout, timer, &
                          error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   ! -------------------------------------------------------------------
@@ -504,7 +504,7 @@ program postw90
                     mp_grid, fermi_n, num_wann, num_kpts, num_bands, system%num_valence_bands, &
                     effective_model, have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, &
                     timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
@@ -520,7 +520,7 @@ program postw90
                         scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                         system%num_valence_bands, effective_model, have_disentangled, seedname, &
                         stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   if (pw90_calcs%boltzwann) then
@@ -529,7 +529,7 @@ program postw90
                         SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                         num_wann, num_bands, num_kpts, effective_model, have_disentangled, &
                         pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   if (pw90_calcs%gyrotropic) then
@@ -539,7 +539,7 @@ program postw90
                          eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                          num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
                          error, comm)
-    if (allocated(error)) call prterr(error, stdout, stderr, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   endif
 
   if (on_root .and. pw90_calcs%boltzwann) then
@@ -563,66 +563,4 @@ program postw90
 #ifdef MPI
   call mpi_finalize(ierr)
 #endif
-
-contains
-
-  subroutine prterr(error, stdout, stderr, comm)
-    use w90_error_base, only: code_remote
-    use w90_comms, only: comms_no_sync_send, comms_no_sync_recv
-
-    type(w90_error_type), allocatable, intent(in) :: error
-    integer, intent(in) :: stderr, stdout
-    type(w90_comm_type), intent(in) :: comm
-
-    type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
-    integer :: ie ! global error value to be returned
-    integer :: je ! error value on remote ranks
-    integer :: j ! rank index
-    integer :: failrank ! lowest rank reporting an error
-    character(len=128) :: mesg ! only print 128 chars of error
-
-    ie = 0
-    mesg = 'not set'
-
-    if (mpirank(comm) == 0) then
-      ! fixme, report all failing ranks
-      do j = mpisize(comm) - 1, 1, -1
-        call comms_no_sync_recv(je, 1, j, le, comm)
-
-        if (je /= code_remote .and. je /= 0) then
-          failrank = j
-          ie = je
-          call comms_no_sync_recv(mesg, 128, j, le, comm)
-        endif
-      enddo
-      ! if the error is on rank0
-      if (error%code /= code_remote .and. error%code /= 0) then
-        failrank = 0
-        ie = error%code
-        mesg = error%message
-      endif
-
-      !if (ie == 0) write (stderr, *) "logic error" ! to arrive here requires this
-
-      write (stderr, *) 'Exiting.......'
-      write (stderr, '(1x,a)') trim(mesg)
-      write (stderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
-      write (stdout, '(1x,a)') ' error encountered; check error .werr error log'
-
-    else ! non 0 ranks
-      je = error%code
-      call comms_no_sync_send(je, 1, 0, le, comm)
-      if (je /= code_remote .and. je /= 0) then
-        mesg = error%message
-        call comms_no_sync_send(mesg, 128, 0, le, comm)
-      endif
-    endif
-
-#ifdef MPI
-    call mpi_finalize(je) ! je overwritten here
-#endif
-    !call exit(ie) ! return true fail code (gnu extension)
-    stop
-  end subroutine prterr
-
 end program postw90

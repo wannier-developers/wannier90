@@ -16,7 +16,7 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module w90_disentangle
+module w90_disentangle_mod
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 
@@ -3813,4 +3813,4 @@ contains
     !================================================!
   end subroutine internal_zmatrix_gamma
 
-end module w90_disentangle
+end module w90_disentangle_mod
