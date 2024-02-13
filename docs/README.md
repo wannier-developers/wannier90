@@ -9,3 +9,9 @@ pandoc -s wannier90/doc/user_guide/user_guide.tex -o user_guide.md
 ```
 
 Note pandoc does not support `verb#1#` style latex code, I need to manually replace these by `verb|1|` style code.
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
