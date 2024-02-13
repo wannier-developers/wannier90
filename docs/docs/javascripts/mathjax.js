@@ -5,6 +5,9 @@ window.MathJax = {
     processEscapes: true,
     processEnvironments: true,
     tags: "ams",
+    macros: {
+      bm: ["{\\mathbf #1}",1],
+    }
   },
   options: {
     ignoreHtmlClass: ".*|",
