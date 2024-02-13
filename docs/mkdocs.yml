@@ -1,0 +1,172 @@
+site_name: Wannier90
+# site_url: https://example.com/
+site_author: Wannier90 Developers
+site_description: >-
+  Everything about wannier90...
+
+repo_name: wannier-developers/wannier90
+repo_url: https://github.com/wannier-developers/wannier90
+edit_uri: https://github.com/qiaojunfeng/w90-docs/edit/main/docs
+view_uri: https://github.com/qiaojunfeng/w90-docs/raw/main/docs
+
+copyright: Copyright &copy; 2016 - 2024 Wannier90 Developers
+
+nav:
+   - Home: 'index.md'
+   - 'User guide':
+      - 'Introduction': "user_guide/introduction.md"
+      - 'wannier90.x':
+        - "Methodology": "user_guide/wannier90/methodology.md"
+        - "Parameters": "user_guide/wannier90/parameters.md"
+        - "Projections": "user_guide/wannier90/projections.md"
+        - "Code overview": "user_guide/wannier90/code_overview.md"
+        - "Post-processing": "user_guide/wannier90/postproc.md"
+        - "Library mode": "user_guide/wannier90/library_mode.md"
+        - "Transport": "user_guide/wannier90/transport.md"
+        - "Files": "user_guide/wannier90/files.md"
+        - "Notes on interpolations": "user_guide/wannier90/notes_interpolations.md"
+        - "Sample inputs": "user_guide/wannier90/sample_inputs.md"
+      - 'postw90.x':
+        - "Berry": "user_guide/postw90/berry.md"
+        - "Gyrotropic": "user_guide/postw90/gyrotropic.md"
+        - "BoltzWann": "user_guide/postw90/boltzwann.md"
+        - "Generic Band interpolation": "user_guide/postw90/geninterp.md"
+      - "Appendices": 
+        - "Utilities": "user_guide/appendices/utilities.md"
+        - "FAQs": "user_guide/appendices/faq.md"
+
+theme:
+  name: material
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.footnote.tooltips
+    # - content.tabs.link
+    - content.tooltips
+    # - header.autohide
+    # - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    # - navigation.instant
+    # - navigation.instant.prefetch
+    # - navigation.instant.progress
+    # - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    # - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    # - toc.integrate
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off
+        name: Switch to system preference
+  font:
+    text: Roboto
+    code: Roboto Mono
+  favicon: assets/favicon.png
+  icon:
+    logo: logo
+
+extra:
+  status:
+    new: Recently added
+    deprecated: Deprecated
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/wannier-developers/wannier90
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: wannier-developers
+      repo: wannier90
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/mkdocs.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - git-committers:
+      repository: qiaojunfeng/w90-docs
+      branch: main
+  - search
+  - bibtex:
+      bib_file: "refs.bib"
+      footnote_format: "ref{number}" # default "{number}", to avoid conflict with user-defined footnotes
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.js
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/contrib/auto-render.min.js
+
+extra_css:
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.css
