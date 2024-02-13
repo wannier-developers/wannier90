@@ -1,34 +1,39 @@
 # Electronic transport calculations with the `BoltzWann` module
 
-By setting $\verb#boltzwann#=\verb#TRUE#$, `postw90` will call the
+By setting `boltzwann=TRUE`, `postw90` will call the
 `BoltzWann` routines to calculate some transport coefficients using the
 Boltzmann transport equation in the relaxation time approximation.
 
 In particular, the transport coefficients that are calculated are: the
-electrical conductivity $\bm{\mathrm{\sigma}}$, the Seebeck coefficient
-$\bm{\mathrm{S}}$ and the coefficient $\bm{\mathrm{K}}$ (defined below;
+electrical conductivity $\mathrm{\bm{\sigma}}$, the Seebeck coefficient
+$\mathrm{\bm{S}}$ and the coefficient $\mathrm{\bm{K}}$ (defined below;
 it is the main ingredient of the thermal conductivity).
 
 The list of parameters of the `BoltzWann` module are summarized in
+<!-- TODO: link the table in sec:wannier -->
 Table [\[parameter_keywords_bw\]](#parameter_keywords_bw){reference-type="ref"
-reference="parameter_keywords_bw"}. An example of a Boltzmann transport
+reference="parameter_keywords_bw"}. 
+An example of a Boltzmann transport
 calculation can be found in the `wannier90` Tutorial.
 
-**Note**: By default, the code assumes to be working with a 3D bulk
-material, with periodicity along all three spatial directions. If you
-are interested in studying 2D systems, set the correct value for the
-`boltz_2d_dir` variable (see
-Sec. [\[sec:boltz2ddir\]](#sec:boltz2ddir){reference-type="ref"
-reference="sec:boltz2ddir"} for the documentation). This is important
-for the evaluation of the Seebeck coefficient.
+!!!Note
+    By default, the code assumes to be working with a 3D bulk
+    material, with periodicity along all three spatial directions. If you
+    are interested in studying 2D systems, set the correct value for the
+    `boltz_2d_dir` variable 
+    <!-- TODO: linke with sec in wannier -->
+    (see Sec. [\[sec:boltz2ddir\]](#sec:boltz2ddir){reference-type="ref"
+    reference="sec:boltz2ddir"} for the documentation). 
+    This is important
+    for the evaluation of the Seebeck coefficient.
 
 Please cite the following paper [@pizzi-cpc14] when publishing results
 obtained using the `BoltzWann` module:
 
-> G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,\
+> G. Pizzi, D. Volja, B. Kozinsky, M. Fornari, and N. Marzari,
 > *BoltzWann: A code for the evaluation of thermoelectric and electronic
 > transport properties with a maximally-localized Wannier functions
-> basis*,\
+> basis*,
 > Comp. Phys. Comm. 185, 422 (2014), DOI:10.1016/j.cpc.2013.09.015.
 
 ### Theory {#sec:boltzwann-theory}
@@ -38,52 +43,80 @@ equations can be found for instance in
 Refs. [@ziman-book72; @grosso-book00; @mahan-itc06]. Here we briefly
 summarize only the main results.
 
-The current density $\bm{\mathrm{J}}$ and the heat current (or energy
-flux density) $\bm{\mathrm{J}}_Q$ can be written, respectively, as
-$$\begin{aligned}
-  \bm{\mathrm{J}}   &= \bm{\mathrm{\sigma}}(\bm{\mathrm{E}} - \bm{\mathrm{S}} \bm{\mathrm{\nabla }}T) \\
-  \bm{\mathrm{J}}_Q &= T \bm{\mathrm{\sigma }}\bm{\mathrm{S}} \bm{\mathrm{E}} - \bm{\mathrm{K}} \bm{\mathrm{\nabla }}T,
-\end{aligned}$$ where the electrical conductivity
-$\bm{\mathrm{\sigma}}$, the Seebeck coefficient $\bm{\mathrm{S}}$ and
-$\bm{\mathrm{K}}$ are $3\times 3$ tensors, in general.
+The current density $\mathrm{\bm{J}}$ and the heat current (or energy
+flux density) $\mathrm{\bm{J}}_Q$ can be written, respectively, as
 
-Note: the thermal conductivity $\bm{\mathrm{\kappa}}$ (actually, the
-electronic part of the thermal conductivity), which is defined as the
-heat current per unit of temperature gradient in open-circuit
-experiments (i.e., with $\bm{\mathrm{J}}=0$) is not precisely
-$\bm{\mathrm{K}}$, but
-$\bm{\mathrm{\kappa }}= \bm{\mathrm{K}}-\bm{\mathrm{S}} \bm{\mathrm{\sigma }}\bm{\mathrm{S}} T$
-(see for instance Eq. (7.89) of Ref. [@ziman-book72] or Eq. (XI-57b) of
-Ref. [@grosso-book00]). The thermal conductivity $\bm{\mathrm{\kappa}}$
-can be then calculated from the $\bm{\mathrm{\sigma}}$,
-$\bm{\mathrm{S}}$ and $\bm{\mathrm{K}}$ tensors output by the code.
+$$
+\begin{equation}
+\begin{aligned}
+  \mathrm{\bm{J}}   &= \mathrm{\bm{\sigma}}(\mathrm{\bm{E}} - \mathrm{\bm{S}} \mathrm{\bm{\nabla }}T) \\
+  \mathrm{\bm{J}}_Q &= T \mathrm{\bm{\sigma }}\mathrm{\bm{S}} \mathrm{\bm{E}} - \mathrm{\bm{K}} \mathrm{\bm{\nabla }}T,
+\end{aligned}
+\end{equation}
+$$ 
+
+where the electrical conductivity
+$\mathrm{\bm{\sigma}}$, the Seebeck coefficient $\mathrm{\bm{S}}$ and
+$\mathrm{\bm{K}}$ are $3\times 3$ tensors, in general.
+
+!!! note
+    the thermal conductivity $\mathrm{\bm{\kappa}}$ (actually, the
+    electronic part of the thermal conductivity), which is defined as the
+    heat current per unit of temperature gradient in open-circuit
+    experiments (i.e., with $\mathrm{\bm{J}}=0$) is not precisely
+    $\mathrm{\bm{K}}$, but
+    $\mathrm{\bm{\kappa }}= \mathrm{\bm{K}}-\mathrm{\bm{S}} \mathrm{\bm{\sigma }}\mathrm{\bm{S}} T$
+    (see for instance Eq. (7.89) of Ref. [@ziman-book72] or Eq. (XI-57b) of
+    Ref. [@grosso-book00]). The thermal conductivity $\mathrm{\bm{\kappa}}$
+    can be then calculated from the $\mathrm{\bm{\sigma}}$,
+    $\mathrm{\bm{S}}$ and $\mathrm{\bm{K}}$ tensors output by the code.
 
 These quantities depend on the value of the chemical potential $\mu$ and
 on the temperature $T$, and can be calculated as follows:
-$$\begin{aligned}
-_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
-  [\bm{\mathrm{\sigma }}\bm{\mathrm{S}}]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon), \label{eq:boltz-sigmas}\\
-  [\bm{\mathrm{K}}]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),\label{eq:boltz-thermcond}
-\end{aligned}$$ where $[\bm{\mathrm{\sigma }}\bm{\mathrm{S}}]$ denotes
-the product of the two tensors $\bm{\mathrm{\sigma}}$ and
-$\bm{\mathrm{S}}$, $f(\varepsilon,\mu,T)$ is the usual Fermi--Dirac
+
+$$
+\begin{equation}
+\label{eq:boltz-sigmas}
+\begin{aligned}
+  \mathrm{[\bm{\sigma}]}_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
+  [\mathrm{\bm{\sigma }}\mathrm{\bm{S}}]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon),\\
+  [\mathrm{\bm{K}}]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),
+\end{aligned}
+\end{equation}
+$$ 
+
+where $[\mathrm{\bm{\sigma }}\mathrm{\bm{S}}]$ denotes
+the product of the two tensors $\mathrm{\bm{\sigma}}$ and
+$\mathrm{\bm{S}}$, $f(\varepsilon,\mu,T)$ is the usual Fermi--Dirac
 distribution function
-$$f(\varepsilon,\mu,T) = \frac{1}{e^{(\varepsilon-\mu)/K_B T}+1}$$ and
+
+$$
+\begin{equation}
+f(\varepsilon,\mu,T) = \frac{1}{e^{(\varepsilon-\mu)/K_B T}+1}
+\end{equation}
+$$ 
+
+and
 $\Sigma_{ij}(\varepsilon)$ is the Transport Distribution Function (TDF)
 tensor, defined as
-$$\Sigma_{ij}(\varepsilon) = \frac 1 V \sum_{n,\bm{\mathrm{k}}} v_i(n,\bm{\mathrm{k}}) v_j(n,\bm{\mathrm{k}}) \tau(n,\bm{\mathrm{k}}) \delta(\varepsilon - E_{n,k}).$$
+
+$$
+\begin{equation}
+\Sigma_{ij}(\varepsilon) = \frac 1 V \sum_{n,\mathrm{\bm{k}}} v_i(n,\mathrm{\bm{k}}) v_j(n,\mathrm{\bm{k}}) \tau(n,\mathrm{\bm{k}}) \delta(\varepsilon - E_{n,k}).
+\end{equation}
+$$
 
 In the above formula, the sum is over all bands $n$ and all states
-$\bm{\mathrm{k}}$ (including spin, even if the spin index is not
-explicitly written here). $E_{n,\bm{\mathrm{k}}}$ is the energy of the
-$n-$th band at $\bm{\mathrm{k}}$, $v_i(n,\bm{\mathrm{k}})$ is the $i-$th
-component of the band velocity at $(n,\bm{\mathrm{k}})$, $\delta$ is the
+$\mathrm{\bm{k}}$ (including spin, even if the spin index is not
+explicitly written here). $E_{n,\mathrm{\bm{k}}}$ is the energy of the
+$n-$th band at $\mathrm{\bm{k}}$, $v_i(n,\mathrm{\bm{k}})$ is the $i-$th
+component of the band velocity at $(n,\mathrm{\bm{k}})$, $\delta$ is the
 Dirac's delta function, $V = N_k \Omega_c$ is the total volume of the
 system ($N_k$ and $\Omega_c$ being the number of $k$-points used to
 sample the Brillouin zone and the unit cell volume, respectively), and
 finally $\tau$ is the relaxation time. In the *relaxation-time
 approximation* adopted here, $\tau$ is assumed as a constant, i.e., it
-is independent of $n$ and $\bm{\mathrm{k}}$ and its value (in fs) is
+is independent of $n$ and $\mathrm{\bm{k}}$ and its value (in fs) is
 read from the input variable `boltz_relax_time`.
 
 ### Files
@@ -122,26 +155,27 @@ spin-down projection.
 #### `seedname_tdf.dat`
 
 OUTPUT. This file contains the Transport Distribution Function (TDF)
-tensor $\bm{\mathrm{\Sigma}}$ on a grid of energies.
+tensor $\mathrm{\bm{\Sigma}}$ on a grid of energies.
 
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each energy
 $\varepsilon$ on the grid, containing a number of columns. The first is
 the energy $\varepsilon$, the followings are the components if
-$\bm{\mathrm{\Sigma}}(\varepsilon)$ in the following order:
+$\mathrm{\bm{\Sigma}}(\varepsilon)$ in the following order:
 $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$,
 $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input
 flag `spin_decomp`), 12 further columns are provided, with the 6
-components of $\bm{\mathrm{\Sigma}}$ for the spin up, followed by those
+components of $\mathrm{\bm{\Sigma}}$ for the spin up, followed by those
 for the spin down.
 
-The energy $\varepsilon$ is in eV, while $\bm{\mathrm{\Sigma}}$ is in
-$\displaystyle\frac{1}{\hbar^2}\cdot\frac{\mathrm{eV}\cdot\mathrm{fs}}{\text{\AA}}$.
+The energy $\varepsilon$ is in eV, while $\mathrm{\bm{\Sigma}}$ is in
+$\displaystyle\frac{1}{\hbar^2}\cdot{\mathrm{eV}\cdot\mathrm{fs}}\cdot
+{\mathring{\mathrm{A}}^{-1}}$.
 
 #### `seedname_elcond.dat`
 
 OUTPUT. This file contains the electrical conductivity tensor
-$\bm{\mathrm{\sigma}}$ on the grid of $T$ and $\mu$ points.
+$\mathrm{\bm{\sigma}}$ on the grid of $T$ and $\mu$ points.
 
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each
@@ -156,10 +190,9 @@ components of the electrical conductivity tensor ar in SI units, i.e. in
 #### `seedname_sigmas.dat`
 
 OUTPUT. This file contains the tensor
-$\bm{\mathrm{\sigma}}\bm{\mathrm{S}}$, i.e. the product of the
+$\mathrm{\bm{\sigma}}\mathrm{\bm{S}}$, i.e. the product of the
 electrical conductivity tensor and of the Seebeck coefficient as defined
-by Eq. [\[eq:boltz-sigmas\]](#eq:boltz-sigmas){reference-type="eqref"
-reference="eq:boltz-sigmas"}, on the grid of $T$ and $\mu$ points.
+by Eq. $\eqref{eq:boltz-sigmas}$, on the grid of $T$ and $\mu$ points.
 
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each
@@ -173,13 +206,13 @@ components of the tensor ar in SI units, i.e. in A/m/K.
 
 #### `seedname_seebeck.dat`
 
-OUTPUT. This file contains the Seebeck tensor $\bm{\mathrm{S}}$ on the
+OUTPUT. This file contains the Seebeck tensor $\mathrm{\bm{S}}$ on the
 grid of $T$ and $\mu$ points.
 
 Note that in the code the Seebeck coefficient is defined as zero when
-the determinant of the electrical conductivity $\bm{\mathrm{\sigma}}$ is
+the determinant of the electrical conductivity $\mathrm{\bm{\sigma}}$ is
 zero. If there is at least one $(\mu, T)$ pair for which
-$\det \bm{\mathrm{\sigma}}=0$, a warning is issued on the output file.
+$\det \mathrm{\bm{\sigma}}=0$, a warning is issued on the output file.
 
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each
@@ -195,9 +228,8 @@ components of the Seebeck tensor ar in SI units, i.e. in V/K.
 
 #### `seedname_kappa.dat`
 
-OUTPUT. This file contains the tensor $\bm{\mathrm{K}}$ defined in
-Sec. [3.1](#sec:boltzwann-theory){reference-type="ref"
-reference="sec:boltzwann-theory"} on the grid of $T$ and $\mu$ points.
+OUTPUT. This file contains the tensor $\mathrm{\bm{K}}$ defined in
+Sec. [Theory](#sec:boltzwann-theory) on the grid of $T$ and $\mu$ points.
 
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each
@@ -206,5 +238,5 @@ $T$, $K_{xx}$, $K_{xy}$, $K_{yy}$, $K_{xz}$, $K_{yz}$, $K_{zz}$. (The
 tensor is symmetric).
 
 The chemical potential is in eV, the temperature is in K, and the
-components of the $\bm{\mathrm{K}}$ tensor are the SI units for the
+components of the $\mathrm{\bm{K}}$ tensor are the SI units for the
 thermal conductivity, i.e. in W/m/K.

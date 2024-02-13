@@ -88,18 +88,18 @@ arise from your use of `wannier90`:
 > Ibañez-Azpiroz, H. Lee, J.M. Lihm, D. Marchand, A. Marrazzo, Y.
 > Mokrousov, J.I. Mustafa, Y. Nohara, Y. Nomura, L. Paulatto, S. Poncé,
 > T. Ponweiser, J. Qiao, F. Thöle, S.S. Tsirkin, M. Wierzbowska, N.
-> Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates,\
+> Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates,
 > Wannier90 as a community code: new features and applications, *J.
-> Phys. Cond. Matt.* **32**, 165902 (2020)\
+> Phys. Cond. Matt.* **32**, 165902 (2020)
 > <https://doi.org/10.1088/1361-648X/ab51ff>
 
 If you are using versions 2.x of the code, cite instead:
 
 > \[ref\] A. A. Mostofi, J. R. Yates, G. Pizzi, Y.-S. Lee, I. Souza,
-> D. Vanderbilt and N. Marzari,\
+> D. Vanderbilt and N. Marzari,
 > An updated version of `wannier90`: A Tool for Obtaining
 > Maximally-Localised Wannier Functions, *Comput. Phys. Commun.*
-> **185**, 2309 (2014)\
+> **185**, 2309 (2014)
 > <http://doi.org/10.1016/j.cpc.2014.05.003>
 
 ## Installation
@@ -118,19 +118,19 @@ Not at present.
 Yes. `wannier90` works on top of an electronic structure calculation.
 
 At the time of writing there are public, fully functioning, interfaces
-between `wannier90` and `pwscf`, abinit
+between `wannier90` and `PWSCF`, abinit
 (<http://www.abinit.org>), siesta (<http://www.icmab.es/siesta/>), VASP
 (<https://www.vasp.at>), Wien2k (<http://www.wien2k.at>), fleur
 (<http://www.fleur.de>), OpenMX (<http://www.openmx-square.org/>), GPAW
 (<https://wiki.fysik.dtu.dk/gpaw/>).
 
-To use `wannier90` in combination with `pwscf` code (a
+To use `wannier90` in combination with `PWSCF` code (a
 plane-wave, pseudopotential, density-functional theory code, which is
 part of the `quantum-espresso` package) you will need to download
-`pwscf` from the webpage <http://www.quantum-espresso.org>.
-Then compile `pwscf` and the `wannier90` interface program
+`PWSCF` from the webpage <http://www.quantum-espresso.org>.
+Then compile `PWSCF` and the `wannier90` interface program
 `pw2wannier90`. For instructions, please refer to the documentation that
 comes with the `quantum-espresso` distribution.
 
-For examples of how to use `pwscf` and `wannier90` in
+For examples of how to use `PWSCF` and `wannier90` in
 conjunction with each other, see the `wannier90` Tutorial.

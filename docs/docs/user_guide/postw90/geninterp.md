@@ -1,14 +1,16 @@
 # Generic Band interpolation
 
-By setting $\verb#geninterp#=\verb#TRUE#$, `postw90` will calculate the
+By setting `geninterp=TRUE`, `postw90` will calculate the
 band energies (and possibly the band derivatives, if also
 `geninterp_alsofirstder` is set to `TRUE`) on a generic list of $k$
 points provided by the user.
 
 The list of parameters of the Generic Band Interpolation module are
 summarized in
+<!-- TODO: link the table in sec wannier -->
 Table [\[parameter_keywords_geninterp\]](#parameter_keywords_geninterp){reference-type="ref"
-reference="parameter_keywords_geninterp"}. The list of input $k$ points
+reference="parameter_keywords_geninterp"}. 
+The list of input $k$ points
 for which the band have to be calculated is read from the file named
 `seedname_geninterp.kpt`. The format of this file is described below.
 
@@ -28,12 +30,13 @@ Otherwise, it must contain `cart` (or `abs`) if instead the $k-$point
 coordinates are given in absolute coordinates (in units of 1/Å) along
 the $k_x$, $k_y$ and $k_z$ axes.
 
-*Note on units*: In the case of absolute coordinates, if $a_{lat}$ is
-the lattice constant expressed in angstrom, and you want to represent
-for instance the point $X=\frac {2\pi}{a_{lat}} [0.5, 0, 0]$, then you
-have to input for its $x$ coordinate $k_x = 0.5 * 2 * \pi / a_{lat}$. As
-a practical example, if $a_{lat}=4$Å, then $k_x = 0.78539816339745$ in
-absolute coordinates in units of 1/Å.
+!!! note
+    *Note on units*: In the case of absolute coordinates, if $a_{lat}$ is
+    the lattice constant expressed in angstrom, and you want to represent
+    for instance the point $X=\frac {2\pi}{a_{lat}} [0.5, 0, 0]$, then you
+    have to input for its $x$ coordinate $k_x = 0.5 * 2 * \pi / a_{lat}$. As
+    a practical example, if $a_{lat}=4$Å, then $k_x = 0.78539816339745$ in
+    absolute coordinates in units of 1/Å.
 
 The third line must contain the number $n$ of following $k$ points.
 
@@ -65,14 +68,15 @@ large number of $k$ points (if the flag `geninterp_single_file` is
 `true`, instead, all the I/O is made by the root node, which is a
 significant bottleneck).
 
-**Important!** The files are not deleted before the start of a
-calculation, but only the relevant files are overwritten. Therefore, if
-one first performs a calculation and then a second one with a smaller
-number of processors, care is needed to avoid to mix the results of the
-older calculations with those of the new one. In case of doubt, either
-check the date stamp in the first line of the
-` seedname_geninterp_*.dat` files, or simply delete the
-` seedname_geninterp_*.dat` files before starting the new calculation.
+!!! note
+    **Important!** The files are not deleted before the start of a
+    calculation, but only the relevant files are overwritten. Therefore, if
+    one first performs a calculation and then a second one with a smaller
+    number of processors, care is needed to avoid to mix the results of the
+    older calculations with those of the new one. In case of doubt, either
+    check the date stamp in the first line of the
+    ` seedname_geninterp_*.dat` files, or simply delete the
+    ` seedname_geninterp_*.dat` files before starting the new calculation.
 
 To join the files, on can simply use the following command:
 

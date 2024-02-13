@@ -26,7 +26,7 @@ The script can be be found in the `utility` directory of the
 
 where `nx`, `ny` and `nz` define the size of the Monkhorst--Pack grid
 that we want to use (for instance, in the above example of the
-$4\times 4\times 4$ $k$ grid, `nx`$=$`ny`$=$`nz`$=$`<!-- -->`{=html}4).
+$4\times 4\times 4$ $k$ grid, `nx`$=$`ny`$=$`nz`$=$4).
 
 This produces on output the list of $k$ points in Quantum Espresso
 format, where (apart from a header) the first three columns of each line
@@ -49,7 +49,7 @@ allows to provide the $k$ point coordinates with the accuracy required
 by `wannier90`, and moreover it makes sure that the $k$ grid used in the
 ab-initio code and in `wannier90` are the same.
 
-### $\tt{w90chk2chk.x}$[]{#sec:w90chk2chk label="sec:w90chk2chk"}
+### `w90chk2chk.x`
 
 During the calculation of the Wannier functions, `wannier90` produces a
 `.chk` file that contains some information to restart the calculation.
@@ -109,7 +109,7 @@ A typical use is the following:
 
 5.  Run the `postw90` code.
 
-### $\tt{PL\_assessment}$ {#sec:pl_assessment}
+### `PL_assessment`
 
 The function of this utility is to assess the length of a principal
 layer (in the context of a Landauer-Buttiker quantum conductance
@@ -122,7 +122,9 @@ The utility requires the real-space Hamiltonian in the MLWF basis,
 The `seedname_hr.dat` file should be copied to a directory containing
 executable for the utility. Within that directory, run:
 
-    \$> ./PL_assess.x  nk1 nk2 nk3 num_wann 
+```bash
+./PL_assess.x  nk1 nk2 nk3 num_wann 
+```
 
 where:
 
@@ -132,7 +134,9 @@ k-points in y-direction `nk3` is the number of k-points in z-direction
 
 e.g.,
 
-    \$> ./PL_assess.x  1 1 20 16
+```bash
+./PL_assess.x  1 1 20 16
+```
 
 Note that the current implementation only allows for a single k-point in
 the direction transverse to the transport direction.
@@ -151,7 +155,7 @@ four columns
 
 4.  Maximum absolute value in (2)
 
-### $\tt{w90vdw}$ {#sec:w90vdw}
+### `w90vdw`
 
 This utility provides an implementation of a method for calculating van
 der Waals energies based on the idea of density decomposition via MLWFs.
@@ -167,7 +171,7 @@ For further details of this program, please see the documentation in
 `utility/w90vdw/doc/` and the related examples in
 `utility/w90vdw/examples/`.
 
-### $\tt{w90pov}$ {#sec:w90pov}
+### `w90pov`
 
 An utility to create Pov files (to render the Wannier functions using
 the PovRay utility) is provided inside `utility/w90pov`.
@@ -175,7 +179,7 @@ the PovRay utility) is provided inside `utility/w90pov`.
 Please refer to the documentation inside `utility/w90pov/doc` for more
 information.
 
-### $\tt{k\_mapper.py}$ {#sec:k_mapper}
+### `k_mapper.py`
 
 The `wannier90` code requires the definition of a full Monkhorst--Pack
 grid of $\mathbf{k}$-vectors, which can be obtained by means of the
@@ -187,12 +191,12 @@ calculation than what you need to interpolate the band structure. The
 a full grid needed for interpolation into the reduced grid needed for
 the GW calculation with Yambo. Usage:
 
-`path/k_mapper.py nx ny nz QE_nscf_output`
+    path/k_mapper.py nx ny nz QE_nscf_output
 
 where `path` is the path of `utility` folder, `QE_nscf_output` is the
 path of the QE nscf output file given to Yambo.
 
-### $\tt{gw2wannier90.py}$
+### `gw2wannier90.py`
 
 This utility allows to sort in energy the input data of `wannier90`
 (e.g. overlap matrices and energy eigenvalues). `gw2wannier90.py` allows
@@ -200,7 +204,9 @@ to use `wannier90` at the $G_0W_0$ level, where quasi-particle
 corrections can change the energy ordering of eigenvalues (Some
 `wannier90` modules require states to be ordered in energy). Usage:
 
-`path/gw2wannier90.py seedname options` where `path` is the path of
+    path/gw2wannier90.py seedname options
+
+where `path` is the path of
 `utility` folder.
 
 Available options are:
@@ -220,9 +226,9 @@ use (bigger) formatted files, with options:
 
 In default, the output format is the same as the input format. To
 generate formatted files with unformatted input, use option:
-`write_formatted` []{#sec:w90aaa label="sec:w90aaa"}
+`write_formatted`
 
-### $\tt{w90spn2spn.x}$[]{#sec:w90spn2spn label="sec:w90spn2spn"}
+### `w90spn2spn.x`
 
 The interface between ab-initio code and `wannier90` (e.g.
 `pw2wannier90.x`) can produce a `.spn` file that is used by `postw90` to
@@ -253,12 +259,12 @@ A typical use is the following:
     If the file is "unformatted", run (in the folder with this file) the
     command
 
-        	w90spn2spn.x -export seedname
+        w90spn2spn.x -export seedname
         	
 
     or equivalently
 
-        	w90spn2spn.x -u2f seedname
+        w90spn2spn.x -u2f seedname
         	
 
     (replacing `seedname` with the seedname of your calculation).
@@ -272,12 +278,12 @@ A typical use is the following:
 
 4.  On this second machine (after having compiled `w90spn2spn.x`) run
 
-        	w90spn2spn.x -import seedname
+        w90spn2spn.x -import seedname
         	
 
     or equivalently
 
-        	w90spn2spn.x -f2u seedname
+        w90spn2spn.x -f2u seedname
         	
 
     This command reads the `seedname.spn.fmt` file and creates an
@@ -302,7 +308,7 @@ compute `amn` using pseudo-atomic orbital projection.
 
 Usage:
 
-`path/write_pdwf_projectors.py UPF_filename`
+    path/write_pdwf_projectors.py UPF_filename
 
 where `path` is the path of `utility` folder, `UPF_filename` is the path
 of a `UPF` file.
