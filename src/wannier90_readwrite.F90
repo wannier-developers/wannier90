@@ -399,6 +399,8 @@ contains
 
     logical :: found
 
+    found = .false.
+
     ! default value is lsitesymmetry=.false.
     call w90_readwrite_get_keyword(settings, 'site_symmetry', found, error, comm, &
                                    l_value=lsitesymmetry)
@@ -423,6 +425,8 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
+
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'transport', found, error, comm, &
                                    l_value=w90_calculation%transport)
@@ -458,6 +462,8 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
+
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'tran_read_ht', found, error, comm, &
                                    l_value=tran%read_ht)
@@ -595,6 +601,8 @@ contains
 
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_keyword(settings, 'dist_cutoff_mode', found, error, comm, &
                                    c_value=real_space_ham%dist_cutoff_mode)
     if (allocated(error)) return
@@ -643,6 +651,8 @@ contains
 
     integer :: ierr
     logical :: found
+
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'num_dump_cycles', found, error, comm, &
                                    i_value=wann_control%num_dump_cycles)
@@ -821,6 +831,8 @@ contains
     integer :: nkp, ierr
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_keyword(settings, 'dis_num_iter', found, error, comm, &
                                    i_value=dis_control%num_iter)
     if (allocated(error)) return
@@ -911,6 +923,8 @@ contains
 
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_keyword(settings, 'postproc_setup', found, error, comm, &
                                    l_value=postproc_setup)
     if (allocated(error)) return
@@ -935,6 +949,9 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, chk_found
+
+    found = .false.
+    chk_found = .false.
 
     call w90_readwrite_get_keyword(settings, 'restart', found, error, comm, &
                                    c_value=w90_calculation%restart)
@@ -973,6 +990,8 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found, hr_plot
+
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'write_xyz', found, error, comm, &
                                    l_value=output_file%write_xyz)
@@ -1054,6 +1073,8 @@ contains
     logical :: found
     character(len=6) :: spin_str
 
+    found = .false.
+
     call w90_readwrite_get_keyword(settings, 'wvfn_formatted', found, error, comm, &
                                    l_value=wvfn_read%formatted)
     if (allocated(error)) return
@@ -1092,6 +1113,8 @@ contains
 
     integer :: ierr, num_project
     logical :: found
+
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'bands_plot_format', found, error, comm, &
                                    c_value=band_plot%format)
@@ -1287,6 +1310,8 @@ contains
 
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_keyword(settings, 'fermi_surface_num_points', found, error, comm, &
                                    i_value=fermi_surface_data%num_points)
     if (allocated(error)) return
@@ -1325,6 +1350,8 @@ contains
 
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_keyword(settings, 'one_dim_axis', found, error, comm, c_value=one_dim_axis)
     if (allocated(error)) return
 
@@ -1357,6 +1384,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'translate_home_cell', found, error, comm, &
                                    l_value=hamiltonian%translate_home_cell)
@@ -1384,6 +1412,8 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
 
     logical :: found
+
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm, l_value=use_bloch_phases)
     if (allocated(error)) return
@@ -1418,6 +1448,8 @@ contains
     integer, allocatable :: nnkpts_idx(:)
     integer :: i, k, ierr, rows
     logical :: found
+
+    found = .false.
 
     ! get the nnkpts block -- this is allowed only in postproc-setup mode
     call w90_readwrite_get_block_length(settings, 'nnkpts', kmesh_info%explicit_nnkpts, rows, error, comm)
@@ -1528,6 +1560,8 @@ contains
     integer :: num_select_projections
     integer, allocatable :: select_projections(:)
     integer :: imap
+
+    found = .false.
 
     ! Projections
     call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm, &
@@ -1660,6 +1694,8 @@ contains
 
     integer :: i_temp
     logical :: found
+
+    found = .false.
 
     ! Constrained centres
     call w90_readwrite_get_block_length(settings, 'slwf_centres', found, i_temp, error, comm)

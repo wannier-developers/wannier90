@@ -93,6 +93,7 @@ contains
 
     integer :: unlucky_rank
 
+    found = .false.
     call w90_readwrite_get_keyword(settings, 'timing_level', found, error, comm, &
                                    i_value=print_output%timing_level)
     if (allocated(error)) return
@@ -124,6 +125,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'optimisation', found, error, comm, &
                                    i_value=optimisation)
@@ -144,6 +146,7 @@ contains
 
     integer :: ic
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm, c_value=energy_unit)
     if (allocated(error)) return
@@ -176,6 +179,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'num_wann', found, error, comm, i_value=num_wann)
     if (allocated(error)) return
@@ -203,6 +207,7 @@ contains
 
     integer :: nk
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .true., error, comm)
     if (allocated(error)) return
@@ -278,6 +283,7 @@ contains
 
     integer :: i_temp
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm, i_value=i_temp)
     if (allocated(error)) return
@@ -309,7 +315,9 @@ contains
 
     logical :: found, ltmp
 
+    found = .false.
     ltmp = .false.
+
     call w90_readwrite_get_keyword(settings, 'gamma_only', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
     gamma_only = ltmp
@@ -331,6 +339,8 @@ contains
 
     integer :: iv_temp(3)
     logical :: found
+
+    found = .false.
 
     call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 3, error, comm, &
                                           i_value=iv_temp)
@@ -361,6 +371,7 @@ contains
     logical :: found, ltmp
     integer :: itmp
 
+    found = .false.
     ltmp = .false.  ! by default our WF are not spinors
     call w90_readwrite_get_keyword(settings, 'spinors', found, error, comm, l_value=ltmp)
     if (allocated(error)) return
@@ -415,6 +426,7 @@ contains
 
     integer :: i_temp, ierr, bands_num_spec_points
     logical :: found
+    found = .false.
 
     bands_num_spec_points = 0
     call w90_readwrite_get_block_length(settings, 'kpoint_path', found, i_temp, error, comm)
@@ -467,6 +479,7 @@ contains
     real(kind=dp) :: fermi_energy_step
     integer :: i, ierr, n
     logical :: found
+    found = .false.
 
     n = 0
     found_fermi_energy = .false.
@@ -546,6 +559,7 @@ contains
 
     integer :: i
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm, &
                                    l_value=ws_region%use_ws_distance)
@@ -647,6 +661,8 @@ contains
 
     ! local
     logical :: found, found2
+    found = .false.
+    found2 = .false.
 
     call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm, &
                                    r_value=dis_manifold%win_min)
@@ -693,6 +709,7 @@ contains
 
     integer :: itmp, ierr
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm, &
                                    i_value=kmesh_input%search_shells)
@@ -776,6 +793,7 @@ contains
     real(kind=dp), allocatable :: kpt_cart(:, :)
     integer :: ierr
     logical :: found
+    found = .false.
 
     ! pw90_effective_model ignores kpt_cart
     ! this routine allocates the intent(out) kpt_latt
@@ -823,6 +841,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     logical :: found
+    found = .false.
 
     call w90_readwrite_get_keyword_block(settings, 'unit_cell_cart', found, 3, 3, bohr, error, &
                                          comm, r_value=real_lattice_tmp)
@@ -846,6 +865,9 @@ contains
 
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
+
+    found = .false.
+    found2 = .false.
 
     if (allocated(settings%entries)) return ! don't attempt this read in library mode
 
@@ -900,6 +922,7 @@ contains
     integer :: lx
     integer, allocatable :: lxa(:)
 
+    found = .false.
     ! keywords for wannier.x
 
     call clear_block(settings, 'atoms_cart', error, comm)
@@ -2560,6 +2583,7 @@ contains
     logical :: found_e, found_s, lconvert
     character(len=maxlen) :: dummy, end_st, start_st
 
+    found = .false.
     found_s = .false.
     found_e = .false.
 
@@ -2850,6 +2874,7 @@ contains
 
     keyword = "atoms_cart"
     frac = .false.
+    found = .false.
     call w90_readwrite_get_block_length(settings, "atoms_frac", found, i_temp, error, comm)
     if (allocated(error)) return
     if (found) then
@@ -3152,6 +3177,8 @@ contains
     character(len=3), parameter :: c_sep = " ,;"
     character(len=5), parameter :: c_punc = " ,;-:"
     character(len=5)  :: c_num1, c_num2
+
+    found = .false.
 
     if (lcount .and. present(i_value)) then
       call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call', comm)

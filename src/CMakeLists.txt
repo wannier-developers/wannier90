@@ -17,7 +17,7 @@ target_sources(Wannier90_lib PRIVATE
 		utility.F90
 		wannier90_readwrite.F90
 		wannier90_types.F90
-		wannier_lib.F90
+		library_interface.F90
 		wannierise.F90
 		ws_distance.F90
 		)

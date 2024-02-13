@@ -72,11 +72,12 @@ set(test_names
 		testw90_precond_2
 		testw90_write_u_matrices
 )
-if (WANNIER90_WITH_MPI)
-	list(APPEND test_names
-			partestw90_mpierr
-	)
-endif ()
+# fixme, this also must trigger parallel runner
+#if (WANNIER90_WITH_MPI)
+#	list(APPEND test_names
+#			partestw90_mpierr
+#	)
+#endif ()
 set(extra_files
 		checkpoints
 		run_tests
