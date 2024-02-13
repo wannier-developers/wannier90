@@ -4,9 +4,8 @@
 
 INPUT. The master input file; contains the specification of the system
 and any parameters for the run. For a description of input parameters,
-see Chapter [2](#chap:parameters){reference-type="ref"
-reference="chap:parameters"}; for examples, see
-Section [10.1](#winfile){reference-type="ref" reference="winfile"} and
+see Chapter [Parameters](../parameters); for examples, see
+Section [`seedname.win`](#seedname.win) and
 the `wannier90` Tutorial.
 
 ### Units
@@ -24,8 +23,7 @@ master input file:
 
 -   Convergence thresholds for the minimisation of $\Omega$
 
--   `zona` (see Section [3.1](#sec:proj){reference-type="ref"
-    reference="sec:proj"})
+-   `zona` (see Section [Projections](../projections))
 
 -   `wannier_plot_cube`: cut-off radius for plotting WF in Gaussian cube
     format
@@ -57,8 +55,10 @@ $\{\mathbf{B}_{1},\mathbf{B}_{2},\mathbf{B}_{3}\}$ are defined in terms
 of the direct lattice vectors
 $\{\mathbf{A}_{1},\mathbf{A}_{2},\mathbf{A}_{3}\}$ by the equation
 
-$$\mathbf{B}_{1} = \frac{2\pi}{\Omega}\mathbf{A}_{2}\times\mathbf{A}_{3}
-\ \ \ \mathrm{etc.},$$
+$$
+\mathbf{B}_{1} = \frac{2\pi}{\Omega}\mathbf{A}_{2}\times\mathbf{A}_{3}
+\ \ \ \mathrm{etc.},
+$$
 
 where the cell volume is
 $V=\mathbf{A}_{1}\cdot(\mathbf{A}_{2}\times\mathbf{A}_{3})$.
@@ -66,34 +66,33 @@ $V=\mathbf{A}_{1}\cdot(\mathbf{A}_{2}\times\mathbf{A}_{3})$.
 ## `seedname.mmn`
 
 INPUT. Written by the underlying electronic structure code. See
-Chapter [5](#ch:wann-pp){reference-type="ref" reference="ch:wann-pp"}
+Chapter [Post-processing](../postproc)
 for details.
 
 ## `seedname.amn`
 
 INPUT. Written by the underlying electronic structure code. See
-Chapter [5](#ch:wann-pp){reference-type="ref" reference="ch:wann-pp"}
+Chapter [Post-processing](../postproc)
 for details.
 
 ## `seedname.dmn`
 
 INPUT. Read if `site_symmetry = .true.` (symmetry-adapted mode). Written
 by the underlying electronic structure code. See
-Chapter [5](#ch:wann-pp){reference-type="ref" reference="ch:wann-pp"}
+Chapter [Post-processing](../postproc)
 for details.
 
 ## `seedname.eig`
 
 INPUT. Written by the underlying electronic structure code. See
-Chapter [5](#ch:wann-pp){reference-type="ref" reference="ch:wann-pp"}
+Chapter [Post-processing](../postproc)
 for details.
 
 ## `seedname.nnkp` {#sec:old-nnkp}
 
 OUTPUT. Written by `wannier90` when `postproc_setup=.TRUE.` (or,
 alternatively, when `wannier90` is run with the `-pp` command-line
-option). See Chapter [5](#ch:wann-pp){reference-type="ref"
-reference="ch:wann-pp"} for details.
+option). See Chapter [Post-processing](../postproc) for details.
 
 ## `seedname.wout`
 
@@ -196,7 +195,7 @@ plotting.
 
 This part of the output files provides information on the
 $\mathrm{b}$-vectors and weights chosen to satisfy the condition of
-Eq. [\[eq:B1\]](#eq:B1){reference-type="ref" reference="eq:B1"}.
+Eq. [B1](../parameters/mjx-eqn:eq:B1).
 
      *---------------------------------- K-MESH ----------------------------------*
      +----------------------------------------------------------------------------+
@@ -266,9 +265,11 @@ at the end of each line of output, there are the characters "`<– DIS`".
 This enables fast searching of the output using, for example, the Unix
 command `grep`:
 
-`my_shell> grep DIS wannier.wout | less`
+```bash
+grep DIS wannier.wout | less
+```
 
-### Wannierisation {#sec:files-wannierisation}
+### Wannierisation
 
 The next part of the output file provides information on the
 minimisation of $\widetilde{\Omega}$. At each iteration, the centre and
@@ -329,7 +330,9 @@ spread of each WF is reported.
 It looks quite complicated, but things look more simple if one uses
 `grep`:
 
-`my_shell> grep CONV wannier.wout`
+```bash
+grep CONV wannier.wout
+```
 
 gives
 
@@ -353,7 +356,9 @@ reference="sec:wann_params"} for details.
 
 Similarly, the command
 
-`my_shell> grep SPRD wannier.wout`
+```bash
+grep SPRD wannier.wout
+```
 
 gives
 
@@ -366,7 +371,7 @@ gives
 which, for each iteration, reports the value of the diagonal and
 off-diagonal parts of the non-gauge-invariant spread, as well as the
 total spread, respectively. Recall from
-Section [1](#sec:method){reference-type="ref" reference="sec:method"}
+Section [Methodology](../methodology)
 that
 $\Omega = \Omega_{\mathrm{I}}+ \Omega_{\mathrm{D}} + \Omega_{\mathrm{OD}}$.
 
@@ -381,9 +386,17 @@ subset of functions, it is not possible to cast the total spread
 functional $\Omega$ as a sum of a gauge-invariant part and a
 gauge-dependent part. Instead, one has
 $\Omega^{'} = \Omega_{\mathrm{IOD}} + \Omega_{\mathrm{D}}$, where
-$$\Omega^{'} = \sum_{n=1}^{J'<J} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_{n}^{2}\right]$$
+
+$$
+\Omega^{'} = \sum_{n=1}^{J'<J} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_{n}^{2}\right]
+$$
+
 and
-$$\Omega_{\mathrm{IOD}} = \sum_{n=1}^{J'<J} \left[\langle r^2_n \rangle- \sum_{\mathbf{R}} \vert\langle\mathbf{R}n\vert \mathbf{r} \vert n\mathbf{R}\rangle\vert^2 \right].$$
+
+$$
+\Omega_{\mathrm{IOD}} = \sum_{n=1}^{J'<J} \left[\langle r^2_n \rangle- \sum_{\mathbf{R}} \vert\langle\mathbf{R}n\vert \mathbf{r} \vert n\mathbf{R}\rangle\vert^2 \right].
+$$
+
 The total number of Wannier functions is $J$, whereas $J'$ is the number
 functions to be selectively localized (so-called *objective WFs*). The
 information on the number of functions which are going to be selectively
@@ -448,15 +461,17 @@ minimisation of the modified spread functional:
 
 When comparing the output from an SLWF calculation with a standard
 wannierisation (see
-Sec. [8.7.5](#sec:files-wannierisation){reference-type="ref"
-reference="sec:files-wannierisation"}), the only differences are in the
+Sec. [Wannierisation](#wannierisation)), the only differences are in the
 definition of the spread functional. Hence, during the minimization
 `O_OD` is replaced by `O_IOD` and `O_TOT` now reflects the fact that the
 new total spread functional is $\Omega^{'}$. The part on the final state
 has one more item of information: the value of the difference between
 the global spread functional and the new spread functional given by
 `Omega Rest`
-$$\Omega_{R} = \sum_{n=1}^{J-J'} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_{n}^{2} \right]$$
+
+$$
+\Omega_{R} = \sum_{n=1}^{J-J'} \left[\langle r^2 \rangle_n - \overline{\mathbf{r}}_{n}^{2} \right]
+$$
 
 If adding centre-constraints to the SLWFs, you will find the information
 about the centres of the original projections and the desired centres in
@@ -481,7 +496,11 @@ output file for the minimisation section is modified as follows: both
 `O_IOD` and `O_TOT` now take into account the factors coming from the
 new term in the functional due to the constraints, which are implemented
 by adding the following penalty functional to the spread functional,
-$$\lambda_c \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n} \right)^2,$$
+
+$$
+\lambda_c \sum_{n=1}^{J'} \left(\overline{\mathbf{r}}_n - \mathbf{r}_{0n} \right)^2,
+$$
+
 where $\mathbf{r}_{0n}$ is the desired centre for the $n^{\text{th}}$
 Wannier function, see Ref. [@Marianetti] for details. The layout of the
 output file at each iteration is unchanged.
@@ -546,7 +565,7 @@ contains the rectangular matrices $\bf{U}^{{\rm dis}({\bf k})}$.
 
 ## `seedname.r2mn`
 
-OUTPUT. Written if $\verb#write_r2mn#=\verb#true#$. The matrix elements
+OUTPUT. Written if `write_r2mn = true`. The matrix elements
 $\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to MLWF)
 
 ## `seedname_band.dat`
@@ -602,32 +621,40 @@ space grid, indexed by k-point `p` (from 1 to `num_kpts`) and spin `s`
 
 The name of the wavefunction file is assumed to have the form:
 
-        write(wfnname,200) p,spin
-    200 format ('UNK',i5.5,'.',i1)
+```fortran
+    write(wfnname,200) p,spin
+200 format ('UNK',i5.5,'.',i1)
+```
 
 The first line of each file should contain 5 integers: the number of
 grid points in each direction (`ngx`, `ngy` and `ngz`), the k-point
 number `ik` and the total number of bands `num_band` in the file. The
 full file will be read by `wannier90` as:
 
-    read(file_unit) ngx,ngy,ngz,ik,nbnd  
-    do loop_b=1,num_bands
-      read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
-    end do
+```fortran
+read(file_unit) ngx,ngy,ngz,ik,nbnd  
+do loop_b=1,num_bands
+  read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
+end do
+```
 
 If `spinors`=`true` then `s`='NC', and the name of the wavefunction file
 is assumed to have the form:
 
-        write(wfnname,200) p
-    200 format ('UNK',i5.5,'.NC')
+```fortran
+    write(wfnname,200) p
+200 format ('UNK',i5.5,'.NC')
+```
 
 and the file will be read by `wannier90` as:
 
-    read(file_unit) ngx,ngy,ngz,ik,nbnd  
-    do loop_b=1,num_bands
-       read(file_unit) (r_wvfn_nc(nx,loop_b,1),nx=1,ngx*ngy*ngz) ! up-spinor
-       read(file_unit) (r_wvfn_nc(nx,loop_b,2),nx=1,ngx*ngy*ngz) ! down-spinor
-    end do  
+```fortran
+read(file_unit) ngx,ngy,ngz,ik,nbnd  
+do loop_b=1,num_bands
+  read(file_unit) (r_wvfn_nc(nx,loop_b,1),nx=1,ngx*ngy*ngz) ! up-spinor
+  read(file_unit) (r_wvfn_nc(nx,loop_b,2),nx=1,ngx*ngy*ngz) ! down-spinor
+end do  
+```
 
 All UNK files can be in formatted or unformatted style, this is
 controlled by the logical keyword `wvfn_formatted`.
@@ -667,7 +694,7 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
 
 ## `seedname_r.dat`
 
-OUTPUT. Written if $\verb#write_rmn#=\verb#true#$. The matrix elements
+OUTPUT. Written if `write_rmn = true`. The matrix elements
 $\langle m\mathbf{0}|\mathbf{r}|n\mathbf{R}\rangle$ (where $n\mathbf{R}$
 refers to MLWF $n$ in unit cell $\mathbf{R}$). The first line gives the
 date and time at which the file was created. The second line states the
@@ -740,7 +767,7 @@ and 8 for $\langle m\mathbf{0}|\mathbf{r}_z|n\mathbf{R}\rangle$), e.g.
 
 ## `seedname.bvec`
 
-OUTPUT. Written if $\verb#write_bvec#=\verb#true#$. This file contains
+OUTPUT. Written if `write_bvec = true`. This file contains
 the matrix elements of bvector and their weights. The first line gives
 the date and time at which the file was created. The second line states
 the number of k-points and the total number of neighbours for each
@@ -749,8 +776,8 @@ coordinate and weigths for each k-points and each of its neighbours.
 
 ## `seedname_wsvec.dat`
 
-OUTPUT. Written if $\verb#write_hr#=\verb#true#$ or
-$\verb#write_rmn#=\verb#true#$ or $\verb#write_tb#=\verb#true#$. The
+OUTPUT. Written if `write_hr = true` or
+`write_rmn = true` or `write_tb = true`. The
 first line gives the date and time at which the file was created and the
 value of `use_ws_distance`. For each pair of Wannier functions
 (identified by the components of the vector $\mathbf{R}$ separating
@@ -790,7 +817,7 @@ order to correctly interpolate in reciprocal space.
 
 ## `seedname_qc.dat`
 
-OUTPUT. Written if $\verb#transport#=\verb#.TRUE.#$. The first line
+OUTPUT. Written if `transport = .TRUE.`. The first line
 gives the date and time at which the file was created. In the subsequent
 lines, the energy value in units of eV is written in the left column,
 and the quantum conductance in units of $\frac{2e^2}{h}$
@@ -808,7 +835,7 @@ column.
 
 ## `seedname_dos.dat`
 
-OUTPUT. Written if $\verb#transport#=\verb#.TRUE.#$. The first line
+OUTPUT. Written if `transport = .TRUE.`. The first line
 gives the date and time at which the file was created. In the subsequent
 lines, the energy value in units of eV is written in the left column,
 and the density of states in an arbitrary unit is written in the right
@@ -825,9 +852,9 @@ column.
 
 ## `seedname_htB.dat`
 
-INPUT/OUTPUT. Read if $\verb#transport_mode#=\verb#bulk#$ and
-$\verb#tran_read_ht#=\verb#.TRUE.#$. Written if
-$\verb#tran_write_ht#=\verb#.TRUE.#$. The first line gives the date and
+INPUT/OUTPUT. Read if `transport_mode = bulk` and
+`tran_read_ht = .TRUE.`. Written if
+`tran_write_ht = .TRUE.`. The first line gives the date and
 time at which the file was created. The second line gives `tran_num_bb`.
 The subsequent lines contain `tran_num_bb`$\times$`tran_num_bb` $H_{mn}$
 matrix, where the indices $m$ and $n$ span all `tran_num_bb` WFs located
@@ -857,8 +884,8 @@ such a way that $m$ is the fastest varying index.
 
 ## `seedname_htL.dat`
 
-INPUT. Read if $\verb#transport_mode#=\verb#lcr#$ and
-$\verb#tran_read_ht#=\verb#.TRUE.#$. The file must be written in the
+INPUT. Read if `transport_mode = lcr` and
+`tran_read_ht = .TRUE.`. The file must be written in the
 same way as in `seedname_htB.dat`. The first line can be any comment you
 want. The second line gives `tran_num_ll`. `tran_num_ll` in
 `seedname_htL.dat` must be equal to that in `seedname.win`. The code
@@ -884,16 +911,16 @@ will stop otherwise.
 
 ## `seedname_htR.dat`
 
-INPUT. Read if $\verb#transport_mode#=\verb#lcr#$ and
-$\verb#tran_read_ht#=\verb#.TRUE.#$ and
-$\verb#tran_use_same_lead#=\verb#.FALSE.#$. The file must be written in
+INPUT. Read if `transport_mode = lcr` and
+`tran_read_ht = .TRUE.` and
+`tran_use_same_lead = .FALSE.`. The file must be written in
 the same way as in `seedname_htL.dat`. `tran_num_rr` in
 `seedname_htR.dat` must be equal to that in `seedname.win`.
 
 ## `seedname_htC.dat`
 
-INPUT. Read if $\verb#transport_mode#=\verb#lcr#$ and
-$\verb#tran_read_ht#=\verb#.TRUE.#$. The first line can be any comment
+INPUT. Read if `transport_mode = lcr` and
+`tran_read_ht = .TRUE.`. The first line can be any comment
 you want. The second line gives `tran_num_cc`. The subsequent lines
 contain `tran_num_cc`$\times$`tran_num_cc` $H_{mn}$ matrix, where the
 indices $m$ and $n$ span all `tran_num_cc` WFs inside the central
@@ -912,8 +939,8 @@ that in `seedname.win`.
 
 ## `seedname_htLC.dat`
 
-INPUT. Read if $\verb#transport_mode#=\verb#lcr#$ and
-$\verb#tran_read_ht#=\verb#.TRUE.#$. The first line can be any comment
+INPUT. Read if `transport_mode = lcr` and
+`tran_read_ht = .TRUE.`. The first line can be any comment
 you want. The second line gives `tran_num_ll` and `tran_num_lc` in the
 given order. The subsequent lines contain
 `tran_num_ll`$\times$`tran_num_lc` $H_{mn}$ matrix. The index $m$ spans
@@ -935,8 +962,8 @@ interaction with the WFs in the semi-infinite left lead. Note that
 
 ## `seedname_htCR.dat`
 
-INPUT. Read if $\verb#transport_mode#=\verb#lcr#$ and
-$\verb#tran_read_ht#=\verb#.TRUE.#$. The first line can be any comment
+INPUT. Read if `transport_mode = lcr` and
+`tran_read_ht = .TRUE.`. The first line can be any comment
 you want. The second line gives `tran_num_cr` and `tran_num_rr` in the
 given order. The subsequent lines contain
 `tran_num_cr`$\times$`tran_num_rr` $H_{mn}$ matrix. The index $m$ spans
@@ -958,8 +985,8 @@ right lead which is in contact with the conductor region. Note that
 
 ## `seedname.unkg` {#sec:files_unkg}
 
-INPUT. Read if $\verb#transport_mode#=\verb#lcr#$ and
-$\verb#tran_read_ht#=\verb#.FALSE.#$. The first line is the number of
+INPUT. Read if `transport_mode = lcr` and
+`tran_read_ht = .FALSE.`. The first line is the number of
 G-vectors at which the $\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ are
 subsequently printed. This number should always be 32 since 32 specific
 $\tilde{u}_{m\mathbf{k}}$ are required. The following lines contain the
@@ -1014,7 +1041,7 @@ that are required. Note the G-vectors ($a,b,c$) needed.
 
 ## `seedname_u.mat`
 
-OUTPUT. Written if $\verb#write_u_matrices#=\verb#.TRUE.#$. The first
+OUTPUT. Written if `write_u_matrices = .TRUE.`. The first
 line gives the date and time at which the file was created. The second
 line states the number of kpoints `num_kpts` and the number of wannier
 functions `num_wann` twice. The third line is empty. Then there are
@@ -1048,7 +1075,7 @@ columns). There is an empty line between each block of data.
 
 ## `seedname_u_dis.mat`
 
-OUTPUT. Written if $\verb#write_u_matrices#=\verb#.TRUE.#$ and
+OUTPUT. Written if `write_u_matrices = .TRUE.` and
 disentanglement is enabled. The first line gives the date and time at
 which the file was created. The second line states the number of kpoints
 `num_kpts`, the number of wannier functions `num_bands` and the number
