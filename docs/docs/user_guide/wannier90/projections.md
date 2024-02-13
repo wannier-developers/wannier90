@@ -61,8 +61,8 @@ first line of the projections block (see above).
 `ang_mtm`:\
 Angular momentum states may be specified by `l` and `mr`, or by the
 appropriate character string. See
-Tables [3.1](#tab:angular){reference-type="ref" reference="tab:angular"}
-and [3.2](#tab:hybrids){reference-type="ref" reference="tab:hybrids"}.
+Tables [Angular functions](#angular-functions)
+and [Hybrids](#hybrids).
 Examples:\
 `l=2,mr=1 ` or ` dz2` -- a single projection with $l=2$,
 $m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)\
@@ -199,164 +199,85 @@ wave-functions are used as the projection orbitals, namely
 $A_{mn}^{(\mathbf{k})} =
 \langle\psi_{m\mathbf{k}}|\psi_{n\mathbf{k}}\rangle = \delta_{mn}$.
 
-## Orbital Definitions {#sec:orbital-defs}
+## Orbital Definitions
 
 The angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
 associated with particular values of $l$ and $m_{\mathrm{r}}$ are given
-in Tables [3.1](#tab:angular){reference-type="ref"
-reference="tab:angular"} and [3.2](#tab:hybrids){reference-type="ref"
-reference="tab:hybrids"}.
+in Tables [Angular functions](#angular-functions) and [Hybrids](#hybrids).
 
 The radial functions $R_{\mathrm{r}}(r)$ associated with different
 values of $r$ should be orthogonal. One choice would be to take the set
 of solutions to the radial part of the hydrogenic Schrödinger equation
 for $l=0$, i.e., the radial parts of the 1s, 2s, 3s... orbitals, which
-are given in Table [3.3](#tab:radial){reference-type="ref"
-reference="tab:radial"}.
+are given in Table [Radial functions](#radial-functions).
 
-::: center
-::: {#tab:angular}
-  ----- ------------------ -------------- ---------------------------------------------------------------------------------------------
-                                          
-   $l$   $m_{\mathrm{r}}$       Name                               $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-                                          
-                                          
-    0           1               `s`                                          $\frac{1}{\sqrt{4\pi}}$
-                                          
-                                          
-    1           1               `pz`                                    $\sqrt{\frac{3}{4\pi}}\cos\theta$
-                                          
-    1           2               `px`                              $\sqrt{\frac{3}{4\pi}}\sin\theta\cos\varphi$
-                                          
-    1           3               `py`                              $\sqrt{\frac{3}{4\pi}}\sin\theta\sin\varphi$
-                                          
-                                          
-    2           1              `dz2`                              $\sqrt{\frac{5}{16\pi}}(3\cos^{2}\theta -1)$
-                                          
-    2           2              `dxz`                         $\sqrt{\frac{15}{4\pi}}\sin\theta\cos\theta\cos\varphi$
-                                          
-    2           3              `dyz`                         $\sqrt{\frac{15}{4\pi}}\sin\theta\cos\theta\sin\varphi$
-                                          
-    2           4             `dx2-y2`                         $\sqrt{\frac{15}{16\pi}}\sin^{2}\theta\cos2\varphi$
-                                          
-    2           5              `dxy`                           $\sqrt{\frac{15}{16\pi}}\sin^{2}\theta\sin2\varphi$
-                                          
-                                          
-    3           1              `fz3`                       $\frac{\sqrt{7}}{4\sqrt{\pi}}(5\cos^{3}\theta-3\cos\theta)$
-                                          
-    3           2              `fxz2`               $\frac{\sqrt{21}}{4\sqrt{2\pi}}(5\cos^{2}\theta-1)\sin\theta\cos\varphi$
-                                          
-    3           3              `fyz2`               $\frac{\sqrt{21}}{4\sqrt{2\pi}}(5\cos^{2}\theta-1)\sin\theta\sin\varphi$
-                                          
-    3           4           `fz(x2-y2)`               $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\cos2\varphi$
-                                          
-    3           5              `fxyz`                 $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\sin2\varphi$
-                                          
-    3           6           `fx(x2-3y2)`   $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(\cos^{2}\varphi-3\sin^{2}\varphi)\cos\varphi$
-                                          
-    3           7           `fy(3x2-y2)`   $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(3\cos^{2}\varphi-\sin^{2}\varphi)\sin\varphi$
-                                          
-  ----- ------------------ -------------- ---------------------------------------------------------------------------------------------
+### Angular functions
 
-  : Angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-  associated with particular values of $l$ and $m_{\mathrm{r}}$ for
-  $l\ge0$.
-:::
-:::
+| $l$ | $m_{\mathrm{r}}$ |     Name     |                         $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$                          |
+|:---:|:----------------:|:------------:|:-------------------------------------------------------------------------------------------:|
+|  0  |        1         |     `s`      |                                   $\frac{1}{\sqrt{4\pi}}$                                   |
+|  1  |        1         |     `pz`     |                              $\sqrt{\frac{3}{4\pi}}\cos\theta$                              |
+|  1  |        2         |     `px`     |                        $\sqrt{\frac{3}{4\pi}}\sin\theta\cos\varphi$                         |
+|  1  |        3         |     `py`     |                        $\sqrt{\frac{3}{4\pi}}\sin\theta\sin\varphi$                         |
+|  2  |        1         |    `dz2`     |                        $\sqrt{\frac{5}{16\pi}}(3\cos^{2}\theta -1)$                         |
+|  2  |        2         |    `dxz`     |                   $\sqrt{\frac{15}{4\pi}}\sin\theta\cos\theta\cos\varphi$                   |
+|  2  |        3         |    `dyz`     |                   $\sqrt{\frac{15}{4\pi}}\sin\theta\cos\theta\sin\varphi$                   |
+|  2  |        4         |   `dx2-y2`   |                     $\sqrt{\frac{15}{16\pi}}\sin^{2}\theta\cos2\varphi$                     |
+|  2  |        5         |    `dxy`     |                     $\sqrt{\frac{15}{16\pi}}\sin^{2}\theta\sin2\varphi$                     |
+|  3  |        1         |    `fz3`     |                 $\frac{\sqrt{7}}{4\sqrt{\pi}}(5\cos^{3}\theta-3\cos\theta)$                 |
+|  3  |        2         |    `fxz2`    |          $\frac{\sqrt{21}}{4\sqrt{2\pi}}(5\cos^{2}\theta-1)\sin\theta\cos\varphi$           |
+|  3  |        3         |    `fyz2`    |          $\frac{\sqrt{21}}{4\sqrt{2\pi}}(5\cos^{2}\theta-1)\sin\theta\sin\varphi$           |
+|  3  |        4         | `fz(x2-y2)`  |            $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\cos2\varphi$             |
+|  3  |        5         |    `fxyz`    |            $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\sin2\varphi$             |
+|  3  |        6         | `fx(x2-3y2)` | $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(\cos^{2}\varphi-3\sin^{2}\varphi)\cos\varphi$ |
+|  3  |        7         | `fy(3x2-y2)` | $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(3\cos^{2}\varphi-\sin^{2}\varphi)\sin\varphi$ |
 
-::: center
-::: {#tab:hybrids}
-  ----------------------- ------------------ ----------- -----------------------------------------------------------------------------
-                                                         
-            $l$            $m_{\mathrm{r}}$     Name                      $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-                                                         
-                                                         
-   $-$`<!-- -->`{=html}1          1            `sp-1`                  $\frac{1}{\sqrt{2}}$`s` $+\frac{1}{\sqrt{2}}$`px`
-                                                         
-   $-$`<!-- -->`{=html}1          2            `sp-2`                  $\frac{1}{\sqrt{2}}$`s` $-\frac{1}{\sqrt{2}}$`px`
-                                                         
-                                                         
-   $-$`<!-- -->`{=html}2          1            `sp2-1`    $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py`
-                                                         
-   $-$`<!-- -->`{=html}2          2            `sp2-2`    $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py`
-                                                         
-   $-$`<!-- -->`{=html}2          3            `sp2-3`                 $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`
-                                                         
-                                                         
-   $-$`<!-- -->`{=html}3          1            `sp3-1`                   $\frac{1}{2}$(`s` $+$ `px` $+$ `py` $+$ `pz`)
-                                                         
-   $-$`<!-- -->`{=html}3          2            `sp3-2`                   $\frac{1}{2}$(`s` $+$ `px` $-$ `py` $-$ `pz`)
-                                                         
-   $-$`<!-- -->`{=html}3          3            `sp3-3`                   $\frac{1}{2}$(`s` $-$ `px` $+$ `py` $-$ `pz`)
-                                                         
-   $-$`<!-- -->`{=html}3          4            `sp3-4`                   $\frac{1}{2}$(`s` $-$ `px` $-$ `py` $+$ `pz`)
-                                                         
-                                                         
-   $-$`<!-- -->`{=html}4          1           `sp3d-1`    $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py`
-                                                         
-   $-$`<!-- -->`{=html}4          2           `sp3d-2`    $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py`
-                                                         
-   $-$`<!-- -->`{=html}4          3           `sp3d-3`                 $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`
-                                                         
-   $-$`<!-- -->`{=html}4          4           `sp3d-4`                $\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`
-                                                         
-   $-$`<!-- -->`{=html}4          5           `sp3d-5`               $-\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`
-                                                         
-                                                         
-   $-$`<!-- -->`{=html}5          1           `sp3d2-1`             $\frac{1}{\sqrt{6}}\verb#s#-\frac{1}{\sqrt{2}}\verb#px#
-                                                                   -\frac{1}{\sqrt{12}}\verb#dz2#+\frac{1}{2}\verb#dx2-y2#$
-                                                         
-   $-$`<!-- -->`{=html}5          2           `sp3d2-2`             $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#px#
-                                                                   -\frac{1}{\sqrt{12}}\verb#dz2#+\frac{1}{2}\verb#dx2-y2#$
-                                                         
-   $-$`<!-- -->`{=html}5          3           `sp3d2-3`             $\frac{1}{\sqrt{6}}\verb#s#-\frac{1}{\sqrt{2}}\verb#py#
-                                                                   -\frac{1}{\sqrt{12}}\verb#dz2#-\frac{1}{2}\verb#dx2-y2#$
-                                                         
-   $-$`<!-- -->`{=html}5          4           `sp3d2-4`             $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#py#
-                                                                   -\frac{1}{\sqrt{12}}\verb#dz2#-\frac{1}{2}\verb#dx2-y2#$
-                                                         
-   $-$`<!-- -->`{=html}5          5           `sp3d2-5`             $\frac{1}{\sqrt{6}}\verb#s#-\frac{1}{\sqrt{2}}\verb#pz#
-                                                                                +\frac{1}{\sqrt{3}}\verb#dz2#$
-                                                         
-   $-$`<!-- -->`{=html}5          6           `sp3d2-6`             $\frac{1}{\sqrt{6}}\verb#s#+\frac{1}{\sqrt{2}}\verb#pz#
-                                                                                +\frac{1}{\sqrt{3}}\verb#dz2#$
-                                                         
-  ----------------------- ------------------ ----------- -----------------------------------------------------------------------------
+Angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ associated
+with particular values of $l$ and $m_{\mathrm{r}}$ for $l\ge0$.
 
-  : Angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$
-  associated with particular values of $l$ and $m_{\mathrm{r}}$ for
-  $l<0$, in terms of the orbitals defined in
-  Table [3.1](#tab:angular){reference-type="ref"
-  reference="tab:angular"}.
-:::
-:::
+### Hybrids
 
-::: center
-::: {#tab:radial}
-  ---------- --------------------------------------------
-             
-     $r$                 $R_{\mathrm{r}}(r)$
-             
-             
-      1            $2 \alpha^{3/2}\exp(-\alpha r)$
-             
-             
-      2       $\frac{1}{2\sqrt{2}}\alpha^{3/2}(2-\alpha
-                         r)\exp(-\alpha r/2)$
-             
-             
-      3       $\sqrt{\frac{4}{27}}\alpha^{3/2}(1-2\alpha
-              r/3+2\alpha^{2}r^{2}/27)\exp(-\alpha r/3)$
-             
-  ---------- --------------------------------------------
+|     $l$      | $m_{\mathrm{r}}$ |   Name    |                 $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$                  |
+|:------------:|:----------------:|:---------:|:---------------------------------------------------------------------------:|
+|           -1 |        1         |  `sp-1`   |              $\frac{1}{\sqrt{2}}$`s` $+\frac{1}{\sqrt{2}}$`px`              |
+|           -1 |        2         |  `sp-2`   |              $\frac{1}{\sqrt{2}}$`s` $-\frac{1}{\sqrt{2}}$`px`              |
+|           -2 |        1         |  `sp2-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py` |
+|           -2 |        2         |  `sp2-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py` |
+|           -2 |        3         |  `sp2-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`              |
+|           -3 |        1         |  `sp3-1`  |                $\frac{1}{2}$(`s` $+$ `px` $+$ `py`           |                  |           |                                                                             |
+|           -3 |        2         |  `sp3-2`  |                $\frac{1}{2}$(`s` $+$ `px` $-$ `py` $-$ `pz`)                |
+|           -3 |        3         |  `sp3-3`  |                $\frac{1}{2}$(`s` $-$ `px` $+$ `py` $-$ `pz`)                |
+|           -3 |        4         |  `sp3-4`  |                $\frac{1}{2}$(`s` $-$ `px` $-$ `py` $+$ `pz`)                |
+|           -4 |        1         | `sp3d-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py` |
+|           -4 |        2         | `sp3d-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py` |
+|           -4 |        3         | `sp3d-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`              |
+|           -4 |        4         | `sp3d-4`  |             $\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`             |
+|           -4 |        5         | `sp3d-5`  |            $-\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`             |
+|           -5 |        1         | `sp3d2-1` |           $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`px`-$\frac{1}{\sqrt{12}}$`dz2`+$\frac{1}{2}$`dx2-y2`           |
+|           -5 |        2         | `sp3d2-2` |           $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`px`-$\frac{1}{\sqrt{12}}$`dz2`+$\frac{1}{2}$`dx2-y2`           |
+|           -5 |        3         | `sp3d2-3` |           $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`py`-$\frac{1}{\sqrt{12}}$`dz2`-$\frac{1}{2}$`dx2-y2`           |
+|           -5 |        4         | `sp3d2-4` |           $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`py`-$\frac{1}{\sqrt{12}}$`dz2`-$\frac{1}{2}$`dx2-y2`           |
+|           -5 |        5         | `sp3d2-5` |           $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`pz`+$\frac{1}{\sqrt{3}}$`dz2`                        |
+|           -5 |        6         | `sp3d2-6` |           $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`pz`+$\frac{1}{\sqrt{3}}$`dz2`                        |
 
-  :  One possible choice for the radial functions $R_{\mathrm{r}}(r)$
-  associated with different values of $r$: the set of solutions to the
-  radial part of the hydrogenic Schrödinger equation for $l=0$, i.e.,
-  the radial parts of the 1s, 2s, 3s... orbitals, where
-  $\alpha=Z/a={\tt zona}$.
-:::
-:::
+Angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ associated
+with particular values of $l$ and $m_{\mathrm{r}}$ for $l<0$, in terms
+of the orbitals defined in
+Table [Angular functions](#angular-functions).
+
+### Radial functions
+
+|   $r$    |            $R_{\mathrm{r}}(r)$             |
+|:--------:|:------------------------------------------:|
+|    1     |      $2 \alpha^{3/2}\exp(-\alpha r)$       |
+|    2     |  $\frac{1}{2\sqrt{2}}\alpha^{3/2}(2-\alpha r)\exp(-\alpha r/2)$             |
+|    3     | $\sqrt{\frac{4}{27}}\alpha^{3/2}(1-2\alpha r/3+2\alpha^{2}r^{2}/27)\exp(-\alpha r/3)$  |
+
+One possible choice for the radial functions $R_{\mathrm{r}}(r)$
+associated with different values of $r$: the set of solutions to the
+radial part of the hydrogenic Schrödinger equation for $l=0$, i.e., the
+radial parts of the 1s, 2s, 3s… orbitals, where $\alpha=Z/a={\tt zona}$.
+
 
 ## Projections via the SCDM-**k** method in pw2wannier90
 
@@ -426,22 +347,22 @@ Wannierisation, for such cases, one can inspect the stdout of
 `pw2wannier90`, which will print the orbitals used for computing `amn`,
 e.g.,
 
-` `
+```
+-------------------------------------
+*** Compute A with atomic projectors
+-------------------------------------
+Use atomic projectors from UPF
 
-> -------------------------------------\
-> \*\*\* Compute A with atomic projectors\
-> -------------------------------------\
-> Use atomic projectors from UPF\
-> \
-> (read from pseudopotential files):\
-> state \# 1: atom 1 (C ), wfc 1 (l=0 m= 1)\
-> state \# 2: atom 1 (C ), wfc 2 (l=1 m= 1)\
-> state \# 3: atom 1 (C ), wfc 2 (l=1 m= 2)\
-> state \# 4: atom 1 (C ), wfc 2 (l=1 m= 3)\
-> state \# 5: atom 2 (C ), wfc 1 (l=0 m= 1)\
-> state \# 6: atom 2 (C ), wfc 2 (l=1 m= 1)\
-> state \# 7: atom 2 (C ), wfc 2 (l=1 m= 2)\
-> state \# 8: atom 2 (C ), wfc 2 (l=1 m= 3)\
+(read from pseudopotential files):
+state # 1: atom 1 (C ), wfc 1 (l=0 m= 1)
+state # 2: atom 1 (C ), wfc 2 (l=1 m= 1)
+state # 3: atom 1 (C ), wfc 2 (l=1 m= 2)
+state # 4: atom 1 (C ), wfc 2 (l=1 m= 3)
+state # 5: atom 2 (C ), wfc 1 (l=0 m= 1)
+state # 6: atom 2 (C ), wfc 2 (l=1 m= 1)
+state # 7: atom 2 (C ), wfc 2 (l=1 m= 2)
+state # 8: atom 2 (C ), wfc 2 (l=1 m= 3)
+```
 
 Here it shows that there are two carbon atoms, each with one $s$ and
 three $p$ orbitals. If one wants to exclude specific orbital(s), there
@@ -487,10 +408,12 @@ format of the file is:
     they are related by $r = \exp(x)$. The rest are $n_p$ columns of the
     radial wavefunctions of the projectors,
 
-        -9.639057329615259 0.000065134426111 3.32211124436945e-05 1.86840239681223e-09
-        -9.626557329615258 0.000065953716334 3.363898259696903e-05 1.915701228607072e-09
-        -9.614057329615258 0.000066783311958 3.406210890972733e-05 1.964197436025957e-09
-        ...
+    ```
+    -9.639057329615259 0.000065134426111 3.32211124436945e-05 1.86840239681223e-09
+    -9.626557329615258 0.000065953716334 3.363898259696903e-05 1.915701228607072e-09
+    -9.614057329615258 0.000066783311958 3.406210890972733e-05 1.964197436025957e-09
+    ...
+    ```
 
     Inside `pw2wannier90.x`, the radial wavefunction will be read and
     multiplied by spherical harmonics to form the actual projectors.
