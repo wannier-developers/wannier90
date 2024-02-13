@@ -398,7 +398,6 @@ contains
     ierr = 0
 
     if (mpirank(common_data%comm) == 0) then
-      write (*, *) "JJ: ", common_data%seedname
       call kmesh_write(common_data%exclude_bands, common_data%kmesh_info, &
                        common_data%select_proj%auto_projections, common_data%proj_input, &
                        common_data%print_output, common_data%kpt_latt, common_data%real_lattice, &

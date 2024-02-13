@@ -1162,6 +1162,8 @@ contains
     integer :: i, loop, ierr, wann_plot_num
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_vector_length(settings, 'wannier_plot_supercell', found, i, error, comm)
     if (allocated(error)) return
 
