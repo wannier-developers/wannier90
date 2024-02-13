@@ -55,7 +55,7 @@ contains
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: gamma_only
 
-    real(kind=dp), intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
+    real(kind=dp), pointer, intent(in) :: eigval(:, :) ! (num_bands, num_kpts)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -133,7 +133,8 @@ contains
       call set_error_alloc(error, 'Error in allocating eigval_opt in dis_main', comm)
       return
     endif
-    eigval_opt = eigval
+    eigval_opt(1:num_bands, 1:num_kpts) = eigval(1:num_bands, 1:num_kpts)
+    !write(*,*)"JJ:",num_bands, num_kpts, eigval(1,1), eigval_opt(1,1)
 
     ! Set up energy windows
     call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
