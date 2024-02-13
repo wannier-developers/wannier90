@@ -118,19 +118,19 @@ Not at present.
 Yes. `wannier90` works on top of an electronic structure calculation.
 
 At the time of writing there are public, fully functioning, interfaces
-between `wannier90` and [pwscf]{.smallcaps}, abinit
+between `wannier90` and `pwscf`, abinit
 (<http://www.abinit.org>), siesta (<http://www.icmab.es/siesta/>), VASP
 (<https://www.vasp.at>), Wien2k (<http://www.wien2k.at>), fleur
 (<http://www.fleur.de>), OpenMX (<http://www.openmx-square.org/>), GPAW
 (<https://wiki.fysik.dtu.dk/gpaw/>).
 
-To use `wannier90` in combination with [pwscf]{.smallcaps} code (a
+To use `wannier90` in combination with `pwscf` code (a
 plane-wave, pseudopotential, density-functional theory code, which is
 part of the `quantum-espresso` package) you will need to download
-[pwscf]{.smallcaps} from the webpage <http://www.quantum-espresso.org>.
-Then compile [pwscf]{.smallcaps} and the `wannier90` interface program
+`pwscf` from the webpage <http://www.quantum-espresso.org>.
+Then compile `pwscf` and the `wannier90` interface program
 `pw2wannier90`. For instructions, please refer to the documentation that
 comes with the `quantum-espresso` distribution.
 
-For examples of how to use [pwscf]{.smallcaps} and `wannier90` in
+For examples of how to use `pwscf` and `wannier90` in
 conjunction with each other, see the `wannier90` Tutorial.

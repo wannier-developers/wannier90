@@ -19,7 +19,7 @@ Once the overlaps and projection have been computed and written to files
 
 ### `seedname.nnkp` file
 
-OUTPUT, if $\verb#postproc_setup#=\verb#.true.#$
+OUTPUT, if `postproc_setup = .true.`
 
 The file `seedname.nnkp` provides the information needed to determine
 the required overlap elements $M_{mn}^{(\mathbf{k,b})}$ and projections
@@ -101,10 +101,7 @@ crystallographic co-ordinates relative to the direct lattice vectors.
 `l  mr  r`: three integers; $l$ and $m_\mathrm{r}$ specify the angular
 part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and $\mathrm{r}$
 specifies the radial part $R_{\mathrm{r}}(r)$ of the projection function
-(see Tables [3.1](#tab:angular){reference-type="ref"
-reference="tab:angular"}, [3.2](#tab:hybrids){reference-type="ref"
-reference="tab:hybrids"} and [3.3](#tab:radial){reference-type="ref"
-reference="tab:radial"}).
+(see Tables [Angular functions](../projections/#angular-functions), [Hybrids](../projections#hybrids) and [Radial functions](../projections/#radial-functions).
 
 `z-axis`: three real numbers; default is `0.0 0.0 1.0`; defines the axis
 from which the polar angle $\theta$ in spherical polar coordinates is
@@ -180,7 +177,7 @@ overlap and projection matrices, for example to ignore shallow-core
 states. The first line is the number of states to exclude, the following
 lines give the states for be excluded.
 
-#### []{#sec:auto-projections-block label="sec:auto-projections-block"}`auto_projections` block
+#### `auto_projections` block
 
     begin auto_projections
        8
@@ -221,7 +218,7 @@ Wannier function (PDWF) [@Qiao2023-pdwf], which uses pseudo-atomic
 orbitals inside pseudopotentials as initial guesses. See Example 34 and
 35.
 
-#### An example of projections {#sec:proj_example}
+#### An example of projections
 
 As a concrete example: one wishes to have a set of four sp$^3$
 projection orbitals on, say, a carbon atom at (0.5,0.5,0.5) in
@@ -250,11 +247,10 @@ and `seedname.nnkp`, generated on the first pass of `wannier90` (with
 where the first line tells us that in total four projections are
 specified, and the subsquent lines provide the projection centre, the
 angular and radial parts of the orbital (see
-Section [3.4](#sec:orbital-defs){reference-type="ref"
-reference="sec:orbital-defs"} for definitions), the $z$ and $x$ axes,
+Section [Orbital Definitions](../projections/#orbital-definitions) for definitions), the $z$ and $x$ axes,
 and the diffusivity and cut-off radius for the projection orbital.
 
-[pwscf]{.smallcaps}, or any other *ab initio* electronic structure code,
+`pwscf`, or any other *ab initio* electronic structure code,
 then reads `seedname.nnkp` file, calculates the projections and writes
 them to `seedname.amn`.
 
@@ -268,7 +264,7 @@ First line: a user comment, e.g., the date and time
 
 Second line: 3 integers: `num_bands`, `num_kpts`, `nntot`
 
-Then: $\verb#num_kpts#\times\verb#nntot#$ blocks of data:
+Then: `num_kpts * nntot` blocks of data:
 
 First line of each block: 5 integers. The first specifies the
 $\mathbf{k}$ (i.e., gives the ordinal corresponding to its position in
@@ -281,10 +277,10 @@ that brings the k-point specified by the second integer, and that thus
 lives inside the first BZ zone, to the actual $\mathbf{k+b}$ that we
 need.
 
-Subsequent $\verb#num_bands#\times\verb#num_bands#$ lines of each block:
+Subsequent `num_bands * num_bands` lines of each block:
 two real numbers per line. These are the real and imaginary parts,
 respectively, of the actual scalar product $M_{mn}^{(\mathbf{k,b})}$ for
-$m,n \in [1,\verb#num_bands#]$. The order of these elements is such that
+$m,n \in [1,\texttt{num_bands}]$. The order of these elements is such that
 the first index $m$ is fastest.
 
 ### `seedname.amn` file
@@ -298,7 +294,7 @@ First line: a user comment, e.g., the date and time
 Second line: 3 integers: `num_bands`, `num_kpts`, `num_wann`
 
 Subsequently
-$\verb#num_bands#\times\verb#num_wann#\times\verb#num_kpts#$ lines: 3
+$\texttt{num_bands} \times \texttt{num_wann} \times \texttt{num_kpts}$ lines: 3
 integers and 2 real numbers on each line. The first two integers are the
 band index $m$ and the projection index $n$, respectively. The third
 integer specifies the $\mathbf{k}$ by giving the ordinal corresponding
@@ -317,9 +313,10 @@ symmetry-adapted Wannier functions [@sakuma-prb13]. Required if
 First line: a user comment, e.g., the date and time
 
 Second line: 4 integers: `num_bands`, `nsymmetry`, `nkptirr`,
-`num_kpts`.\
-`nsymmetry`: the number of symmetry operations\
-`nkptirr`: the number of irreducible k-points
+`num_kpts`.
+
+- `nsymmetry`: the number of symmetry operations
+- `nkptirr`: the number of irreducible k-points
 
 Blank line
 
@@ -348,27 +345,27 @@ on the irreducible k-points. The data is written 10 values per line.
 
 Blank line
 
-$\verb#nsymmetry# \times \verb#nkptirr#$ blocks of data:\
+$\texttt{nsymmetry} \times \texttt{nkptirr}$ blocks of data:
 The information of $D$ matrix in Eq. (15) of Ref. [@sakuma-prb13]. Each
-block contains $\verb#num_wann# \times \verb#num_wann#$ lines and is
+block contains $\texttt{num_wann} \times \texttt{num_wann}$ lines and is
 separated by a blank line. The data are stored in
 `d_matrix_wann(m,n,isym,ikirr)` with
-$\verb#m#, \verb#n# \in [1,\verb#num_wann#]$,
-$\verb#isym# \in [1,\verb#nsymmetry#]$, and
-$\verb#ikirr# \in [1,\verb#nkptirr#]$. The order of the elements is such
+$\texttt{m}, \texttt{n} \in [1,\texttt{num_wann}]$,
+$\texttt{isym} \in [1,\texttt{nsymmetry}]$, and
+$\texttt{ikirr} \in [1,\texttt{nkptirr}]$. The order of the elements is such
 that left indices run faster than right indices (`m`: fastest, `ikirr`:
 slowest).
 
 Blank line
 
-$\verb#nsymmetry# \times \verb#nkptirr#$ blocks of data:\
+$\texttt{nsymmetry} \times \texttt{nkptirr}$ blocks of data:\
 The information of $\tilde d$ matrix in Eq. (17) of
 Ref. [@sakuma-prb13]. Each block contains
-$\verb#num_bands# \times \verb#num_bands#$ lines and is separated by a
+$\texttt{num_bands} \times \texttt{num_bands}$ lines and is separated by a
 blank line. The data are stored in `d_matrix_band(m,n,isym,ikirr)` with
-$\verb#m#, \verb#n# \in [1,\verb#num_bands#]$,
-$\verb#isym# \in [1,\verb#nsymmetry#]$, and
-$\verb#ikirr# \in [1,\verb#nkptirr#]$. The order of the elements is such
+$\texttt{m}, \texttt{n} \in [1,\texttt{num_bands}]$,
+$\texttt{isym} \in [1,\texttt{nsymmetry}]$, and
+$\texttt{ikirr} \in [1,\texttt{nkptirr}]$. The order of the elements is such
 that left indices run faster than right indices (`m`: fastest, `ikirr`:
 slowest).
 
@@ -389,22 +386,23 @@ the $k$-point in the list of $k$-points in `seedname.win`, and the real
 number is the eigenvalue.
 
 E.g.,
-
-               1           1  -6.43858831271328
-               2           1   19.3977795287297
-               3           1   19.3977795287297
-               4           1   19.3977795287298
+```
+            1           1  -6.43858831271328
+            2           1   19.3977795287297
+            3           1   19.3977795287297
+            4           1   19.3977795287298
+```
 
 ### Interface with pwscf
 
 Interfaces between `wannier90` and many ab-initio codes such as
-[pwscf]{.smallcaps}, abinit (<http://www.abinit.org>), siesta
-(<http://www.icmab.es/siesta/>), fleur, VASP and Wien2k
+`pwscf`, `abinit` (<http://www.abinit.org>), `siesta`
+(<http://www.icmab.es/siesta/>), `fleur`, `VASP` and `Wien2k`
 (<http://www.wien2k.at>) are available. Here we describe the seamless
-interface between `wannier90` and [pwscf]{.smallcaps}, a plane-wave DFT
+interface between `wannier90` and `pwscf`, a plane-wave DFT
 code that comes as part of the Quantum ESPRESSO package (see
 <http://www.quantum-espresso.org>). You will need to download and
-compile [pwscf]{.smallcaps} (i.e., the `pw.x` code) and the
+compile `pwscf` (i.e., the `pw.x` code) and the
 post-processing interface `pw2wannier90.x`. Please refer to the
 documentation that comes with the Quantum ESPRESSO distribution for
 instructions.
@@ -428,7 +426,7 @@ instructions.
     bands (if required), localise MLWF, and use MLWF for plotting,
     bandstructures, Fermi surfaces etc.
 
-Examples of how the interface with [pwscf]{.smallcaps} works are given
+Examples of how the interface with `pwscf` works are given
 in the `wannier90` Tutorial.
 
 #### `seedname.pw2wan`
@@ -437,7 +435,7 @@ A number of keywords may be specified in the `pw2wannier90` input file:
 
 -   `outdir` -- Location to write output files. Default is `` `./' ``
 
--   `prefix` -- Prefix for the [pwscf]{.smallcaps} calculation. Default
+-   `prefix` -- Prefix for the `pwscf` calculation. Default
     is `` ` ' ``
 
 -   `seedname` -- Seedname for the `wannier90` calculation. Default is
@@ -551,5 +549,5 @@ follows:
 Here, $R$ is the rotational part of symmetry operations ($3\times3$
 matrix), and $\bf t$ is the fractional translation in the unit of
 "`alat`" (refer the definition of "`alat`" to the manual of
-[pwscf]{.smallcaps}). Both data are given in Cartesian coordinates. The
+`pwscf`). Both data are given in Cartesian coordinates. The
 symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$.
