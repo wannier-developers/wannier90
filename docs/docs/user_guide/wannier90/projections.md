@@ -37,81 +37,84 @@ projection orbitals for different $n$, $l$ and $m_{\mathrm{r}}$.
 
 We use the following format to specify projections in `<seedname>.win`:
 
-`Begin Projections`\
-`[units]`\
-`site:ang_mtm:zaxis:xaxis:radial:zona`\
-`    `⋮\
-`End Projections`
+```
+Begin Projections
+[units]
+site:ang_mtm:zaxis:xaxis:radial:zona
+    ⋮
+End Projections
+```
 
 Notes:
 
-`units`:\
+`units`:
 Optional. Either `Ang` or `Bohr` to specify whether the projection
 centres specified in this block (if given in Cartesian co-ordinates) are
 in units of Angstrom or Bohr, respectively. The default value is `Ang`.
 
-`site`:\
-`C`, `Al`, etc. applies to all atoms of that type\
-`f=0,0.50,0` -- centre on (0.0,0.5,0.0) in **f**ractional coordinates
-(crystallographic units) relative to the direct lattice vectors\
-`c=0.0,0.805,0.0` -- centre on (0.0,0.805,0.0) in **C**artesian
+`site`:
+`C`, `Al`, etc. applies to all atoms of that type
+`f=0,0.50,0` -- centre on `(0.0,0.5,0.0)` in **fractional** coordinates
+(crystallographic units) relative to the direct lattice vectors
+`c=0.0,0.805,0.0` -- centre on `(0.0,0.805,0.0)` in **Cartesian**
 coordinates in units specified by the optional string `units` in the
 first line of the projections block (see above).
 
-`ang_mtm`:\
+`ang_mtm`:
 Angular momentum states may be specified by `l` and `mr`, or by the
 appropriate character string. See
 Tables [Angular functions](#angular-functions)
 and [Hybrids](#hybrids).
-Examples:\
+Examples:
 `l=2,mr=1 ` or ` dz2` -- a single projection with $l=2$,
-$m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)\
+$m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)
 `l=2,mr=1,4 ` or ` dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
-d$_{xz}$\
-`l=-3 ` or ` sp3` -- four sp$^{3}$ hybrids\
-Specific hybrid orbitals may be specified as follows:\
-`l=-3,mr=1,3 ` or ` sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids\
-Multiple states may be specified by separating with '`;`', e.g.,\
+d$_{xz}$
+`l=-3 ` or ` sp3` -- four sp$^{3}$ hybrids
+Specific hybrid orbitals may be specified as follows:
+`l=-3,mr=1,3 ` or ` sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
+Multiple states may be specified by separating with '`;`', e.g.,
 `sp3;l=0 ` or ` l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
 
-`zaxis` (optional):\
+`zaxis` (optional):
 `z=1,1,1` -- set the $z$-axis to be in the (1,1,1) direction. Default is
 `z=0,0,1`
 
-`xaxis` (optional):\
+`xaxis` (optional):
 `x=1,1,1` -- set the $x$-axis to be in the (1,1,1) direction. Default is
 `x=1,0,0`
 
-`radial` (optional):\
+`radial` (optional):
 `r=2` -- use a radial function with one node (ie second highest
 pseudostate with that angular momentum). Default is `r=1`. Radial
 functions associated with different values of `r` should be orthogonal
 to each other.
 
-`zona` (optional):\
+`zona` (optional):
 `zona=2.0` -- the value of $\frac{Z}{a}$ for the radial part of the
 atomic orbital (controls the diffusivity of the radial function). Units
 always in reciprocal Angstrom. Default is `zona=1.0`.
 
-**Examples**
+### Examples
 
-1\. CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
+1. CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
 
-`Cu:l=0;l=1;l=2 `
+    `Cu:l=0;l=1;l=2 `
 
-`O:l=-3 ` or ` O:sp3`
+    `O:l=-3 ` or ` O:sp3`
 
-2\. A single projection onto a p$_z$ orbital orientated in the (1,1,1)
+2. A single projection onto a p$_z$ orbital orientated in the (1,1,1)
 direction:
 
-`c=0,0,0:l=1,mr=1:z=1,1,1 ` or ` c=0,0,0:pz:z=1,1,1`
+    `c=0,0,0:l=1,mr=1:z=1,1,1 ` or ` c=0,0,0:pz:z=1,1,1`
 
-3\. Project onto s, p and d (with no radial nodes), and s and p (with
+3. Project onto s, p and d (with no radial nodes), and s and p (with
 one radial node) in silicon:
 
-`Si:l=0;l=1;l=2`
-
-`Si:l=0;l=1:r=2`
+    ```
+    Si:l=0;l=1;l=2
+    Si:l=0;l=1:r=2
+    ```
 
 ## Spinor Projections
 
@@ -125,23 +128,25 @@ interface between the ab-initio code and Wannier90 (i.e., written after
 the release of the 2.0 version, in October 2013) supporting spinor
 projections.
 
-`Begin Projections`\
-`[units]`\
-`site:ang_mtm:zaxis:xaxis:radial:zona(spin)[quant_dir]`\
-`    `⋮\
-`End Projections`
+```
+Begin Projections
+[units]
+site:ang_mtm:zaxis:xaxis:radial:zona(spin)[quant_dir]
+    ⋮
+End Projections
+```
 
-`spin` (optional):\
-Choose projection onto 'up' or 'down' states\
-`u` -- project onto 'up' states.\
-`d` -- project onto 'down' states.\
+`spin` (optional):
+Choose projection onto 'up' or 'down' states
+`u` -- project onto 'up' states.
+`d` -- project onto 'down' states.
 Default is `u,d`
 
-`quant_dir` (optional):\
+`quant_dir` (optional):
 `1,0,0` -- set the spin quantisation axis to be in the (1,0,0)
 direction. Default is `0,0,1`
 
-**Examples**
+### Examples
 
 -   18 projections on an iron site
 
@@ -165,14 +170,18 @@ direction. Default is `0,0,1`
 
 -   9 projections onto up-states and 3 on down
 
-    `Fe:sp3d2;dxy;dxz;dyz(u) `\
-    `Fe:dxy;dxz;dyz(d)`
+    ```
+    Fe:sp3d2;dxy;dxz;dyz(u)
+    Fe:dxy;dxz;dyz(d)
+    ```
 
 -   projections onto alternate spin states for two lattice sites (Cr1,
     Cr2)
 
-    `Cr1:d(u)`\
-    `Cr2:d(d)`
+    ```
+    Cr1:d(u)
+    Cr2:d(d)
+    ```
 
 ## Short-Cuts
 
@@ -180,10 +189,12 @@ direction. Default is `0,0,1`
 
 It is possible to specify the projections, for example, as follows:
 
-`Begin Projections`\
-`random`\
-`C:sp3`\
-`End Projections`
+```
+Begin Projections
+random
+C:sp3
+End Projections
+```
 
 in which case `wannier90` uses four sp$^3$ orbitals centred on each C
 atom and then chooses the appropriate number of randomly-centred s-type
@@ -276,7 +287,7 @@ Table [Angular functions](#angular-functions).
 One possible choice for the radial functions $R_{\mathrm{r}}(r)$
 associated with different values of $r$: the set of solutions to the
 radial part of the hydrogenic Schrödinger equation for $l=0$, i.e., the
-radial parts of the 1s, 2s, 3s… orbitals, where $\alpha=Z/a={\tt zona}$.
+radial parts of the 1s, 2s, 3s… orbitals, where $\alpha=Z/a=$`zona`.
 
 
 ## Projections via the SCDM-**k** method in pw2wannier90
@@ -314,10 +325,16 @@ spin-noncollinear systems. The SCDM-**k** can operate in two modes:
     projection block.
 
 The following keywords need to be specified in the `pw2wannier90.x`
-input file `<seedname>.pw2wan`: `scdm_proj` `scdm_entanglement`
-`scdm_mu` `scdm_sigma`
+input file `<seedname>.pw2wan`:
 
-## Projections via pseudo-atomic orbitals in pw2wannier90 {#sec:proj_pdwf}
+```
+scdm_proj
+scdm_entanglement
+scdm_mu
+scdm_sigma
+```
+
+## Projections via pseudo-atomic orbitals in pw2wannier90
 
 When generating pseudopotentials, often the atomic wavefunctions of
 isolated atom are pseudized and bundled together with the
