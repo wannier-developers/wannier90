@@ -5,7 +5,7 @@
 INPUT. The master input file; contains the specification of the system
 and any parameters for the run. For a description of input parameters,
 see Chapter [Parameters](../parameters); for examples, see
-Section [`seedname.win`](#seedname.win) and
+Section [`seedname.win`](../sample_inputs/#master-input-file-seednamewin) and
 the `wannier90` Tutorial.
 
 ### Units
@@ -351,8 +351,7 @@ gradient of $\Omega$ with respect to variations in the unitary matrices
 $\mathbf{U}^{(\mathbf{k})}$, and the last is the time taken (in
 seconds). Depending on the input parameters used, the procedure either
 runs for `num_iter` iterations, or a convergence criterion is applied on
-$\Omega$. See Section [2.8](#sec:wann_params){reference-type="ref"
-reference="sec:wann_params"} for details.
+$\Omega$. See Section [Wannierise Parameters](../parameters/#wannierise-parameters) for details.
 
 Similarly, the command
 
