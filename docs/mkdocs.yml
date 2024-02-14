@@ -27,6 +27,7 @@ nav:
         - "Notes on interpolations": "user_guide/wannier90/notes_interpolations.md"
         - "Sample inputs": "user_guide/wannier90/sample_inputs.md"
       - 'postw90.x':
+        - "Parameters": "user_guide/postw90/postw90params.md"
         - "Berry": "user_guide/postw90/berry.md"
         - "Gyrotropic": "user_guide/postw90/gyrotropic.md"
         - "BoltzWann": "user_guide/postw90/boltzwann.md"

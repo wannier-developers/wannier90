@@ -10,9 +10,7 @@ $\mathrm{\bm{S}}$ and the coefficient $\mathrm{\bm{K}}$ (defined below;
 it is the main ingredient of the thermal conductivity).
 
 The list of parameters of the `BoltzWann` module are summarized in
-<!-- TODO: link the table in sec:wannier -->
-Table [\[parameter_keywords_bw\]](#parameter_keywords_bw){reference-type="ref"
-reference="parameter_keywords_bw"}. 
+Table [ `BoltzWann` Parameters](../postw90params/#boltzwann-parameters). 
 An example of a Boltzmann transport
 calculation can be found in the `wannier90` Tutorial.
 
@@ -21,9 +19,7 @@ calculation can be found in the `wannier90` Tutorial.
     material, with periodicity along all three spatial directions. If you
     are interested in studying 2D systems, set the correct value for the
     `boltz_2d_dir` variable 
-    <!-- TODO: linke with sec in wannier -->
-    (see Sec. [\[sec:boltz2ddir\]](#sec:boltz2ddir){reference-type="ref"
-    reference="sec:boltz2ddir"} for the documentation). 
+    (see Sec. [boltz_2d_dir](../postw90params/#sec:boltz2ddir) for the documentation). 
     This is important
     for the evaluation of the Seebeck coefficient.
 

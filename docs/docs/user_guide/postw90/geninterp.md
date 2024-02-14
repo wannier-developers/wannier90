@@ -8,8 +8,7 @@ points provided by the user.
 The list of parameters of the Generic Band Interpolation module are
 summarized in
 <!-- TODO: link the table in sec wannier -->
-Table [\[parameter_keywords_geninterp\]](#parameter_keywords_geninterp){reference-type="ref"
-reference="parameter_keywords_geninterp"}. 
+Table [ `geninterp` Parameters](../postw90params/#geninterp-parameters). 
 The list of input $k$ points
 for which the band have to be calculated is read from the file named
 `seedname_geninterp.kpt`. The format of this file is described below.
