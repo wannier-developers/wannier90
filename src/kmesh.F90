@@ -92,8 +92,9 @@ contains
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
     real(kind=dp) :: bweight(max_shells)
-    real(kind=dp) :: dist, bb1, bbn, ddelta
     real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
+    real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
+    real(kind=dp) :: dnn(kmesh_input%search_shells)
     real(kind=dp) :: recip_lattice(3, 3), volume
     real(kind=dp) :: vkpp(3), vkpp2(3)
     real(kind=dp) :: wb_local(num_nnmax)
@@ -101,11 +102,11 @@ contains
     integer, allocatable :: multi(:)
     integer, allocatable :: nnlist_tmp(:, :), nncell_tmp(:, :, :) ![ysl]
     integer :: ifound, counter, na, nap, loop_s, loop_b, shell !, nbvec, bnum
-    integer :: ifpos, ifneg, ierr
+    integer :: ifpos, ifneg, ierr, multi(kmesh_input%search_shells)
     integer :: lmn(3, (2*nsupcell + 1)**3) ! Order in which to search the cells (ordered in dist from origin)
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnshell(num_kpts, kmesh_input%search_shells)
-    integer :: nnsh, nn, nnx, loop, i, j, nstar, nlarge
+    integer :: nnsh, nn, nnx, loop, i, j
 
     if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: get', timer)
 
@@ -128,91 +129,36 @@ contains
     ! find the distance between k-point 1 and its nearest-neighbour shells
     ! if we have only one k-point, the n-neighbours are its periodic images
 
-    !dnn0 = 0.0_dp
-    !dnn1 = eta
-    !ndnntot = 0
-    !do nlist = 1, kmesh_input%search_shells
-    !  do nkp = 1, num_kpts
-    !    do loop = 1, (2*nsupcell + 1)**3
-    !      l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
-    !      !
-    !      vkpp = kpt_cart(:, nkp) + matmul(lmn(:, loop), recip_lattice)
-    !      dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
-    !                  + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
-    !      if ((dist .gt. kmesh_input%tol) .and. (dist .gt. dnn0 + kmesh_input%tol)) then
-    !        if (dist .lt. dnn1 - kmesh_input%tol) then
-    !          dnn1 = dist  ! found a closer shell
-    !          counter = 0
-    !        end if
-    !        if (dist .gt. (dnn1 - kmesh_input%tol) .and. dist .lt. (dnn1 + kmesh_input%tol)) then
-    !          counter = counter + 1 ! count the multiplicity of the shell
-    !        end if
-    !      end if
-    !    enddo
-    !  enddo
-    !  if (dnn1 .lt. eta - kmesh_input%tol) ndnntot = ndnntot + 1
-    !  dnn(nlist) = dnn1
-    !  multi(nlist) = counter
-    !  dnn0 = dnn1
-    !  dnn1 = eta
-    !enddo
-
-    nstar = (2*nsupcell + 1)**3
-    allocate (dnn(nstar*num_kpts), stat=ierr) ! max necessary size fixme (jj) -- too large!
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating dnn in kmesh_get', comm)
-      return
-    endif
-
-    allocate (multi(nstar*num_kpts)) ! max necessary size fixme (jj) -- too large!
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating multi in kmesh_get', comm)
-      return
-    endif
-
-    dnn(:) = eta
-    multi(:) = 0
-    counter = 1
-    do nkp = 1, num_kpts
-      do loop = 1, nstar
-        ! k' = k + (l,m,n) * G
-        ! v = k1 - k'
-        vkpp = kpt_cart(:, 1) - kpt_cart(:, nkp) - matmul(lmn(:, loop), recip_lattice)
-        dist = sqrt(sum(vkpp*vkpp))
-        if (dist < kmesh_input%tol) cycle ! ignore zeros
-
-        nlist = 1
-        nlarge = 1
-        do while (nlist < counter)
-          if (dist > (dnn(nlist) - kmesh_input%tol) .and. dist < (dnn(nlist) + kmesh_input%tol)) then
-            multi(nlist) = multi(nlist) + 1
-            exit
-          endif
-          if (dist > dnn(nlist)) nlarge = nlarge + 1
-          nlist = nlist + 1
+    dnn0 = 0.0_dp
+    dnn1 = eta
+    ndnntot = 0
+    do nlist = 1, kmesh_input%search_shells
+      do nkp = 1, num_kpts
+        do loop = 1, (2*nsupcell + 1)**3
+          l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
+          !
+          vkpp = kpt_cart(:, nkp) + matmul(lmn(:, loop), recip_lattice)
+          !dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
+          !            + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
+          dist = sqrt(vkpp(1)**2 + vkpp(2)**2 + vkpp(3)**2) !just assume a gamma-centred mesh JJ
+          !
+          if ((dist .gt. kmesh_input%tol) .and. (dist .gt. dnn0 + kmesh_input%tol)) then
+            if (dist .lt. dnn1 - kmesh_input%tol) then
+              dnn1 = dist  ! found a closer shell
+              counter = 0
+            end if
+            if (dist .gt. (dnn1 - kmesh_input%tol) .and. dist .lt. (dnn1 + kmesh_input%tol)) then
+              counter = counter + 1 ! count the multiplicity of the shell
+            end if
+          end if
         enddo
-        if (nlist == counter .and. nlarge < kmesh_input%search_shells + 1) then
-          dnn(nlist) = dist
-          multi(nlist) = 1
-          counter = counter + 1
-        endif
       enddo
+      if (dnn1 .lt. eta - kmesh_input%tol) ndnntot = ndnntot + 1
+      dnn(nlist) = dnn1
+      multi(nlist) = counter
+      dnn0 = dnn1
+      dnn1 = eta
     enddo
-
-    ! fixme(jj): brutish sorting
-    do i = 1, counter
-      do j = i + 1, counter
-        if (dnn(j) < dnn(i)) then
-          dist = dnn(i)
-          dnn(i) = dnn(j)
-          dnn(j) = dist
-          nlist = multi(i)
-          multi(i) = multi(j)
-          multi(j) = nlist
-        endif
-      enddo
-    enddo
-    ndnntot = min(counter, kmesh_input%search_shells)
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
