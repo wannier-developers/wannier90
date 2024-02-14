@@ -134,7 +134,6 @@ contains
       return
     endif
     eigval_opt(1:num_bands, 1:num_kpts) = eigval(1:num_bands, 1:num_kpts)
-    !write(*,*)"JJ:",num_bands, num_kpts, eigval(1,1), eigval_opt(1,1)
 
     ! Set up energy windows
     call dis_windows(dis_spheres, dis_manifold, eigval_opt, kpt_latt, recip_lattice, indxfroz, &
