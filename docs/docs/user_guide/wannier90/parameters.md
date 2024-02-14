@@ -197,7 +197,7 @@ window.
 |        dist_cutoff         |  P   | Cut-off for the distance between WF                          |
 |      dist_cutoff_mode      |  S   | Dimension in which the distance between WF is calculated     |
 |  translation_centre_frac   |  R   | Centre of the unit cell to which final WF are translated     |
-| use_ws_distance |  L   | Improve interpolation using minimum distance between WFs, see [Chap. 9](../notes_interpolations)|
+| use_ws_distance |  L   | Improve interpolation using minimum distance between WFs, see Chap. [Some notes on the interpolation](../notes_interpolations)|
 | ws_distance_tol                            |  R   | Absolute tolerance for the distance to equivalent positions. |
 | ws_search_size                           |  I   | Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell |
 | write_u_matrices                           |  L   | Write $U^{(\bm{k})}$ and $U^{dis(\bm{k})}$ matrices to files |
@@ -369,9 +369,10 @@ end kpoints
 
 There is no default.
 
-**Note**: There is an utility provided with `wannier90`, called
-`kmesh.pl`, which helps to generate the explicit list of $k$ points
-required by `wannier90`. See Sec. [`kmesh.pl`](../../appendices/utilities#kmeshpl).
+!!! note
+    There is an utility provided with `wannier90`, called
+    `kmesh.pl`, which helps to generate the explicit list of $k$ points
+    required by `wannier90`. See Sec. [`kmesh.pl`](../../appendices/utilities#kmeshpl).
 
 ### `logical :: gamma_only`
 
@@ -572,9 +573,10 @@ $A_{mn}^{(\mathbf{k})}$.
 For additional information on the behavior and on the added block, see
 Sec. [`auto_projections` block](../postproc#auto_projections-block).
 
-**Note:** the interface code (e.g. `pw2wannier90.x`) must have at least
-one implementation of a method to automatically generate initial
-projections in order for this option to be usable.
+!!! note
+    the interface code (e.g. `pw2wannier90.x`) must have at least
+    one implementation of a method to automatically generate initial
+    projections in order for this option to be usable.
 
 The default value of this parameter is `false`.
 
@@ -693,10 +695,11 @@ To activate projectability disentanglement procedure, which selectively
 discard/disentangle/freeze state $\vert n \mathbf{k}\rangle$ based on
 its projectability onto some localized atomic orbitals.
 
-Note: this requires the `amn` file is properly normalized, i.e.,
-projectability computed from $A A^\dagger$ must be smaller than or equal
-to 1. The pseudo-atomic projection satisfies such requirement, see
-[Projections via pseudo-atomic orbitals in pw2wannier90](../projections#projections-via-pseudo-atomic-orbitals-in-pw2wannier90).
+!!! note 
+    this requires the `amn` file is properly normalized, i.e.,
+    projectability computed from $A A^\dagger$ must be smaller than or equal
+    to 1. The pseudo-atomic projection satisfies such requirement, see
+    [Projections via pseudo-atomic orbitals in pw2wannier90](../projections#projections-via-pseudo-atomic-orbitals-in-pw2wannier90).
 
 Additionally, one can combine projectability disentanglement with energy
 disentanglement, i.e., enable both `dis_proj_min/max` and
@@ -1197,11 +1200,12 @@ quatity plotted is
 -   `down`. $|\psi|\times sign(Re\{\psi\})$ if
     `wannier_plot_spinor_phase = true`, otherwise $|\psi|$
 
-Note: making a visual representation of a spinor WF is not as
-straightforward as for a scalar WF. While a scalar WF is typically a
-real valued function, a spinor WF is a complex, two component spinor.
-`wannier90` is able to plot several different quantities derived from a
-spinor WF which should give you a good idea of the nature of the WF.
+!!! note 
+    making a visual representation of a spinor WF is not as
+    straightforward as for a scalar WF. While a scalar WF is typically a
+    real valued function, a spinor WF is a complex, two component spinor.
+    `wannier90` is able to plot several different quantities derived from a
+    spinor WF which should give you a good idea of the nature of the WF.
 
 ### `logical :: wannier_plot_spinor_phase`
 
@@ -1258,8 +1262,9 @@ options for this parameter are:
 
 -   `xmgrace`
 
-Note: it is possible to request output in both formats eg
-`bands_format = gnuplot xmgrace`
+!!! note
+    it is possible to request output in both formats eg
+    `bands_format = gnuplot xmgrace`
 
 ### `integer :: bands_plot_project(:)`
 

@@ -17,7 +17,7 @@ calculated using the Hamiltonian in the Wannier function basis of the
 system found by `wannier90`. Setting `tran_read_ht = TRUE`
 allows the user to provide an external Hamiltonian matrix file
 `seedname_htB.dat`, from which the properties are found. See
-Section [sec:post-p parameters](../parameters)
+Section [Post-Processing](../parameters#post-processing)
 for more details of the keywords required for such calculations.
 
 ### `transport_mode = lcr`
@@ -46,7 +46,7 @@ transport properties of an lcr system from a single
 external files provide in the `tran_read_ht = TRUE` case are
 instead built from the Wannier function basis directly. As such, strict
 rules apply to the system geometry, which is shown in
-Figure [7.1](#fig:2c2). These
+Figure [below](#fig:lcr-2c2). These
 rules are as follows:
 
 -   Left and right leads must be identical and periodic.
@@ -121,7 +121,7 @@ $\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ are required. These are found in
 an additional file (`seedname.unkg`) that should be provided by the
 interface between the DFT code and `wannier90` . A detailed description
 of this file may be found in
-Section [`seedname.unkg`](../files/#seedname.unkg).
+Section [`seedname.unkg`](../files/#seednameunkg).
 
 Additionally, the following keywords are also required in the input
 file:

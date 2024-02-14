@@ -101,7 +101,7 @@ crystallographic co-ordinates relative to the direct lattice vectors.
 `l  mr  r`: three integers; $l$ and $m_\mathrm{r}$ specify the angular
 part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and $\mathrm{r}$
 specifies the radial part $R_{\mathrm{r}}(r)$ of the projection function
-(see Tables [Angular functions](../projections/#angular-functions), [Hybrids](../projections#hybrids) and [Radial functions](../projections/#radial-functions).
+(see Tables [Angular functions](../projections/#angular-functions), [Hybrids](../projections#hybrids) and [Radial functions](../projections/#radial-functions)).
 
 `z-axis`: three real numbers; default is `0.0 0.0 1.0`; defines the axis
 from which the polar angle $\theta$ in spherical polar coordinates is

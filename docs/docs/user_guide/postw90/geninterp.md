@@ -7,7 +7,6 @@ points provided by the user.
 
 The list of parameters of the Generic Band Interpolation module are
 summarized in
-<!-- TODO: link the table in sec wannier -->
 Table [ `geninterp` Parameters](../postw90params/#geninterp-parameters). 
 The list of input $k$ points
 for which the band have to be calculated is read from the file named
