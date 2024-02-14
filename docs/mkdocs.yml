@@ -34,6 +34,14 @@ nav:
       - "Appendices": 
         - "Utilities": "user_guide/appendices/utilities.md"
         - "FAQs": "user_guide/appendices/faq.md"
+   - 'Tutorial':
+      - 'Preliminaries': "tutorial/preliminaries.md"
+      - '1: Gallium Arsenide &#151; MLWFs for the valence bands': "tutorial/tutorial_1.md"
+      - '2: Lead &#151; Wannier-interpolated Fermi surface': "tutorial/tutorial_2.md"
+      - '3: Silicon &#151; Disentangled MLWF': "tutorial/tutorial_3.md"
+      - '4: Copper &#151; Fermi surface, orbital character of energy bands': "tutorial/tutorial_4.md"
+      - 'Tutorials with the `pwscf` Interface': "tutorial/with_pwscf.md"
+      - '5: Diamond &#151; MLWFs for the valence bands': "tutorial/tutorial_5.md"
 
 theme:
   name: material
