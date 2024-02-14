@@ -81,10 +81,12 @@ both the up- and down-spin channels, effectively doubling their number.
     values.
 
     ```bash title="Terminal"
-    postw90.x Fe` (serial execution)
-    mpirun -np 8 postw90.x Fe` (example of parallel execution with 8
-    MPI processes)
+    postw90.x Fe # (1)! 
+    mpirun -np 8 postw90.x Fe # (2)!
     ```
+
+    1.    serial execution
+    2.    example of parallel execution with 8 MPI processes
 
 In this tutorial we use the module `kpath` to plot the energy bands
 coloured by the expectation value of the spin along \[001\]:
@@ -126,7 +128,7 @@ kslice = true
 
 kslice_task = fermi_lines
 
-fermi_energy = \[insert your value here\]
+fermi_energy = [insert your value here]
 
 kslice_corner = 0.0 0.0 0.0
 
@@ -248,3 +250,5 @@ may want to increase `kslice_2dkmesh`.)
     and re-run `postw90`. This approach has the advantage that it does
     not require the `Fe.spn` file.
 
+[^2]: Please note the following counterintuitive feature in `pwscf`: in order to obtain a ground state with magnetization
+along the positive z-axis, one should use a negative value for the variable `starting_magnetization`.
