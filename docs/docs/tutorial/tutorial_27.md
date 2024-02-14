@@ -108,13 +108,20 @@ conduction bands are entangled with other high-energy bands and the
 columns of the density matrix are not exponentially localized by
 construction. A modified density matrix is required in this
 case[@LinLin-ArXiv2017], and it is defined as:
-$$P(\mathbf{r},\mathbf{r}') = \sum_{n,\mathbf{k}} \psi_{n\mathbf{k}}(\mathbf{r})f(\varepsilon_{n,\mathbf{k}})\psi_{n\mathbf{k}}^\ast(\mathbf{r}'),$$
+
+$$
+P(\mathbf{r},\mathbf{r}') = \sum_{n,\mathbf{k}} \psi_{n\mathbf{k}}(\mathbf{r})f(\varepsilon_{n,\mathbf{k}})\psi_{n\mathbf{k}}^\ast(\mathbf{r}'),
+$$
+
 where $\psi_{n\mathbf{k}}$ and $\varepsilon_{n,\mathbf{k}}$ are the
 energy eigestates and eigenvalues from the first-principle
 calculation respectively. The function
 $f(\varepsilon_{n,\mathbf{k}})$ contains two free parameters $\mu$
 and $\sigma$ and is defined as a complementary error function:
-$$f(\varepsilon_{n,\mathbf{k}}) = \frac{1}{2}\mathrm{erfc}\left(\frac{\varepsilon_{n,\mathbf{k}} - \mu}{\sigma}\right).$$
+
+$$
+f(\varepsilon_{n,\mathbf{k}}) = \frac{1}{2}\mathrm{erfc}\left(\frac{\varepsilon_{n,\mathbf{k}} - \mu}{\sigma}\right).
+$$
 
 1.  Copy the input files `si.scf` and `si_12bands.nscf` from the
     `input_files` folder into the `erfc` folder
@@ -183,7 +190,11 @@ previous point, we need to define a modified density
 matrix[@LinLin-ArXiv2017]. Since we are only interested in a subset
 of the conduction states, within a bounded energy region, a good
 choice for $f(\varepsilon_{n,\mathbf{k}})$ is:
-$$f(\varepsilon_{n,\mathbf{k}}) = \exp\left(-\frac{(\varepsilon_{n,\mathbf{k}} - \mu)^2}{\sigma^2}\right).$$
+
+$$
+f(\varepsilon_{n,\mathbf{k}}) = \exp\left(-\frac{(\varepsilon_{n,\mathbf{k}} - \mu)^2}{\sigma^2}\right).
+$$
+
 
 1.  Copy the input files `si.scf` and `si_12bands.nscf` from the
     `input_files` directory into the `gaussian` folder
