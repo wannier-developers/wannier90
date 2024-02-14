@@ -204,6 +204,8 @@ contains
     integer :: nk
     logical :: found
 
+    found = .false.
+
     call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .true., error, comm)
     if (allocated(error)) return
 
