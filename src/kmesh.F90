@@ -88,7 +88,6 @@ contains
 
     ! local variables
     real(kind=dp), allocatable :: bvec_tmp(:, :)
-    real(kind=dp), allocatable :: dnn(:)
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
     real(kind=dp) :: bweight(max_shells)
@@ -99,7 +98,6 @@ contains
     real(kind=dp) :: vkpp(3), vkpp2(3)
     real(kind=dp) :: wb_local(num_nnmax)
 
-    integer, allocatable :: multi(:)
     integer, allocatable :: nnlist_tmp(:, :), nncell_tmp(:, :, :) ![ysl]
     integer :: ifound, counter, na, nap, loop_s, loop_b, shell !, nbvec, bnum
     integer :: ifpos, ifneg, ierr, multi(kmesh_input%search_shells)
@@ -728,18 +726,6 @@ contains
 
     endif
 ![ysl-e]
-
-    deallocate (dnn, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating dnn in kmesh_get', comm)
-      return
-    endif
-
-    deallocate (multi, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating multi in kmesh_get', comm)
-      return
-    endif
 
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then
