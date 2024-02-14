@@ -8,56 +8,74 @@
 
 -   Input files:
 
-    -   `GaAs.scf` *The `pwscf` input file for ground state calculation*
+    \-   `GaAs.scf` *The `pwscf` input file for ground state calculation*
 
-    -   `GaAs.nscf` *The `pwscf` input file to obtain Bloch states on a
+    \-   `GaAs.nscf` *The `pwscf` input file to obtain Bloch states on a
         uniform grid*
 
-    -   `GaAs.pw2wan` *The input file for* `pw2wannier90`
+    \-   `GaAs.pw2wan` *The input file for* `pw2wannier90`
 
-    -   `GaAs.win` *The* `wannier90` *and* `postw90` *input file*
+    \-   `GaAs.win` *The* `wannier90` *and* `postw90` *input file*
 
-    1.  Run `pwscf` to obtain the ground state of Gallium Arsenide
+&nbsp;
 
-        `pw.x < GaAs.scf > scf.out`
+1.  Run `pwscf` to obtain the ground state of Gallium Arsenide
 
-    2.  Run `pwscf` to obtain the ground state of Gallium Arsenide
+    ```bash title="Terminal"
+    pw.x < GaAs.scf > scf.out
+    ```
 
-        `pw.x < GaAs.nscf > nscf.out`
+2.  Run `pwscf` to obtain the ground state of Gallium Arsenide
 
-    3.  Run `Wannier90` to generate a list of the required overlaps
-        (written into the `GaAs.nnkp` file)
+    ```bash title="Terminal"
+    pw.x < GaAs.nscf > nscf.out
+    ```
 
-        `wannier90.x -pp GaAs`
+3.  Run `Wannier90` to generate a list of the required overlaps
+    (written into the `GaAs.nnkp` file)
 
-    4.  Run `pw2wannier90` to compute:
+    ```bash title="Terminal"
+    wannier90.x -pp GaAs
+    ```
 
-        -   The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$
-            between spinor Bloch states (written in the `GaAs.mmn` file)
+4.  Run `pw2wannier90` to compute:
 
-        -   The projections for the starting guess (written in the
-            `GaAs.amn` file)
+    -   The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$
+        between spinor Bloch states (written in the `GaAs.mmn` file)
 
-        `pw2wannier90.x < GaAs.pw2wan > pw2wan.out`
+    -   The projections for the starting guess (written in the
+        `GaAs.amn` file)
 
-    5.  Run `wannier90` to compute MLWFs
+    ```bash title="Terminal"
+    pw2wannier90.x < GaAs.pw2wan > pw2wan.out
+    ```
 
-        `wannier90.x GaAs`
+5.  Run `wannier90` to compute MLWFs
 
-    6.  Run `postw90` to compute nonlinear shift current
+    ```bash title="Terminal"
+    wannier90.x GaAs
+    ```
 
-        `postw90.x GaAs` (serial execution)
+6.  Run `postw90` to compute nonlinear shift current
 
-        `mpirun -np 8 postw90.x GaAs` (example of parallel execution
-        with 8 MPI processes)
+    ```bash title="Terminal"
+    postw90.x GaAs` # (1)! 
+
+    mpirun -np 8 postw90.x GaAs  # (2)! 
+    ```
+    1.    serial execution
+    2.    example of parallel execution with 8 MPI processes
 
 ## Shift current $\sigma^{abc}$ {#shift-current-sigmaabc .unnumbered}
 
 The shift current tensor of GaAs has only one independent component that
 is finite, namely $\sigma^{xyz}$. For its computation, set
 
-    berry = true
-    berry_task = sc
+
+```vi title="Input file"
+berry = true
+berry_task = sc
+```
 
 Like the linear optical conductivity, the shift current is a
 frequency-dependent quantity. The frequency window and step is
@@ -68,11 +86,15 @@ The shift current requires an integral over the Brillouin zone. The
 interpolated k-mesh is controlled by `berry_kmesh`, which has been set
 to
 
-    berry_kmesh = 100 100 100
+```vi title="Input file"
+berry_kmesh = 100 100 100
+```
 
 We also need to input the value of the Fermi level in eV:
 
-    fermi_energy = [insert your value here]
+```vi title="Input file"
+fermi_energy = [insert your value here]
+```
 
 Due to the sum over intermediate states involved in the calculation of
 the shift current, one needs to consider a small broadening parameter to
@@ -99,7 +121,12 @@ $b\leftrightarrow c$ index exchange). For plotting the only finite
 shift-current component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as
 in the upper panel of Fig. 3 in Ref. [@ibanez-azpiroz_ab_2018],
 
-    myshell> gnuplot
-    gnuplot> plot 'GaAs-sc_xyz.dat' u 1:2 w l
+```bash title="Terminal"
+gnuplot
+```
+
+```gnuplot title="Gnuplot shell"
+plot 'GaAs-sc_xyz.dat' u 1:2 w l
+```
 
 

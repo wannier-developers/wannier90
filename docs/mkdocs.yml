@@ -61,6 +61,11 @@ nav:
       - '22: Copper &#151; Symmetry-adapted Wannier function': "tutorial/tutorial_22.md"
       - '23: Silicon &#151; $G_0W_0$ bands structure interpolation': "tutorial/tutorial_23.md"
       - '24: Tellurium &#151; gyrotropic effect': "tutorial/tutorial_24.md"
+      - '25: Gallium Arsenide &#151; Nonlinear shift current': "tutorial/tutorial_25.md"
+      - '26: Gallium Arsenide &#151; Selective localization and constrained centres': "tutorial/tutorial_26.md"
+      - '27: Silicon &#151; Selected columns of density matrix algorithm for automated MLWFs': "tutorial/tutorial_27.md"
+      - '28: Diamond &#151; plotting of MLWFs using Gaussian cube format and VESTA': "tutorial/tutorial_28.md"
+      - '29: Platinum &#151; Spin Hall conductivity': "tutorial/tutorial_29.md"
 
 theme:
   name: material

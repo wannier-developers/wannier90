@@ -7,15 +7,15 @@
 
 -   Input files
 
-    \-    `Te.scf` *The `pwscf` input file for ground state
+    \-   `Te.scf` *The `pwscf` input file for ground state
         calculation*
 
-    \-    `Te.nscf` *The `pwscf` input file to obtain Bloch
+    \-   `Te.nscf` *The `pwscf` input file to obtain Bloch
         states on a uniform grid*
 
-    \-    `Te.pw2wan` *The input file for `pw2wannier90`*
+    \-   `Te.pw2wan` *The input file for `pw2wannier90`*
 
-    \-    `Te.win` *The `wannier90` input file*
+    \-   `Te.win` *The `wannier90` input file*
 
 To make things easy, the example treats Te without spin-orbit
 
