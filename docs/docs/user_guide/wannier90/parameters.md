@@ -28,7 +28,7 @@ administrator.
 
 Note also that this requires that the `wannier90.x` executable has been
 compiled in its parallel version (follow the instructions in the file
-`README.install` in the main directory of the wannier90 distribution)
+`README.install` in the main directory of the `wannier90` distribution)
 and that the MPI libraries and binaries are installed and correctly
 configured on your machine.
 
@@ -52,8 +52,7 @@ num_wann : 4
 A logical keyword can be set to `true` using any of the following
 strings: `T`, `true`, `.true.`.
 
-For further examples see Section [10.1](#winfile){reference-type="ref"
-reference="winfile"} and the the `wannier90` Tutorial.
+For further examples see Section [Master input file: `seedname.win`](../sample_inputs#winfile) and the the `wannier90` Tutorial.
 
 ## Keyword List
 
@@ -110,23 +109,17 @@ value, L for a logical value and S for a text string.
 translate_home_cell only relevant if write_xyz is `.true.`
 
 
-<div class="center">
-
-<div id="parameter_keywords4">
-
-|                            |      |                                                                        |
-|:--------------------------:|:----:|:-----------------------------------------------------------------------|
+### Disentanglement Parameters
 |          Keyword           | Type | Description                                                            |
-|                            |      |                                                                        |
-| Disentanglement Parameters |      |                                                                        |
+|:--------------------------:|:----:|:-----------------------------------------------------------------------|
 |        dis_win_min         |  P   | Bottom of the outer energy window                                      |
 |        dis_win_max         |  P   | Top of the outer energy window                                         |
 |        dis_froz_min        |  P   | Bottom of the inner (frozen) energy window                             |
 |        dis_froz_max        |  P   | Top of the inner (frozen) energy window                                |
-|        dis_num_iter        |  I   | Number of iterations for the minimisation of $\omi$                    |
-|       dis_mix_ratio        |  R   | Mixing ratio during the minimisation of $\omi$                         |
-|        dis_conv_tol        |  R   | The convergence tolerance for finding $\omi$                           |
-|      dis_conv_window       |  I   | The number of iterations over which convergence of $\omi$ is assessed. |
+|        dis_num_iter        |  I   | Number of iterations for the minimisation of $\Omega_{\mathrm{I}}$                    |
+|       dis_mix_ratio        |  R   | Mixing ratio during the minimisation of $\Omega_{\mathrm{I}}$                         |
+|        dis_conv_tol        |  R   | The convergence tolerance for finding $\Omega_{\mathrm{I}}$                           |
+|      dis_conv_window       |  I   | The number of iterations over which convergence of $\Omega_{\mathrm{I}}$ is assessed. |
 |      dis_spheres_num       |  I   | Number of spheres in k-space where disentaglement is performed         |
 |   dis_spheres_first_wann   |  I   | Index of the first band to be considered a Wannier function            |
 |        dis_spheres         |  R   | List of centres and radii, for disentanglement only in spheres         |
@@ -135,19 +128,9 @@ translate_home_cell only relevant if write_xyz is `.true.`
 types are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 
-</div>
-
-</div>
-
-<div class="center">
-
-<div id="parameter_keywords5">
-
-|                       |      |                                                                                                                  |
-|:---------------------:|:----:|:-----------------------------------------------------------------------------------------------------------------|
+### Wannierise Parameters
 |        Keyword        | Type | Description                                                                                                      |
-|                       |      |                                                                                                                  |
-| Wannierise Parameters |      |                                                                                                                  |
+|:---------------------:|:----:|:-----------------------------------------------------------------------------------------------------------------|
 |       num_iter        |  I   | Number of iterations for the minimisation of $\Omega$                                                            |
 |     num_cg_steps      |  I   | During the minimisation of $\Omega$ the number of Conjugate Gradient steps before resetting to Steepest Descents |
 |      conv_window      |  I   | The number of iterations over which convergence of $\Omega$ is assessed                                          |
@@ -179,17 +162,9 @@ file. \*\*Cannot be used in conjunction with disentanglement.
 \*\*\*Cannot be used in conjunction with the inner (frozen) energy
 window.
 
-</div>
-
-</div>
-
-<div id="parameter_keywords6">
-
-|                            |      |                                                              |
-|:--------------------------:|:----:|:-------------------------------------------------------------|
+### Plot Parameters
 |          Keyword           | Type | Description                                                  |
-|                            |      |                                                              |
-|      Plot Parameters       |      |                                                              |
+|:--------------------------:|:----:|:-------------------------------------------------------------|
 |        wannier_plot        |  L   | Plot the WF                                                  |
 |     wannier_plot_list      |  I   | List of WF to plot                                           |
 |   wannier_plot_supercell   |  I   | Size of the supercell for plotting the WF                    |
@@ -213,37 +188,28 @@ window.
 |      fermi_energy_max      |  P   | Upper limit of the Fermi energy range                        |
 |     fermi_energy_step      |  R   | Step for increasing the Fermi energy in the specified range  |
 | fermi_surface_plot_format  |  S   | File format for the Fermi surface plot                       |
-|                            |  L   |                                                              |
-|                            |  L   |                                                              |
-|                            |  L   |                                                              |
-|                            |  L   |                                                              |
-|                            |  L   |                                                              |
+| hr_plot                    |  L   | This parameter is not used anymore. Use write_hr instead. |
+| write_hr                  |  L   | Write the Hamiltonian in the WF basis  |
+| write_rmn                  |  L   | Write the position operator in the WF basis |
+| write_bvec                 |  L   | Write to file the matrix elements of the bvectors and their weights |
+| write_tb                   |  L   | Write lattice vectors, Hamiltonian, and position operator in WF basis |
 |         hr_cutoff          |  P   | Cut-off for the absolute value of the Hamiltonian            |
 |        dist_cutoff         |  P   | Cut-off for the distance between WF                          |
 |      dist_cutoff_mode      |  S   | Dimension in which the distance between WF is calculated     |
 |  translation_centre_frac   |  R   | Centre of the unit cell to which final WF are translated     |
-|                            |  L   |                                                              |
-|                            |  R   |                                                              |
-|                            |  I   |                                                              |
-|                            |  L   |                                                              |
-|                            |      |                                                              |
+| use_ws_distance |  L   | Improve interpolation using minimum distance between WFs, see [Chap. 9](../notes_interpolations)|
+| ws_distance_tol                            |  R   | Absolute tolerance for the distance to equivalent positions. |
+| ws_search_size                           |  I   | Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell |
+| write_u_matrices                           |  L   | Write $U^{(\bm{k})}$ and $U^{dis(\bm{k})}$ matrices to files |
 
 `seedname.win` file keywords controlling the plotting. Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. \* Only
 applies when wannier_plot_format is `cube`.
 
-</div>
-
-<div class="center">
-
-<div id="parameter_keywords7">
-
-|                          |      |                                                           |
-|:------------------------:|:----:|:----------------------------------------------------------|
+### Transport Parameters 
 |         Keyword          | Type | Description                                               |
-|                          |      |                                                           |
-|   Transport Parameters   |      |                                                           |
+|:------------------------:|:----:|:----------------------------------------------------------|
 |        transport         |  L   | Calculate quantum conductance and density of states       |
 |      transport_mode      |  S   | Bulk or left-lead_conductor_right-lead calculation        |
 |       tran_win_min       |  P   | Bottom of the energy window for transport calculation     |
@@ -273,9 +239,6 @@ applies when wannier_plot_format is `cube`.
 represented by, I for a integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
 
-</div>
-
-</div>
 
 ## System
 
@@ -295,12 +258,20 @@ Default `num_bands`=`num_wann`
 
 The cell lattice vectors should be specified in Cartesian coordinates.
 
-`begin unit_cell_cart`\
-`[units]` $$\begin{array}{ccc}
+```
+begin unit_cell_cart
+[units]
+``` 
+
+\begin{array}{ccc}
 A_{1x} & A_{1y} & A_{1z} \\
 A_{2x} & A_{2y} & A_{2z} \\
 A_{3x} & A_{3y} & A_{3z}
-\end{array}$$ `end unit_cell_cart`
+\end{array}
+
+```
+end unit_cell_cart
+```
 
 Here $A_{1x}$ is the $x$-component of the first lattice vector
 $\mathbf{A}_1$, $A_{2y}$ is the $y$-component of the second lattice
@@ -320,12 +291,20 @@ the input file.
 
 #### Cartesian coordinates
 
-`begin atoms_cart`\
-`[units]` $$\begin{array}{cccc}
+```
+begin atoms_cart
+[units]
+``` 
+
+\begin{array}{cccc}
 P  & R^{P}_{x} & R^{P}_{y} & R^{P}_{z} \\
 Q  & R^{Q}_{x} & R^{Q}_{y} & R^{Q}_{z} \\
 \vdots
-\end{array}$$ `end atoms_cart`
+\end{array}
+ 
+```
+end atoms_cart
+```
 
 The first entry on a line is the atomic symbol. The next three entries
 are the atom's position $\mathbf{R}=(R_x , R_y, R_z)$ in Cartesian
@@ -335,11 +314,19 @@ not present, the default is `ang`.
 
 #### Fractional coordinates
 
-`begin atoms_frac` $$\begin{array}{cccc}
+```
+begin atoms_frac
+```
+
+\begin{array}{cccc}
 P  & F^{P}_{1} & F^{P}_{2} & F^{P}_{3} \\
 Q  & F^{Q}_{1} & F^{Q}_{2} & F^{Q}_{3} \\
 \vdots
-\end{array}$$ `end atoms_frac`
+\end{array}
+
+```
+end atoms_frac
+```
 
 The first entry on a line is the atomic symbol. The next three entries
 are the atom's position in fractional coordinates $\mathbf{F} = F_1
@@ -351,7 +338,9 @@ the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$.
 Dimensions of the regular (Monkhorst-Pack) k-point mesh. For example,
 for a $2\times2\times2$ grid:
 
-`mp_grid : 2  2  2`
+```
+mp_grid : 2  2  2
+```
 
 No default.
 
@@ -364,19 +353,25 @@ primitive reciprocal lattice vectors $\mathbf{B}_{i}$, $i \in [1,3]$.
 The position of each k-point in this list assigns its numbering; the
 first k-point is k-point 1, the second is k-point 2, and so on.
 
-`begin kpoints`\
-$$\begin{array}{ccc}
+```
+begin kpoints
+```
+
+\begin{array}{ccc}
  K^{1}_{1} & K^{1}_{2} & K^{1}_{3} \\
  K^{2}_{1} & K^{2}_{2} & K^{2}_{3} \\
 \vdots
-\end{array}$$ `end kpoints`
+\end{array}
+
+```
+end kpoints
+```
 
 There is no default.
 
 **Note**: There is an utility provided with `wannier90`, called
 `kmesh.pl`, which helps to generate the explicit list of $k$ points
-required by `wannier90`. See Sec. [1.1](#sec:kmesh){reference-type="ref"
-reference="sec:kmesh"}.
+required by `wannier90`. See Sec. [`kmesh.pl`](../../appendices/utilities#kmeshpl).
 
 ### `logical :: gamma_only`
 
@@ -406,9 +401,17 @@ nearest neighbours. $N_{\mathrm{sh}}$ shells of neighbours are included
 in the finite-difference formula, with $M_s$ vectors in the
 $s^{\mathrm{th}}$ shell. For $\nabla_{{\bf k}}$ to be correct to linear
 order, we require that the following equation is satisfied (Eq. B1 of
-Ref. [@marzari-prb97]): $$\label{eq:B1}
+Ref. [@marzari-prb97]): 
+
+$$
+\begin{equation}
+\label{eq:B1}
 \sum_{s}^{N_{\mathrm{sh}}} w_s \sum_i^{M_{\mathrm{s}}}
-b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:,$$ where
+b_{\alpha}^{i,s} b_{\beta}^{i,s} = \delta_{\alpha\beta}\:,
+\end{equation}
+$$
+
+where
 ${\bf b}^{i,s}$, $i\in[1,M_s]$, is the $i^{\mathrm{th}}$ vector
 belonging to the $s^{\mathrm{th}}$ shell with associated weight $w_s$,
 and $\alpha$ and $\beta$ run over the three Cartesian indices.
@@ -423,7 +426,7 @@ automatically.
 
 Specifies the number of shells of neighbours over which to search in
 attempting to determine an automatic solution to the B1 condition
-Eq. [\[eq:B1\]](#eq:B1){reference-type="ref" reference="eq:B1"}. Larger
+Eq. $\eqref{eq:B1}$. Larger
 values than the default may be required in special cases e.g. for very
 long thin unit cells.
 
@@ -432,10 +435,10 @@ The default value is 36.
 ### `logical :: skip_B1_tests`
 
 If set to `.true.`, does not check the B1 condition
-Eq. [\[eq:B1\]](#eq:B1){reference-type="ref" reference="eq:B1"}. This
+Eq. $\eqref{eq:B1}$. This
 should *only* be used if one knows why the B1 condition should not be
 verified. A typical use of this flag is in conjunction with the Z2PACK
-code: <http://www.physics.rutgers.edu/z2pack/>.
+code: <https://z2pack.greschd.ch/en/latest/>.
 
 The default value is `.false.`.
 
@@ -479,16 +482,17 @@ generate an initial guess for the unitary transformations. This data
 will be written in the `seedname.nnkp` file to be used by a
 first-principles code.
 
-`begin projections`\
-.\
-.\
-`end projections`
+```
+begin projections
+.  
+.  
+end projections
+```
 
 If `guiding_centres`=`true`, then the projection centres are used as the
 guiding centres in the Wannierisation routine.
 
-For details see Section [3.1](#sec:proj){reference-type="ref"
-reference="sec:proj"}.
+For details see Section [Specification of projections in `seedname.win`](../projections#sec:proj).
 
 ## Job Control
 
@@ -566,14 +570,13 @@ to instruct the interface code to automatically generate the
 $A_{mn}^{(\mathbf{k})}$.
 
 For additional information on the behavior and on the added block, see
-Sec. [\[sec:auto-projections-block\]](#sec:auto-projections-block){reference-type="ref"
-reference="sec:auto-projections-block"}.
+Sec. [`auto_projections` block](../postproc#auto_projections-block).
 
 **Note:** the interface code (e.g. `pw2wannier90.x`) must have at least
 one implementation of a method to automatically generate initial
 projections in order for this option to be usable.
 
-The default value of this parameter is $\verb#false#$.
+The default value of this parameter is `false`.
 
 ### `character(len=20) :: restart`
 
@@ -602,7 +605,7 @@ will not be transferable between all machine architectures and formatted
 files should be used if transferability is required (i.e., for test
 cases).
 
-The default value of this parameter is $\verb#false#$.
+The default value of this parameter is `false`.
 
 ### `character(len=20) :: spin`
 
@@ -693,7 +696,7 @@ its projectability onto some localized atomic orbitals.
 Note: this requires the `amn` file is properly normalized, i.e.,
 projectability computed from $A A^\dagger$ must be smaller than or equal
 to 1. The pseudo-atomic projection satisfies such requirement, see
-[3.6](#sec:proj_pdwf){reference-type="ref" reference="sec:proj_pdwf"}.
+[Projections via pseudo-atomic orbitals in pw2wannier90](../projections#projections-via-pseudo-atomic-orbitals-in-pw2wannier90).
 
 Additionally, one can combine projectability disentanglement with energy
 disentanglement, i.e., enable both `dis_proj_min/max` and
@@ -794,12 +797,19 @@ coordinate $\mathbf{K}^i$ must the followed by the respectice sphere
 radius $r_{i}$ in inverse angstrom (on the same line).
 
 The number of lines must be equal to `dis_spheres_num`.
+```
+begin dis_spheres
+```
 
-`begin dis_spheres` $$\begin{array}{cccc}
+\begin{array}{cccc}
  K^{1}_{1} & K^{1}_{2} & K^{1}_{3} & r_{1} \\
  K^{2}_{1} & K^{2}_{2} & K^{2}_{3} & r_{2} \\
 \vdots
-\end{array}$$ `end dis_spheres`
+\end{array}
+
+```
+end dis_spheres
+```
 
 There is no default.
 
@@ -892,7 +902,7 @@ The default is 1
 
 ### `logical :: write_r2mn`
 
-If $\verb#write_r2mn#=\verb#true#$, then the matrix elements
+If `write_r2mn = true`, then the matrix elements
 $\langle m|r^2|n\rangle$ (where $m$ and $n$ refer to WF) are written to
 file `seedname.r2mn` at the end of the Wannierisation procedure.
 
@@ -910,14 +920,14 @@ manifests itself as complex WF with a large spread. By using guiding
 centres the code will attempt to make a consistent choice of branch cut.
 Experience shows that with `guiding_centres` set to true this problem is
 avoided and doing so does not cause any problems. For this reason we
-recommend setting `guiding_centres` to true where possible (it is only
+recommend setting `guiding_centres` to `true` where possible (it is only
 not possible if an explicit projection block is not defined).
 
 The default value is `false`.
 
 ### `integer :: num_guide_cycles`
 
-If `guiding_centres` is set to true, then the guiding centres are used
+If `guiding_centres` is set to `true`, then the guiding centres are used
 only every `num_guide_cycles`.
 
 The default value is 1.
@@ -980,9 +990,9 @@ The number of objective Wannier functions for selective localisation in
 the selectively localised Wannier function (SLWF) method of
 Ref. [@Marianetti]. These functions are obtained by minimising the
 spread functional only with respect to the degrees of freedom of a
-subset of `slwf_num` $<$ `num_wann` functions. At convergence, the
+subset of `slwf_num` < `num_wann` functions. At convergence, the
 objective WFs will have a minimum cumulative spread, whereas the
-remaining `num_wann` $-$ `slwf_num` functions are left unoptimised. The
+remaining `num_wann - slwf_num` functions are left unoptimised. The
 initial guesses for the objective WFs are given by the first `slwf_num`
 orbitals in the `projections` block. If `slwf_num = num_wann` no
 selective minimisation is performed. In this case, `wannier90` will
@@ -996,8 +1006,7 @@ If `slwf_constrain=true`, then the centres of the objective Wannier
 functions are constrained to either the centres of the first `slwf_num`
 orbitals in the `projections` block or to new positions specified in the
 `slwf_centres` block (see
-Sec. [2.8.22](#sec:centre_constraints){reference-type="ref"
-reference="sec:centre_constraints"}). In this case, a modified spread
+Sec. [Constraints on centres](#constraints-on-centres)). In this case, a modified spread
 functional, $\Omega_c$, with the addition of a constraint term, as
 described in Ref. [@Marianetti].
 
@@ -1014,7 +1023,7 @@ the $n^{\text{th}}$ objective WF.
 
 The default is `0.0`.
 
-### Constraints on centres {#sec:centre_constraints}
+### Constraints on centres
 
 If `slwf_constrain=true`, then by default the centres to which the
 `slwf_num` objective Wannier function centres are constrained are given
@@ -1026,18 +1035,20 @@ functions.
 
 The block below shows an example of how to set the constraints:
 
-`begin slwf_centres`\
-`   2  0.0   0.0  0.0`\
-`   4  0.25  0.0  0.0`\
-`end slwf_centres`
+```
+begin slwf_centres
+   2  0.0   0.0  0.0
+   4  0.25  0.0  0.0
+end slwf_centres
+```
 
 -   The first line sets the constraint for the centre of objective WF
     number 2 (as defined by the order of WFs in the `projections` block)
-    to (0.0,0.0,0.0) in fractional co-ordinates.
+    to (0.0, 0.0, 0.0) in fractional coordinates.
 
 -   The second line sets the constraint for the centre of objective WF
     number 4 (as defined by the order of WFs in the `projections` block)
-    to (0.25,0.0,0.0) in fractional co-ordinates.
+    to (0.25, 0.0, 0.0) in fractional coordinates.
 
 -   The target centres of all other objective Wannier functions remain
     as the centres given in the corresponding rows of the `projections`
@@ -1059,7 +1070,7 @@ Capabilities:
 
 ### `logical :: wannier_plot`
 
-If $\verb#wannier_plot#=\verb#true#$, then the code will write out the
+If `wannier_plot = true`, then the code will write out the
 Wannier functions in a format specified by `wannier_plot_format`
 
 The default value of this parameter is `false`.
@@ -1072,7 +1083,9 @@ after the minimisation of the spread.
 The default behaviour is to plot all WF. For example, to plot WF 4, 5, 6
 and 10:
 
-`wannier_plot_list : 4-6, 10`
+```
+wannier_plot_list : 4-6, 10
+```
 
 ### `integer :: wannier_plot_supercell`
 
@@ -1172,17 +1185,17 @@ The default value is 1.0.
 
 ### `character(len=20) :: wannier_plot_spinor_mode`
 
-If $\verb#spinors#=\verb#true#$ then this parameter controls the
+If `spinors = true` then this parameter controls the
 quantity to plot. For a spinor WF with components $[\phi,\psi]$ the
 quatity plotted is
 
--   `total` (default). $\sqrt{[|\phi|^2+|\psi|^2}$
+-   `total` (default). $\sqrt{[|\phi|^2+|\psi|^2]}$
 
 -   `up`. $|\phi|\times sign(Re\{\phi\})$ if
-    $\verb#wannier_plot_spinor_phase#=\verb#true#$, otherwise $|\phi|$
+    `wannier_plot_spinor_phase = true`, otherwise $|\phi|$
 
 -   `down`. $|\psi|\times sign(Re\{\psi\})$ if
-    $\verb#wannier_plot_spinor_phase#=\verb#true#$, otherwise $|\psi|$
+    `wannier_plot_spinor_phase = true`, otherwise $|\psi|$
 
 Note: making a visual representation of a spinor WF is not as
 straightforward as for a scalar WF. While a scalar WF is typically a
@@ -1192,12 +1205,12 @@ spinor WF which should give you a good idea of the nature of the WF.
 
 ### `logical :: wannier_plot_spinor_phase`
 
-If $\verb#wannier_plot_spinor_phase#=\verb#true#$ phase information will
+If `wannier_plot_spinor_phase = true` phase information will
 be taken into account when plotting a spinor WF.
 
 ### `logical :: bands_plot`
 
-If $\verb#bands_plot#=\verb#true#$, then the code will calculate the
+If `bands_plot = true`, then the code will calculate the
 band structure, through Wannier interpolation, along the path in k-space
 defined by `bands_kpath` using `bands_num_points` along the first
 section of the path and write out an output file in a format specified
@@ -1212,17 +1225,25 @@ Each line gives the start and end point (with labels) for a section of
 the path. Values are in fractional coordinates with respect to the
 primitive reciprocal lattice vectors.
 
-`begin kpoint_path` $$\begin{array}{cccccccc}
+```
+begin kpoint_path
+``` 
+
+\begin{array}{cccccccc}
 G & 0.0 & 0.0 & 0.0 & L & 0.0 & 0.0 & 1.0 \\
 L & 0.0 & 0.0 & 1.0 & N & 0.0 & 1.0 & 1.0 \\
 \vdots
-\end{array}$$ `end kpoint_path`
+\end{array}
+
+```
+end kpoint_path
+```
 
 There is no default
 
 ### `integer :: bands_num_points`
 
-If $\verb#bands_plot#=\verb#true#$, then the number of points along the
+If `bands_plot = true`, then the number of points along the
 first section of the bandstructure plot given by `kpoint_path`. Other
 sections will have the same density of k-points.
 
@@ -1238,7 +1259,7 @@ options for this parameter are:
 -   `xmgrace`
 
 Note: it is possible to request output in both formats eg
-$\verb#bands_format#=\verb#gnuplot xmgrace#$
+`bands_format = gnuplot xmgrace`
 
 ### `integer :: bands_plot_project(:)`
 
@@ -1250,7 +1271,9 @@ in the `seedname_band.dat` file, and a corresponding gnuplot script to
 
 For example, to project on to WFs 2, 6, 7, 8 and 12:
 
-`bands_plot_project : 2, 6-8, 12`
+```
+bands_plot_project : 2, 6-8, 12
+```
 
 ### `character(len=20) :: bands_plot_mode`
 
@@ -1267,8 +1290,8 @@ The valid options for this parameter are:
 
 ### `integer :: bands_plot_dim`
 
-Dimension of the system. If $\verb#bands_plot_dim#<\:$`<!-- -->`{=html}3
-and $\verb#bands_plot_mode#=\verb#cut#$, lattice vector
+Dimension of the system. If `bands_plot_dim < 3`
+and `bands_plot_mode = cut`, lattice vector
 $\mathbf{R}=N_1 \mathbf{A}_{1} + N_2 \mathbf{A}_{2} + N_3 \mathbf{A}_3$,
 where $N_i=0$ if $\mathbf{A}_i$ is parallel to any of the confined
 directions specified by `one_dim_axis`, are exclusively used in the band
@@ -1284,7 +1307,7 @@ The valid options for this parameter are:
 
 ### `logical :: fermi_surface_plot`
 
-If $\verb#fermi_surface_plot#=\verb#true#$, then the code will
+If `fermi_surface_plot = true`, then the code will
 calculate, through Wannier interpolation, the eigenvalues on a regular
 grid with `fermi_surface_num_points` in each direction. The code will
 write a file in bxsf format which can be read by XCrySDen in order to
@@ -1294,7 +1317,7 @@ The default value is `false`.
 
 ### `integer :: fermi_surface_num_points`
 
-If $\verb#fermi_surface_plot#=\verb#true#$, then the number of divisions
+If `fermi_surface_plot = true`, then the number of divisions
 in the regular k-point grid used to calculate the Fermi surface.
 
 The default value for `fermi_surface_num_points` is 50.
@@ -1327,7 +1350,7 @@ There is no default value.
 
 The maximum value in the range of Fermi energies. Units are eV.
 
-The default value is `fermi_energy_min`+1.0.
+The default value is `fermi_energy_min + 1.0`.
 
 ### `real(kind=dp) :: fermi_energy_step`
 
@@ -1345,28 +1368,28 @@ parameter are:
 
 ### `logical :: write_hr`
 
-If $\verb#write_hr#=\verb#true#$, then the Hamiltonian matrix in the WF
+If `write_hr = true`, then the Hamiltonian matrix in the WF
 basis will be written to a file `seedname_hr.dat`.
 
 The default value is `false`.
 
 ### `logical :: write_rmn`
 
-If $\verb#write_rmn#=\verb#true#$, then the position operator in the WF
+If `write_rmn = true`, then the position operator in the WF
 basis will be written to a file `seedname_r.dat`.
 
 The default value is `false`.
 
 ### `logical :: write_bvec`
 
-If $\verb#write_bvec#=\verb#true#$, then the the matrix elements of
+If `write_bvec = true`, then the the matrix elements of
 bvector and their weights will be written to a file `seedname.bvec`.
 
 The default value is `false`.
 
 ### `logical :: write_tb`
 
-If $\verb#write_tb#=\verb#true#$, then the lattice vectors, together
+If `write_tb = true`, then the lattice vectors, together
 with the Hamiltonian and position-operator matrices in the WF basis,
 will be written to a file `seedname_tb.dat`, in units of Angstrom and
 eV.
@@ -1375,7 +1398,7 @@ The default value is `false`.
 
 ### `logical :: transport`
 
-If $\verb#transport#=\verb#true#$, then the code will calculate quantum
+If `transport = true`, then the code will calculate quantum
 conductance and density of states of a one-dimensional system. The
 results will be written to files `seedname_qc.dat` and
 `seedname_dos.dat`, respectively. Since both quantities are a function
@@ -1386,26 +1409,25 @@ The default value of this parameter is `false`.
 
 ### `character(len=20) :: transport_mode`
 
-If $\verb#transport_mode#=\verb#bulk#$, quantum conductance and density
+If `transport_mode = bulk`, quantum conductance and density
 of states are calculated for a perfectly-periodic one-dimensional
 system. In this case, the transport part can either use the Hamiltonian
 matrix in the WF basis generated by `wannier90` or a Hamiltonian matrix
 provided by the external file `seedname_htB.dat`.
 
-If $\verb#transport_mode#=\verb#lcr#$, quantum conductance and density
+If `transport_mode = lcr`, quantum conductance and density
 of states are calculated for a system where semi-infinite, left and
 right leads are connected through a central conductor region. In this
 case, the transport part will work independently from the
 disentanglement and wannierise procedure. Details of the method is
 described in Ref. [@nardelli-prb99].
 
-If $\verb#tran_read_ht# = \verb#true#$ then the Hamiltonian matrices
+If `tran_read_ht = true` then the Hamiltonian matrices
 must be provided by the five external files:
 `seedname_htL.dat, seedname_htLC.dat, seedname_htC.dat, seedname_htCR.dat, seedname_htR.dat`.
-If $\verb#tran_read_ht# = \verb#false#$ then the Hamiltonian matrices
+If `tran_read_ht = false` then the Hamiltonian matrices
 are found automatically provided the supercell adheres to conditions
-outlined in Section [7.3](#sec:2c2){reference-type="ref"
-reference="sec:2c2"}.
+outlined in Section [Automated lcr Transport Calculations: The 2c2 Geometry](../transport#sec:2c2).
 
 The valid options for this parameter are:
 
@@ -1459,8 +1481,8 @@ The default value is 0.
 ### `integer :: tran_num_ll`
 
 Size of a left-lead Hamiltonian matrix. If
-$\verb#transport_mode# = \verb#lcr#$ and
-$\verb#tran_read_ht# = \verb#false#$ then `tran_num_ll` is the number of
+`transport_mode = lcr` and
+`tran_read_ht = false` then `tran_num_ll` is the number of
 Wannier functions in a principal layer.
 
 The default value is 0.
@@ -1494,8 +1516,8 @@ The default value is 0.
 ### `integer :: tran_num_cell_ll`
 
 Number of unit cells in one principal layer of left lead. Used if
-$\verb#transport_mode# = \verb#lcr#$ and
-$\verb#tran_read_ht# = \verb#false#$.
+`transport_mode = lcr` and
+`tran_read_ht = false`.
 
 The default value is 0.
 
@@ -1521,7 +1543,7 @@ The default value is 0.
 
 ### `logical :: tran_write_ht`
 
-If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix
+If `tran_write_ht = true`, then the Hamiltonian matrix
 formatted for the transport calculation will be written to a file
 `seedname_htB.dat`.
 
@@ -1529,18 +1551,17 @@ The default value is `false`.
 
 ### `logical :: tran_read_ht`
 
-If $\verb#tran_write_ht#=\verb#true#$, then the Hamiltonian matrix
+If `tran_write_ht = true`, then the Hamiltonian matrix
 formatted for the transport calculation will be read from a set of files
 described in the parameter `transport_mode`. Set
-$\verb#tran_write_ht#=\verb#false#$ to perform automated lcr
-calculations (see Section [7.3](#sec:2c2){reference-type="ref"
-reference="sec:2c2"}).
+`tran_write_ht = false` to perform automated lcr
+calculations (see Section [Automated lcr Transport Calculations: The 2c2 Geometry](../transport#sec:2c2)).
 
 The default value is `false`.
 
 ### `logical :: tran_use_same_lead`
 
-If $\verb#tran_use_same_lead#=\verb#true#$, then the left and the right
+If `tran_use_same_lead = true`, then the left and the right
 leads are the same. In this case, `seedname_htR.dat` is not required.
 
 The default value is `true`.
@@ -1572,8 +1593,7 @@ i.e., translate function $W_j({\bf r}-{\bf R})$ inside the Wigner-Seitz
 cell centred on WF $W_i({\bf r})$.
 
 For a longer explanation, see
-Chapter [\[chap:interpolation\]](#chap:interpolation){reference-type="ref"
-reference="chap:interpolation"}.
+Chapter [Some notes on the interpolation](../notes_interpolations).
 
 If `false` the code puts all the WF in the home cell, only possible
 choice until wannier90 v2.0.1.
@@ -1587,8 +1607,7 @@ Tolerance when determining whether two values
 $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and
 $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as
 defined in
-chapter [\[chap:interpolation\]](#chap:interpolation){reference-type="ref"
-reference="chap:interpolation"}) for the shortest distance between two
+chapter [Some notes on the interpolation](../notes_interpolations)) for the shortest distance between two
 Wannier functions are equivalent. If the difference in distance (in
 Angstrom) is less than `ws_distance_tol`, they are taken to be
 equivalent.
@@ -1599,8 +1618,7 @@ The default value is $10^{-5}$.
 
 Maximum absolute value for the integers $n,m,l$ that identify the
 super-lattice vectors $\tilde{\mathbf{R}}_{nml}$ (see
-chapter [\[chap:interpolation\]](#chap:interpolation){reference-type="ref"
-reference="chap:interpolation"}) when searching for points inside the
+chapter [Some notes on the interpolation](../notes_interpolations)) when searching for points inside the
 Wigner-Seitz cell. If `ws_search_size` is provided as a single integer,
 then the number of repetitions of the Born-von Karman cell is the same
 along all three linear dimensions; otherwise, if three integers are
@@ -1608,7 +1626,7 @@ provided, the number of repetitions along the $i-$th linear dimension is
 `ws_search_size(i)`. The variable is used both in `hamiltonian.F90` and
 in `ws_distance.F90`. In the latter case, its value is incremented by
 one in order to account for WFs whose centre wanders away from the
-original reference unit cell.\
+original reference unit cell.  
 The default value is generally sufficient, but might need to be
 increased in case of elongated cells.
 
@@ -1628,7 +1646,7 @@ The default value is `false`.
 The absolute value of the smallest matrix element of the Hamiltonian in
 the WF basis. If $h_{mn}(\mathbf{R})>\:$` hr_cutoff`, then the matrix
 element $h_{mn}(\mathbf{R})$ is retained and used in the band structure
-interpolation (when $\verb#bands_plot_mode#=\verb#cut#$) or in the
+interpolation (when `bands_plot_mode = cut`) or in the
 transport calculation. Otherwise it is deemed to be insignificant and is
 discarded. Units are eV.
 
@@ -1638,7 +1656,7 @@ The default value is 0.0.
 
 The largest distance between two WFs for which the Hamiltonian matrix
 element is retained and used in the band interpolation (when
-$\verb#bands_plot_mode#=\verb#cut#$) or in the transport calculation.
+`bands_plot_mode = cut`) or in the transport calculation.
 Units are Å.
 
 The default value is 1000.0.
