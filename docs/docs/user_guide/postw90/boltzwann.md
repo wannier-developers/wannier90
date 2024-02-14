@@ -14,7 +14,7 @@ Table [ `BoltzWann` Parameters](../postw90params/#boltzwann-parameters).
 An example of a Boltzmann transport
 calculation can be found in the `wannier90` Tutorial.
 
-!!!Note
+!!! note
     By default, the code assumes to be working with a 3D bulk
     material, with periodicity along all three spatial directions. If you
     are interested in studying 2D systems, set the correct value for the

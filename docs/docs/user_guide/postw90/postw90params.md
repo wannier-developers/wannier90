@@ -93,7 +93,7 @@ The currently available modules in `postw90.x` are:
     spin Hall conductivity, including anomalous Hall conductivity,
     orbital magnetisation, optical conductivity, nonlinear shift current
     and spin Hall conductivity (see
-    Chap. [berry](../berry) and examples 18, 19, 25, 29 and 30 of the
+    Chap. [Berry](../berry) and examples 18, 19, 25, 29 and 30 of the
     tutorial). It also includes an option to compute $k\cdot p$
     expansion coefficients (see
     Sec. [kdotp](../berry/#sec:kdotp) and example 33 of the tutorial).
@@ -101,15 +101,15 @@ The currently available modules in `postw90.x` are:
 -   `gyrotropic`: Calculation of gyrotropic properties, including
     natural and current0induced optical rotation, and the
     current-induced magnetization (see
-    Chap. [gyrotropic](../gyrotropic) and examples of the tutorial).
+    Chap. [Gyrotropic](../gyrotropic) and examples of the tutorial).
 
 -   `BoltzWann`: Calculation of electronic transport properties for bulk
     materials using the semiclassical Boltzmann transport equation (see
-    Chap. [ch:boltzwann](../boltzwann) and example 16 of the tutorial).
+    Chap. [BoltzWann](../boltzwann) and example 16 of the tutorial).
 
 -   `geninterp` (Generic Band Interpolation): Calculation band energies
     (and band derivatives) on a generic list of $k$ points (see
-    Chap. [ch:geninterp](../geninterp)).
+    Chap. [Geninterp](../geninterp)).
 
 Keyword List
 ------------
@@ -409,12 +409,13 @@ The default value is 1 if `spinors=true`, 2 otherwise.
 
 Scissors shift applied to the conduction bands.
 
-**Note!** This variable is deprecated and will be removed in future
-versions of the code. This applies the scissors shift only to the
-Hamiltonian, but also other matrices might need to be updated if a
-scissors shift is applied. If you are using BoltzWann, consider using
-`boltz_bandshift` instead. If you are calculating spin Hall
-conductivity, consider using `shc_bandshift` instead.
+!!! note 
+    This variable is deprecated and will be removed in future
+    versions of the code. This applies the scissors shift only to the
+    Hamiltonian, but also other matrices might need to be updated if a
+    scissors shift is applied. If you are using BoltzWann, consider using
+    `boltz_bandshift` instead. If you are calculating spin Hall
+    conductivity, consider using `shc_bandshift` instead.
 
 The units are eV. The default value is 0 eV (i.e., no scissors shift
 applied).
@@ -718,9 +719,9 @@ The valid options for this parameter are:
     -   `seedname-path.kpt` (list of $k$-points along the path, written
         in the `pwscf` format)
 
--   `curv` Minus the Berry curvature given by
+-   `curv` Minus the Berry curvature given by<!-- Note the eq number is not automatically setted -->
     [Berry Eq. (15)](../berry/#mjx-eqn:eq:ahc) of
-    Ch. [berry](../berry), in units of ` berry_curv_unit`. The following
+    Ch. [Berry](../berry), in units of ` berry_curv_unit`. The following
     files are created:
 
     -   `seedname-curv.dat` (data file)
@@ -729,9 +730,9 @@ The valid options for this parameter are:
 
     -   `seedname-curv_{x,y,z}.py` (`python` scripts)
 
--   `morb` The integrand of the $k$-space orbital magnetization formula
+-   `morb` The integrand of the $k$-space orbital magnetization formula<!-- Note the eq number is not automatically setted -->
     \[[Berry Eq. (16)](../berry/#mjx-eqn:eq:morb) of
-    Ch. [berry](../berry)\] in eV$\cdot$Å$^2$. Four output files are
+    Ch. [Berry](../berry)\] in eV$\cdot$Å$^2$. Four output files are
     created:
 
     -   `seedname-morb.dat` (data file)
@@ -741,9 +742,9 @@ The valid options for this parameter are:
     -   `seedname-morb_{x,y,z}.py` (`python` scripts)
 
 -   `shc` The band-projected Berry curvature-like term of spin Hall
-    conductivity given by
+    conductivity given by<!-- Note the eq number is not automatically setted -->
     [Berry Eq. (19)](../berry/#mjx-eqn:eq:kubo_shc_berry) of
-    Ch. [berry](../berry), in units of ` berry_curv_unit`. The following
+    Ch. [Berry](../berry), in units of ` berry_curv_unit`. The following
     files are created:
 
     -   `seedname-shc.dat` (data file)
@@ -755,11 +756,11 @@ The valid options for this parameter are:
 -   Any combination of the above. The following combinations are of
     special interest
 
-    `kpath_task = bands+curv`
+    -   `kpath_task = bands+curv`
 
-    `kpath_task = bands+morb`
+    -   `kpath_task = bands+morb`
 
-    `kpath_task = bands+shc`
+    -   `kpath_task = bands+shc`
 
     They generate the following files:
 
@@ -884,11 +885,12 @@ The valid options for this parameter are:
 
 The default value is `fermi_lines`.
 
-Note: When `kslice_fermi_lines_colour = none` the `gnuplot` scripts draw
-the $k$-slices with a square shape, even when ` kslice_b1` and
-`kslice_b2` below are not at right angles, or do not have equal lengths.
-(The `python` scripts draw the slices with the correct parallelogram
-shape.)
+!!! note
+    When `kslice_fermi_lines_colour = none` the `gnuplot` scripts draw
+    the $k$-slices with a square shape, even when ` kslice_b1` and
+    `kslice_b2` below are not at right angles, or do not have equal lengths.
+    (The `python` scripts draw the slices with the correct parallelogram
+    shape.)
 
 ### `real(kind=dp) :: kslice_corner(3)`
 
@@ -1180,14 +1182,15 @@ values, the $\sigma_{xy}^{\text{spin}z}$ is computed.
 Shift all conduction bands by a given amount (defined by
 `shc_bandshift_energyshift`).
 
-Note: this flag slightly differs from the global `scissors_shift` flag:
-with `shc_bandshift`, an exact rigid shift is applied *after*
-interpolation; `scissors_shift` applies instead the shift *before*
-interpolation. As a consequence, results may slightly differ (and this
-is why we provide both possibilities). Note also that with
-`scissors_shift` you have to provide the number of valence bands
-`num_valence_bands`, while with `shc_bandshift` you should provide the
-first band to shift `shc_bandshift_firstband` = `num_valence_bands`$+1$.
+!!! note 
+    this flag slightly differs from the global `scissors_shift` flag:
+    with `shc_bandshift`, an exact rigid shift is applied *after*
+    interpolation; `scissors_shift` applies instead the shift *before*
+    interpolation. As a consequence, results may slightly differ (and this
+    is why we provide both possibilities). Note also that with
+    `scissors_shift` you have to provide the number of valence bands
+    `num_valence_bands`, while with `shc_bandshift` you should provide the
+    first band to shift `shc_bandshift_firstband` = `num_valence_bands`$+1$.
 
 The default value is `false`.
 

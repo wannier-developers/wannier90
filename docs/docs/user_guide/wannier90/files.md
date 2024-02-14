@@ -195,7 +195,7 @@ plotting.
 
 This part of the output files provides information on the
 $\mathrm{b}$-vectors and weights chosen to satisfy the condition of
-Eq. [B1](../parameters/mjx-eqn:eq:B1).
+Eq. [B1](../parameters/#mjx-eqn:eq:B1).
 
      *---------------------------------- K-MESH ----------------------------------*
      +----------------------------------------------------------------------------+
@@ -982,7 +982,7 @@ right lead which is in contact with the conductor region. Note that
         0.000000    0.000000    0.000000    0.000000    0.000000    0.000000
         0.000000    0.000000    0.000000
 
-## `seedname.unkg` {#sec:files_unkg}
+## `seedname.unkg`
 
 INPUT. Read if `transport_mode = lcr` and
 `tran_read_ht = .FALSE.`. The first line is the number of
