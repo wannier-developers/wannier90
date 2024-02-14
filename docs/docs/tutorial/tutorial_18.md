@@ -163,7 +163,9 @@ value larger than one in ` Fe.win`.
 
 The optical conductivity tensor of bcc Fe with magnetization along
 $\hat{\bf z}$ has the form
-$$\bm{\sigma}=\bm{\sigma}^{\rm S}+\bm{\sigma}^{\rm A}=
+
+$$
+\bm{\sigma}=\bm{\sigma}^{\rm S}+\bm{\sigma}^{\rm A}=
 \left(
 \begin{array}{ccc}
 \sigma_{xx} & 0 & 0\\
@@ -177,7 +179,10 @@ $$\bm{\sigma}=\bm{\sigma}^{\rm S}+\bm{\sigma}^{\rm A}=
 -\sigma_{xy} & 0 & 0\\
 0 & 0 & 0
 \end{array}
-\right)$$ where "S" and "A" stand for the symmetric and antisymmetric
+\right),
+$$
+
+where "S" and "A" stand for the symmetric and antisymmetric
 parts and $\sigma_{xx}=\sigma_{yy}\not=\sigma_{zz}$. The dc AHC
 calculated earlier corresponds to $\sigma_{xy}$ in the limit
 $\omega\rightarrow
