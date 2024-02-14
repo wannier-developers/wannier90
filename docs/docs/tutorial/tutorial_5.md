@@ -2,7 +2,7 @@
 
 -   Outline: *Obtain MLWFs for the valence bands of diamond*
 
--   Directory: `examples/example5/`
+-   Directory: `tutorials/tutorial5/` *Files can be downloaded from [here]{}*
 
 -   Input Files
 
@@ -18,21 +18,21 @@
 
 1.  Run `pwscf` to obtain the ground state of diamond
 
-    ```bash
+    ```bash title="Terminal"
     pw.x < diamond.scf > scf.out
     ```
 
 2.  Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid\
 
-    ```bash
+    ```bash title="Terminal"
     pw.x < diamond.nscf > nscf.out
     ```
 
 3.  Run `wannier90` to generate a list of the required overlaps (written
     into the `diamond.nnkp` file).
     
-    ```bash
+    ```bash title="Terminal"
     wannier90.x -pp diamond
     ```
 
@@ -40,13 +40,13 @@
     the projections for the starting guess (written in the `diamond.mmn`
     and `diamond.amn` files).
 
-    ```bash
+    ```bash title="Terminal"
     pw2wannier90.x < diamond.pw2wan > pw2wan.out
     ```
 
 5.  Run `wannier90` to compute the MLWFs.
 
-    ```bash
+    ```bash title="Terminal"
     wannier90.x diamond
     ```
 

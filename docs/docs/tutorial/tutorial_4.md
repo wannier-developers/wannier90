@@ -9,7 +9,7 @@
     Starting guess: five atom-centred d orbitals, and two s orbitals
     centred on one of each of the two tetrahedral interstices.*
 
--   Directory: `examples/example4/`
+-   Directory: `tutorials/tutorial4/` *Files can be downloaded from [here]{}*
 
 -   Input Files
 
@@ -25,7 +25,7 @@
 
 1.  Run `wannier90` to minimise the MLWFs spread
 
-    ```bash
+    ```bash title="Terminal"
     wannier90.x copper
     ```
 
@@ -36,26 +36,22 @@
 
 3.  Plot the interpolated bandstructure. A suitable path in k-space is
 
-
-    > begin kpoint_path
-    >
-    > G 0.00 0.00 0.00 X 0.50 0.50 0.00
-    >
-    > X 0.50 0.50 0.00 W 0.50 0.75 0.25
-    >
-    > W 0.50 0.75 0.25 L 0.00 0.50 0.00
-    >
-    > L 0.00 0.50 0.00 G 0.00 0.00 0.00
-    >
-    > G 0.00 0.00 0.00 K 0.00 0.50 -0.50
-    >
-    > end kpoint_path
+    ```vi title="Input file"
+     begin kpoint_path
+     G 0.00 0.00 0.00 X 0.50 0.50 0.00
+     X 0.50 0.50 0.00 W 0.50 0.75 0.25
+     W 0.50 0.75 0.25 L 0.00 0.50 0.00
+     L 0.00 0.50 0.00 G 0.00 0.00 0.00
+     G 0.00 0.00 0.00 K 0.00 0.50 -0.50
+     end kpoint_path
+    ```
 
 4.  Plot the contribution of the interstitial WF to the bandstructure.
     Add the following keyword to `copper.win`
 
-
-    > bands_plot_project = 6,7
+    ```vi title="Input file"
+    bands_plot_project = 6,7
+    ```
 
     The resulting file `copper_band_proj.gnu` can be opened with
     gnuplot. Red lines correspond to a large contribution from the

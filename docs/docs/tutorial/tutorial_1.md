@@ -6,8 +6,8 @@
     pseudopotentials and a <br> 
     2$\times$2$\times$2 k-point grid. Starting guess: four bond-centred Gaussians.*
 
--   Directory: `tutorials/tutorial1/` *Files for this tutorial can be 
-    downloaded [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial1)*
+-   Directory: `tutorials/tutorial1/` *Files can be
+    downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial1)*
 
 -   Input Files
 
@@ -39,7 +39,7 @@
 2.  Plot the MLWFs by adding the following keywords to the input file
     `gaas.win`
 
-    ``` title="Input file"
+    ```vi title="Input file"
     wannier_plot = true
     ```
 
@@ -47,7 +47,8 @@
     them explicitly on a real space grid (see Ref. [@UserGuide]). As a
     consequence, plotting the MLWFs is slower and uses more memory than
     the minimisation of the spread. The four files that are created
-    (`gaas_00001.xsf`, etc.) can be viewed using `XCrySDen`,[^1] e.g.,
+    (`gaas_00001.xsf`, etc.) can be viewed using `XCrySDen`[^1],
+    e.g.,
 
     ```bash title="Terminal"
     xcrysden --xsf gaas_00001.xsf
@@ -57,7 +58,7 @@
     require a lot of memory. Use the keyword `wannier_plot_list` to plot
     a subset of the MLWFs. E.g., to plot the 1st and 3rd MLWFs use
 
-    ``` title="Input file"
+    ```vi title="Input file"
     wannier_plot_list = 1 3
     ```
 
@@ -76,4 +77,4 @@
     mesh with $n$ divisions in the $i^{\mathrm{th}}$ direction in the
     Brillouin zone, the MLWFs "live" in a supercell $n$ times the unit
     cell.
-
+    [^1]: http://www.xcrysden.org/

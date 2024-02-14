@@ -8,7 +8,7 @@
     4$\times$4$\times$4 k-point grid.
     Starting guess: atom-centred sp$^3$ hybrid orbitals*
 
--   Directory: `examples/example3/`
+-   Directory: `tutorials/tutorial3/` *Files can be downloaded from [here]{}*
 
 -   Input Files
 
@@ -31,7 +31,7 @@ Fig. [2](#fig:si.bnd).
 
 1.  Run `wannier90`.
 
-    ```bash
+    ```bash title="Terminal"
     wannier90.x silicon
     ```
 
@@ -45,21 +45,23 @@ Fig. [2](#fig:si.bnd).
 2.  Plot the energy bands by adding the following commands to the input
     file `silicon.win`
 
-    > restart = plot
-    >
-    > bands_plot = true
+    ```vi title="Input file"
+    restart = plot
+    
+    bands_plot = true
+    ```
 
     and re-running `wannier90`. The files `silicon_band.dat` and
     ` silicon_band.gnu` are created. To plot the bandstructure run
     gnuplot
     
-    ```bash
+    ```bash title="Terminal"
     gnuplot
     ```
 
     and within the gnuplot shell type
    
-    ```gnuplot
+    ```gnuplot title="Gnuplot shell"
     load 'silicon_band.gnu'
     ```
 
