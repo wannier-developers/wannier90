@@ -8,7 +8,7 @@
     4$\times$4$\times$4 k-point grid.
     Starting guess: atom-centred sp$^3$ hybrid orbitals*
 
--   Directory: `examples/example2/`
+-   Directory: `tutorials/tutorial2/` *Files can be downloaded from [here]{}*
 
 -   Input Files
 
@@ -30,7 +30,7 @@ localised.
 
 1.  Run `wannier90` to minimise the MLWFs spread
 
-    ```bash
+    ```bash title="Terminal"
     wannier90.x lead
     ```
 
@@ -42,11 +42,13 @@ localised.
     the plotting routine. Add the following keywords to the `lead.win`
     file:
 
-    > restart = plot
-    >
-    > fermi_energy = 5.2676
-    >
-    > fermi_surface_plot = true
+    ```vi title="Input file"
+    restart = plot
+    
+    fermi_energy = 5.2676
+    
+    fermi_surface_plot = true
+    ```
 
     and re-run `wannier90`. The value of the Fermi energy (5.2676 eV)
     was obtained from the initial first principles calculation.
@@ -58,7 +60,7 @@ localised.
     points). The Fermi surface file `lead.bxsf` can be viewed using
     `XCrySDen`, e.g.,
 
-    ```bash
+    ```bash title="Terminal"
     xcrysden --bxsf lead.bxsf
     ```
 

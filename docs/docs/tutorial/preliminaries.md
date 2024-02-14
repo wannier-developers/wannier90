@@ -3,12 +3,12 @@ author:
 - Version 3.1
 bibliography:
 - ../wannier90.bib
-title: ": Tutorial"
+title: ": Tutorials"
 ---
 
 # Preliminaries {#preliminaries .unnumbered}
 
-Welcome to `wannier90`! The examples contained in this tutorial are
+Welcome to `wannier90`! The examples contained in these tutorials are
 designed to help you become familiar with the procedure of generating,
 analysing and using maximally-localised Wannier functions (MLWFs). As a
 first step, install `wannier90` following the instructions in the
@@ -60,7 +60,7 @@ directory of the `wannier90` distribution.
 Then, to run e.g. with 8 processors, you typically need to run a command
 similar to `postw90` as follows:
 
-```bash
+```bash title="Terminal"
 mpirun -np 8 postw90.x seedname
 ```
 
@@ -68,13 +68,13 @@ mpirun -np 8 postw90.x seedname
 libraries installed on your system: refer to your MPI manual and/or to
 your system administrator for further information).
 
-# About this tutorial {#about-this-tutorial .unnumbered}
+# About these tutorials {#about-this-tutorials .unnumbered}
 
-The first part of this tutorial comprises four examples taken from
+The first part of this collection of tutorials comprises four examples taken from
 Refs. [@marzari-prb97; @souza-prb01]: gallium arsenide, lead, silicon
 and copper. All of the `wannier90` input files have been provided.
 
-The second part of the tutorial covers the generation of
+The second part of this collection of tutorials covers the generation of
 `wannier90` input files starting from a full electronic structure
 calculation. We have provided input files for the
 `pwscf` interface (<http://www.quantum-espresso.org>) to
@@ -82,8 +82,8 @@ calculation. We have provided input files for the
 the ` quantum-espresso` package, namely `pw.x` and ` pw2wannier90.x`, in
 order to run these examples. Please visit
 <http://www.quantum-espresso.org> to download the package, and for
-installation instructions. The tutorial examples work with
-`pwscf v5.1.x` and `v6.0.x`. The exception are the examples on
+installation instructions. The tutorials work with
+`pwscf v5.1.x` and `v6.0.x`. The exception are the tutorials on
 symmetry adapted Wannier functions which require v6.0.x together with
 the very latest version of `pw2wannier90.f90`. This can be found in the
 directory `pwscf/v6.0` in the wannier distribution. It should be moved
@@ -100,7 +100,7 @@ Wien2k (<http://www.wien2k.at>)
 
 # Contact us {#contact-us .unnumbered}
 
-If you have any suggestions regarding ways in which this tutorial may be
+If you have any suggestions regarding ways in which these tutorials may be
 improved, then send us an email.
 
 For other questions, email the `wannier90` forum at
