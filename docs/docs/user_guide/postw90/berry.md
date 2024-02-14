@@ -38,7 +38,7 @@ generalization of the Berry connection,
 
 $$
 \begin{equation}
-\label{eq_berry-connection-matrix}
+\label{eq:berry-connection-matrix}
 {\bf A}_{nm}({\bf k})=\langle u_{n{\bf k}}\vert i\bm{\nabla}_{\bf k}\vert
 u_{m{\bf k}}\rangle={\bf A}_{mn}^*({\bf k}),
 \end{equation}
