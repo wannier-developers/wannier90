@@ -135,5 +135,5 @@ file:
 A further parameter related to these calculations is
 `tran_group_threshold`.
 
-Examples of how 2c2 calculations are preformed can be found in the
+Tutorial of [how 2c2 calculations are preformed](../../tutorials/tutorial_14.md) can be found in the
 `wannier90` Tutorial.

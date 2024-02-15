@@ -82,30 +82,39 @@ The currently available modules in `postw90.x` are:
 
 -   `kpath`: Calculation of $k$-space quantities such as energy bands,
     Berry curvature and Berry curvature-like term of spin Hall
-    conductivity along a piecewise linear path in the BZ (see examples
-    17, 18 and 29 of the tutorial).
+    conductivity along a piecewise linear path in the BZ (see tutorials
+    [17](../../tutorials/tutorial_17.md), 
+    [18](../../tutorials/tutorial_18.md) 
+    and [29](../../tutorials/tutorial_29.md) of the tutorial).
 
 -   `kslice`: Calculation of $k$-space quantities on a planar slice of
-    the BZ (see examples 17, 18 and 29 of the tutorial).
+    the BZ (see tutorials [17](../../tutorials/tutorial_17.md), 
+    [18](../../tutorials/tutorial_18.md) 
+    and [29](../../tutorials/tutorial_29.md) of the tutorial).
 
 -   `berry`: Calculation of properties related to the BZ integral of the
     Berry curvature, Berry connection and Berry curvature-like term of
     spin Hall conductivity, including anomalous Hall conductivity,
     orbital magnetisation, optical conductivity, nonlinear shift current
     and spin Hall conductivity (see
-    Chap. [Berry](../berry) and examples 18, 19, 25, 29 and 30 of the
+    Chap. [Berry](../berry) and tutorials 
+    [18](../../tutorials/tutorial_18.md), 
+    [19](../../tutorials/tutorial_19.md), 
+    [25](../../tutorials/tutorial_25.md), 
+    [29](../../tutorials/tutorial_29.md)
+    and [30](../../tutorials/tutorial_30.md) of the
     tutorial). It also includes an option to compute $k\cdot p$
     expansion coefficients (see
-    Sec. [kdotp](../berry/#sec:kdotp) and example 33 of the tutorial).
+    Sec. [kdotp](../berry/#sec:kdotp) and tutorial [33](../../tutorials/tutorial_33.md) of the tutorial).
 
 -   `gyrotropic`: Calculation of gyrotropic properties, including
     natural and current0induced optical rotation, and the
     current-induced magnetization (see
-    Chap. [Gyrotropic](../gyrotropic) and examples of the tutorial).
+    Chap. [Gyrotropic](../gyrotropic) and tutorial [24](../../tutorials/tutorial_24.md) of the tutorial).
 
 -   `BoltzWann`: Calculation of electronic transport properties for bulk
     materials using the semiclassical Boltzmann transport equation (see
-    Chap. [BoltzWann](../boltzwann) and example 16 of the tutorial).
+    Chap. [BoltzWann](../boltzwann) and tutorial [16](../../tutorials/tutorial_16.md) of the tutorial).
 
 -   `geninterp` (Generic Band Interpolation): Calculation band energies
     (and band derivatives) on a generic list of $k$ points (see

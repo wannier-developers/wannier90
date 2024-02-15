@@ -11,7 +11,7 @@ it is the main ingredient of the thermal conductivity).
 
 The list of parameters of the `BoltzWann` module are summarized in
 Table [ `BoltzWann` Parameters](../postw90params/#boltzwann-parameters). 
-An example of a Boltzmann transport
+A [tutorial of a Boltzmann transport](../../tutorials/tutorial_16.md)
 calculation can be found in the `wannier90` Tutorial.
 
 !!! note

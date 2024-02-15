@@ -397,7 +397,8 @@ Same as the case of optical conductivity, the parameter $\eta$ contained
 in the
 Eq. $\eqref{eq:kubo_shc_berry}$ can be chosen using the keyword
 `[kubo_]smr_fixed_en_width`. Also, adaptive smearing can be employed by
-the keyword `[kubo_]adpt_smr` (see Examples 29 and 30 in the Tutorial).
+the keyword `[kubo_]adpt_smr` (see Tutorials [29](../../tutorials/tutorial_29.md)
+and [30](../../tutorials/tutorial_30.md) in the Tutorial).
 
 Please cite the following paper [@qiao-prb2018] or  [@ryoo-prb2019] when
 publishing SHC results obtained using this method:

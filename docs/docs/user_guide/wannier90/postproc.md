@@ -207,15 +207,15 @@ method [@LinLin-ArXiv2017] is one way of generating the initial
 $A_{mn}^{(\mathbf{k})}$ in an automatic way. This has been implemented
 in the `pw2wannier90` interface code (you need v6.3 with the files
 provided in the `pwscf` folder of Wannier90, or v6.4), see for instance
-Example 27 in the `wannier90` tutorial that shows how to use it.
+Tutorial [27](../../tutorials/tutorial_27.md) in the `wannier90` tutorial that shows how to use it.
 
 Moreover, also the automatic generation of initial projections with
-spinor WFs is implemented in the `pw2wannier90` interface. See Example
-31 in the `wannier90` tutorial that shows how to use it.
+spinor WFs is implemented in the `pw2wannier90` interface. See Tutorial
+[31](../../tutorials/tutorial_31.md) in the `wannier90` tutorial that shows how to use it.
 
 Another automatic projection method is projectability-disentangled
 Wannier function (PDWF) [@Qiao2023-pdwf], which uses pseudo-atomic
-orbitals inside pseudopotentials as initial guesses. See Example 34 and
+orbitals inside pseudopotentials as initial guesses. See Tutorial [34](../../tutorials/tutorial_34.md) and
 35.
 
 #### An example of projections
