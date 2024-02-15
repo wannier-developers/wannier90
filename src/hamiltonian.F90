@@ -280,11 +280,31 @@ contains
     ! local variables
     integer          :: loop_kpt, i, j, m, irpt, ierr, counter
     real(kind=dp)    :: rdotk
-    real(kind=dp)    :: eigval_opt(num_bands, num_kpts)
-    real(kind=dp)    :: eigval2(num_wann, num_kpts)
+    real(kind=dp), allocatable    :: eigval_opt(:,:)
+    real(kind=dp), allocatable    :: eigval2(:,:)
     real(kind=dp)    :: irvec_tmp(3)
-    complex(kind=dp) :: utmp(num_bands, num_wann)
+    complex(kind=dp), allocatable :: utmp(:,:)
     complex(kind=dp) :: fac
+
+    ! START test memory
+    allocate (eigval_opt(num_bands, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating eigval_opt in hamiltonian_get_hr', comm)
+      return
+    endif
+
+    allocate (eigval2(num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating eigval2 in hamiltonian_get_hr', comm)
+      return
+    endif
+
+    allocate (utmp(num_bands, num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating utmp in hamiltonian_get_hr', comm)
+      return
+    endif
+    ! END test memory
 
     if (print_output%timing_level > 1) call io_stopwatch_start('hamiltonian: get_hr', timer)
 
