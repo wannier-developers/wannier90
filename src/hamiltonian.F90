@@ -286,25 +286,11 @@ contains
     complex(kind=dp), allocatable :: utmp(:,:)
     complex(kind=dp) :: fac
 
-    ! START test memory
-    allocate (eigval_opt(num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating eigval_opt in hamiltonian_get_hr', comm)
-      return
-    endif
-
     allocate (eigval2(num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating eigval2 in hamiltonian_get_hr', comm)
       return
     endif
-
-    allocate (utmp(num_bands, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating utmp in hamiltonian_get_hr', comm)
-      return
-    endif
-    ! END test memory
 
     if (print_output%timing_level > 1) call io_stopwatch_start('hamiltonian: get_hr', timer)
 
@@ -319,10 +305,25 @@ contains
     if (ham_logical%have_ham_k) go to 100
 
     ham_k = cmplx_0
-    eigval_opt = 0.0_dp
-    eigval2 = 0.0_dp
 
     if (have_disentangled) then
+
+      ! start allocation of eigval_opt, utmp; used only if have_disentangled.
+      allocate (eigval_opt(num_bands, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating eigval_opt in hamiltonian_get_hr', comm)
+        return
+      endif
+
+      allocate (utmp(num_bands, num_wann), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating utmp in hamiltonian_get_hr', comm)
+        return
+      endif
+
+      eigval_opt = 0.0_dp
+      eigval2 = 0.0_dp
+      ! end allocation of eigval_opt, utmp
 
       ! slim down eigval to contain states within the outer window
 
