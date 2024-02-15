@@ -163,7 +163,7 @@ program wannier
     ! please only invoke on rank 0
     call write_kmesh(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-    if (rank == 0) close (unit=stderr, status='delete')
+    !if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
@@ -286,7 +286,7 @@ program wannier
   endif
 
   call print_times(common_data, stdout)
-  if (rank == 0) close (unit=stderr, status='delete')
+  !if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
   call mpi_finalize(ierr)
 #endif
