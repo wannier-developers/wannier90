@@ -26,18 +26,17 @@ module w90_io
 
   private
 
-  logical, public, save :: post_proc_flag                        !! Are we in post processing mode
+  !logical, public, save :: post_proc_flag                        !! Are we in post processing mode
   character(len=10), parameter, public :: w90_version = '3.1.0 ' !! Label for this version of wannier90
 
   public :: io_stopwatch_start
   public :: io_stopwatch_stop
   public :: io_commandline
   public :: io_date
-  public :: io_file_unit
-  public :: io_get_seedname
   public :: io_print_timings
   public :: io_time
   public :: io_wallclocktime
+  public :: prterr
 
 contains
 
@@ -159,53 +158,7 @@ contains
   end subroutine io_print_timings
 
   !================================================
-  subroutine io_get_seedname(seedname)
-    !================================================
-    !
-    !! Get the seedname from the commandline
-    !
-    !================================================
-
-    implicit none
-
-    integer :: num_arg
-    character(len=50) :: ctemp
-    character(len=50), intent(inout)  :: seedname
-
-    post_proc_flag = .false.
-
-    num_arg = command_argument_count()
-    if (num_arg == 0) then
-      seedname = 'wannier'
-    elseif (num_arg == 1) then
-      call get_command_argument(1, seedname)
-      if (index(seedname, '-pp') > 0) then
-        post_proc_flag = .true.
-        seedname = 'wannier'
-      end if
-    else
-      call get_command_argument(1, seedname)
-      if (index(seedname, '-pp') > 0) then
-        post_proc_flag = .true.
-        call get_command_argument(2, seedname)
-      else
-        call get_command_argument(2, ctemp)
-        if (index(ctemp, '-pp') > 0) post_proc_flag = .true.
-      end if
-
-    end if
-
-    ! If on the command line the whole seedname.win was passed, I strip the last ".win"
-    if (len(trim(seedname)) .ge. 5) then
-      if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".win") then
-        seedname = seedname(:len(trim(seedname)) - 4)
-      end if
-    end if
-
-  end subroutine io_get_seedname
-
-  !================================================
-  subroutine io_commandline(prog, dryrun, seedname)
+  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname)
     !================================================
     !
     !! Parse the commandline
@@ -214,11 +167,11 @@ contains
 
     implicit none
 
-    character(len=50), intent(in) :: prog
+    character(len=:), allocatable, intent(in) :: prog
     !! Name of the calling program
-    logical, intent(out) :: dryrun
+    logical, intent(out) :: dryrun, post_proc_flag
     !! Have we been asked for a dryrun
-    character(len=50), intent(inout)  :: seedname
+    character(len=:), allocatable, intent(inout)  :: seedname
 
     integer :: num_arg, loop
     character(len=50), allocatable :: ctemp(:)
@@ -439,29 +392,61 @@ contains
     return
   end function io_wallclocktime
 
-  !================================================
-  function io_file_unit()
-    !================================================
-    !! Returns an unused unit number
-    !! so we can later open a file on that unit.
-    !
-    !================================================
+  subroutine prterr(error, ie, istdout, istderr, comm)
+    use w90_comms, only: comms_no_sync_send, comms_no_sync_recv, w90_comm_type, mpirank, mpisize
+    use w90_error_base, only: code_remote, w90_error_type
 
-    implicit none
+    ! arguments
+    integer, intent(inout) :: ie ! global error value to be returned
+    integer, intent(in) :: istderr, istdout
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(in) :: error
 
-    integer :: io_file_unit, unit
-    logical :: file_open
+    ! local variables
+    type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
+    integer :: je ! error value on remote ranks
+    integer :: j ! rank index
+    integer :: failrank ! lowest rank reporting an error
+    character(len=128) :: mesg ! only print 128 chars of error
 
-    unit = 9
-    file_open = .true.
-    do while (file_open)
-      unit = unit + 1
-      inquire (unit, OPENED=file_open)
-    end do
+    ie = 0
+    mesg = 'not set'
 
-    io_file_unit = unit
+    if (mpirank(comm) == 0) then
+      ! fixme, report all failing ranks instead of lowest failing rank (current stand)
+      do j = mpisize(comm) - 1, 1, -1
+        call comms_no_sync_recv(je, 1, j, le, comm)
 
-    return
-  end function io_file_unit
+        if (je /= code_remote .and. je /= 0) then
+          failrank = j
+          ie = je
+          call comms_no_sync_recv(mesg, 128, j, le, comm)
+        endif
+      enddo
+      ! if the error is on rank0
+      if (error%code /= code_remote .and. error%code /= 0) then
+        failrank = 0
+        ie = error%code
+        mesg = error%message
+      endif
+
+      write (istdout, *) 'Exiting.......'
+      write (istdout, '(1x,a)') trim(mesg)
+      write (istdout, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+
+      write (istderr, *) 'Exiting.......'
+      write (istderr, '(1x,a)') trim(mesg)
+      write (istderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+      write (istderr, '(1x,a)') ' error encountered; check .wout log'
+
+    else ! non 0 ranks
+      je = error%code
+      call comms_no_sync_send(je, 1, 0, le, comm)
+      if (je /= code_remote .and. je /= 0) then
+        mesg = error%message
+        call comms_no_sync_send(mesg, 128, 0, le, comm)
+      endif
+    endif
+  end subroutine prterr
 
 end module w90_io

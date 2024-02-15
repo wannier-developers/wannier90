@@ -62,7 +62,7 @@ contains
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
     type(ws_region_type), intent(in) :: ws_region
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -164,7 +164,7 @@ contains
     ! arguments
     type(ham_logical_type), intent(inout) :: ham_logical
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout), allocatable :: ndegen(:)
     integer, intent(inout), allocatable :: irvec(:, :)
@@ -252,7 +252,7 @@ contains
     type(print_output_type), intent(in)      :: print_output
     type(dis_manifold_type), intent(in)      :: dis_manifold
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in)           :: comm
+    type(w90_comm_type), intent(in)           :: comm
     type(timer_list_type), intent(inout)     :: timer
 
     integer, intent(inout), allocatable :: shift_vec(:, :)
@@ -582,7 +582,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit, io_date
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date
     use w90_types, only: timer_list_type
     use w90_wannier90_types, only: ham_logical_type
 
@@ -590,7 +590,7 @@ contains
     type(ham_logical_type), intent(inout) :: ham_logical
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout) :: nrpts
     integer, intent(in)    :: ndegen(:)
@@ -601,7 +601,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    integer            :: i, j, irpt, file_unit
+    integer            :: i, j, irpt, file_unit, ierr
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
 
@@ -611,9 +611,12 @@ contains
 
     ! write the  whole matrix with all the indices
 
-    file_unit = io_file_unit()
-    open (file_unit, file=trim(seedname)//'_hr.dat', form='formatted', &
-          status='unknown', err=101)
+    open (newunit=file_unit, file=trim(seedname)//'_hr.dat', form='formatted', status='unknown', &
+          iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: hamiltonian_write_hr: problem opening file '//trim(seedname)//'_hr.dat', comm)
+      return
+    endif
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -632,16 +635,8 @@ contains
     end do
 
     close (file_unit)
-
     ham_logical%hr_written = .true.
-
     if (timing_level > 1) call io_stopwatch_stop('hamiltonian: write_hr', timer)
-
-    return
-
-101 call set_error_file(error, 'Error: hamiltonian_write_hr: problem opening file '//trim(seedname)//'_hr.dat', comm)
-    return !fixme jj restructure
-
   end subroutine hamiltonian_write_hr
 
   !================================================!
@@ -671,7 +666,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout)              :: nrpts
     integer, intent(inout), allocatable :: ndegen(:)
@@ -821,7 +816,7 @@ contains
     !================================================!
 
     use w90_constants, only: twopi, cmplx_i
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90_types, only: kmesh_info_type
 
     implicit none
@@ -829,7 +824,7 @@ contains
     ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: irvec(:, :)
@@ -840,15 +835,20 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    integer :: loop_rpt, m, n, nkp, ind, nn, file_unit
+    integer :: loop_rpt, m, n, nkp, ind, nn, file_unit, ierr
     real(kind=dp) :: rdotk
     complex(kind=dp) :: fac
     complex(kind=dp) :: position(3)
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
 
-    file_unit = io_file_unit()
-    open (file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', err=101)
+    open (newunit=file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', &
+          iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r', comm)
+      return
+    endif
+
     call io_date(cdate, ctime)
 
     header = 'written on '//cdate//' at '//ctime
@@ -888,12 +888,6 @@ contains
     end do
 
     close (file_unit)
-
-    return
-
-101 call set_error_file(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r', comm)
-    return !fixme jj restructure
-
   end subroutine hamiltonian_write_rmn
 
   !================================================!
@@ -909,7 +903,7 @@ contains
     !! * <0n|r|Rn>
     !================================================!
 
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit, io_date
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date
     use w90_constants, only: twopi, cmplx_i
     use w90_types, only: kmesh_info_type
     use w90_wannier90_types, only: ham_logical_type
@@ -919,7 +913,7 @@ contains
     type(ham_logical_type), intent(inout) :: ham_logical
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer                :: i, j, irpt, ik, nn, idir, file_unit
     integer, intent(in)    :: num_wann
@@ -938,18 +932,22 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    real(kind=dp)      :: rdotk
-    complex(kind=dp)   :: fac, pos_r(3)
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
+    complex(kind=dp)   :: fac, pos_r(3)
+    integer :: ierr
+    real(kind=dp)      :: rdotk
 
     if (ham_logical%tb_written) return
 
     if (timing_level > 1) call io_stopwatch_start('hamiltonian: write_tb', timer)
 
-    file_unit = io_file_unit()
-    open (file_unit, file=trim(seedname)//'_tb.dat', form='formatted', &
-          status='unknown', err=101)
+    open (newunit=file_unit, file=trim(seedname)//'_tb.dat', form='formatted', status='unknown', &
+          iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: hamiltonian_write_tb: problem opening file '//trim(seedname)//'_tb.dat', comm)
+      return
+    endif
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -1010,18 +1008,9 @@ contains
         end do
       end do
     end do
+
     close (file_unit)
-
     ham_logical%tb_written = .true.
-
     if (timing_level > 1) call io_stopwatch_stop('hamiltonian: write_tb', timer)
-
-    return
-
-101 call set_error_file(error, 'Error: hamiltonian_write_tb: problem opening file ' &
-                        //trim(seedname)//'_tb.dat', comm)
-    return !jj fixme restructure
-
   end subroutine hamiltonian_write_tb
-
 end module w90_hamiltonian

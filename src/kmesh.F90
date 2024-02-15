@@ -30,7 +30,7 @@ module w90_kmesh
   use w90_types, only: max_shells, num_nnmax ! used for dimensioning
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -78,19 +78,20 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
+    integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     logical, intent(in) :: gamma_only
 
     ! local variables
-    real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
     real(kind=dp), allocatable :: bvec_tmp(:, :)
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp) :: bk_local(3, num_nnmax, num_kpts) !, kpbvec(3)
     real(kind=dp) :: bweight(max_shells)
+    real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
     real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
     real(kind=dp) :: dnn(kmesh_input%search_shells)
     real(kind=dp) :: recip_lattice(3, 3), volume
@@ -104,7 +105,6 @@ contains
     integer :: nlist, nkp, nkp2, l, m, n, ndnn, ndnnx, ndnntot
     integer :: nnshell(num_kpts, kmesh_input%search_shells)
     integer :: nnsh, nn, nnx, loop, i, j
-    integer :: stdout
 
     if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: get', timer)
 
@@ -136,8 +136,9 @@ contains
           l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
           !
           vkpp = kpt_cart(:, nkp) + matmul(lmn(:, loop), recip_lattice)
-          dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
-                      + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
+          !dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
+          !            + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
+          dist = sqrt(vkpp(1)**2 + vkpp(2)**2 + vkpp(3)**2) !just assume a gamma-centred mesh JJ
           !
           if ((dist .gt. kmesh_input%tol) .and. (dist .gt. dnn0 + kmesh_input%tol)) then
             if (dist .lt. dnn1 - kmesh_input%tol) then
@@ -739,7 +740,7 @@ contains
   end subroutine kmesh_get
 
   !================================================!
-  subroutine kmesh_write(exclude_bands, kmesh_info, proj_input, print_output, kpt_latt, &
+  subroutine kmesh_write(exclude_bands, kmesh_info, lauto_proj, proj, print_output, kpt_latt, &
                          real_lattice, num_kpts, num_proj, calc_only_A, spinors, seedname, timer)
     !==================================================================!
     !                                                                  !
@@ -770,26 +771,26 @@ contains
     ! m and n.                                                         !
     !==================================================================!
 
-    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_types, only: kmesh_info_type, kmesh_input_type, &
-      proj_input_type, print_output_type, timer_list_type
+      proj_type, print_output_type, timer_list_type
 
     implicit none
 
+    character(len=*), intent(in)  :: seedname
     integer, allocatable, intent(in) :: exclude_bands(:)
-    type(print_output_type), intent(in) :: print_output
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(proj_input_type), intent(in) :: proj_input
-    type(timer_list_type), intent(inout) :: timer
-
     integer, intent(in) :: num_kpts
     integer, intent(inout) :: num_proj
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
     logical, intent(in) :: calc_only_A
     logical, intent(in) :: spinors
-    character(len=50), intent(in)  :: seedname
+    logical, intent(in) :: lauto_proj
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(print_output_type), intent(in) :: print_output
+    type(proj_type), allocatable, intent(in) :: proj(:) ! alloc only because allocation status is tested
+    type(timer_list_type), intent(inout) :: timer
 
     real(kind=dp) :: recip_lattice(3, 3), volume
     integer           :: i, nkp, nn, nnkpout, num_exclude_bands
@@ -797,8 +798,7 @@ contains
 
     if (print_output%timing_level > 0) call io_stopwatch_start('kmesh: write', timer)
 
-    nnkpout = io_file_unit()
-    open (unit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
+    open (newunit=nnkpout, file=trim(seedname)//'.nnkp', form='formatted')
 
     ! Date and time
     call io_date(cdate, ctime)
@@ -833,19 +833,19 @@ contains
     if (spinors) then
       ! Projections
       write (nnkpout, '(a)') 'begin spinor_projections'
-      if (allocated(proj_input%site)) then
+      if (allocated(proj)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            proj_input%site(1, i), proj_input%site(2, i), proj_input%site(3, i), &
-            proj_input%l(i), proj_input%m(i), proj_input%radial(i)
+            proj(i)%site(1), proj(i)%site(2), proj(i)%site(3), &
+            proj(i)%l, proj(i)%m, proj(i)%radial
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            proj_input%z(1, i), proj_input%z(2, i), proj_input%z(3, i), &
-            proj_input%x(1, i), proj_input%x(2, i), proj_input%x(3, i), &
-            proj_input%zona(i)
+            proj(i)%z(1), proj(i)%z(2), proj(i)%z(3), &
+            proj(i)%x(1), proj(i)%x(2), proj(i)%x(3), &
+            proj(i)%zona
           write (nnkpout, '(2x,1i3,1x,3f11.7)') &
-            proj_input%s(i), &
-            proj_input%s_qaxis(1, i), proj_input%s_qaxis(2, i), proj_input%s_qaxis(3, i)
+            proj(i)%s, &
+            proj(i)%s_qaxis(1), proj(i)%s_qaxis(2), proj(i)%s_qaxis(3)
         enddo
       else
         ! No projections
@@ -855,16 +855,16 @@ contains
     else
       ! Projections
       write (nnkpout, '(a)') 'begin projections'
-      if (allocated(proj_input%site)) then
+      if (allocated(proj)) then
         write (nnkpout, '(i6)') num_proj
         do i = 1, num_proj
           write (nnkpout, '(3(f10.5,1x),2x,3i3)') &
-            proj_input%site(1, i), proj_input%site(2, i), proj_input%site(3, i), &
-            proj_input%l(i), proj_input%m(i), proj_input%radial(i)
+            proj(i)%site(1), proj(i)%site(2), proj(i)%site(3), &
+            proj(i)%l, proj(i)%m, proj(i)%radial
           write (nnkpout, '(2x,3f11.7,1x,3f11.7,1x,f7.2)') &
-            proj_input%z(1, i), proj_input%z(2, i), proj_input%z(3, i), &
-            proj_input%x(1, i), proj_input%x(2, i), proj_input%x(3, i), &
-            proj_input%zona(i)
+            proj(i)%z(1), proj(i)%z(2), proj(i)%z(3), &
+            proj(i)%x(1), proj(i)%x(2), proj(i)%x(3), &
+            proj(i)%zona
         enddo
       else
         ! No projections
@@ -874,7 +874,7 @@ contains
     endif
 
     ! Info for automatic generation of projections
-    if (proj_input%auto_projections) then
+    if (lauto_proj) then
       write (nnkpout, '(a)') 'begin auto_projections'
       write (nnkpout, '(i6)') num_proj
       write (nnkpout, '(i6)') 0
@@ -927,7 +927,7 @@ contains
 
     type(kmesh_info_type), intent(inout) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer :: ierr
 
     ! Deallocate real arrays that are public
@@ -1056,7 +1056,7 @@ contains
     type(kmesh_input_type), intent(in)  :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: lmn(:, :)
@@ -1127,7 +1127,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -1165,6 +1165,9 @@ contains
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
     endif
+
+    ! note allocation of kmesh_input%shell list in subroutine w90_readwrite_read_kmesh_data()
+    ! kmesh_input%num_shells = 0 in same place
 
     b1sat = .false.
     do shell = 1, kmesh_input%search_shells
@@ -1448,7 +1451,7 @@ contains
     type(kmesh_input_type), intent(in) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
@@ -1600,7 +1603,7 @@ contains
     !================================================
 
     use w90_constants, only: eps7, maxlen
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_file_unit
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
     implicit none
@@ -1610,7 +1613,7 @@ contains
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts, stdout
     integer, intent(in) :: lmn(:, :)
@@ -1665,25 +1668,30 @@ contains
       counter = counter + multi(shell)
     end do
 
-    kshell_in = io_file_unit()
-    open (unit=kshell_in, file=trim(seedname)//'.kshell', &
-          form='formatted', status='old', action='read', err=101)
+    open (newunit=kshell_in, file=trim(seedname)//'.kshell', form='formatted', status='old', &
+          action='read', iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: Problem (1) opening input file '//trim(seedname)//'.kshell', comm)
+      return
+    endif
 
     num_lines = 0; tot_num_lines = 0
     do
-      read (kshell_in, '(a)', iostat=ierr, err=200, end=210) dummy
-      dummy = adjustl(dummy)
-      tot_num_lines = tot_num_lines + 1
-      if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
-        if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-      endif
-
+      read (kshell_in, '(a)', iostat=ierr) dummy
+      if (ierr == 0) then !read ok, proceed
+        dummy = adjustl(dummy)
+        tot_num_lines = tot_num_lines + 1
+        if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
+          if (len(trim(dummy)) > 0) num_lines = num_lines + 1
+        endif
+      else if (ierr > 0) then !error case
+        call set_error_input(error, 'Error: Problem (2) reading input file '//trim(seedname)//'.kshell', comm)
+        return
+      else if (ierr < 0) then !end of record or end of file
+        exit
+      end if
     end do
 
-200 call set_error_file(error, 'Error: Problem (1) reading input file '//trim(seedname)//'.kshell', comm)
-    return !JJ fixme, restructure
-
-210 continue
     rewind (kshell_in)
     kmesh_input%num_shells = num_lines
 
@@ -1832,8 +1840,6 @@ contains
 
     return
 
-101 call set_error_input(error, 'Error: Problem (2) reading input file '//trim(seedname)//'.kshell', comm)
-    return
 103 call set_error_input(error, 'Error: Problem (3) reading input file '//trim(seedname)//'.kshell', comm)
     return
 230 call set_error_input(error, 'Error: Problem reading in w90_readwrite_get_keyword_vector', comm)

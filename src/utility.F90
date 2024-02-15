@@ -21,7 +21,7 @@ module w90_utility
   !! Module contains lots of useful general routines
 
   use w90_constants, only: dp
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -219,9 +219,11 @@ contains
 
     if (present(prod2) .and. present(eigval)) then
       ! tmp = diag(eigval).tmp
-      forall (i=1:nb, j=1:mc)
-      tmp(i, j) = eigval(i)*tmp(i, j)
-      end forall
+      do j = 1, mc
+        do i = 1, nb
+          tmp(i, j) = eigval(i)*tmp(i, j)
+        enddo
+      enddo
       ! prod2 = op(a).tmp
       call utility_zgemm_new(a, tmp, prod2, transa, 'N')
     end if
@@ -350,7 +352,7 @@ contains
     real(kind=dp), intent(in)  :: real_lat(3, 3)
     real(kind=dp), intent(out) :: recip_lat(3, 3)
     real(kind=dp), intent(out) :: volume
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     call utility_recip_lattice_base(real_lat, recip_lat, volume)
 
@@ -455,9 +457,9 @@ contains
 
     implicit none
 
-    real(kind=dp), intent(in)  :: inv_lat(3, 3)
-    real(kind=dp), intent(out)  :: frac(3)
-    real(kind=dp), intent(in)  :: cart(3)
+    real(kind=dp), intent(in) :: inv_lat(3, 3)
+    real(kind=dp), intent(out) :: frac(3)
+    real(kind=dp), intent(in) :: cart(3)
 
     integer :: i
 
@@ -557,7 +559,7 @@ contains
     character(len=maxlen), intent(in)  :: string_tmp
     real(kind=dp), intent(out) :: outvec(3)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: pos
     character(len=maxlen) :: ctemp
@@ -646,7 +648,7 @@ contains
     real(kind=dp), intent(out) :: eig(dim)
     complex(kind=dp), intent(out) :: rot(dim, dim)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     complex(kind=dp) :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
     real(kind=dp) :: rwork(7*dim)
@@ -668,7 +670,7 @@ contains
       return
     endif
     if (info > 0) then
-      write (errormsg, '(i3,a)') 'Error in utility_diagonalize: ', info, &
+      write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: ', info, &
         ' EIGENVECTORS FAILED TO CONVERGE'
       call set_error_fatal(error, errormsg, comm)
       return
@@ -1011,7 +1013,7 @@ contains
     integer, intent(in) :: n
     !! input: the order of the smearing function
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp) :: a, arg, hp, hd, sqrtpm1
@@ -1097,7 +1099,7 @@ contains
     !! input: the point where to compute the function
     integer :: n
     !! input: the order of the smearing function
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp) :: sqrtpm1

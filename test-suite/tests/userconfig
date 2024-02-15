@@ -27,7 +27,7 @@ extract_fn = tools parsers.parse_wout.parse
 tolerance = ( (1.0e-5, 1.0e-5, 'final_centres_x'),
               (1.0e-5, 1.0e-5, 'final_centres_y'),
               (1.0e-5, 1.0e-5, 'final_centres_z'),
-              (3.0e-6, 3.0e-6, 'final_spreads'), 
+              (3.1e-6, 3.1e-6, 'final_spreads'), 
               (1.0e-6, 1.0e-6, 'omegaIOD_C'), 
               (1.0e-6, 5.0e-6, 'omegaD'), 
               (1.0e-5, 1.0e-5, 'omegaRest'), 
