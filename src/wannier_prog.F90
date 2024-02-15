@@ -459,7 +459,7 @@ contains
     ierr = 0
 
     if (mpirank(common_data%comm) == 0) then
-      call w90_create_kmesh(common_data, istdout, istderr, ierr)
+      if (.not. allocated(common_data%kmesh_info%nnlist)) call w90_create_kmesh(common_data, istdout, istderr, ierr)
 
       call kmesh_write(common_data%exclude_bands, common_data%kmesh_info, &
                        common_data%select_proj%auto_projections, common_data%proj_input, &
