@@ -8,7 +8,7 @@
     4$\times$4$\times$4 k-point grid.
     Starting guess: atom-centred sp$^3$ hybrid orbitals*
 
--   Directory: `tutorials/tutorial2/` *Files can be downloaded from [here]{}*
+-   Directory: `tutorials/tutorial2/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial2)*
 
 -   Input Files
 

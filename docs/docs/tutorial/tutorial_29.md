@@ -57,11 +57,12 @@
     ```
 
 6.  Run `postw90`
- 
+
     ```bash title="Terminal"
     postw90.x Pt # (1)! 
     mpirun -np 8 postw90.x Pt # (2)! 
     ```
+
     1.     serial execution
     2.     example of parallel execution with 8 MPI processes
 
