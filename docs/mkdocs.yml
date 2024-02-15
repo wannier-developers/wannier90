@@ -197,6 +197,7 @@ plugins:
       repository: qiaojunfeng/w90-docs
       branch: main
   - search
+  - glightbox
   - bibtex:
       bib_file: "refs.bib"
       footnote_format: "ref{number}" # default "{number}", to avoid conflict with user-defined footnotes
@@ -210,4 +211,5 @@ extra_javascript:
   # - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/contrib/auto-render.min.js
 
 extra_css:
+  - stylesheets/custom.css
   - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.css

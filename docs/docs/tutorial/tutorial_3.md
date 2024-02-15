@@ -68,9 +68,8 @@ Fig. [2](#fig:si.bnd).
     The k-point path for the bandstructure interpolation is set in the
     `kpoint_path` block. Try plotting along different paths.
 
-<figure markdown="span">
+<figure markdown="span" id="fig:si.bnd">
 ![Image title](./si.webp){ width="500" }
-<figure id="fig:si.bnd">
 <figcaption> Fig. 2: Bandstructure of silicon showing the position of the outer
 and inner energy windows.</figcaption>
 </figure>
