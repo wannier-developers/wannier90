@@ -46,7 +46,7 @@ transport properties of an lcr system from a single
 external files provide in the `tran_read_ht = TRUE` case are
 instead built from the Wannier function basis directly. As such, strict
 rules apply to the system geometry, which is shown in
-Figure [below](#fig:lcr-2c2). These
+Figure [below](#fig:lcr_2c2). These
 rules are as follows:
 
 -   Left and right leads must be identical and periodic.
@@ -60,7 +60,7 @@ rules are as follows:
 
 -   A single **k**-point (Gamma) must be used.
 
-<figure markdown="span">
+<figure markdown="span" id="fig:lcr_2c2">
 ![lcr_2c2](lcr_2c2.webp){ width="100%" }
 <figcaption>Schematic illustration of the supercell required for 2c2 lcr
 calculations, showing where each of the Hamiltonian matrices are derived
@@ -135,5 +135,5 @@ file:
 A further parameter related to these calculations is
 `tran_group_threshold`.
 
-Examples of how 2c2 calculations are preformed can be found in the
+Tutorial of [how 2c2 calculations are preformed](../../tutorials/tutorial_14.md) can be found in the
 `wannier90` Tutorial.

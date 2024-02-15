@@ -825,7 +825,7 @@ part of the spread functional.
 
 Total number of iterations in the minimisation procedure. Set
 `num_iter=0` if you wish to generate projected WFs rather than
-maximally-localized WFs (see Example 8 in the Tutorial).
+maximally-localized WFs (see Tutorial [8](../../tutorials/tutorial_8.md) in the Tutorial).
 
 The default value is 100
 

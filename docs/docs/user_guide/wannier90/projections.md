@@ -440,4 +440,5 @@ format of the file is:
     see the script `utility/write_pdwf_projectors.py`.
 
     For an actual example of a `Si.dat` file for silicon, see the file
-    `examples/example35/ext_proj/Si.dat`.
+    [`tutorials/tutorial35/ext_proj/Si.dat`](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial35/ext_proj/Si.dat).
+    <!-- The tutorial35 do not exist now, I just give the link -->
