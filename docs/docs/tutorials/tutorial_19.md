@@ -78,7 +78,8 @@ the new input files `Fe.pw2wan` and `Fe.win`.
     2.   example of parallel execution with 8 MPI processes
 
 The orbital magnetization is computed as the BZ integral of the quantity
-${\bf M}^{\rm orb}({\bf k})$ defined in Eq. (11.20) of the User Guide.
+${\bf M}^{\rm orb}({\bf k})$ defined in this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:morb) 
+of the User Guide.
 The relevant lines in `Fe.win` are
 
 ```vi title="Input file"

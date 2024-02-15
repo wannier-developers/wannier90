@@ -44,7 +44,7 @@
     ```
 
     and re-running `wannier90`. To visualise the MLWFs we must represent
-    them explicitly on a real space grid (see Ref. [@UserGuide]). As a
+    them explicitly on a real space grid (see the [User guide page](../../user_guide/wannier90/methodology#methodology)). As a
     consequence, plotting the MLWFs is slower and uses more memory than
     the minimisation of the spread. The four files that are created
     (`gaas_00001.xsf`, etc.) can be viewed using `XCrySDen`[^1],

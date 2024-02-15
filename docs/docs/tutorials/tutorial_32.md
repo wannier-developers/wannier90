@@ -2,12 +2,12 @@
 
 -   Outline: Compute the Wannier interpolated band structure of
     tungsten (W) using the SCDM method to calculate the initial guess
-    (see [Tutorial 27](../tutorial_27) for more details). The free parameters in the SCDM
+    (see Tutorial [27](../tutorial_27) for more details). The free parameters in the SCDM
     method, i.e., $\mu$ and $\sigma$, are obtained by fitting a
     complementary error function to the projectabilities. The number of
     MLWFs is given by the number of pseudo-atomic orbitals (PAOs) in the
     pseudopotential, $21$ in this case. All the steps shown in this
-    example have been automated in the AiiDA[@Pizzi_AiiDA] workflow that
+    tutorial have been automated in the AiiDA[@Pizzi_AiiDA] workflow that
     can be downloaded from the MaterialsCloud
     website[@MaterialsCloudArchiveEntry].
 
@@ -141,7 +141,7 @@
     ```
 
     Please cite Ref. [@Vitale2019automated] in any publication employing
-    the procedure outlined in this example to obtain $\mu$ and $\sigma$.
+    the procedure outlined in this tutorial to obtain $\mu$ and $\sigma$.
 
 <figure markdown="span" id="fig:W_bs">
 ![Image title](./W_bs.webp){ width="500"}

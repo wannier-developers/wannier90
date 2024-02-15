@@ -41,7 +41,7 @@ nav:
       - '2: Lead &#151; Wannier-interpolated Fermi surface': "tutorials/tutorial_2.md"
       - '3: Silicon &#151; Disentangled MLWFs': "tutorials/tutorial_3.md"
       - '4: Copper &#151; Fermi surface, orbital character of energy bands': "tutorials/tutorial_4.md"
-      - 'Tutorials with the `pwscf` Interface': "tutorials/with_pwscf.md"
+      - 'Tutorials with the pwscf Interface': "tutorials/with_pwscf.md"
       - '5: Diamond &#151; MLWFs for the valence bands': "tutorials/tutorial_5.md"
       - '6: Copper &#151; Fermi surface': "tutorials/tutorial_6.md"
       - '7: Silane (SiH₄) &#151; Molecular MLWFs using Γ-point sampling': "tutorials/tutorial_7.md"
