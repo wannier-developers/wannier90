@@ -181,7 +181,7 @@ program wannier
 
   call w90_get_nn(common_data, nn, stdout, stderr, ierr)
   nkl = count(distk == rank) ! number of kpoints this rank
-  write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
+  !write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
   allocate (mloc(nb, nb, nn, nkl))
   allocate (u(nw, nw, nk))
