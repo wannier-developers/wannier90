@@ -106,6 +106,9 @@ module w90_library
   public :: w90_get_fortran_stdout
   public :: w90_get_proj ! get projection info
   public :: w90_get_spreads ! get spreads
+  public :: w90_get_nnkp ! get k' indexes
+  public :: w90_get_nn ! get number of b-vectors
+  public :: w90_get_gkpb ! get g offsets of k'
   public :: w90_input_reader ! extra variables from .win
   public :: w90_input_setopt ! set options specified by set_option
   public :: w90_plot ! plot functions
@@ -859,6 +862,23 @@ contains
 
     nnkp = common_data%kmesh_info%nnlist
   end subroutine w90_get_nnkp
+
+  subroutine w90_get_gkpb(common_data, gkpb, istdout, istderr, ierr)
+    ! gkpb is the triple of reciprocal lattice translations to correct phase in k'= k+b
+    ! gkpb should be dimensioned (3,nk,nnb)
+    implicit none
+
+    integer, intent(out) :: gkpb(:, :, :), ierr
+    integer, intent(in) :: istdout, istderr
+    type(lib_common_type), intent(inout) :: common_data
+
+    if (.not. common_data%setup_complete) then
+      call w90_create_kmesh(common_data, istdout, istderr, ierr)
+      if (ierr > 0) return
+    endif
+
+    gkpb = common_data%kmesh_info%nncell
+  end subroutine w90_get_gkpb
 
   subroutine w90_get_centres(common_data, centres)
     implicit none
