@@ -478,15 +478,25 @@ A number of keywords may be specified in the `pw2wannier90` input file:
     file. Default is `.false.` (only relevant if `write_spn=.true.`)
 
 -   `write_uHu` -- Set to `.true.` to write out the matrix elements
-    $$\langle u_{n{\bf k}+{\bf b}_1}\vert
-    H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle.$$ Default is `.false.`
+
+    $$
+    \langle u_{n{\bf k}+{\bf b}_1}\vert
+    H_{\bf k}\vert u_{m{\bf k}+{\bf b}_2}\rangle.
+    $$
+
+    Default is `.false.`
 
 -   `uHu_formatted` -- Set to `.true.` to write uHu data as a formatted
     file. Default is `.false.` (only relevant if `write_uHu=.true.`)
 
 -   `write_uIu` -- Set to `.true.` to write out the matrix elements of
-    $$\langle  u_{n{\bf k}+{\bf b}_1}\vert
-    u_{m{\bf k}+{\bf b}_2}\rangle.$$ Default is `.false.`
+
+    $$
+    \langle  u_{n{\bf k}+{\bf b}_1}\vert
+    u_{m{\bf k}+{\bf b}_2}\rangle.
+    $$
+
+    Default is `.false.`
 
 -   `uIu_formatted` -- Set to `.true.` to write uIu data as a formatted
     file. Default is `.false.` (only relevant if `write_uIu=.true.`)
@@ -523,7 +533,7 @@ For examples of use, refer to the `wannier90` Tutorial.
 #### `seedname.sym`
 
 If `read_sym = .true.`, then this additional input file is required for
-`pw2wannier90.x`\
+`pw2wannier90.x`
 if `read_sym = .false.`, then this file is written by `pw2wannier90.x`
 (only for reference -- it is not used in subsequent calculations)
 

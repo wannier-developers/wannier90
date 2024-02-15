@@ -184,7 +184,7 @@ kubo_adpt_smr = false
 
 kubo_smr_fixed_en_width = 1
 
-fermi_energy = \[insert your value here\]
+fermi_energy = [insert your value here]
 
 berry_curv_unit = ang2
 ```

@@ -78,7 +78,7 @@ For further examples see Section [Master input file: `seedname.win`](../sample_
 `seedname.win` file keywords defining the system. Argument types are
 represented by, I for a integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.  
-\* atoms_cart and atoms_frac may not both be defined in the same input
+\* `atoms_cart` and `atoms_frac` may not both be defined in the same input
 file.
 
 ### Job Control
@@ -101,12 +101,12 @@ file.
 | translate_home_cell  |  L   | To translate final Wannier centres to home unit cell when writing xyz file                      |
 |      write_xyz       |  L   | To write atomic positions and final centres in xyz file format                                  |
 |    write_vdw_data    |  L   | To write data for futher processing by w90vdw utility                                           |
-|    write_hr_diag     |  L   | To write the diagonal elements of the Hamiltonian in the Wannier basis to seedname.wout (in eV) |
+|    write_hr_diag     |  L   | To write the diagonal elements of the Hamiltonian in the Wannier basis to `seedname.wout` (in eV) |
 
 `seedname.win` file keywords defining job control. Argument types are
 represented by, I for a integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
-translate_home_cell only relevant if write_xyz is `.true.`
+translate_home_cell only relevant if `write_xyz` is `.true.`
 
 
 ### Disentanglement Parameters
@@ -157,7 +157,7 @@ physical value, L for a logical value and S for a text string.
 `seedname.win` file keywords controlling the wannierisation. Argument
 types are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. \*
-fixed_step and trial_step may not both be defined in the same input
+`fixed_step` and `trial_step` may not both be defined in the same input
 file. \*\*Cannot be used in conjunction with disentanglement.
 \*\*\*Cannot be used in conjunction with the inner (frozen) energy
 window.
@@ -205,7 +205,7 @@ window.
 `seedname.win` file keywords controlling the plotting. Argument types
 are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. \* Only
-applies when wannier_plot_format is `cube`.
+applies when `wannier_plot_format` is `cube`.
 
 ### Transport Parameters 
 |         Keyword          | Type | Description                                               |

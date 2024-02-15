@@ -168,11 +168,10 @@ the first lattice vector $\mathbf{A}_{1}$, etc.
 
 $$
 \begin{aligned}
-\texttt{M_matrix(m,n,nn,nkp)} & = & \left\langle u_{m\mathbf{k}} |
+\texttt{M_matrix(m,n,nn,nkp)} & = \left\langle u_{m\mathbf{k}} |
 u_{n\mathbf{k+b}}\right\rangle\\
-\texttt{A_matrix(m,n,nkp)} & = &
-\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle\\
-\texttt{eigenvalues(n,nkp)} &=& \varepsilon_{n\mathbf{k}}
+\texttt{A_matrix(m,n,nkp)} & = \left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle\\
+\texttt{eigenvalues(n,nkp)} &= \varepsilon_{n\mathbf{k}}
 \end{aligned}
 $$
 
@@ -180,8 +179,8 @@ where
 
 $$
 \begin{aligned}
-\mathbf{k} &=&\texttt{kpt_latt(1:3,nkp)}\\
-\mathbf{k+b}&=& \texttt{kpt_latt(1:3,nnlist(nkp,nn))} +
+\mathbf{k} &=\texttt{kpt_latt(1:3,nkp)}\\
+\mathbf{k+b}&= \texttt{kpt_latt(1:3,nnlist(nkp,nn))} +
 \texttt{nncell(1:3,nkp,nn)} 
 \end{aligned}
 $$
