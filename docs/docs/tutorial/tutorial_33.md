@@ -128,4 +128,4 @@ For comparison, the exact band structure calculated usingWannier90 (file `bc2n_b
 [^3]: The calculation of the AHC using `berry_task = kubo` involves a
     truncation of the sum over empty states in the Kubo-Greenwood
     formula: see description of the keyword [`kubo_eigval_max`]() in the
-    User Guide. As discussed around [the formula for anomalous Hall conductivity]() of the User Guide, no truncation is done with `berry_task = ahc`.
+    User Guide. As discussed around [the formula for anomalous Hall conductivity](../../user_guide/postw90/berry/#mjx-eqn:eq:ahc) of the User Guide, no truncation is done with `berry_task = ahc`.
