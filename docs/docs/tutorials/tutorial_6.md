@@ -7,15 +7,15 @@
 
 -   Input Files
 
-    `-    `copper.scf` *The `pwscf` input file for ground
+    -    `copper.scf` *The `pwscf` input file for ground
         state calculation*
 
-    `-    `copper.nscf` *The `pwscf` input file to obtain
+    -    `copper.nscf` *The `pwscf` input file to obtain
         Bloch states on a uniform grid*
 
-    `-    `copper.pw2wan` *Input file for `pw2wannier90`*
+    -    `copper.pw2wan` *Input file for `pw2wannier90`*
 
-    `-    `copper.win` *The `wannier90` input file*
+    -    `copper.win` *The `wannier90` input file*
 
 1.  Run `pwscf` to obtain the ground state of copper
 
@@ -106,5 +106,3 @@ Inspect the output file `copper.wout`.
 -   Instead of extracting a subspace of seven states, we could extract a
     nine dimensional space (i.e., with $s$, $p$ and $d$ character).
     Examine this case and compare the interpolated bandstructures.
-
-
