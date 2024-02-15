@@ -36,13 +36,14 @@ void cset_u_opt(void*, std::complex<double>*);
 
 void cget_nn(void*, int&);
 void cget_nnkp(void*, int*);
+void cget_gkpb(void*, int*);
 void cget_centres(void*, void*);
 void cget_spreads(void*, void*);
 }
 
 #ifdef MPI_VERSION
 #include <mpi.h>
-void cinput_setopt(void* blob, std::string seed, int ierr, MPI_Comm comm) {
+void cinput_setopt(void* blob, std::string seed, int& ierr, MPI_Comm comm) {
         int fcomm = MPI_Comm_c2f(comm);
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
@@ -51,7 +52,7 @@ void cinput_setopt(void* blob, std::string seed, int ierr, MPI_Comm comm) {
         cinput_setopt(blob, &stringdesc, ierr, fcomm);
 }
 #else
-void cinput_setopt(void* blob, std::string seed, int ierr) {
+void cinput_setopt(void* blob, std::string seed, int& ierr) {
         CFI_cdesc_t stringdesc;
         char* seedc = (char*)seed.c_str(); // discarding constness
         CFI_establish(&stringdesc, seedc, CFI_attribute_other, CFI_type_char, strlen(seedc), 0, NULL);

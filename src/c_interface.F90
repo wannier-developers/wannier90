@@ -154,6 +154,20 @@ contains
     call w90_get_nnkp(common_fptr, nfptr, istdout, istderr, ierr)
   end subroutine cget_nnkp
 
+  subroutine cget_gkpb(common_cptr, gkpb) bind(c)
+! return the g-offset of adjacent k-points in finite difference scheme
+    implicit none
+    type(c_ptr), value :: common_cptr, gkpb
+    type(lib_common_type), pointer :: common_fptr
+    integer(kind=c_int), pointer :: nfptr(:, :, :)
+    integer(kind=c_int) :: istderr, istdout, ierr
+    call w90_get_fortran_stderr(istderr)
+    call w90_get_fortran_stdout(istdout)
+    call c_f_pointer(common_cptr, common_fptr)
+    call c_f_pointer(gkpb, nfptr, [3, common_fptr%num_kpts, common_fptr%kmesh_info%nntot])
+    call w90_get_gkpb(common_fptr, nfptr, istdout, istderr, ierr)
+  end subroutine cget_gkpb
+
   subroutine cget_spreads(common_cptr, spreads) bind(c)
 ! returns the spreads of calulated mlwfs
     implicit none
