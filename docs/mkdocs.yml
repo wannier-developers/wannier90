@@ -44,9 +44,9 @@ nav:
       - 'Tutorials with the `pwscf` Interface': "tutorials/with_pwscf.md"
       - '5: Diamond &#151; MLWFs for the valence bands': "tutorials/tutorial_5.md"
       - '6: Copper &#151; Fermi surface': "tutorials/tutorial_6.md"
-      - '7: Silane (SiH$$_4$$) &#151; Molecular MLWFs using $\Gamma$-point sampling': "tutorials/tutorial_7.md"
+      - '7: Silane (SiH₄) &#151; Molecular MLWFs using Γ-point sampling': "tutorials/tutorial_7.md"
       - '8: Iron &#151; Spin-polarized WFs, DOS, projected WFs versus MLWFs': "tutorials/tutorial_8.md"
-      - '9: Cubic BaTiO$_3$': "tutorials/tutorial_9.md"
+      - '9: Cubic BaTiO₃': "tutorials/tutorial_9.md"
       - '10: Graphite': "tutorials/tutorial_10.md"
       - '11: Silicon &#151; Valence and low-lying conduction states': "tutorials/tutorial_11.md"
       - '12: Benzene &#151; Valence and low-lying conduction states': "tutorials/tutorial_12.md"
@@ -60,7 +60,7 @@ nav:
       - '20: Disentanglement restricted inside spherical regions of k space': "tutorials/tutorial_20.md"
       - '21: Gallium Arsenide &#151; Symmetry-adapted Wannier functions': "tutorials/tutorial_21.md"
       - '22: Copper &#151; Symmetry-adapted Wannier function': "tutorials/tutorial_22.md"
-      - '23: Silicon &#151; $G_0W_0$ bands structure interpolation': "tutorials/tutorial_23.md"
+      - '23: Silicon &#151; G₀W₀ bands structure interpolation': "tutorials/tutorial_23.md"
       - '24: Tellurium &#151; gyrotropic effect': "tutorials/tutorial_24.md"
       - '25: Gallium Arsenide &#151; Nonlinear shift current': "tutorials/tutorial_25.md"
       - '26: Gallium Arsenide &#151; Selective localization and constrained centres': "tutorials/tutorial_26.md"
@@ -69,6 +69,8 @@ nav:
       - '29: Platinum &#151; Spin Hall conductivity': "tutorials/tutorial_29.md"
       - '30: Gallium Arsenide &#151; Frequency-dependent spin Hall conductivity': "tutorials/tutorial_30.md"
       - '31: Platinum &#151; Selected columns of density matrix algorithm for spinor wavefunctions': "tutorials/tutorial_31.md"
+      - '32: Tungsten &#151; SCDM parameters from projectability': "tutorials/tutorial_32.md"
+      - '33: Monolayer BC₂N &#151; k&middot;p expansion coefficients': "tutorials/tutorial_33.md" 
 
 theme:
   name: material
