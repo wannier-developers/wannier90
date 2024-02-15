@@ -108,20 +108,19 @@ provided in the example folder
     python kdotp_plot.py
 ```
 
-For comparison, the exact band structure calculated usingWannier90 (file `bc2n_band.dat`, generated automatically) is alsoplotted along (see Fig. [11](#fig:bc2n-bnd){reference-type="ref"
-reference="fig:bc2n-bnd"}).
+For comparison, the exact band structure calculated usingWannier90 (file `bc2n_band.dat`, generated automatically) is also plotted along (see Fig. [11](#fig:bc2n-bnd)).
 
-    <figure id="fig:bc2n-bnd">
-    <div class="center">
-    <embed src="kdotp_bands_SX.pdf" style="width:12cm" />
-    </div>
-    <figcaption>Band dispersion of monolayer BC<span
+<figure markdown="span" id="fig:bc2n-bnd">
+![Image title](./kdotp_bands_SX.webp){ width="500"}
+<figcaption>Band dispersion of monolayer BC<span
     class="math inline"><sub>2</sub></span>N around <span
     class="math inline"><em>S</em></span> point. Exact results (solid dots)
     are compared to first-order (blue) and second-order (red) <span
     class="math inline"><em>k</em> ⋅ <em>p</em></span> model results for
     valence and conduction bands.</figcaption>
-    </figure>
+</figure>
+
+&nbsp;
 
 [^1]: Once `XCrySDen` starts, click on `Tools` $\rightarrow$ `Data Grid`
     in order to specify an isosurface value to plot.
@@ -134,5 +133,4 @@ reference="fig:bc2n-bnd"}).
 [^3]: The calculation of the AHC using `berry_task = kubo` involves a
     truncation of the sum over empty states in the Kubo-Greenwood
     formula: see description of the keyword [`kubo_eigval_max`]() in the
-    User Guide. As discussed around [the formula for anomalous Hall conductivity]() of the User Guide, no
-    truncation is done with `berry_task = ahc`.
+    User Guide. As discussed around [the formula for anomalous Hall conductivity]() of the User Guide, no truncation is done with `berry_task = ahc`.
