@@ -395,28 +395,30 @@ contains
       return
     endif
 
-    call dis_main(common_data%dis_control, common_data%dis_spheres, common_data%dis_manifold, &
-                  common_data%kmesh_info, common_data%kpt_latt, common_data%sitesym, &
-                  common_data%print_output, common_data%m_matrix_local, common_data%u_matrix, &
-                  common_data%u_opt, common_data%eigval, common_data%real_lattice, &
-                  common_data%omega%invariant, common_data%num_bands, common_data%num_kpts, &
-                  common_data%num_wann, common_data%gamma_only, common_data%lsitesymmetry, &
-                  istdout, common_data%timer, common_data%dist_kpoints, error, common_data%comm)
-    if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
+    if (common_data%num_bands > common_data%num_wann) then
+      call dis_main(common_data%dis_control, common_data%dis_spheres, common_data%dis_manifold, &
+                    common_data%kmesh_info, common_data%kpt_latt, common_data%sitesym, &
+                    common_data%print_output, common_data%m_matrix_local, common_data%u_matrix, &
+                    common_data%u_opt, common_data%eigval, common_data%real_lattice, &
+                    common_data%omega%invariant, common_data%num_bands, common_data%num_kpts, &
+                    common_data%num_wann, common_data%gamma_only, common_data%lsitesymmetry, &
+                    istdout, common_data%timer, common_data%dist_kpoints, error, common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      endif
 
-    call setup_m_loc(common_data%kmesh_info, common_data%print_output, common_data%m_matrix_local, &
-                     common_data%m_matrix_local, common_data%u_matrix, common_data%num_bands, &
-                     common_data%num_kpts, common_data%num_wann, common_data%timer, &
-                     common_data%dist_kpoints, error, common_data%comm)
-    if (allocated(error)) then
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
+      call setup_m_loc(common_data%kmesh_info, common_data%print_output, common_data%m_matrix_local, &
+                       common_data%m_matrix_local, common_data%u_matrix, common_data%num_bands, &
+                       common_data%num_kpts, common_data%num_wann, common_data%timer, &
+                       common_data%dist_kpoints, error, common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      endif
 
-    common_data%have_disentangled = .true.
+      common_data%have_disentangled = .true.
+    endif
   end subroutine w90_disentangle
 
   subroutine w90_project_overlap(common_data, istdout, istderr, ierr) !fixme(jj) rename more sensibly
