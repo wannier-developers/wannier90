@@ -54,7 +54,7 @@
 ! tran_group_threshold = distance defining the grouping of WFs          !
 !=======================================================================!
 
-module w90_transport
+module w90_transport_mod
 
   !! Module to handle ballistic transport.
   !! Based on
@@ -121,7 +121,7 @@ contains
     type(ham_logical_type), intent(inout)       :: ham_logical
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(inout)              :: rpt_origin
     integer, intent(inout)              :: nrpts
@@ -178,6 +178,7 @@ contains
 
     logical :: pl_warning
 
+    ! fixme jj printout guards as elsewhere please (even if not yet parallel)
     if (print_output%timing_level > 0) call io_stopwatch_start('tran: main', timer)
 
     write (stdout, '(/1x,a)') '*---------------------------------------------------------------------------*'
@@ -368,7 +369,7 @@ contains
     type(real_space_ham_type), intent(in) :: real_space_ham
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: irvec(:, :)
     integer, intent(inout) :: irvec_max ! limits of hr_one_dim final dim
@@ -643,7 +644,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date, io_file_unit
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal
     use w90_types, only: timer_list_type
@@ -655,7 +656,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_pl
     integer, intent(in) :: num_wann
@@ -727,8 +728,7 @@ contains
 
     if (transport%write_ht) then
 
-      file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htB.dat', status='unknown', form='formatted', &
+      open (newunit=file_unit, file=trim(seedname)//'_htB.dat', status='unknown', form='formatted', &
             action='write')
 
       call io_date(cdate, ctime)
@@ -753,7 +753,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date, io_file_unit
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
     use w90_types, only: timer_list_type
@@ -770,7 +770,7 @@ contains
     type(transport_type), intent(in) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -843,13 +843,11 @@ contains
 
     call io_date(cdate, ctime)
 
-    qc_unit = io_file_unit()
-    open (qc_unit, file=trim(seedname)//'_qc.dat', status='unknown', &
+    open (newunit=qc_unit, file=trim(seedname)//'_qc.dat', status='unknown', &
           form='formatted', action='write')
     write (qc_unit, *) '## written on '//cdate//' at '//ctime ! Date and time
 
-    dos_unit = io_file_unit()
-    open (dos_unit, file=trim(seedname)//'_dos.dat', status='unknown', &
+    open (newunit=dos_unit, file=trim(seedname)//'_dos.dat', status='unknown', &
           form='formatted', action='write')
     write (dos_unit, *) '## written on '//cdate//' at '//ctime ! Date and time
 
@@ -1006,7 +1004,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_1, cmplx_i, pi
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date, io_file_unit
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date
     use w90_wannier90_types, only: transport_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal
     use w90_types, only: timer_list_type
@@ -1028,7 +1026,7 @@ contains
     type(transport_type), intent(in) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -1060,13 +1058,11 @@ contains
 
     call io_date(cdate, ctime)
 
-    qc_unit = io_file_unit()
-    open (qc_unit, file=trim(seedname)//'_qc.dat', status='unknown', &
+    open (newunit=qc_unit, file=trim(seedname)//'_qc.dat', status='unknown', &
           form='formatted', action='write')
     write (qc_unit, *) '## written on '//cdate//' at '//ctime ! Date and time
 
-    dos_unit = io_file_unit()
-    open (dos_unit, file=trim(seedname)//'_dos.dat', status='unknown', &
+    open (newunit=dos_unit, file=trim(seedname)//'_dos.dat', status='unknown', &
           form='formatted', action='write')
     write (dos_unit, *) '## written on '//cdate//' at '//ctime ! Date and time
 
@@ -1538,7 +1534,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     complex(kind=dp), intent(in) ::  e_scan_cmp
@@ -1804,7 +1800,7 @@ contains
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: nxx
     integer, intent(in) :: stdout
     integer, intent(in) :: igreen
@@ -1995,13 +1991,12 @@ contains
     !================================================!
 
     use w90_constants, only: dp, maxlen
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file
 
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx), h_01(nxx, nxx)
@@ -2010,9 +2005,7 @@ contains
     integer :: i, j, nw, file_unit
     character(len=maxlen) :: dummy
 
-    file_unit = io_file_unit()
-
-    open (unit=file_unit, file=h_file, form='formatted', &
+    open (newunit=file_unit, file=h_file, form='formatted', &
           status='old', action='read', err=101)
 
     write (stdout, '(/a)', advance='no') ' Reading H matrix from '//h_file//'  : '
@@ -2049,25 +2042,25 @@ contains
     !================================================!
 
     use w90_constants, only: dp, maxlen
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file
 
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_00(nxx, nxx)
     character(len=50), intent(in) :: h_file
 
-    integer :: i, j, nw, file_unit
+    integer :: i, j, nw, file_unit, ierr
     character(len=maxlen) :: dummy
 
-    file_unit = io_file_unit()
-
-    open (unit=file_unit, file=h_file, form='formatted', &
-          status='old', action='read', err=101)
+    open (newunit=file_unit, file=h_file, form='formatted', status='old', action='read', iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: Problem opening input file '//h_file, comm)
+      return
+    endif
 
     write (stdout, '(/a)', advance='no') ' Reading H matrix from '//h_file//'  : '
 
@@ -2084,11 +2077,7 @@ contains
     close (unit=file_unit)
 
     return
-
-101 call set_error_file(error, 'Error: Problem opening input file '//h_file, comm)
-    return
 102 call set_error_file(error, 'Error: Problem reading input file '//h_file, comm)
-    return
 
   end subroutine tran_read_htC
 
@@ -2097,13 +2086,12 @@ contains
     !================================================!
 
     use w90_constants, only: dp, maxlen
-    use w90_io, only: io_file_unit
     use w90_error, only: w90_error_type, set_error_file, set_error_file
 
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) ::  nxx1, nxx2
     integer, intent(in) ::  stdout
     real(kind=dp), intent(out) :: h_01(nxx1, nxx2)
@@ -2112,9 +2100,7 @@ contains
     integer :: i, j, nw1, nw2, file_unit
     character(len=maxlen) :: dummy
 
-    file_unit = io_file_unit()
-
-    open (unit=file_unit, file=h_file, form='formatted', &
+    open (newunit=file_unit, file=h_file, form='formatted', &
           status='old', action='read', err=101)
 
     write (stdout, '(/a)', advance='no') ' Reading H matrix from '//h_file//'  : '
@@ -2155,7 +2141,7 @@ contains
     ! type and 'parity' of each wannier function.
     !================================================!
     use w90_constants, only: dp, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file, &
       set_error_dealloc
@@ -2165,7 +2151,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_wann
@@ -2188,14 +2174,13 @@ contains
 
     if (print_output%timing_level > 1) call io_stopwatch_start('tran: find_sigs_unkg_int', timer)
 
-    file_unit = io_file_unit()
     inquire (file=trim(seedname)//'.unkg', exist=have_file)
     if (.not. have_file) then
       call set_error_file(error, 'tran_hr_parity_unkg: file '//trim(seedname)// &
                           '.unkg not found', comm)
       return
     endif
-    open (file_unit, file=trim(seedname)//'.unkg', form='formatted', action='read')
+    open (newunit=file_unit, file=trim(seedname)//'.unkg', form='formatted', action='read')
 
     write (stdout, '(3a)') ' Reading '//trim(seedname)//'.unkg  file'
     read (file_unit, *) num_G
@@ -2487,7 +2472,7 @@ contains
     type(wannier_data_type), intent(in) :: wannier_data
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -2802,8 +2787,7 @@ contains
           & Inconsistent number of groups among principal layers', comm)
         return
       endif
-      !fixme unprotected writeout?
-      write (stdout, *) 'Inconsistent number of groups among principal layers: restarting sorting...'
+      if (print_output%iprint > 0) write (stdout, *) 'Inconsistent number of groups among principal layers: restarting sorting...'
       deallocate (PL1_groups, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating PL1_groups in tran_lcr_2c2_sort', comm)
@@ -3018,8 +3002,8 @@ contains
                                    'Sorting techniques exhausted: Inconsitent subgroup structures among principal layers', comm)
               return
             endif
-            !fixme, unprotected writeout?
-            write (stdout, *) 'Inconsistent subgroup structure among principal layers: restarting sorting...'
+            if (print_output%iprint > 0) &
+              write (stdout, *) 'Inconsistent subgroup structure among principal layers: restarting sorting...'
             deallocate (temp_subgroup, stat=ierr)
             if (ierr /= 0) then
               call set_error_dealloc(error, 'Error deallocating tmp_subgroup in tran_lcr_2c2_sort', comm)
@@ -3171,7 +3155,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: stdout !, Array_size => size(Array_groups) so not needed
     integer, intent(in) :: Array_groups(:), coord(3)
@@ -3380,7 +3364,7 @@ contains
 
     ! arguments
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     real(kind=dp), intent(in) :: tran_group_threshold
     real(kind=dp), intent(in) :: array(:, :)
     integer, intent(out), allocatable :: array_groups(:)
@@ -3518,7 +3502,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     integer, intent(in) :: coord(3)
     integer, intent(in) :: num_G
     integer, intent(in) :: num_wann
@@ -3886,7 +3870,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90_types, only: atom_data_type
     use w90_wannier90_types, only: transport_type
 
@@ -3916,11 +3900,8 @@ contains
       enddo
     endif
 
-    xyz_unit = io_file_unit()
-    open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted')
-
+    open (newunit=xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted')
     write (xyz_unit, '(i6)') num_wann + atom_data%num_atoms
-
     call io_date(cdate, ctime)
     write (xyz_unit, '(a84)') 'Wannier centres and atomic positions, written by Wannier90 on '//cdate//' at '//ctime
 
@@ -4050,7 +4031,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, eps5
-    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
     use w90_wannier90_types, only: transport_type, real_space_ham_type
     use w90_error, only: w90_error_type, set_error_fatal, set_error_alloc, set_error_dealloc
@@ -4091,7 +4072,7 @@ contains
     type(transport_type), intent(inout) :: transport
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=50), intent(in)  :: seedname
 
@@ -4474,8 +4455,7 @@ contains
     if (transport%write_ht) then
       write (stdout, *) '------------------------------- Writing ht files  ----------------------------'
 
-      file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htL.dat', status='unknown', form='formatted', action='write')
+      open (newunit=file_unit, file=trim(seedname)//'_htL.dat', status='unknown', form='formatted', action='write')
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
@@ -4488,9 +4468,7 @@ contains
       write (stdout, *) ' '//trim(seedname)//'_htL.dat  written'
 
       !hR
-
-      file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htR.dat', status='unknown', form='formatted', action='write')
+      open (newunit=file_unit, file=trim(seedname)//'_htR.dat', status='unknown', form='formatted', action='write')
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
@@ -4503,9 +4481,7 @@ contains
       write (stdout, *) ' '//trim(seedname)//'_htR.dat  written'
 
       !hLC
-
-      file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htLC.dat', status='unknown', form='formatted', action='write')
+      open (newunit=file_unit, file=trim(seedname)//'_htLC.dat', status='unknown', form='formatted', action='write')
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
@@ -4516,9 +4492,7 @@ contains
       write (stdout, *) ' '//trim(seedname)//'_htLC.dat written'
 
       !hCR
-
-      file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htCR.dat', status='unknown', form='formatted', action='write')
+      open (newunit=file_unit, file=trim(seedname)//'_htCR.dat', status='unknown', form='formatted', action='write')
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
@@ -4529,9 +4503,7 @@ contains
       write (stdout, *) ' '//trim(seedname)//'_htCR.dat written'
 
       !hC
-
-      file_unit = io_file_unit()
-      open (file_unit, file=trim(seedname)//'_htC.dat', status='unknown', form='formatted', action='write')
+      open (newunit=file_unit, file=trim(seedname)//'_htC.dat', status='unknown', form='formatted', action='write')
 
       call io_date(cdate, ctime)
       write (file_unit, *) 'written on '//cdate//' at '//ctime ! Date and time
@@ -4556,5 +4528,4 @@ contains
 
   end subroutine tran_lcr_2c2_build_ham
 
-end module w90_transport
-
+end module w90_transport_mod

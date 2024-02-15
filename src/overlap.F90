@@ -30,9 +30,10 @@ module w90_overlap
 
   public :: overlap_allocate
   public :: overlap_dealloc
+  public :: overlap_read
+  ! these are only public for old wannier_lib
   public :: overlap_project
   public :: overlap_project_gamma
-  public :: overlap_read
 
 contains
 
@@ -40,7 +41,7 @@ contains
 
   subroutine overlap_allocate(a_matrix, m_matrix, m_matrix_local, m_matrix_orig, &
                               m_matrix_orig_local, u_matrix, u_matrix_opt, nntot, num_bands, &
-                              num_kpts, num_wann, timing_level, timer, error, comm)
+                              num_kpts, num_wann, timing_level, timer, dist_k, error, comm)
     !================================================!
     !! Allocate memory to read Mmn and Amn from files
     !! This must be called before calling overlap_read
@@ -57,6 +58,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: timing_level
+    integer, intent(in) :: dist_k(:)
 
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
     complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
@@ -68,112 +70,97 @@ contains
 
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
     integer :: ierr
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id, nkl
     logical :: disentanglement
     logical :: on_root = .false.
 
     disentanglement = (num_bands > num_wann)
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
+    nkl = count(dist_k == my_node_id) ! number of k on this rank
 
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 0) call io_stopwatch_start('overlap: allocate', timer)
-
-    call comms_array_split(num_kpts, counts, displs, comm)
-
-    allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_read', comm)
-      return
-    endif
-    u_matrix = cmplx_0
 
     if (disentanglement) then
       if (on_root) then
         allocate (m_matrix_orig(num_bands, num_bands, nntot, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_read', comm)
+          call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_allocate', comm)
           return
         endif
-        allocate (m_matrix(1, 1, 1, 1))
       else
-        allocate (m_matrix_orig(1, 1, 1, 1))
-        allocate (m_matrix(1, 1, 1, 1))
+        allocate (m_matrix_orig(0, 0, 0, 0))
       endif
-
-      allocate (m_matrix_orig_local(num_bands, num_bands, nntot, counts(my_node_id)), stat=ierr)
+      allocate (m_matrix_orig_local(num_bands, num_bands, nntot, nkl), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_read', comm)
+        call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_allocate', comm)
         return
       endif
-      allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating a_matrix in overlap_read', comm)
-        return
-      endif
-      allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_read', comm)
-        return
-      endif
-
-      allocate (m_matrix_local(1, 1, 1, 1))
-
+      m_matrix_orig = cmplx_0
+      m_matrix_orig_local = cmplx_0
     else
-      if (on_root) then
-        allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating m_matrix in overlap_read', comm)
-          return
-        endif
-        m_matrix = cmplx_0
-        allocate (m_matrix_orig(1, 1, 1, 1))
-      else
-        allocate (m_matrix(1, 1, 1, 1))
-        allocate (m_matrix_orig(1, 1, 1, 1))
-      endif
+      allocate (m_matrix_orig_local(0, 0, 0, 0))
+      allocate (m_matrix_orig(0, 0, 0, 0))
+    endif
 
-      allocate (m_matrix_local(num_wann, num_wann, nntot, counts(my_node_id)), stat=ierr)
+    if (on_root) then
+      allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_read', comm)
+        call set_error_alloc(error, 'Error in allocating m_matrix in overlap_allocate', comm)
         return
       endif
-      m_matrix_local = cmplx_0
-
-      allocate (m_matrix_orig_local(1, 1, 1, 1))
-      allocate (a_matrix(1, 1, 1))
-      allocate (u_matrix_opt(1, 1, 1))
-
+      m_matrix = cmplx_0
+    else
+      allocate (m_matrix(0, 0, 0, 0))
     endif
+    allocate (m_matrix_local(num_wann, num_wann, nntot, nkl), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_allocate', comm)
+      return
+    endif
+    m_matrix_local = cmplx_0
+
+    allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating a_matrix in overlap_allocate', comm)
+      return
+    endif
+    allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating u_matrix in overlap_allocate', comm)
+      return
+    endif
+    u_matrix = cmplx_0
+    allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_allocate', comm)
+      return
+    endif
+    u_matrix_opt = cmplx_0
 
     if (timing_level > 0) call io_stopwatch_stop('overlap: allocate', timer)
 
   end subroutine overlap_allocate
 
   !================================================!
-  subroutine overlap_read(kmesh_info, select_projection, sitesym, a_matrix, m_matrix, &
-                          m_matrix_local, m_matrix_orig, m_matrix_orig_local, u_matrix, &
-                          u_matrix_opt, num_bands, num_kpts, num_proj, num_wann, timing_level, &
-                          cp_pp, gamma_only, lsitesymmetry, use_bloch_phases, seedname, stdout, &
-                          timer, error, comm)
+  subroutine overlap_read(kmesh_info, select_projection, sitesym, au_matrix, &
+                          m_matrix_local, num_bands, num_kpts, num_proj, &
+                          num_wann, print_output, timing_level, cp_pp, gamma_only, lsitesymmetry, &
+                          use_bloch_phases, seedname, stdout, timer, dist_k, error, comm)
     !================================================!
     !! Read the Mmn and Amn from files
     !! Note: one needs to call overlap_allocate first!
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
-    use w90_types, only: kmesh_info_type, timer_list_type
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: select_projection_type, sitesym_type
     use w90_error
 
@@ -181,37 +168,39 @@ contains
 
     ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
+    type(print_output_type), intent(in)      :: print_output
     type(select_projection_type), intent(in) :: select_projection
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
 
+    integer, intent(in) :: dist_k(:)
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
-    integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
+    integer, intent(in) :: timing_level
 
-    complex(kind=dp), intent(inout) :: a_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: au_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_orig(:, :, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    !complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 
-    logical, intent(in) :: gamma_only
+    logical, intent(in) :: gamma_only ! used in some now commented code below
     logical, intent(in) :: lsitesymmetry
     logical, intent(in) :: cp_pp, use_bloch_phases
 
     character(len=50), intent(in)  :: seedname
 
     ! local variables
+    integer, allocatable :: map_kpts(:)
     integer :: mmn_in, amn_in, num_mmn, num_amn
     integer :: nb_tmp, nkp_tmp, nntot_tmp, np_tmp, ierr
-    integer :: nkp, nkp2, inn, nn, n, m
+    integer :: nkp, nkp2, nkp_loc, inn, nn, n, m
     integer :: nnl, nnm, nnn, ncount
     logical :: nn_found
     real(kind=dp) :: m_real, m_imag, a_real, a_imag
@@ -219,78 +208,72 @@ contains
     character(len=50) :: dummy
 
     logical :: disentanglement
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: on_root = .false.
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
 
     disentanglement = (num_bands > num_wann)
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
-
-    if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
+    if (my_node_id == 0) then
+      on_root = .true.
+    endif
+    allocate (map_kpts(num_kpts))
+    nkp_loc = 1
+    do nkp = 1, num_kpts
+      if (dist_k(nkp) == my_node_id) then
+        map_kpts(nkp) = nkp_loc
+        nkp_loc = nkp_loc + 1
+      endif
+    enddo
 
     if (timing_level > 0) call io_stopwatch_start('overlap: read', timer)
 
-    call comms_array_split(num_kpts, counts, displs, comm)
+    !if (on_root) then - read on local bits on all nodes
 
-    if (disentanglement) then
-      if (on_root) then
-        m_matrix_orig = cmplx_0
-      endif
-      m_matrix_orig_local = cmplx_0
-      a_matrix = cmplx_0
-      u_matrix_opt = cmplx_0
+    ! Read M_matrix_orig from file
+    open (newunit=mmn_in, file=trim(seedname)//'.mmn', &
+          form='formatted', status='old', action='read', err=101)
+
+    if (print_output%iprint > 0) write (stdout, '(/a)', advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
+
+    ! Read the comment line
+    read (mmn_in, '(a)', err=103, end=103) dummy
+    if (print_output%iprint > 0) write (stdout, '(a)') trim(dummy)
+
+    ! Read the number of bands, k-points and nearest neighbours
+    read (mmn_in, *, err=103, end=103) nb_tmp, nkp_tmp, nntot_tmp
+
+    ! Checks
+    if (nb_tmp .ne. num_bands) then
+      call set_error_file(error, trim(seedname)//'.mmn has not the right number of bands', comm)
+      return
+    endif
+    if (nkp_tmp .ne. num_kpts) then
+      call set_error_file(error, trim(seedname)//'.mmn has not the right number of k-points', comm)
+      return
+    endif
+    if (nntot_tmp .ne. kmesh_info%nntot) then
+      write (*, *) my_node_id, nntot_tmp, kmesh_info%nntot
+      call set_error_file(error, trim(seedname)//'.mmn has not the right number of nearest neighbours', comm)
+      return
     endif
 
-    if (on_root) then
-
-      ! Read M_matrix_orig from file
-      mmn_in = io_file_unit()
-      open (unit=mmn_in, file=trim(seedname)//'.mmn', &
-            form='formatted', status='old', action='read', err=101)
-
-      if (on_root) write (stdout, '(/a)', advance='no') ' Reading overlaps from '//trim(seedname)//'.mmn    : '
-
-      ! Read the comment line
-      read (mmn_in, '(a)', err=103, end=103) dummy
-      if (on_root) write (stdout, '(a)') trim(dummy)
-
-      ! Read the number of bands, k-points and nearest neighbours
-      read (mmn_in, *, err=103, end=103) nb_tmp, nkp_tmp, nntot_tmp
-
-      ! Checks
-      if (nb_tmp .ne. num_bands) then
-        call set_error_file(error, trim(seedname)//'.mmn has not the right number of bands', comm)
-        return
-      endif
-      if (nkp_tmp .ne. num_kpts) then
-        call set_error_file(error, trim(seedname)//'.mmn has not the right number of k-points', comm)
-        return
-      endif
-      if (nntot_tmp .ne. kmesh_info%nntot) then
-        call set_error_file(error, trim(seedname)//'.mmn has not the right number of nearest neighbours', comm)
-        return
-      endif
-
-      ! Read the overlaps
-      num_mmn = num_kpts*kmesh_info%nntot
-      allocate (mmn_tmp(num_bands, num_bands), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating mmn_tmp in overlap_read', comm)
-        return
-      endif
-      do ncount = 1, num_mmn
-        read (mmn_in, *, err=103, end=103) nkp, nkp2, nnl, nnm, nnn
-        do n = 1, num_bands
-          do m = 1, num_bands
-            read (mmn_in, *, err=103, end=103) m_real, m_imag
-            mmn_tmp(m, n) = cmplx(m_real, m_imag, kind=dp)
-          enddo
+    ! Read the overlaps
+    num_mmn = num_kpts*kmesh_info%nntot
+    allocate (mmn_tmp(num_bands, num_bands), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating mmn_tmp in overlap_read', comm)
+      return
+    endif
+    do ncount = 1, num_mmn
+      read (mmn_in, *, err=103, end=103) nkp, nkp2, nnl, nnm, nnn
+      do n = 1, num_bands
+        do m = 1, num_bands
+          read (mmn_in, *, err=103, end=103) m_real, m_imag
+          mmn_tmp(m, n) = cmplx(m_real, m_imag, kind=dp)
         enddo
+      enddo
+      if (dist_k(nkp) == my_node_id) then
         nn = 0
         nn_found = .false.
         do inn = 1, kmesh_info%nntot
@@ -314,98 +297,83 @@ contains
           call set_error_file(error, 'Neighbour not found', comm)
           return
         end if
-        if (disentanglement) then
-          m_matrix_orig(:, :, nn, nkp) = mmn_tmp(:, :)
-        else
-          ! disentanglement=.false. means numbands=numwann, so no the dimensions are the same
-          m_matrix(:, :, nn, nkp) = mmn_tmp(:, :)
-        end if
-      end do
-      deallocate (mmn_tmp, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating mmn_tmp in overlap_read', comm)
-        return
-      endif
-      close (mmn_in)
+        m_matrix_local(:, :, nn, map_kpts(nkp)) = mmn_tmp(:, :)
+      end if
+    end do
+    deallocate (mmn_tmp, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating mmn_tmp in overlap_read', comm)
+      return
     endif
+    close (mmn_in)
 
-    if (disentanglement) then
-      call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix_orig, num_bands*num_bands*kmesh_info%nntot*counts, &
-                          num_bands*num_bands*kmesh_info%nntot*displs, error, comm)
-      if (allocated(error)) return
-    else
-      call comms_scatterv(m_matrix_local, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                          m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                          num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
-      if (allocated(error)) return
-    endif
+    !if (disentanglement) then
+    !  w = num_bands*num_bands*kmesh_info%nntot
+    !  call comms_scatterv(m_matrix_orig_local, w*counts(my_node_id), m_matrix_orig, w*counts, w*displs, error, comm)
+    !  if (allocated(error)) return
+    !else
+    !  w = num_wann*num_wann*kmesh_info%nntot
+    !  call comms_scatterv(m_matrix_local, w*counts(my_node_id), m_matrix, w*counts, w*displs, error, comm)
+    !  if (allocated(error)) return
+    !endif
 
     if (.not. use_bloch_phases) then
-      if (on_root) then
+      !if (on_root) then read on all nodes
 
-        ! Read A_matrix from file wannier.amn
-        amn_in = io_file_unit()
-        open (unit=amn_in, file=trim(seedname)//'.amn', form='formatted', status='old', err=102)
+      ! Read A_matrix from file wannier.amn
+      open (newunit=amn_in, file=trim(seedname)//'.amn', form='formatted', status='old', err=102)
 
-        if (on_root) write (stdout, '(/a)', advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
+      if (print_output%iprint > 0) write (stdout, '(/a)', advance='no') ' Reading projections from '//trim(seedname)//'.amn : '
 
-        ! Read the comment line
-        read (amn_in, '(a)', err=104, end=104) dummy
-        if (on_root) write (stdout, '(a)') trim(dummy)
+      ! Read the comment line
+      read (amn_in, '(a)', err=104, end=104) dummy
+      if (print_output%iprint > 0) write (stdout, '(a)') trim(dummy)
 
-        ! Read the number of bands, k-points and wannier functions
-        read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
+      ! Read the number of bands, k-points and wannier functions
+      read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
 
-        ! Checks
-        if (nb_tmp .ne. num_bands) then
-          call set_error_file(error, trim(seedname)//'.amn has not the right number of bands', comm)
-          return
-        endif
-        if (nkp_tmp .ne. num_kpts) then
-          call set_error_file(error, trim(seedname)//'.amn has not the right number of k-points', comm)
-          return
-        endif
-        if (np_tmp .ne. num_proj) then
-          call set_error_file(error, trim(seedname)//'.amn has not the right number of projections', comm)
-          return
-        endif
-
-        if (num_proj > num_wann .and. .not. select_projection%lselproj) then
-          call set_error_file(error, trim(seedname)//'.amn has too many projections to be used without selecting a subset', comm)
-          return
-        endif
-
-        ! Read the projections
-        num_amn = num_bands*num_proj*num_kpts
-        if (disentanglement) then
-          do ncount = 1, num_amn
-            read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
-            if (select_projection%proj2wann_map(n) < 0) cycle
-            a_matrix(m, select_projection%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
-          end do
-        else
-          do ncount = 1, num_amn
-            read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
-            if (select_projection%proj2wann_map(n) < 0) cycle
-            u_matrix(m, select_projection%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
-          end do
-        end if
-        close (amn_in)
+      ! Checks
+      if (nb_tmp .ne. num_bands) then
+        call set_error_file(error, trim(seedname)//'.amn has not the right number of bands', comm)
+        return
+      endif
+      if (nkp_tmp .ne. num_kpts) then
+        call set_error_file(error, trim(seedname)//'.amn has not the right number of k-points', comm)
+        return
+      endif
+      if (np_tmp .ne. num_proj) then
+        call set_error_file(error, trim(seedname)//'.amn has not the right number of projections', comm)
+        return
       endif
 
-      if (disentanglement) then
-        call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
-      else
-        call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+      if (num_proj > num_wann .and. .not. select_projection%lselproj) then
+        call set_error_file(error, trim(seedname)//'.amn has too many projections to be used without selecting a subset', comm)
+        return
       endif
-      if (allocated(error)) return
+
+      if (.not. allocated(select_projection%proj2wann_map)) then
+        call set_error_fatal(error, 'select_projection%proj2wann_map not allocated in overlap_read call', comm)
+        return
+      endif
+
+      ! Read the projections
+      num_amn = num_bands*num_proj*num_kpts
+      do ncount = 1, num_amn
+        read (amn_in, *, err=104, end=104) m, n, nkp, a_real, a_imag
+        if (select_projection%proj2wann_map(n) < 0) cycle
+        au_matrix(m, select_projection%proj2wann_map(n), nkp) = cmplx(a_real, a_imag, kind=dp)
+      end do
+      close (amn_in)
+      !endif
+
+      !call comms_bcast(au_matrix(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+      !if (allocated(error)) return
 
     else
 
       do n = 1, num_kpts
         do m = 1, num_wann
-          u_matrix(m, m, n) = cmplx_1
+          au_matrix(m, m, n) = cmplx_1
         end do
       end do
 
@@ -413,52 +381,38 @@ contains
 
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
-    if (cp_pp) call overlap_rotate(a_matrix, m_matrix_orig, kmesh_info%nntot, num_bands, &
+    if (cp_pp) call overlap_rotate(au_matrix, m_matrix_local, kmesh_info%nntot, num_bands, &
                                    timing_level, timer, error, comm)
     if (allocated(error)) return
 
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
-!~      if (gamma_only) call overlap_check_m_symmetry()
-
+    ! if (gamma_only) call overlap_check_m_symmetry()
+    !
     ! If we don't need to disentangle we can now convert from A to U
     ! And rotate M accordingly
-![ysl-b]
-!       if(.not.disentanglement .and. (.not.cp_pp) .and. (.not. use_bloch_phases )) &
-!            call overlap_project
-!~       if((.not.cp_pp) .and. (.not. use_bloch_phases )) then
-!~         if (.not.disentanglement) then
-!~            if ( .not. gamma_only ) then
-!~               call overlap_project
-!~            else
-!~               call overlap_project_gamma()
-!~            endif
-!~         else
-!~            if (gamma_only) call overlap_symmetrize()
-!~         endif
-!~       endif
-!
-!~[aam]
-    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
-      if (.not. gamma_only) then
-        call overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, kmesh_info%nnlist, &
-                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
-                             lsitesymmetry, stdout, timer, error, comm)
-      else
-        call overlap_project_gamma(m_matrix, u_matrix, kmesh_info%nntot, num_wann, &
-                                   timing_level, stdout, timer, error, comm)
-      endif
-      if (allocated(error)) return
-    endif
-!~[aam]
-
+    ! Jan 2023, Jerome Jackson, moved overlap_project outside of overlap_read
+    !    if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
+    !      if (.not. gamma_only) then
+    !        call overlap_project(sitesym, m_matrix_local, au_matrix, kmesh_info%nnlist, &
+    !                             kmesh_info%nntot, num_bands, num_kpts, num_wann, timing_level, &
+    !                             lsitesymmetry, stdout, timer, dist_k, error, comm)
+    !      else
+    !        call overlap_project_gamma(m_matrix_local, au_matrix, kmesh_info%nntot, num_wann, &
+    !                                   timing_level, stdout, timer, error, comm)
+    !      endif
+    !      if (allocated(error)) return
+    !    endif
+    !
+    !~[aam]
     !~      if( gamma_only .and. use_bloch_phases ) then
     !~        write(stdout,'(1x,"+",76("-"),"+")')
     !~        write(stdout,'(3x,a)') 'WARNING: gamma_only and use_bloch_phases                 '
     !~        write(stdout,'(3x,a)') '         M must be calculated from *real* Bloch functions'
     !~        write(stdout,'(1x,"+",76("-"),"+")')
     !~      end if
-![ysl-e]
+    ![ysl-e]
 
+    deallocate (map_kpts)
     if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)
 
     return
@@ -470,6 +424,8 @@ contains
     return
 104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.amn', comm)
     return
+
+    !if (on_root) deallocate(m_matrix_orig)
 
   end subroutine overlap_read
 
@@ -630,7 +586,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_fatal
     use w90_types, only: timer_list_type
 
@@ -639,7 +595,7 @@ contains
     ! arguments
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: nntot
     integer, intent(in) :: num_bands
@@ -656,8 +612,7 @@ contains
 
     if (timing_level > 1) call io_stopwatch_start('overlap: rotate', timer)
 
-    lam_unit = io_file_unit()
-    open (unit=lam_unit, file='lambda.dat', &
+    open (newunit=lam_unit, file='lambda.dat', &
           form='unformatted', status='old', action='read')
     read (lam_unit) lambda
     close (lam_unit)
@@ -735,7 +690,7 @@ contains
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_local(:, :, :, :)
     complex(kind=dp), allocatable, intent(inout) :: m_matrix_orig_local(:, :, :, :)
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     integer :: ierr
@@ -800,9 +755,9 @@ contains
   end subroutine overlap_dealloc
 
   !================================================!
-  subroutine overlap_project(sitesym, m_matrix, m_matrix_local, u_matrix, nnlist, nntot, &
+  subroutine overlap_project(sitesym, m_matrix_local, u_matrix, nnlist, nntot, &
                              num_bands, num_kpts, num_wann, timing_level, lsitesymmetry, stdout, &
-                             timer, error, comm)
+                             timer, dist_k, error, comm)
     !================================================!
     !!  Construct initial guess from the projection via a Lowdin transformation
     !!  See section 3 of the CPC 2008
@@ -825,8 +780,9 @@ contains
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
+    integer, intent(in) :: dist_k(:)
     integer, intent(in) :: nnlist(:, :)
     integer, intent(in) :: nntot
     integer, intent(in) :: num_bands
@@ -835,14 +791,14 @@ contains
     integer, intent(in) :: timing_level
     integer, intent(in) :: stdout
 
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
 
     logical, intent(in) :: lsitesymmetry
 
     ! local variables
-    integer :: i, j, m, nkp, info, ierr, nn, nkp2
+    integer :: i, j, m, nkp, nkp_loc, info, ierr, nn, nkp2
     real(kind=dp), allocatable :: svals(:)
     real(kind=dp)                 :: rwork(5*num_bands)
     complex(kind=dp)              :: ctmp2
@@ -851,20 +807,13 @@ contains
     complex(kind=dp), allocatable :: cvdag(:, :)
 
     ! pllel setup
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
-    integer :: num_nodes, my_node_id
+    integer :: my_node_id
     logical :: on_root = .false.
 
-    num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     if (timing_level > 1) call io_stopwatch_start('overlap: project', timer)
-
-    call comms_array_split(num_kpts, counts, displs, comm)
 
     allocate (svals(num_bands), stat=ierr)
     if (ierr /= 0) then
@@ -891,57 +840,63 @@ contains
     ! where CS = CA.CA^\dagger.
 
     do nkp = 1, num_kpts
-      !
-      ! SINGULAR VALUE DECOMPOSITION
-      !
-      call zgesvd('A', 'A', num_bands, num_bands, u_matrix(1, 1, nkp), num_bands, svals, cz, &
-                  num_bands, cvdag, num_bands, cwork, 4*num_bands, rwork, info)
-      if (info .ne. 0) then
-        write (stdout, *) ' ERROR: IN ZGESVD IN overlap_project'
-        write (stdout, *) ' K-POINT NKP=', nkp, ' INFO=', info
-        if (info .lt. 0) then
-          write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
+      if (dist_k(nkp) == my_node_id) then
+        !
+        ! SINGULAR VALUE DECOMPOSITION
+        !
+        call zgesvd('A', 'A', num_bands, num_bands, u_matrix(1, 1, nkp), num_bands, svals, cz, &
+                    num_bands, cvdag, num_bands, cwork, 4*num_bands, rwork, info)
+        if (info .ne. 0) then
+          write (stdout, *) ' ERROR: IN ZGESVD IN overlap_project'
+          write (stdout, *) ' K-POINT NKP=', nkp, ' INFO=', info
+          if (info .lt. 0) then
+            write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
+          endif
+          call set_error_fatal(error, 'Error in ZGESVD in overlap_project', comm)
+          return
         endif
-        call set_error_fatal(error, 'Error in ZGESVD in overlap_project', comm)
-        return
-      endif
 
-      ! u_matrix(:,:,nkp)=matmul(cz,cvdag)
-      call utility_zgemm(u_matrix(:, :, nkp), cz, 'N', cvdag, 'N', num_wann)
+        ! u_matrix(:,:,nkp)=matmul(cz,cvdag)
+        call utility_zgemm(u_matrix(:, :, nkp), cz, 'N', cvdag, 'N', num_wann)
 
-      !
-      ! CHECK UNITARITY
-      !
-      do i = 1, num_bands
-        do j = 1, num_bands
-          ctmp2 = cmplx_0
-          do m = 1, num_bands
-            ctmp2 = ctmp2 + u_matrix(m, j, nkp)*conjg(u_matrix(m, i, nkp))
+        !
+        ! CHECK UNITARITY
+        !
+        do i = 1, num_bands
+          do j = 1, num_bands
+            ctmp2 = cmplx_0
+            do m = 1, num_bands
+              ctmp2 = ctmp2 + u_matrix(m, j, nkp)*conjg(u_matrix(m, i, nkp))
+            enddo
+            if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) then
+              write (stdout, *) ' ERROR: unitarity of initial U'
+              write (stdout, '(1x,a,i2)') 'nkp= ', nkp
+              write (stdout, '(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j
+              write (stdout, '(1x,a,f12.6,1x,f12.6)') &
+                '[u_matrix.transpose(u_matrix)]_ij= ', &
+                real(ctmp2, dp), aimag(ctmp2)
+              call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project', comm)
+              return
+            endif
+            if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
+              write (stdout, *) ' ERROR: unitarity of initial U'
+              write (stdout, '(1x,a,i2)') 'nkp= ', nkp
+              write (stdout, '(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j
+              write (stdout, '(1x,a,f12.6,1x,f12.6)') &
+                '[u_matrix.transpose(u_matrix)]_ij= ', &
+                real(ctmp2, dp), aimag(ctmp2)
+              call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project', comm)
+              return
+            endif
           enddo
-          if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) then
-            write (stdout, *) ' ERROR: unitarity of initial U'
-            write (stdout, '(1x,a,i2)') 'nkp= ', nkp
-            write (stdout, '(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j
-            write (stdout, '(1x,a,f12.6,1x,f12.6)') &
-              '[u_matrix.transpose(u_matrix)]_ij= ', &
-              real(ctmp2, dp), aimag(ctmp2)
-            call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project', comm)
-            return
-          endif
-          if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
-            write (stdout, *) ' ERROR: unitarity of initial U'
-            write (stdout, '(1x,a,i2)') 'nkp= ', nkp
-            write (stdout, '(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j
-            write (stdout, '(1x,a,f12.6,1x,f12.6)') &
-              '[u_matrix.transpose(u_matrix)]_ij= ', &
-              real(ctmp2, dp), aimag(ctmp2)
-            call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project', comm)
-            return
-          endif
         enddo
-      enddo
+      else
+        u_matrix(:, :, nkp) = 0.0_dp
+      endif
     enddo
     ! NKP
+    call comms_allreduce(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (lsitesymmetry) then
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
@@ -951,21 +906,23 @@ contains
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
-    do nkp = 1, counts(my_node_id)
-      do nn = 1, nntot
-        nkp2 = nnlist(nkp + displs(my_node_id), nn)
-        ! cvdag = U^{dagger} . M   (use as workspace)
-        call utility_zgemm(cvdag, u_matrix(:, :, nkp + displs(my_node_id)), 'C', &
-                           m_matrix_local(:, :, nn, nkp), 'N', num_wann)
-        ! cz = cvdag . U
-        call utility_zgemm(cz, cvdag, 'N', u_matrix(:, :, nkp2), 'N', num_wann)
-        m_matrix_local(:, :, nn, nkp) = cz(:, :)
-      end do
+    nkp_loc = 1
+    do nkp = 1, num_kpts
+      if (dist_k(nkp) == my_node_id) then
+        do nn = 1, nntot
+          nkp2 = nnlist(nkp, nn)
+          ! cvdag = U^{dagger} . M   (use as workspace)
+          call utility_zgemm(cvdag, u_matrix(:, :, nkp), 'C', &
+                             m_matrix_local(:, :, nn, nkp_loc), 'N', num_wann)
+          ! cz = cvdag . U
+          call utility_zgemm(cz, cvdag, 'N', u_matrix(:, :, nkp2), 'N', num_wann)
+          m_matrix_local(:, :, nn, nkp_loc) = cz(:, :)
+        end do
+        nkp_loc = nkp_loc + 1
+      endif
     end do
-    call comms_gatherv(m_matrix_local, num_wann*num_wann*nntot*counts(my_node_id), &
-                       m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs, &
-                       error, comm)
-    if (allocated(error)) return
+    !call comms_reduce(m_matrix(1,1,1,1), num_wann*num_wann*nntot*num_kpts, 'SUM', error, comm)
+    !if (allocated(error)) return
 
     deallocate (cwork, stat=ierr)
     if (ierr /= 0) then
@@ -1024,7 +981,7 @@ contains
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! internal variables
     integer :: i, j, m, info, ierr, nn

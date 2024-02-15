@@ -51,7 +51,7 @@ contains
     !================================================!
 
     use w90_constants, only: dp, pi
-    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, &
@@ -67,7 +67,7 @@ contains
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -225,7 +225,7 @@ contains
       ws_distance_type
     use w90_postw90_types, only: pw90_spin_mod_type, wigner_seitz_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     ! arguments
     type(pw90_spin_mod_type), intent(in) :: pw90_spin
@@ -234,7 +234,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -308,7 +308,7 @@ contains
       ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     ! arguments
     type(ws_region_type), intent(in) :: ws_region
@@ -316,7 +316,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -386,7 +386,7 @@ contains
       ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     ! arguments
     type(ws_region_type), intent(in) :: ws_region
@@ -394,7 +394,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann

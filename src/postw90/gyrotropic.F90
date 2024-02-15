@@ -79,10 +79,10 @@ contains
     !
     !================================================!
 
-    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_constants, only: dp, twopi, pw90_physical_constants_type
     use w90_get_oper, only: get_HH_R, get_AA_R, get_BB_R, get_CC_R, get_SS_R
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_berry_mod_type, pw90_oper_read_type, &
       pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, timer_list_type, &
@@ -101,7 +101,7 @@ contains
     type(print_output_type), intent(in) :: print_output
     type(pw90_physical_constants_type), intent(in) :: physics
     type(ws_region_type), intent(in) :: ws_region
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_system_type), intent(in) :: w90_system
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
@@ -591,9 +591,8 @@ contains
     !                                                                      !
     !======================================================================!
 
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_i
-    use w90_io, only: io_file_unit
     use w90_postw90_types, only: pw90_gyrotropic_type, pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
       wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
@@ -614,7 +613,7 @@ contains
     type(pw90_band_deriv_degen_type), intent(in) :: pw90_band_deriv_degen
     type(print_output_type), intent(in) :: print_output
     type(ws_region_type), intent(in) :: ws_region
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wannier_data_type), intent(in) :: wannier_data
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
@@ -907,7 +906,7 @@ contains
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new
     use w90_spin, only: spin_get_S
     use w90_utility, only: utility_rotate
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -920,7 +919,7 @@ contains
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1131,7 +1130,6 @@ contains
     !================================================!
 
     use w90_postw90_types, only: pw90_gyrotropic_type
-    use w90_io, only: io_file_unit
 
     implicit none
 
@@ -1163,9 +1161,8 @@ contains
 
     file_name = trim(seedname)//"-gyrotropic-"//trim(f_out_name)//".dat"
     file_name = trim(file_name)
-    file_unit = io_file_unit()
     write (stdout, '(/,3x,a)') '* '//file_name
-    open (file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
+    open (newunit=file_unit, FILE=file_name, STATUS='UNKNOWN', FORM='FORMATTED')
 
     if (present(comment)) write (file_unit, *) "#"//trim(comment)
     if (present(units)) write (file_unit, *) "# in units of [ "//trim(units)//" ] "

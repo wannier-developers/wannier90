@@ -1,4 +1,4 @@
-!-*- mode: F90 -*-!
+!!-*- mode: F90 -*-!
 !------------------------------------------------------------!
 ! This file is distributed as part of the Wannier90 code and !
 ! under the terms of the GNU General Public License. See the !
@@ -16,14 +16,14 @@
 !                                                            !
 !------------------------------------------------------------!
 
-module w90_wannierise
+module w90_wannierise_mod
 
   !! Main routines for the minimisation of the spread
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
     set_error_input, set_error_fatal, set_error_file
-  use w90_comms, only: w90comm_type
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -45,87 +45,70 @@ module w90_wannierise
 contains
 
   !================================================!
-  subroutine wann_main(atom_data, dis_manifold, exclude_bands, ham_logical, kmesh_info, kpt_latt, &
-                       output_file, real_space_ham, wann_control, omega, sitesym, w90_system, &
+  subroutine wann_main(ham_logical, kmesh_info, kpt_latt, wann_control, omega, sitesym, &
                        print_output, wannier_data, ws_region, w90_calculation, ham_k, ham_r, &
-                       m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                       wannier_centres_translated, irvec, mp_grid, ndegen, shift_vec, nrpts, &
-                       num_bands, num_kpts, num_proj, num_wann, optimisation, rpt_origin, &
-                       bands_plot_mode, transport_mode, have_disentangled, lsitesymmetry, &
-                       seedname, stdout, timer, error, comm)
+                       m_matrix_loc, u_matrix, real_lattice, wannier_centres_translated, irvec, &
+                       mp_grid, ndegen, nrpts, num_kpts, num_proj, num_wann, optimisation, &
+                       rpt_origin, bands_plot_mode, transport_mode, lsitesymmetry, stdout, &
+                       timer, dist_k, error, comm)
     !================================================!
     !
     !! Calculate the Unitary Rotations to give Maximally Localised Wannier Functions
     !
     !================================================
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
-    use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop, io_file_unit
-    use w90_wannier90_types, only: wann_control_type, output_file_type, &
-      w90_calculation_type, real_space_ham_type, wann_omega_type, sitesym_type, &
-      ham_logical_type
-    use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, &
-      atom_data_type, dis_manifold_type, w90_system_type, ws_region_type, timer_list_type
-    use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
+    use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop
+    use w90_wannier90_types, only: wann_control_type, w90_calculation_type, wann_omega_type, &
+      sitesym_type, ham_logical_type
+    use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, ws_region_type, &
+      timer_list_type
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
-    use w90_comms, only: mpisize, mpirank, comms_gatherv, comms_bcast, &
-      comms_scatterv, comms_array_split, w90comm_type
-
-    !ivo
-    use w90_hamiltonian, only: hamiltonian_setup, hamiltonian_get_hr
+    use w90_comms, only: mpisize, mpirank, comms_allreduce, w90_comm_type
+    use w90_hamiltonian, only: hamiltonian_setup
 
     implicit none
 
     ! arguments
-    type(atom_data_type), intent(in)         :: atom_data
-    type(dis_manifold_type), intent(in)      :: dis_manifold
     type(ham_logical_type), intent(inout)    :: ham_logical
     type(kmesh_info_type), intent(in)        :: kmesh_info
-    real(kind=dp), intent(in)                :: kpt_latt(:, :)
-    type(w90_system_type), intent(in)        :: w90_system
     type(ws_region_type), intent(in)         :: ws_region
     type(print_output_type), intent(in)      :: print_output
-    type(output_file_type), intent(in)       :: output_file
-    type(real_space_ham_type), intent(inout) :: real_space_ham
     type(wann_control_type), intent(inout)   :: wann_control
     type(wann_omega_type), intent(inout)     :: omega
     type(sitesym_type), intent(in)           :: sitesym
     type(w90_calculation_type), intent(in)   :: w90_calculation
-    type(w90comm_type), intent(in)           :: comm
+    type(w90_comm_type), intent(in)           :: comm
     type(wannier_data_type), intent(inout)   :: wannier_data
     type(timer_list_type), intent(inout)     :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: mp_grid(3)
-    integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_proj
     integer, intent(in) :: num_wann
     integer, intent(in) :: optimisation
     integer, intent(inout), allocatable :: irvec(:, :)
     integer, intent(inout), allocatable :: ndegen(:)
-    integer, intent(inout), allocatable :: shift_vec(:, :)
-    integer, allocatable, intent(in) :: exclude_bands(:)
     integer, intent(inout) :: nrpts
     integer, intent(inout) :: rpt_origin
     integer, intent(in) :: stdout
+    integer, intent(in) :: dist_k(:)
 
-    real(kind=dp), intent(in) :: eigval(:, :)
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(inout), allocatable :: wannier_centres_translated(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     complex(kind=dp), intent(inout), allocatable :: ham_k(:, :, :)
     complex(kind=dp), intent(inout), allocatable :: ham_r(:, :, :)
-    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    !complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
 
     logical, intent(in) :: lsitesymmetry
-    logical, intent(in) :: have_disentangled
 
     character(len=*), intent(in) :: bands_plot_mode
     character(len=*), intent(in) :: transport_mode
-    character(len=50), intent(in) :: seedname
 
     ! local variables
     type(localisation_vars_type) :: old_spread
@@ -133,38 +116,24 @@ contains
     type(localisation_vars_type) :: trial_spread
 
     ! Data to avoid large allocation within iteration loop
-    real(kind=dp), allocatable  :: rnkb(:, :, :)
-    real(kind=dp), allocatable  :: rnkb_loc(:, :, :)
-    real(kind=dp), allocatable  :: ln_tmp(:, :, :)
-    real(kind=dp), allocatable  :: ln_tmp_loc(:, :, :)
-
-    !real(kind=dp), intent(in) :: recip_lattice(3, 3), volume
-    ! for MPI
-    complex(kind=dp), allocatable  :: u_matrix_loc(:, :, :)
-    complex(kind=dp), allocatable  :: m_matrix_loc(:, :, :, :)
-    complex(kind=dp), allocatable  :: cdq_loc(:, :, :) ! the only large array sent from process to process in the main loop
-    complex(kind=dp), allocatable  :: cdodq_loc(:, :, :)
-    integer, allocatable  :: counts(:)
-    integer, allocatable  :: displs(:)
-
-    logical :: first_pass
-    !! Used to trigger the calculation of the invarient spread we only need to do this on entering wann_main (_gamma)
-    real(kind=dp) :: lambda_loc
-    ! end of wannierise module data
-
+    real(kind=dp), allocatable :: rnkb(:, :, :)
+    real(kind=dp), allocatable :: rnkb_loc(:, :, :)
+    real(kind=dp), allocatable :: ln_tmp(:, :, :)
+    real(kind=dp), allocatable :: ln_tmp_loc(:, :, :)
+    real(kind=dp), allocatable :: sheet(:, :, :)
+    real(kind=dp), allocatable :: rave(:, :), r2ave(:), rave2(:)
     ! guiding centres
     real(kind=dp), allocatable :: rguide(:, :)
-    integer :: irguide
 
-    ! local arrays used and passed in subroutines
+    complex(kind=dp), allocatable :: u_matrix_loc(:, :, :)
+    complex(kind=dp), allocatable :: cdq_loc(:, :, :) ! the only large array sent from process to process in the main loop
+    complex(kind=dp), allocatable :: cdodq_loc(:, :, :)
     complex(kind=dp), allocatable :: csheet(:, :, :)
     complex(kind=dp), allocatable :: cdodq(:, :, :)
     complex(kind=dp), allocatable :: cdodq_r(:, :, :)
     complex(kind=dp), allocatable :: k_to_r(:, :)
     complex(kind=dp), allocatable :: cdodq_precond(:, :, :)
     complex(kind=dp), allocatable :: cdodq_precond_loc(:, :, :)
-    real(kind=dp), allocatable :: sheet(:, :, :)
-    real(kind=dp), allocatable :: rave(:, :), r2ave(:), rave2(:)
 
     !local arrays not passed into subroutines
     complex(kind=dp), allocatable  :: cwschur1(:), cwschur2(:)
@@ -178,24 +147,29 @@ contains
     ! m0 and u0 are replaced by m0_loc and u0_loc
     complex(kind=dp), allocatable  :: m0_loc(:, :, :, :), u0_loc(:, :, :)
     complex(kind=dp), allocatable  :: cwork(:)
+
     real(kind=dp), allocatable  :: evals(:)
     real(kind=dp), allocatable  :: rwork(:)
+    real(kind=dp), allocatable :: history(:)
+    real(kind=dp), allocatable :: rnr0n2(:)
 
+    logical :: first_pass
+    !! Used to trigger the calculation of the invarient spread we only need to do this on entering wann_main (_gamma)
+    real(kind=dp) :: lambda_loc
+
+    integer, allocatable :: global_k(:)
+    complex(kind=dp) :: rdotk
+    integer :: conv_count, noise_count, page_unit
+    integer :: i, n, iter, ind, ierr, iw, ncg, nkp, nkp_loc
+    integer :: irguide
+    integer :: irpt, loop_kpt
+    integer :: nkrank
+    logical :: lconverged, lrandom, lfirst
+    logical :: lprint, ldump, lquad
     real(kind=dp) :: doda0
     real(kind=dp) :: falphamin, alphamin
     real(kind=dp) :: gcfac, gcnorm1, gcnorm0
-    integer       :: i, n, iter, ind, ierr, iw, ncg, nkp, nkp_loc !, nn
-    logical       :: lprint, ldump, lquad
-    real(kind=dp), allocatable :: history(:)
-    real(kind=dp)              :: save_spread
-    logical                    :: lconverged, lrandom, lfirst
-    integer                    :: conv_count, noise_count, page_unit
-    complex(kind=dp) :: rdotk !, fac
-    !real(kind=dp) :: alpha_precond
-    integer :: irpt, loop_kpt
-    !logical :: cconverged
-    !real(kind=dp) :: glpar, cvalue_new
-    real(kind=dp), allocatable :: rnr0n2(:)
+    real(kind=dp) :: save_spread
 
     ! pllel setup
     logical :: on_root = .false.
@@ -211,6 +185,25 @@ contains
 
     first_pass = .true.
 
+    nkrank = count(dist_k == my_node_id) ! number k this rank, for dimensioning
+    ! there is no need to round up to 1, but less than zero is nonsense
+    if (nkrank < 0) then
+      call set_error_fatal(error, 'kpt decomposition nonsensical in wann_main', comm)
+      return
+    endif
+    allocate (global_k(nkrank), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating local kpoint distribution in wann_main', comm)
+      return
+    end if
+    loop_kpt = 1
+    do i = 1, num_kpts
+      if (dist_k(i) == my_node_id) then
+        global_k(loop_kpt) = i
+        loop_kpt = loop_kpt + 1
+      endif
+    enddo
+
     ! Allocate stuff
     allocate (history(wann_control%conv_window), stat=ierr)
     if (ierr /= 0) then
@@ -222,6 +215,7 @@ contains
       call set_error_alloc(error, 'Error in allocating rnkb in wann_main', comm)
       return
     endif
+    rnkb = 0.0_dp
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main', comm)
@@ -234,8 +228,6 @@ contains
         return
       endif
     end if
-
-    rnkb = 0.0_dp
 
     ! sub vars passed into other subs
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
@@ -328,90 +320,62 @@ contains
       call set_error_alloc(error, 'Error in allocating cdq in wann_main', comm)
       return
     endif
-
-    ! for MPI
-    if (allocated(counts)) deallocate (counts)
-    allocate (counts(0:num_nodes - 1), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating counts in wann_main', comm)
-      return
-    end if
-
-    if (allocated(displs)) deallocate (displs)
-    allocate (displs(0:num_nodes - 1), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating displs in wann_main', comm)
-      return
-    end if
-    call comms_array_split(num_kpts, counts, displs, comm)
-    allocate (rnkb_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
+    allocate (rnkb_loc(num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rnkb_loc in wann_main', comm)
       return
     endif
-    allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
+    allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp_loc in wann_main', comm)
       return
     endif
-    allocate (u_matrix_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
+    allocate (u_matrix_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix_loc in wann_main', comm)
       return
     endif
-    allocate (m_matrix_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating m_matrix_loc in wann_main', comm)
-      return
-    endif
     if (wann_control%precond) then
-      allocate (cdodq_precond_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
+      allocate (cdodq_precond_loc(num_wann, num_wann, nkrank), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating cdodq_precond_loc in wann_main', comm)
         return
       endif
     end if
-    ! initialize local u and m matrices with global ones
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = nkp_loc + displs(my_node_id)
-!       m_matrix_loc (:,:,:, nkp_loc) = &
-!           m_matrix (:,:,:, nkp)
-      u_matrix_loc(:, :, nkp_loc) = &
-        u_matrix(:, :, nkp)
-    end do
-    call comms_scatterv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                        m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                        num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
-    if (allocated(error)) return
 
-    allocate (cdq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
+    ! initialize local u matrix with global one
+    do nkp_loc = 1, nkrank
+      nkp = global_k(nkp_loc)
+      u_matrix_loc(:, :, nkp_loc) = u_matrix(:, :, nkp)
+    end do
+
+    allocate (cdq_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdq_loc in wann_main', comm)
       return
     endif
-    allocate (cdodq_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
+    allocate (cdodq_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdodq_loc in wann_main', comm)
       return
     endif
-    allocate (cdqkeep_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
+    allocate (cdqkeep_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdqkeep_loc in wann_main', comm)
       return
     endif
     if (optimisation > 0) then
-      allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, max(1, counts(my_node_id))), stat=ierr)
+      allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     end if
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m0_loc in wann_main', comm)
       return
     endif
-    allocate (u0_loc(num_wann, num_wann, max(1, counts(my_node_id))), stat=ierr)
+    allocate (u0_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u0_loc in wann_main', comm)
       return
     endif
-
     allocate (cz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cz in wann_main', comm)
@@ -445,21 +409,14 @@ contains
 
     cwschur1 = cmplx_0; cwschur2 = cmplx_0; cwschur3 = cmplx_0; cwschur4 = cmplx_0
     cdq = cmplx_0; cz = cmplx_0; cmtmp = cmplx_0; cdqkeep_loc = cmplx_0; cdq_loc = cmplx_0
-    ! buff=cmplx_0
-
     gcnorm1 = 0.0_dp; gcnorm0 = 0.0_dp
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if (wann_control%guiding_centres%enable) then
       do n = 1, num_proj
-        call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), &
-                                  rguide(:, n), real_lattice)
+        call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
+                                  real_lattice)
       enddo
-!       if(spinors) then ! not needed with new changes to spinor proj 2013 JRY
-!          do n=1,num_proj
-!             call utility_frac_to_cart(proj_site(:,n),rguide(:,n+num_proj),real_lattice)
-!          enddo
-!       end if
     end if
 
     if (print_output%iprint > 0) then
@@ -477,9 +434,9 @@ contains
 
     irguide = 0
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
-      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                       .false., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, timer, error, comm)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                       m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
+                       nkrank, global_k, error, comm)
       if (allocated(error)) return
 
       irguide = 1
@@ -493,8 +450,8 @@ contains
 
     ! calculate initial centers and spread
     call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
-                    num_kpts, print_output, wann_control%constrain, omega%invariant, counts, &
-                    displs, ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, error, comm)
+                    num_kpts, print_output, wann_control%constrain, omega%invariant, ln_tmp_loc, &
+                    m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, error, comm)
     if (allocated(error)) return
 
     ! public variables
@@ -512,7 +469,9 @@ contains
     wannier_data%centres = rave
     wannier_data%spreads = r2ave - rave2
 
+    ! JJ checkme, where is lquad intitialised?  should it be persistent between invocations?
     if (wann_control%lfixstep) lquad = .false.
+
     ncg = 0
     iter = 0
     old_spread%om_tot = 0.0_dp
@@ -561,12 +520,14 @@ contains
       end if
     endif
 
-    lconverged = .false.; lfirst = .true.; lrandom = .false.
-    conv_count = 0; noise_count = 0
+    lconverged = .false.
+    lfirst = .true.
+    lrandom = .false.
+    conv_count = 0
+    noise_count = 0
 
     if (.not. wann_control%lfixstep .and. optimisation <= 0) then
-      page_unit = io_file_unit()
-      open (unit=page_unit, status='scratch', form='unformatted')
+      open (newunit=page_unit, status='scratch', form='unformatted')
     endif
 
     ! main iteration loop
@@ -585,28 +546,27 @@ contains
       if (wann_control%guiding_centres%enable .and. &
           (iter .gt. wann_control%guiding_centres%num_no_guide_iter) &
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
-        call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                         .false., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                         print_output%iprint, timer, error, comm)
+        call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                         m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, &
+                         timer, nkrank, global_k, error, comm)
         if (allocated(error)) return
 
         irguide = 1
       endif
 
       ! calculate gradient of omega
-
       if (lsitesymmetry .or. wann_control%precond) then
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
-                         wann_control%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
-                         m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, &
-                         sitesym, timer, error, comm, print_output%iprint, cdodq)
+                         wann_control%constrain, lsitesymmetry, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, sitesym, &
+                         timer, nkrank, global_k, error, comm, print_output%iprint, cdodq)
         if (allocated(error)) return
 
       else
         call wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, &
-                         wann_control%constrain, lsitesymmetry, counts, displs, ln_tmp_loc, &
-                         m_matrix_loc, rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, &
-                         sitesym, timer, error, comm, print_output%iprint)
+                         wann_control%constrain, lsitesymmetry, ln_tmp_loc, m_matrix_loc, &
+                         rnkb_loc, cdodq_loc, lambda_loc, print_output%timing_level, sitesym, &
+                         timer, nkrank, global_k, error, comm, print_output%iprint)
         if (allocated(error)) return
 
       endif
@@ -618,15 +578,17 @@ contains
       if (wann_control%precond) then
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, k_to_r, &
                                       wann_spread, num_wann, num_kpts, kpt_latt, real_lattice, &
-                                      nrpts, irvec, ndegen, counts, displs, optimisation, timer)
+                                      nrpts, irvec, ndegen, optimisation, timer)
       endif
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, kmesh_info%wbtot, cdq_loc, cdodq_loc, &
-                                     counts, stdout, timer, error, comm)
+                                     stdout, timer, error, comm)
       if (allocated(error)) return
 
-      if (lsitesymmetry) call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann)
+      if (lsitesymmetry) then
+        call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann, error, comm)
+      endif
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -646,7 +608,6 @@ contains
         u0_loc = u_matrix_loc
 
         if (optimisation <= 0) then
-!             write(page_unit)   m_matrix
           write (page_unit) m_matrix_loc
           rewind (page_unit)
         else
@@ -656,16 +617,16 @@ contains
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
-                                  lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, timer, &
-                                  error, comm)
+                                  lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
+                                  print_output%timing_level, stdout, sitesym, timer, nkrank, &
+                                  global_k, error, comm)
         if (allocated(error)) return
 
         ! calculate spread at trial step
         call wann_omega(csheet, sheet, rave, r2ave, rave2, trial_spread, num_wann, kmesh_info, &
-                        num_kpts, print_output, wann_control%constrain, omega%invariant, counts, &
-                        displs, ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, error, &
-                        comm)
+                        num_kpts, print_output, wann_control%constrain, omega%invariant, &
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, &
+                        error, comm)
         if (allocated(error)) return
 
         ! Calculate optimal step (alphamin)
@@ -717,18 +678,18 @@ contains
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                   cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
-                                  lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                  m_matrix_loc, print_output%timing_level, stdout, sitesym, timer, &
-                                  error, comm)
+                                  lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
+                                  print_output%timing_level, stdout, sitesym, timer, nkrank, &
+                                  global_k, error, comm)
         if (allocated(error)) return
 
         call wann_spread_copy(wann_spread, old_spread)
 
         ! calculate the new centers and spread
         call wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
-                        num_kpts, print_output, wann_control%constrain, &
-                        omega%invariant, counts, displs, ln_tmp_loc, &
-                        m_matrix_loc, lambda_loc, first_pass, timer, error, comm)
+                        num_kpts, print_output, wann_control%constrain, omega%invariant, &
+                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, &
+                        error, comm)
         if (allocated(error)) return
 
         ! parabolic line search was unsuccessful, use trial step already taken
@@ -807,29 +768,33 @@ contains
         !omega_tilde = wann_spread%om_d + wann_spread%om_nu
       end if
 
-      if (ldump) then
-        ! Before calling w90_wannier90_readwrite_write_chkpt, I need to gather on the root node
-        ! the u_matrix from the u_matrix_loc. No need to broadcast it since
-        ! it's printed by the root node only
-        call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
-                           u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, error, comm)
-        if (allocated(error)) return
-
-        ! I also transfer the M matrix
-        call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                           m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                           num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
-        if (allocated(error)) return
-
-        if (on_root) then
-          call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
-                                                   kmesh_info, kpt_latt, num_kpts, dis_manifold, &
-                                                   num_bands, num_wann, u_matrix, u_matrix_opt, &
-                                                   m_matrix, mp_grid, real_lattice, &
-                                                   omega%invariant, have_disentangled, stdout, &
-                                                   seedname)
-        endif
-      endif
+!JJ      if (ldump) then
+!JJ        ! Before calling w90_wannier90_readwrite_write_chkpt, I need to gather on the root node
+!JJ        ! the u_matrix from the u_matrix_loc. No need to broadcast it since
+!JJ        ! it's printed by the root node only
+!JJ        u_matrix(:, :, :) = 0.0_dp
+!JJ        m_matrix(:, :, :, :) = 0.0_dp
+!JJ        do nkp_loc = 1, nkrank
+!JJ          nkp = displs(my_node_id) + nkp_loc
+!JJ          u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
+!JJ          m_matrix(:, :, :, nkp) = m_matrix_loc(:, :, :, nkp_loc)
+!JJ        enddo
+!JJ
+!JJ        wwk = num_wann*num_wann*num_kpts
+!JJ        call comms_reduce(u_matrix(1, 1, 1), wwk, 'SUM', error, comm)
+!JJ        if (allocated(error)) return
+!JJ        call comms_reduce(m_matrix(1, 1, 1, 1), wwk*kmesh_info%nntot, 'SUM', error, comm)
+!JJ        if (allocated(error)) return
+!JJ
+!JJ        if (on_root) then
+!JJ          call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
+!JJ                                                   kmesh_info, kpt_latt, num_kpts, dis_manifold, &
+!JJ                                                   num_bands, num_wann, u_matrix, u_matrix_opt, &
+!JJ                                                   m_matrix, mp_grid, real_lattice, &
+!JJ                                                   omega%invariant, have_disentangled, stdout, &
+!JJ                                                   seedname)
+!JJ        endif
+!JJ      endif
 
       if (wann_control%conv_window .gt. 1) then
         call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
@@ -851,26 +816,13 @@ contains
     enddo
     ! end of the minimization loop
 
-    ! the m matrix is sent by piece to avoid huge arrays
-    ! But, I want to reduce the memory usage as much as possible.
-!    do nn = 1, nntot
-!      m_matrix_1b_loc=m_matrix_loc(:,:,nn,:)
-!      call comms_gatherv(m_matrix_1b_loc,num_wann*num_wann*counts(my_node_id),&
-!                 m_matrix_1b,num_wann*num_wann*counts,num_wann*num_wann*displs)
-!      call comms_bcast(m_matrix_1b(1,1,1),num_wann*num_wann*num_kpts)
-!      m_matrix(:,:,nn,:)=m_matrix_1b(:,:,:)
-!    end do!nn
-    call comms_gatherv(m_matrix_loc, num_wann*num_wann*kmesh_info%nntot*counts(my_node_id), &
-                       m_matrix, num_wann*num_wann*kmesh_info%nntot*counts, &
-                       num_wann*num_wann*kmesh_info%nntot*displs, error, comm)
-    if (allocated(error)) return
-
-    ! send u matrix
-    call comms_gatherv(u_matrix_loc, num_wann*num_wann*counts(my_node_id), &
-                       u_matrix, num_wann*num_wann*counts, num_wann*num_wann*displs, error, comm)
-    if (allocated(error)) return
-
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+    ! copy from local u matrix back to full matrix & reduce
+    u_matrix(:, :, :) = 0.0_dp
+    do nkp_loc = 1, nkrank
+      nkp = global_k(nkp_loc)
+      u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
+    enddo
+    call comms_allreduce(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
     if (allocated(error)) return
 
     ! Evaluate the penalty functional
@@ -927,77 +879,17 @@ contains
       end if
     endif
 
-    if (output_file%write_xyz .and. on_root) then
-      call wann_write_xyz(real_space_ham%translate_home_cell, num_wann, wannier_data%centres, &
-                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
-      if (allocated(error)) return
-    endif
-
-    if (output_file%write_hr_diag) then
-      call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
-                             real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
-                             num_kpts, num_wann, nrpts, rpt_origin, bands_plot_mode, stdout, &
-                             timer, error, transport_mode, comm)
-      if (allocated(error)) return
-
-      call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
-                              ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
-                              real_lattice, wannier_data%centres, wannier_centres_translated, &
-                              irvec, shift_vec, nrpts, num_bands, num_kpts, num_wann, &
-                              have_disentangled, stdout, timer, error, lsitesymmetry, comm)
-      if (allocated(error)) return
-
-      if (print_output%iprint > 0) then
-        write (stdout, *)
-        write (stdout, '(1x,a)') 'On-site Hamiltonian matrix elements'
-        write (stdout, '(3x,a)') '  n        <0n|H|0n> (eV)'
-        write (stdout, '(3x,a)') '-------------------------'
-        do i = 1, num_wann
-          write (stdout, '(3x,i3,5x,f12.6)') i, real(ham_r(i, i, rpt_origin), kind=dp)
-        enddo
-        write (stdout, *)
-      endif
-    endif
-
     if (wann_control%guiding_centres%enable) then
-      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                       .false., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, timer, error, comm)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                       m_matrix_loc, rnkb, print_output%timing_level, print_output%iprint, timer, &
+                       nkrank, global_k, error, comm)
       if (allocated(error)) return
     endif
 
-    ! unitarity is checked
+    ! check unitarity of u
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
                               print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
-
-    ! write extra info regarding omega_invariant
-    if (print_output%iprint > 2 .and. on_root) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                            error, comm, stdout)
-      if (allocated(error)) return
-    endif
-
-    ! write matrix elements <m|r^2|n> to file
-    if (output_file%write_r2mn .and. on_root) then
-      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-      if (allocated(error)) return
-    endif
-
-    ! calculate and write projection of WFs on original bands in outer window
-    if (have_disentangled .and. output_file%write_proj) then
-      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_manifold%lwindow, print_output%timing_level, &
-                                print_output%iprint, stdout, timer)
-    endif
-
-    ! aam: write data required for vdW utility
-    if (output_file%write_vdw_data .and. on_root) then
-      call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, &
-                               u_matrix_opt, have_disentangled, w90_system, error, comm, stdout, &
-                               seedname)
-      if (allocated(error)) return
-    endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (rwork, stat=ierr)
@@ -1035,8 +927,6 @@ contains
       call set_error_dealloc(error, 'Error in deallocating cdq in wann_main', comm)
       return
     endif
-
-    ! for MPI
     deallocate (ln_tmp_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ln_tmp_loc in wann_main', comm)
@@ -1050,11 +940,6 @@ contains
     deallocate (u_matrix_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u_matrix_loc in wann_main', comm)
-      return
-    endif
-    deallocate (m_matrix_loc, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating m_matrix_loc in wann_main', comm)
       return
     endif
     deallocate (cdq_loc, stat=ierr)
@@ -1145,7 +1030,6 @@ contains
         return
       endif
     end if
-    ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main', comm)
@@ -1156,7 +1040,6 @@ contains
       call set_error_dealloc(error, 'Error in deallocating rnkb in wann_main', comm)
       return
     endif
-
     deallocate (u0_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u0_loc in wann_main', comm)
@@ -1169,10 +1052,6 @@ contains
         return
       endif
     end if
-
-    if (allocated(counts)) deallocate (counts)
-    if (allocated(displs)) deallocate (displs)
-
     deallocate (history, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating history in wann_main', comm)
@@ -1212,7 +1091,7 @@ contains
       type(localisation_vars_type), intent(in) :: old_spread
       type(localisation_vars_type), intent(in) :: wann_spread
       type(w90_error_type), allocatable, intent(out) :: error
-      type(w90comm_type), intent(in) :: comm
+      type(w90_comm_type), intent(in) :: comm
       type(wann_control_type), intent(in) :: wann_control
       real(kind=dp), intent(inout) :: history(:)
       real(kind=dp), intent(out) :: save_spread
@@ -1222,9 +1101,9 @@ contains
       logical, intent(inout) :: lconverged, lrandom, lfirst
 
       ! local
-      real(kind=dp) :: delta_omega
       integer :: j, ierr
       real(kind=dp), allocatable :: temp_hist(:)
+      real(kind=dp) :: delta_omega
 
       allocate (temp_hist(wann_control%conv_window), stat=ierr)
       if (ierr /= 0) then
@@ -1285,22 +1164,24 @@ contains
     end subroutine internal_test_convergence
 
     !================================================!
-    subroutine internal_random_noise(conv_noise_amp, num_wann, counts, cdq_loc)
+    subroutine internal_random_noise(conv_noise_amp, num_wann, nkrank, cdq_loc)
       !================================================!
       !
       !! Add some random noise to the search direction
       !! to help escape from local minima
       !
       !================================================!
-
       use w90_constants, only: cmplx_0
-      use w90_comms, only: w90comm_type
+      use w90_comms, only: w90_comm_type
 
       implicit none
-      real(kind=dp), intent(in) :: conv_noise_amp
+
+      ! arguments
       integer, intent(in) :: num_wann
+      integer, intent(in) :: nkrank
+      real(kind=dp), intent(in) :: conv_noise_amp
       complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      integer, intent(in) :: counts(0:)
+
       ! local
       integer :: ikp, iw, jw, ierr
       real(kind=dp), allocatable :: noise_real(:, :), noise_imag(:, :)
@@ -1329,7 +1210,7 @@ contains
       ! cdq is a num_wann x num_wann x num_kpts anti-hermitian array
       ! to which we add a random anti-hermitian matrix
 
-      do ikp = 1, counts(my_node_id)
+      do ikp = 1, nkrank
         do iw = 1, num_wann
           call random_seed()
           call random_number(noise_real(:, iw))
@@ -1372,10 +1253,9 @@ contains
     end subroutine internal_random_noise
 
     !================================================!
-    subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, &
-                                        k_to_r, wann_spread, num_wann, num_kpts, &
-                                        kpt_latt, real_lattice, nrpts, irvec, ndegen, &
-                                        counts, displs, optimisation, timer)
+    subroutine precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, k_to_r, &
+                                        wann_spread, num_wann, num_kpts, kpt_latt, real_lattice, &
+                                        nrpts, irvec, ndegen, optimisation, timer)
       !================================================!
       !
       !! Calculate the conjugate gradients search
@@ -1409,8 +1289,6 @@ contains
       integer, intent(in) :: nrpts
       integer, intent(in) :: irvec(:, :)
       integer, intent(in) :: ndegen(:)
-      integer, intent(in) :: counts(0:)
-      integer, intent(in) :: displs(0:)
       integer, intent(in) :: optimisation
 
       ! local
@@ -1427,13 +1305,9 @@ contains
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       ! gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
 
-      !if (wann_control%precond) then
-      ! compute cdodq_precond
-
       cdodq_r(:, :, :) = 0 ! intermediary gradient in R space
       cdodq_precond(:, :, :) = 0
       cdodq_precond_loc(:, :, :) = 0
-!         cdodq_precond(:,:,:) = complx_0
 
       ! convert to real space in cdodq_r
       ! Two algorithms: either double loop or GEMM. GEMM is much more efficient but requires more RAM
@@ -1474,9 +1348,8 @@ contains
         do irpt = 1, nrpts
           cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt)/real(ndegen(irpt), dp)
         end do
-        call zgemm('N', 'C', num_wann*num_wann, num_kpts, nrpts, cmplx_1, &
-            & cdodq_r, num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, &
-            num_wann*num_wann)
+        call zgemm('N', 'C', num_wann*num_wann, num_kpts, nrpts, cmplx_1, cdodq_r, &
+                   num_wann*num_wann, k_to_r, num_kpts, cmplx_0, cdodq_precond, num_wann*num_wann)
       else
         do irpt = 1, nrpts
           do loop_kpt = 1, num_kpts
@@ -1487,10 +1360,10 @@ contains
           enddo
         enddo
       end if
-      cdodq_precond_loc(:, :, 1:counts(my_node_id)) = &
-        cdodq_precond(:, :, 1 + displs(my_node_id):displs(my_node_id) + counts(my_node_id))
-
-      !end if
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
+        cdodq_precond_loc(:, :, nkp_loc) = cdodq_precond(:, :, nkp)
+      enddo
 
     end subroutine precond_search_direction
 
@@ -1498,7 +1371,7 @@ contains
     subroutine internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                          noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                          wann_control, num_wann, wbtot, cdq_loc, cdodq_loc, &
-                                         counts, stdout, timer, error, comm)
+                                         stdout, timer, error, comm)
       !================================================!
       !
       !! Calculate the conjugate gradients search
@@ -1507,21 +1380,19 @@ contains
       !!     cg_coeff = [g(i).g(i)]/[g(i-1).g(i-1)]
       !
       !================================================!
-
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: comms_allreduce, w90comm_type
+      use w90_comms, only: comms_allreduce, w90_comm_type
       use w90_wannier90_types, only: wann_control_type
       use w90_types, only: timer_list_type
 
       implicit none
 
-      ! argumetns
+      ! arguments
       type(wann_control_type), intent(in) :: wann_control
       type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
-      type(w90comm_type), intent(in) :: comm
+      type(w90_comm_type), intent(in) :: comm
 
-      integer, intent(in) :: counts(0:)
       integer, intent(in) :: iter
       integer, intent(in) :: noise_count
       integer, intent(in) :: num_wann
@@ -1543,6 +1414,9 @@ contains
 
       ! local
       complex(kind=dp), external :: zdotc
+      integer :: m
+
+      m = count(dist_k == mpirank(comm))*num_wann*num_wann ! for dimensioning
 
       if ((.not. wann_control%precond) .and. print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_start('wann: main: search_direction', timer)
@@ -1550,12 +1424,10 @@ contains
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       if (wann_control%precond) then
-!         gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq_precond,1,cdodq,1),dp)
-        gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_precond_loc, 1, &
-                             cdodq_loc, 1), dp)
+        gcnorm1 = real(zdotc(m, cdodq_precond_loc, 1, cdodq_loc, 1), dp)
       else
-        gcnorm1 = real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdodq_loc, 1), dp)
-      end if
+        gcnorm1 = real(zdotc(m, cdodq_loc, 1, cdodq_loc, 1), dp)
+      endif
       call comms_allreduce(gcnorm1, 1, 'SUM', error, comm)
       if (allocated(error)) return
 
@@ -1585,23 +1457,23 @@ contains
       gcnorm0 = gcnorm1
 
       ! calculate search direction
-
       if (wann_control%precond) then
         cdq_loc(:, :, :) = cdodq_precond_loc(:, :, :) + cdqkeep_loc(:, :, :)*gcfac !! JRY not MPI
       else
         cdq_loc(:, :, :) = cdodq_loc(:, :, :) + cdqkeep_loc(:, :, :)*gcfac
-      end if
+      endif
 
       ! add some random noise to search direction, if required
       if (lrandom) then
         if (print_output%iprint > 0) write (stdout, '(a,i3,a,i3,a)') &
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', &
           wann_control%conv_noise_num, ' ]'
-        call internal_random_noise(wann_control%conv_noise_amp, num_wann, counts, cdq_loc)
+        call internal_random_noise(wann_control%conv_noise_amp, num_wann, nkrank, cdq_loc)
       endif
+
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
-      doda0 = -real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdq_loc, 1), dp)
+      doda0 = -real(zdotc(m, cdodq_loc, 1, cdq_loc, 1), dp)
 
       call comms_allreduce(doda0, 1, 'SUM', error, comm)
       if (allocated(error)) return
@@ -1615,17 +1487,19 @@ contains
           if (lprint .and. print_output%iprint > 2 .and. print_output%iprint > 0) &
             write (stdout, *) ' LINE --> Search direction uphill: resetting CG'
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
-          if (lrandom) call internal_random_noise(wann_control%conv_noise_amp, num_wann, &
-                                                  counts, cdq_loc)
+          if (lrandom) then
+            call internal_random_noise(wann_control%conv_noise_amp, num_wann, nkrank, cdq_loc)
+          endif
           ncg = 0
           gcfac = 0.0_dp
+
           ! re-calculate gradient along search direction
-          doda0 = -real(zdotc(counts(my_node_id)*num_wann*num_wann, cdodq_loc, 1, cdq_loc, 1), dp)
+          doda0 = -real(zdotc(m, cdodq_loc, 1, cdq_loc, 1), dp)
 
           call comms_allreduce(doda0, 1, 'SUM', error, comm)
           if (allocated(error)) return
-
           doda0 = doda0/(4.0_dp*wbtot)
+
           ! if search direction still uphill then reverse search direction
           if (doda0 .gt. 0.0_dp) then
             if (lprint .and. print_output%iprint > 2 .and. print_output%iprint > 0) &
@@ -1642,18 +1516,12 @@ contains
         endif
       endif
 
-      !~     ! calculate search direction
-      !~     cdq(:,:,:) = cdodq(:,:,:) + cdqkeep(:,:,:) * gcfac
-
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_stop('wann: main: search_direction', timer)
-        !if (allocated(error)) return
       endif
 
       lrandom = .false.
-
       return
-
     end subroutine internal_search_direction
 
     !================================================!
@@ -1666,7 +1534,7 @@ contains
       !
       !================================================!
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: w90comm_type
+      use w90_comms, only: w90_comm_type
       use w90_types, only: timer_list_type
 
       implicit none
@@ -1730,8 +1598,9 @@ contains
     !================================================!
     subroutine internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
                                     cwschur3, cwschur4, cz, num_wann, num_kpts, kmesh_info, &
-                                    lsitesymmetry, counts, displs, cdq_loc, u_matrix_loc, &
-                                    m_matrix_loc, timing_level, stdout, sitesym, timer, error, comm)
+                                    lsitesymmetry, cdq_loc, u_matrix_loc, m_matrix_loc, &
+                                    timing_level, stdout, sitesym, timer, nkrank, global_k, error, &
+                                    comm)
       !================================================!
       !
       !! Update U and M matrices after a trial step
@@ -1742,7 +1611,7 @@ contains
       use w90_sitesym, only: sitesym_symmetrize_rotation
       use w90_wannier90_types, only: sitesym_type
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: comms_bcast, comms_gatherv, w90comm_type
+      use w90_comms, only: comms_allreduce, w90_comm_type
       use w90_utility, only: utility_zgemm
       use w90_types, only: kmesh_info_type, timer_list_type
 
@@ -1752,25 +1621,27 @@ contains
       type(sitesym_type), intent(in) :: sitesym
       type(timer_list_type), intent(inout) :: timer
       type(w90_error_type), allocatable, intent(out) :: error
-      type(w90comm_type), intent(in) :: comm
+      type(w90_comm_type), intent(in) :: comm
 
       complex(kind=dp), intent(inout) :: cdq(:, :, :)
+      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
       complex(kind=dp), intent(inout) :: cmtmp(:, :), tmp_cdq(:, :) ! really just local?
       complex(kind=dp), intent(inout) :: cwork(:)
-      real(kind=dp), intent(inout) :: evals(:)
-      real(kind=dp), intent(inout) :: rwork(:)
       complex(kind=dp), intent(inout) :: cwschur1(:), cwschur2(:)
       complex(kind=dp), intent(inout) :: cwschur3(:), cwschur4(:)
       complex(kind=dp), intent(inout) :: cz(:, :)
-      integer, intent(in) :: num_wann, num_kpts
-      logical, intent(in) :: lsitesymmetry
-      integer, intent(in) :: counts(0:)
-      integer, intent(in) :: displs(0:)
-      complex(kind=dp), intent(inout) :: cdq_loc(:, :, :)
-      complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
       complex(kind=dp), intent(inout) :: m_matrix_loc(:, :, :, :)
+      complex(kind=dp), intent(inout) :: u_matrix_loc(:, :, :)
+
+      integer, intent(in) :: nkrank
+      integer, intent(in) :: global_k(:)
       integer, intent(in) :: timing_level
+      integer, intent(in) :: num_wann, num_kpts
       integer, intent(in) :: stdout
+      logical, intent(in) :: lsitesymmetry
+
+      real(kind=dp), intent(inout) :: evals(:)
+      real(kind=dp), intent(inout) :: rwork(:)
 
       ! local vars
       integer :: i, nkp, nn, nkp2, nsdim, nkp_loc, info
@@ -1781,11 +1652,12 @@ contains
 
       if (timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: main: u_and_m', timer)
 
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
-        if (lsitesymmetry) then                !YN: RS:
-          if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle !YN: RS:
-        end if                                 !YN: RS:
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
+        if (lsitesymmetry) then
+          if (sitesym%ir2ik(sitesym%ik2ir(nkp)) .ne. nkp) cycle
+        end if
+
         ! cdq(nkp) is anti-Hermitian; tmp_cdq = i*cdq  is Hermitian
         tmp_cdq(:, :) = cmplx_i*cdq_loc(:, :, nkp_loc)
         ! Hermitian matrix eigen-solver
@@ -1819,12 +1691,12 @@ contains
       enddo
 
       ! each process communicates its result to other processes
-      ! it would be enough to copy only next neighbors
-      call comms_gatherv(cdq_loc, num_wann*num_wann*counts(my_node_id), cdq, &
-                         num_wann*num_wann*counts, num_wann*num_wann*displs, error, comm)
-      if (allocated(error)) return
-
-      call comms_bcast(cdq(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+      cdq(:, :, :) = 0.0_dp
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
+        cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
+      enddo
+      call comms_allreduce(cdq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
       if (allocated(error)) return
 
 !!$      do nkp = 1, num_kpts
@@ -1847,14 +1719,14 @@ contains
       if (lsitesymmetry) then
         call sitesym_symmetrize_rotation(sitesym, cdq, num_kpts, num_wann, error, comm)
         if (allocated(error)) return
-        !RS: calculate cdq(Rk) from k
-        cdq_loc(:, :, 1:counts(my_node_id)) = cdq(:, :, 1 + displs(my_node_id):displs(my_node_id) &
-                                                  + counts(my_node_id))
+        do nkp_loc = 1, nkrank
+          nkp = global_k(nkp_loc)
+          cdq_loc(:, :, nkp_loc) = cdq(:, :, nkp)
+        enddo
       endif
 
       ! the orbitals are rotated
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
         ! cmtmp = U(k) . cdq(k)
         call utility_zgemm(cmtmp, u_matrix_loc(:, :, nkp_loc), 'N', cdq_loc(:, :, nkp_loc), 'N', &
                            num_wann)
@@ -1862,16 +1734,16 @@ contains
       enddo
 
       ! and the M_ij are updated
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
           ! tmp_cdq = cdq^{dagger} . M
-          call utility_zgemm(tmp_cdq, cdq(:, :, nkp), 'C', m_matrix_loc(:, :, nn, nkp_loc), 'N', &
+          call utility_zgemm(tmp_cdq, cdq(:, :, nkp), 'C', m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc), 'N', &  !jj fixme
                              num_wann)
           ! cmtmp = tmp_cdq . cdq
           call utility_zgemm(cmtmp, tmp_cdq, 'N', cdq(:, :, nkp2), 'N', num_wann)
-          m_matrix_loc(:, :, nn, nkp_loc) = cmtmp(:, :)
+          m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc) = cmtmp(:, :) !jj fixme
         enddo
       enddo
 
@@ -1881,9 +1753,9 @@ contains
 
   !================================================!
 
-  subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                         gamma_only, counts, displs, m_matrix_loc, rnkb, timing_level, &
-                         iprint, timer, error, comm, m_w)
+  subroutine wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                         m_matrix_loc, rnkb, timing_level, iprint, timer, nkrank, global_k, error, &
+                         comm, m_w)
     !================================================!
     !! Uses guiding centres to pick phases which give a
     !! consistent choice of branch cut for the spread definition
@@ -1893,13 +1765,13 @@ contains
     use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_inv3
-    use w90_comms, only: comms_allreduce, w90comm_type, mpirank
+    use w90_comms, only: comms_allreduce, w90_comm_type, mpirank
     use w90_types, only: kmesh_info_type, timer_list_type
 
     implicit none
 
     ! arguments
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
@@ -1909,8 +1781,8 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: irguide !! Zero if first call to this routine
     integer, intent(in) :: iprint
-    integer, intent(in) :: displs(0:)
-    integer, intent(in) :: counts(0:)
+    integer, intent(in) :: nkrank
+    integer, intent(in) :: global_k(:)
 
     real(kind=dp), intent(out) :: sheet(:, :, :) !! Choice of branch cut
     real(kind=dp), intent(out) :: rnkb(:, :, :)
@@ -1918,10 +1790,7 @@ contains
     real(kind=dp), intent(in), optional :: m_w(:, :, :)
 
     complex(kind=dp), intent(out) :: csheet(:, :, :) !! Choice of phase
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    complex(kind=dp), allocatable, intent(in) :: m_matrix_loc(:, :, :, :)
-
-    logical, intent(in) :: gamma_only
+    complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
 
     !local
     complex(kind=dp) :: csum(kmesh_info%nnh)
@@ -1946,32 +1815,21 @@ contains
 
       if (.not. present(m_w)) then
         ! get average phase for each unique bk direction
-        if (gamma_only) then
-          do na = 1, kmesh_info%nnh
-            csum(na) = cmplx_0
-            do nkp_loc = 1, counts(my_node_id)
-              nkp = nkp_loc + displs(my_node_id)
-              nn = kmesh_info%neigh(nkp, na)
-              csum(na) = csum(na) + m_matrix(loop_wann, loop_wann, nn, nkp_loc)
-            enddo
+        do na = 1, kmesh_info%nnh
+          csum(na) = cmplx_0
+          do nkp_loc = 1, nkrank
+            nkp = global_k(nkp_loc)
+            nn = kmesh_info%neigh(nkp, na)
+            csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
           enddo
-        else
-          do na = 1, kmesh_info%nnh
-            csum(na) = cmplx_0
-            do nkp_loc = 1, counts(my_node_id)
-              nkp = nkp_loc + displs(my_node_id)
-              nn = kmesh_info%neigh(nkp, na)
-              csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
-            enddo
-          enddo
-        endif
+        enddo
 
       else
 
         do na = 1, kmesh_info%nnh
           csum(na) = cmplx_0
-          do nkp_loc = 1, counts(my_node_id)
-            nkp = nkp_loc + displs(my_node_id)
+          do nkp_loc = 1, nkrank
+            nkp = global_k(nkp_loc)
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) &
                        + cmplx(m_w(loop_wann, loop_wann, 2*nn - 1), m_w(loop_wann, loop_wann, 2*nn), dp)
@@ -2119,8 +1977,8 @@ contains
 
   !================================================!
   subroutine wann_omega(csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, kmesh_info, &
-                        num_kpts, print_output, wann_slwf, omega_invariant, counts, displs, &
-                        ln_tmp_loc, m_matrix_loc, lambda_loc, first_pass, timer, error, comm)
+                        num_kpts, print_output, wann_slwf, omega_invariant, ln_tmp_loc, &
+                        m_matrix_loc, lambda_loc, first_pass, timer, nkrank, global_k, error, comm)
     !================================================!
     !
     !!   Calculate the Wannier Function spread
@@ -2131,7 +1989,7 @@ contains
     !================================================
 
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: comms_allreduce, w90comm_type, mpirank
+    use w90_comms, only: comms_allreduce, w90_comm_type, mpirank
     use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
     use w90_wannier90_types, only: wann_slwf_type
 
@@ -2141,12 +1999,12 @@ contains
     type(kmesh_info_type), intent(in) :: kmesh_info
     type(localisation_vars_type), intent(out)  :: wann_spread
     type(print_output_type), intent(in) :: print_output
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wann_slwf_type), intent(in) :: wann_slwf
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: counts(0:), displs(0:)
+    integer, intent(in) :: nkrank, global_k(:)
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
 
@@ -2173,22 +2031,22 @@ contains
 
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) call io_stopwatch_start('wann: omega', timer)
 
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = nkp_loc + displs(my_node_id)
+    do nkp_loc = 1, nkrank
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
           ! Note that this ln_tmp is defined differently wrt the one in wann_domega
           ln_tmp_loc(n, nn, nkp_loc) = (aimag(log(csheet(n, nn, nkp) &
                                                   *m_matrix_loc(n, n, nn, nkp_loc))) - sheet(n, nn, nkp))
-        end do
-      end do
-    end do
+        enddo
+      enddo
+    enddo
 
     rave = 0.0_dp
     do iw = 1, num_wann
       do ind = 1, 3
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, nkrank
+          nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
                             *ln_tmp_loc(iw, nn, nkp_loc)
@@ -2217,8 +2075,7 @@ contains
 
     r2ave = 0.0_dp
     do iw = 1, num_wann
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
         do nn = 1, kmesh_info%nntot
           mnn2 = real(m_matrix_loc(iw, iw, nn, nkp_loc) &
                       *conjg(m_matrix_loc(iw, iw, nn, nkp_loc)), kind=dp)
@@ -2286,7 +2143,7 @@ contains
 
     if (wann_slwf%selective_loc) then
       wann_spread%om_iod = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
+      do nkp_loc = 1, nkrank
         do nn = 1, kmesh_info%nntot
           summ = 0.0_dp
           do n = 1, wann_slwf%slwf_num
@@ -2309,8 +2166,8 @@ contains
       wann_spread%om_iod = wann_spread%om_iod/real(num_kpts, dp)
 
       wann_spread%om_d = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, wann_slwf%slwf_num
             brn = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
@@ -2328,8 +2185,8 @@ contains
       wann_spread%om_nu = 0.0_dp
       !! Contribution from constrains on centres
       if (wann_slwf%constrain) then
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, nkrank
+          nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             do n = 1, wann_slwf%slwf_num
               wann_spread%om_nu = wann_spread%om_nu + 2.0_dp*kmesh_info%wb(nn)* &
@@ -2356,8 +2213,8 @@ contains
     else
       if (first_pass) then
         wann_spread%om_i = 0.0_dp
-        nkp = nkp_loc + displs(my_node_id)
-        do nkp_loc = 1, counts(my_node_id)
+        !nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, nkrank
           do nn = 1, kmesh_info%nntot
             summ = 0.0_dp
             do m = 1, num_wann
@@ -2382,8 +2239,8 @@ contains
       endif
 
       wann_spread%om_od = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
+        !nkp = nkp_loc + displs(my_node_id)
         do nn = 1, kmesh_info%nntot
           do m = 1, num_wann
             do n = 1, num_wann
@@ -2401,8 +2258,8 @@ contains
       wann_spread%om_od = wann_spread%om_od/real(num_kpts, dp)
 
       wann_spread%om_d = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             brn = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
@@ -2428,8 +2285,8 @@ contains
 
   !================================================!
   subroutine wann_domega(csheet, sheet, rave, num_wann, kmesh_info, num_kpts, wann_slwf, &
-                         lsitesymmetry, counts, displs, ln_tmp_loc, m_matrix_loc, rnkb_loc, &
-                         cdodq_loc, lambda_loc, timing_level, sitesym, timer, error, comm, &
+                         lsitesymmetry, ln_tmp_loc, m_matrix_loc, rnkb_loc, cdodq_loc, &
+                         lambda_loc, timing_level, sitesym, timer, nkrank, global_k, error, comm, &
                          iprint, cdodq)
     !================================================!
     !
@@ -2440,27 +2297,28 @@ contains
     ! Radu Miron at Imperial College London
     !================================================
 
+    use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, w90_comm_type, mpirank
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_sitesym, only: sitesym_symmetrize_gradient !RS:
-    use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, &
-      w90comm_type, mpirank
+    use w90_sitesym, only: sitesym_symmetrize_gradient
     use w90_types, only: kmesh_info_type, timer_list_type
     use w90_wannier90_types, only: wann_slwf_type, sitesym_type
 
     implicit none
 
+    ! arguments
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(wann_slwf_type), intent(inout) :: wann_slwf
     type(sitesym_type), intent(in) :: sitesym
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
+    type(wann_slwf_type), intent(inout) :: wann_slwf
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
     integer, intent(in) :: timing_level, iprint
-    integer, intent(in) :: counts(0:), displs(0:)
+    integer, intent(in) :: nkrank
+    integer, intent(in) :: global_k(:)
 
     real(kind=dp), intent(in)  :: sheet(:, :, :)
     real(kind=dp), intent(out) :: rave(:, :)
@@ -2468,8 +2326,7 @@ contains
     real(kind=dp), intent(inout) :: rnkb_loc(:, :, :)
     real(kind=dp), intent(in) :: lambda_loc
 
-    ! as we work on the local cdodq, returning the full cdodq array is now
-    ! made optional
+    ! as we work on the local cdodq, returning the full cdodq array is now made optional
     complex(kind=dp), intent(out), optional :: cdodq(:, :, :)
     complex(kind=dp), intent(in)  :: csheet(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix_loc(:, :, :, :)
@@ -2486,7 +2343,6 @@ contains
     integer :: my_node_id
 
     my_node_id = mpirank(comm)
-
     if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: domega', timer)
 
     allocate (cr(num_wann, num_wann), stat=ierr)
@@ -2507,8 +2363,8 @@ contains
       endif
     end if
 
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = nkp_loc + displs(my_node_id)
+    do nkp_loc = 1, nkrank
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
           ! Note that this ln_tmp is defined differently wrt the one in wann_omega
@@ -2522,8 +2378,8 @@ contains
     rave = 0.0_dp
     do iw = 1, num_wann
       do ind = 1, 3
-        do nkp_loc = 1, counts(my_node_id)
-          nkp = nkp_loc + displs(my_node_id)
+        do nkp_loc = 1, nkrank
+          nkp = global_k(nkp_loc)
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%bk(ind, nn, nkp) &
                             *ln_tmp_loc(iw, nn, nkp_loc)
@@ -2539,8 +2395,8 @@ contains
     ! b.r_0n are calculated
     if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       r0kb = 0.0_dp
-      do nkp_loc = 1, counts(my_node_id)
-        nkp = nkp_loc + displs(my_node_id)
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             r0kb(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp) &
@@ -2548,11 +2404,11 @@ contains
           enddo
         enddo
       enddo
-    end if
+    endif
 
     rnkb_loc = 0.0_dp
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = nkp_loc + displs(my_node_id)
+    do nkp_loc = 1, nkrank
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann
           rnkb_loc(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
@@ -2564,13 +2420,13 @@ contains
     cdodq_loc = cmplx_0
     cr = cmplx_0
     crt = cmplx_0
-    do nkp_loc = 1, counts(my_node_id)
-      nkp = nkp_loc + displs(my_node_id)
+    do nkp_loc = 1, nkrank
+      nkp = global_k(nkp_loc)
       do nn = 1, kmesh_info%nntot
         do n = 1, num_wann ! R^{k,b} and R~^{k,b} have columns of zeroes for the non-objective Wannier functions
           mnn = m_matrix_loc(n, n, nn, nkp_loc)
-          crt(:, n) = m_matrix_loc(:, n, nn, nkp_loc)/mnn
-          cr(:, n) = m_matrix_loc(:, n, nn, nkp_loc)*conjg(mnn)
+          crt(:, n) = m_matrix_loc(1:num_wann, n, nn, nkp_loc)/mnn !JJ potential for division by zero
+          cr(:, n) = m_matrix_loc(1:num_wann, n, nn, nkp_loc)*conjg(mnn)
         enddo
         if (wann_slwf%selective_loc) then
           do n = 1, num_wann
@@ -2669,26 +2525,31 @@ contains
                                          *cmplx(0.0_dp, -0.5_dp, kind=dp)
             enddo
           enddo
-        end if
+        endif
       enddo
     enddo
     cdodq_loc = cdodq_loc/real(num_kpts, dp)*4.0_dp
 
     if (present(cdodq)) then
       ! each process communicates its result to other processes
-      call comms_gatherv(cdodq_loc, num_wann*num_wann*counts(my_node_id), &
-                         cdodq, num_wann*num_wann*counts, num_wann*num_wann*displs, error, comm)
-      if (allocated(error)) return
-
-      call comms_bcast(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+      cdodq(:, :, :) = 0.0_dp
+      do nkp_loc = 1, nkrank
+        nkp = global_k(nkp_loc)
+        cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
+      enddo
+      call comms_allreduce(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
       if (allocated(error)) return
 
       if (lsitesymmetry) then
-        call sitesym_symmetrize_gradient(sitesym, cdodq, 1, num_kpts, num_wann) !RS:
-        cdodq_loc(:, :, 1:counts(my_node_id)) = cdodq(:, :, displs(my_node_id) &
-                                                      + 1:displs(my_node_id) + counts(my_node_id))
+        ! correct behaviour is reproduced if algorithm 1 (mode 1) is followed by algorithm 2
+        call sitesym_symmetrize_gradient(sitesym, cdodq, 1, num_kpts, num_wann, error, comm)
+        call sitesym_symmetrize_gradient(sitesym, cdodq, 2, num_kpts, num_wann, error, comm)
+        do nkp_loc = 1, nkrank
+          nkp = global_k(nkp_loc)
+          cdodq_loc(:, :, nkp_loc) = cdodq(:, :, nkp)
+        enddo
       endif
-    end if
+    endif
 
     deallocate (cr, stat=ierr)
     if (ierr /= 0) then
@@ -2724,326 +2585,10 @@ contains
     copy%om_tot = orig%om_tot
     copy%om_iod = orig%om_iod
     copy%om_nu = orig%om_nu
-    !! copy%om_c  =  orig%om_c
-!~    copy%om_1   =  orig%om_1
-!~    copy%om_2   =  orig%om_2
-!~    copy%om_3   =  orig%om_3
 
     return
 
   end subroutine wann_spread_copy
-
-  !================================================!
-  subroutine wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, lwindow, &
-                                  timing_level, iprint, stdout, timer)
-    !================================================!
-    !
-    ! Calculates and writes the projection of each Wannier function
-    ! on the original bands within the outer window.
-    !
-    !================================================!
-
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: w90comm_type
-    use w90_types, only: timer_list_type
-
-    implicit none
-
-    ! arguments
-    type(timer_list_type), intent(inout) :: timer
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_wann
-    integer, intent(in) :: stdout
-    integer, intent(in) :: timing_level, iprint
-    logical, intent(in) :: lwindow(:, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    real(kind=dp), intent(in) :: eigval(:, :)
-
-    ! local variables
-    integer :: nw, nb, nkp, counter
-    real(kind=dp) :: summ
-
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_start('wann: calc_projection', timer)
-
-    if (iprint > 0) then
-      write (stdout, '(/1x,a78)') repeat('-', 78)
-      write (stdout, '(1x,9x,a)') &
-        'Projection of Bands in Outer Window on all Wannier Functions'
-      write (stdout, '(1x,8x,62a)') repeat('-', 62)
-      write (stdout, '(1x,16x,a)') '   Kpt  Band      Eigval      |Projection|^2'
-      write (stdout, '(1x,16x,a47)') repeat('-', 47)
-    endif
-
-    do nkp = 1, num_kpts
-      counter = 0
-      do nb = 1, num_bands
-        if (lwindow(nb, nkp)) then
-          counter = counter + 1
-          summ = 0.0_dp
-          do nw = 1, num_wann
-            summ = summ + abs(u_matrix_opt(counter, nw, nkp))**2
-          enddo
-          if (iprint > 0) write (stdout, '(1x,16x,i5,1x,i5,1x,f14.6,2x,f14.8)') &
-            nkp, nb, eigval(nb, nkp), summ
-        endif
-      enddo
-    enddo
-    if (iprint > 0) write (stdout, '(1x,a78/)') repeat('-', 78)
-
-    if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: calc_projection', timer)
-
-    return
-
-  end subroutine wann_calc_projection
-
-  !================================================!
-  subroutine wann_write_xyz(translate_home_cell, num_wann, wannier_centres, real_lattice, &
-                            atom_data, print_output, error, comm, stdout, seedname)
-    !================================================!
-    !
-    ! Write xyz file with Wannier centres
-    !
-    !================================================!
-
-    use w90_io, only: io_file_unit, io_date
-    use w90_utility, only: utility_translate_home
-    use w90_types, only: atom_data_type, print_output_type
-
-    implicit none
-
-    type(atom_data_type), intent(in) :: atom_data
-    type(print_output_type), intent(in) :: print_output
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
-
-    logical, intent(in) :: translate_home_cell
-    integer, intent(in) :: num_wann
-    real(kind=dp), intent(in) :: wannier_centres(:, :)
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
-
-    integer :: iw, ind, xyz_unit, nsp, nat, ierr
-    character(len=9) :: cdate, ctime
-    real(kind=dp) :: wc(3, num_wann)
-
-    wc = wannier_centres
-
-    if (translate_home_cell) then
-      do iw = 1, num_wann
-        call utility_translate_home(wc(:, iw), real_lattice)
-      enddo
-    endif
-
-    if (print_output%iprint > 2) then
-      write (stdout, '(1x,a)') 'Final centres (translated to home cell for writing xyz file)'
-      do iw = 1, num_wann
-        write (stdout, '(2x, "WF centre", i5, 2x, "(", f10.6, ",", f10.6, ",", f10.6, " )")') &
-          iw, (wc(ind, iw)*print_output%lenconfac, ind=1, 3)
-      end do
-      write (stdout, '(1x,a78)') repeat('-', 78)
-      write (stdout, *)
-    endif
-
-    xyz_unit = io_file_unit()
-    open (xyz_unit, file=trim(seedname)//'_centres.xyz', form='formatted', iostat=ierr)
-    if (ierr /= 0) then
-      call set_error_file(error, 'Error opening file '//trim(seedname)//'_centres.xyz in wann_write_xyz', comm)
-      return
-    endif
-    write (xyz_unit, '(i6)') num_wann + atom_data%num_atoms
-    call io_date(cdate, ctime)
-    write (xyz_unit, *) 'Wannier centres, written by Wannier90 on'//cdate//' at '//ctime
-    do iw = 1, num_wann
-      write (xyz_unit, '("X",6x,3(f14.8,3x))') (wc(ind, iw), ind=1, 3)
-    end do
-    do nsp = 1, atom_data%num_species
-      do nat = 1, atom_data%species_num(nsp)
-        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%symbol(nsp), atom_data%pos_cart(:, nat, nsp)
-      end do
-    end do
-    close (xyz_unit)
-
-    write (stdout, '(/a)') ' Wannier centres written to file '//trim(seedname)//'_centres.xyz'
-
-    return
-
-  end subroutine wann_write_xyz
-
-  !================================================!
-  subroutine wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
-                                 have_disentangled, w90_system, error, comm, stdout, seedname)
-    !================================================!
-    !
-    ! Write a file with Wannier centres, spreads and occupations for
-    ! post-processing computation of vdW C6 coeffients.
-    !
-    ! Based on code written by Lampros Andrinopoulos.
-    !================================================!
-
-    use w90_io, only: io_file_unit, io_date
-    use w90_utility, only: utility_translate_home
-    use w90_constants, only: cmplx_0
-    use w90_types, only: wannier_data_type, w90_system_type
-
-    implicit none
-
-    type(wannier_data_type), intent(in) :: wannier_data
-    type(w90_system_type), intent(in) :: w90_system
-    type(w90_error_type), allocatable, intent(out)  :: error
-    type(w90comm_type), intent(in) :: comm
-
-    integer, intent(in) :: num_wann
-    real(kind=dp), intent(in) :: real_lattice(3, 3)
-    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
-    integer, intent(in) :: stdout
-    logical, intent(in) :: have_disentangled
-    character(len=50), intent(in)  :: seedname
-
-    integer          :: iw, vdw_unit, r, s, k, m, ierr, ndim
-    real(kind=dp)    :: wc(3, num_wann)
-    real(kind=dp)    :: ws(num_wann)
-    complex(kind=dp), allocatable :: f_w(:, :), v_matrix(:, :) !f_w2(:,:)
-
-    wc = wannier_data%centres
-    ws = wannier_data%spreads
-
-    ! translate Wannier centres to the home unit cell
-    do iw = 1, num_wann
-      call utility_translate_home(wc(:, iw), real_lattice)
-    enddo
-
-    allocate (f_w(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating f_w in wann_write_vdw_data', comm)
-      return
-    endif
-
-!~    ! aam: remove f_w2 at end
-!~    allocate(f_w2(num_wann, num_wann),stat=ierr)
-!~    if (ierr/=0) call io_error('Error in allocating f_w2 in wann_write_vdw_data')
-
-    if (have_disentangled) then
-
-      ! dimension of occupied subspace
-      if (w90_system%num_valence_bands .le. 0) then
-        call set_error_input(error, 'Please set num_valence_bands in seedname.win', comm)
-        return
-      endif
-
-      ndim = w90_system%num_valence_bands
-
-      allocate (v_matrix(ndim, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating V_matrix in wann_write_vdw_data', comm)
-        return
-      endif
-
-      ! aam: initialise
-      f_w(:, :) = cmplx_0
-      v_matrix(:, :) = cmplx_0
-!~       f_w2(:,:) = cmplx_0
-
-      ! aam: IN THE END ONLY NEED DIAGONAL PART, SO COULD SIMPLIFY...
-      ! aam: calculate V = U_opt . U
-      do s = 1, num_wann
-        do k = 1, ndim
-          do m = 1, num_wann
-            v_matrix(k, s) = v_matrix(k, s) + u_matrix_opt(k, m, 1)*u_matrix(m, s, 1)
-          enddo
-        enddo
-      enddo
-
-      ! aam: calculate f = V^dagger . V
-      do r = 1, num_wann
-        do s = 1, num_wann
-          do k = 1, ndim
-            f_w(r, s) = f_w(r, s) + v_matrix(k, s)*conjg(v_matrix(k, r))
-          enddo
-        enddo
-      enddo
-
-!~       ! original formulation
-!~       do r=1,num_wann
-!~          do s=1,num_wann
-!~             do nkp=1,num_kpts
-!~                do k=1,ndimfroz(nkp)
-!~                   do m=1,num_wann
-!~                      do l=1,num_wann
-!~                         f_w2(r,s) = f_w2(r,s) + &
-!~                              u_matrix_opt(k,m,nkp) * u_matrix(m,s,nkp) * &
-!~                              conjg(u_matrix_opt(k,l,nkp)) * conjg(u_matrix(l,r,nkp))
-!~                      end do
-!~                   end do
-!~                end do
-!~             end do
-!~          end do
-!~       end do
-
-!~       ! test equivalence
-!~       do r=1,num_wann
-!~          do s=1,num_wann
-!~             if (abs(real(f_w(r,s),dp)-real(f_w2(r,s),dp)).gt.eps6) then
-!~                write(*,'(i6,i6,f16.10,f16.10)') r,s,real(f_w(r,s),dp),real(f_w2(r,s),dp)
-!~             endif
-!~             if (abs(aimag(f_w(r,s))-aimag(f_w2(r,s))).gt.eps6) then
-!~                write(*,'(a,i6,i6,f16.10,f16.10)') 'Im: ',r,s,aimag(f_w(r,s)),aimag(f_w2(r,s))
-!~             endif
-!~          enddo
-!~       enddo
-!~       write(*,*) ' done vdw '
-
-    else
-      ! for valence only, all occupancies are unity
-      f_w(:, :) = 1.0_dp
-    endif
-
-    ! aam: write the seedname.vdw file directly here
-    vdw_unit = io_file_unit()
-    open (unit=vdw_unit, file=trim(seedname)//'.vdw', action='write')
-    if (have_disentangled) then
-      write (vdw_unit, '(a)') 'disentangle T'
-    else
-      write (vdw_unit, '(a)') 'disentangle F'
-    endif
-    write (vdw_unit, '(a)') 'amalgamate F'
-    write (vdw_unit, '(a,i3)') 'degeneracy', w90_system%num_elec_per_state
-    write (vdw_unit, '(a)') 'num_frag 2'
-    write (vdw_unit, '(a)') 'num_wann'
-    write (vdw_unit, '(i3,1x,i3)') num_wann/2, num_wann/2
-    write (vdw_unit, '(a)') 'tol_occ 0.9'
-    write (vdw_unit, '(a)') 'pxyz'
-    write (vdw_unit, '(a)') 'F F F'
-    write (vdw_unit, '(a)') 'F F F'
-    write (vdw_unit, '(a)') 'tol_dist 0.05'
-    write (vdw_unit, '(a)') 'centres_spreads_occ'
-    write (vdw_unit, '(a)') 'ang'
-    do iw = 1, num_wann
-      write (vdw_unit, '(4(f13.10,1x),1x,f11.8)') wc(1:3, iw), ws(iw), real(f_w(iw, iw))
-    end do
-    close (vdw_unit)
-
-    write (stdout, '(/a/)') ' vdW data written to file '//trim(seedname)//'.vdw'
-
-    if (have_disentangled) then
-      deallocate (v_matrix, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating v_matrix in wann_write_vdw_data', comm)
-        return
-      endif
-    endif
-
-    deallocate (f_w, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating f_w in wann_write_vdw_data', comm)
-      return
-    endif
-
-    return
-
-  end subroutine wann_write_vdw_data
 
   !================================================!
   subroutine wann_check_unitarity(num_kpts, num_wann, u_matrix, timing_level, iprint, stdout, &
@@ -3052,7 +2597,7 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0, eps5
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_types, only: timer_list_type
 
     implicit none
@@ -3062,7 +2607,7 @@ contains
     complex(kind=dp), intent(in) :: u_matrix(:, :, :)
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     integer :: nkp, i, j, m
@@ -3116,213 +2661,9 @@ contains
   end subroutine wann_check_unitarity
 
   !================================================!
-  subroutine wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-    !================================================!
-    !
-    ! Write seedname.r2mn file
-    !
-    !================================================!
-
-    use w90_constants, only: dp
-    use w90_io, only: io_file_unit
-    use w90_types, only: kmesh_info_type
-
-    implicit none
-
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
-
-    integer, intent(in) :: num_kpts, num_wann
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    character(len=50), intent(in)  :: seedname
-
-    integer :: r2mnunit, nw1, nw2, nkp, nn, ierr
-    real(kind=dp) :: r2ave_mn, delta
-
-    ! note that here I use formulas analogue to Eq. 23, and not to the
-    ! shift-invariant Eq. 32 .
-    r2mnunit = io_file_unit()
-    open (r2mnunit, file=trim(seedname)//'.r2mn', form='formatted', iostat=ierr)
-    if (ierr /= 0) then
-      call set_error_file(error, 'Error opening file '//trim(seedname)//'.r2mn in wann_write_r2mn', comm)
-      return
-    endif
-    do nw1 = 1, num_wann
-      do nw2 = 1, num_wann
-        r2ave_mn = 0.0_dp
-        delta = 0.0_dp
-        if (nw1 .eq. nw2) delta = 1.0_dp
-        do nkp = 1, num_kpts
-          do nn = 1, kmesh_info%nntot
-            r2ave_mn = r2ave_mn + kmesh_info%wb(nn)* &
-                       ! [GP-begin, Apr13, 2012: corrected sign inside "real"]
-                       (2.0_dp*delta - real(m_matrix(nw1, nw2, nn, nkp) + &
-                                            conjg(m_matrix(nw2, nw1, nn, nkp)), kind=dp))
-            ! [GP-end]
-          enddo
-        enddo
-        r2ave_mn = r2ave_mn/real(num_kpts, dp)
-        write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn
-      enddo
-    enddo
-    close (r2mnunit)
-
-    return
-
-  end subroutine wann_write_r2mn
-
-  !================================================!
-  subroutine wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                              error, comm, stdout)
-    !================================================!
-
-    use w90_comms, only: w90comm_type
-    use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_types, only: kmesh_info_type, print_output_type, timer_list_type
-
-    implicit none
-
-    type(print_output_type), intent(in) :: print_output
-    type(kmesh_info_type), intent(in) :: kmesh_info
-    type(timer_list_type), intent(inout) :: timer
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
-    integer, intent(in) :: num_wann, num_kpts
-    integer, intent(in) :: stdout
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-
-    complex(kind=dp), allocatable :: cv1(:, :), cv2(:, :)
-    complex(kind=dp), allocatable :: cw1(:), cw2(:)
-    complex(kind=dp), allocatable :: cpad1(:)
-    real(kind=dp), allocatable :: singvd(:)
-
-    integer :: ierr, info
-    integer :: nkp, nn, nb, na, ind
-    real(kind=dp) :: omt1, omt2, omt3
-
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-      call io_stopwatch_start('wann: svd_omega_i', timer)
-    endif
-
-    allocate (cw1(10*num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cw1 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cw2(10*num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cw2 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cv1(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv1 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cv2(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv2 in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (singvd(num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating singvd in wann_svd_omega_i', comm)
-      return
-    endif
-    allocate (cpad1(num_wann*num_wann), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cpad1 in wann_svd_omega_i', comm)
-      return
-    endif
-
-    cw1 = cmplx_0; cw2 = cmplx_0; cv1 = cmplx_0; cv2 = cmplx_0; cpad1 = cmplx_0
-    singvd = 0.0_dp
-
-    ! singular value decomposition
-    omt1 = 0.0_dp; omt2 = 0.0_dp; omt3 = 0.0_dp
-    do nkp = 1, num_kpts
-      do nn = 1, kmesh_info%nntot
-        ind = 1
-        do nb = 1, num_wann
-          do na = 1, num_wann
-            cpad1(ind) = m_matrix(na, nb, nn, nkp)
-            ind = ind + 1
-          enddo
-        enddo
-        call zgesvd('A', 'A', num_wann, num_wann, cpad1, num_wann, singvd, cv1, &
-                    num_wann, cv2, num_wann, cw1, 10*num_wann, cw2, info)
-        if (info .ne. 0) then
-          call set_error_fatal(error, 'ERROR: Singular value decomp. zgesvd failed', comm)
-          return
-        endif
-
-        do nb = 1, num_wann
-          omt1 = omt1 + kmesh_info%wb(nn)*(1.0_dp - singvd(nb)**2)
-          omt2 = omt2 - kmesh_info%wb(nn)*(2.0_dp*log(singvd(nb)))
-          omt3 = omt3 + kmesh_info%wb(nn)*(acos(singvd(nb))**2)
-        enddo
-      enddo
-    enddo
-    omt1 = omt1/real(num_kpts, dp)
-    omt2 = omt2/real(num_kpts, dp)
-    omt3 = omt3/real(num_kpts, dp)
-    if (print_output%iprint > 0) then
-      write (stdout, *) ' '
-      write (stdout, '(2x,a,f15.9,1x,a)') 'Omega Invariant:   1-s^2 = ', &
-        omt1*print_output%lenconfac**2, '('//trim(print_output%length_unit)//'^2)'
-      write (stdout, '(2x,a,f15.9,1x,a)') '                 -2log s = ', &
-        omt2*print_output%lenconfac**2, '('//trim(print_output%length_unit)//'^2)'
-      write (stdout, '(2x,a,f15.9,1x,a)') '                  acos^2 = ', &
-        omt3*print_output%lenconfac**2, '('//trim(print_output%length_unit)//'^2)'
-    endif
-
-    deallocate (cpad1, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cpad1 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (singvd, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating singvd in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cv2, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cv2 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cv1, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cv1 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cw2, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cw2 in wann_svd_omega_i', comm)
-      return
-    endif
-    deallocate (cw1, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cw1 in wann_svd_omega_i', comm)
-      return
-    endif
-
-    if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
-      call io_stopwatch_stop('wann: svd_omega_i', timer)
-    endif
-
-    return
-
-  end subroutine wann_svd_omega_i
-
-  !================================================!
-  subroutine wann_main_gamma(atom_data, dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
-                             output_file, wann_control, omega, w90_system, print_output, &
-                             wannier_data, m_matrix, u_matrix, u_matrix_opt, eigval, real_lattice, &
-                             mp_grid, num_bands, num_kpts, num_wann, have_disentangled, &
-                             translate_home_cell, seedname, stdout, timer, error, comm)
+  subroutine wann_main_gamma(kmesh_info, wann_control, omega, print_output, wannier_data, &
+                             m_matrix, u_matrix, real_lattice, num_kpts, num_wann, stdout, timer, &
+                             error, comm)
     !================================================!
     !
     ! Calculate the Unitary Rotations to give
@@ -3332,58 +2673,47 @@ contains
 
     use w90_constants, only: dp, cmplx_1, cmplx_0
     use w90_io, only: io_time, io_stopwatch_start, io_stopwatch_stop
-    use w90_wannier90_types, only: wann_control_type, output_file_type, wann_omega_type
+    use w90_wannier90_types, only: wann_control_type, wann_omega_type
     use w90_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, atom_data_type, dis_manifold_type, w90_system_type, timer_list_type
+      wannier_data_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type, mpirank
 
     implicit none
 
-    !JJ this function has not yet been pllelised
+    ! JJ this function is entirely serial
+    ! note that the scaling may be inferior to the non-gamma case
+    ! so this is not necessarily the quicker branch
+    ! JJ surely numkpts==1 identically???
 
     ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wann_control_type), intent(inout) :: wann_control
     type(wann_omega_type), intent(inout) :: omega
-    type(w90_system_type), intent(in) :: w90_system
     type(print_output_type), intent(in) :: print_output
     type(kmesh_info_type), intent(in) :: kmesh_info
-    type(output_file_type), intent(in) :: output_file
-    type(dis_manifold_type), intent(in) :: dis_manifold ! needed for write_chkpt
-    type(atom_data_type), intent(in) :: atom_data
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: stdout
     integer, intent(in) :: num_wann
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: num_bands
-    integer, intent(in) :: mp_grid(3) ! needed for write_chkpt
-    integer, allocatable, intent(in) :: exclude_bands(:)
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(in) :: eigval(:, :)
-    real(kind=dp), intent(in) :: kpt_latt(:, :) ! needed for write_chkpt
 
-    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
-
-    logical, intent(in) :: have_disentangled, translate_home_cell
-    character(len=50), intent(in) :: seedname
 
     ! local variables
     type(localisation_vars_type) :: old_spread
     type(localisation_vars_type) :: wann_spread
 
-    integer :: counts(0:0)
-    integer :: displs(0:0)
+    integer :: counts(0:1)
+    integer :: global_k(1)
     real(kind=dp), allocatable :: rnkb(:, :, :)
     real(kind=dp), allocatable :: ln_tmp(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix_loc(:, :, :, :)
     logical :: first_pass
 
     ! guiding centres
@@ -3409,18 +2739,22 @@ contains
     real(kind=dp), allocatable :: history(:)
     logical :: lconverged
 
+    if (mpirank(comm) > 0) then
+      ! this cannot happen under ordinary circumstances
+      call set_error_alloc(error, &
+                           'wann_main_gamma called by non-root rank (but the algorithm is serial)', comm)
+      return
+    endif
+
     if (print_output%timing_level > 0) call io_stopwatch_start('wann: main_gamma', timer)
 
     first_pass = .true.
-
-    ! Allocate stuff
 
     allocate (history(wann_control%conv_window), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating history in wann_main_gamma', comm)
       return
     endif
-
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rnkb in wann_main_gamma', comm)
@@ -3435,7 +2769,6 @@ contains
     rnkb = 0.0_dp
     tnntot = 2*kmesh_info%nntot
 
-    ! sub vars passed into other subs
     allocate (m_w(num_wann, num_wann, tnntot), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m_w in wann_main_gamma', comm)
@@ -3475,7 +2808,6 @@ contains
     csheet = cmplx_1
     sheet = 0.0_dp; rave = 0.0_dp; r2ave = 0.0_dp; rave2 = 0.0_dp; rguide = 0.0_dp
 
-    ! sub vars not passed into other subs
     allocate (u0(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u0 in wann_main_gamma', comm)
@@ -3500,7 +2832,7 @@ contains
     cz = cmplx_0
 
     ! Set up the MPI arrays for a serial run.
-    counts(0) = 1; displs(0) = 0
+    counts(0) = 1; global_k(1) = 1
 
     ! store original U before rotating
 !~    ! phase factor ph_g is applied to u_matrix
@@ -3516,18 +2848,13 @@ contains
 
 !~    lguide = .false.
     ! guiding centres are not neede for orthorhombic systems
-    if (kmesh_info%nntot .eq. 3) wann_control%guiding_centres%enable = .false.
+    if (kmesh_info%nntot .eq. 3) wann_control%guiding_centres%enable = .false. ! fixme, this requires explanation...
 
     if (wann_control%guiding_centres%enable) then
-      ! initialise rguide to projection centres (Cartesians in units of Ang)
-!~       if ( use_bloch_phases) then
-!~          lguide = .true.
-!~       else
       do n = 1, num_wann
         call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
                                   real_lattice)
       enddo
-!~       endif
     endif
 
     write (stdout, *)
@@ -3542,25 +2869,26 @@ contains
     write (stdout, *)
 
     irguide = 0
-!~    if (guiding_centres.and.(num_no_guide_iter.le.0)) then
-!~       if (nntot.gt.3) call wann_phases(csheet,sheet,rguide,irguide)
-!~       irguide=1
-!~    endif
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
-      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                       .true., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, timer, error, comm)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                       m_matrix, rnkb, print_output%timing_level, print_output%iprint, timer, &
+                       num_kpts, global_k, error, comm) ! no plellisation so num_kpts_local = num_kpts
       if (allocated(error)) return
       irguide = 1
     endif
 
     !  weight m_matrix first to reduce number of operations
     !  m_w : weighted real matrix
+    ! m_matrix is only avbl on root, but no mpi here
+    ! jj cleanup this documentation/notes
+    !if (on_root) then
     do nn = 1, kmesh_info%nntot
       sqwb = sqrt(kmesh_info%wb(nn))
-      m_w(:, :, 2*nn - 1) = sqwb*real(m_matrix(:, :, nn, 1), dp)
-      m_w(:, :, 2*nn) = sqwb*aimag(m_matrix(:, :, nn, 1))
+      m_w(:, :, 2*nn - 1) = sqwb*real(m_matrix(1:num_wann, 1:num_wann, nn, 1), dp)
+      m_w(:, :, 2*nn) = sqwb*aimag(m_matrix(1:num_wann, 1:num_wann, nn, 1))
     end do
+    !endif
+    !call comms_bcast(m_w, num_wann*num_wann*tnntot, error, comm)
 
     ! calculate initial centers and spread
     call wann_omega_gamma(m_w, csheet, sheet, rave, r2ave, rave2, wann_spread, num_wann, &
@@ -3634,9 +2962,9 @@ contains
       if (wann_control%guiding_centres%enable .and. &
           (iter .gt. wann_control%guiding_centres%num_no_guide_iter) &
           .and. (mod(iter, wann_control%guiding_centres%num_guide_cycles) .eq. 0)) then
-        call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                         .true., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                         print_output%iprint, timer, error, comm, m_w)
+        call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                         m_matrix, rnkb, print_output%timing_level, print_output%iprint, &
+                         timer, num_kpts, global_k, error, comm, m_w) ! num_kpts_loc == num_kpts here
         if (allocated(error)) return
         irguide = 1
       endif
@@ -3684,15 +3012,15 @@ contains
       omega%total = wann_spread%om_tot
       omega%tilde = wann_spread%om_d + wann_spread%om_od
 
-      if (ldump) then
-        uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
-        call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
-        call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
-                                                 kmesh_info, kpt_latt, num_kpts, dis_manifold, &
-                                                 num_bands, num_wann, u_matrix, u_matrix_opt, &
-                                                 m_matrix, mp_grid, real_lattice, omega%invariant, &
-                                                 have_disentangled, stdout, seedname)
-      endif
+!JJ      if (ldump) then
+!        uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
+!        call utility_zgemm(u_matrix, u0, 'N', uc_rot, 'N', num_wann)
+!        call w90_wannier90_readwrite_write_chkpt('postdis', exclude_bands, wannier_data, &
+!                                                 kmesh_info, kpt_latt, num_kpts, dis_manifold, &
+!                                                 num_bands, num_wann, u_matrix, u_matrix_opt, &
+!                                                 m_matrix, mp_grid, real_lattice, omega%invariant, &
+!                                                 have_disentangled, stdout, seedname)
+!      endif
 
       if (wann_control%conv_window .gt. 1) then
         call internal_test_convergence_gamma(wann_spread, old_spread, history, &
@@ -3714,7 +3042,7 @@ contains
     ! update M
     do nn = 1, kmesh_info%nntot
       sqwb = 1.0_dp/sqrt(kmesh_info%wb(nn))
-      m_matrix(:, :, nn, 1) = sqwb*cmplx(m_w(:, :, 2*nn - 1), m_w(:, :, 2*nn), dp)
+      m_matrix(1:num_wann, 1:num_wann, nn, 1) = sqwb*cmplx(m_w(:, :, 2*nn - 1), m_w(:, :, 2*nn), dp)
     end do
     ! update U
     uc_rot(:, :) = cmplx(ur_rot(:, :), 0.0_dp, dp)
@@ -3738,16 +3066,16 @@ contains
       '       Omega Total  = ', wann_spread%om_tot*print_output%lenconfac**2
     write (stdout, '(1x,a78)') repeat('-', 78)
 
-    if (output_file%write_xyz) then
-      call wann_write_xyz(translate_home_cell, num_wann, wannier_data%centres, &
-                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
-      if (allocated(error)) return
-    endif
+!    if (output_file%write_xyz) then
+!      call wann_write_xyz(translate_home_cell, num_wann, wannier_data%centres, &
+!                          real_lattice, atom_data, print_output, error, comm, stdout, seedname)
+!      if (allocated(error)) return
+!    endif
 
     if (wann_control%guiding_centres%enable) then
-      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, m_matrix, &
-                       .true., counts, displs, m_matrix_loc, rnkb, print_output%timing_level, &
-                       print_output%iprint, timer, error, comm)
+      call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
+                       m_matrix, rnkb, print_output%timing_level, print_output%iprint, timer, &
+                       num_kpts, global_k, error, comm) ! num_kpts_loc == num_kpts here
       if (allocated(error)) return
     endif
 
@@ -3756,32 +3084,32 @@ contains
                               print_output%iprint, stdout, timer, error, comm)
     if (allocated(error)) return
 
+    !JJ
     ! write extra info regarding omega_invariant
-    if (print_output%iprint > 2) then
-      call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
-                            error, comm, stdout)
-      if (allocated(error)) return
-    endif
-
+    !if (print_output%iprint > 2) then
+    !  call wann_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
+    !                        error, comm, stdout)
+    !  if (allocated(error)) return
+    !endif
     ! write matrix elements <m|r^2|n> to file
-    if (output_file%write_r2mn) then
-      call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
-      if (allocated(error)) return
-    endif
+    !if (output_file%write_r2mn) then
+    !  call wann_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
+    !  if (allocated(error)) return
+    !endif
 
     ! calculate and write projection of WFs on original bands in outer window
-    if (have_disentangled .and. output_file%write_proj) then
-      call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
-                                dis_manifold%lwindow, print_output%timing_level, &
-                                print_output%iprint, stdout, timer)
-    endif
+    !if (have_disentangled .and. output_file%write_proj) then
+    !  call wann_calc_projection(num_bands, num_wann, num_kpts, u_matrix_opt, eigval, &
+    !                            dis_manifold%lwindow, print_output%timing_level, &
+    !                            print_output%iprint, stdout, timer)
+    !endif
 
     ! aam: write data required for vdW utility
-    if (output_file%write_vdw_data) then
-      call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
-                               have_disentangled, w90_system, error, comm, stdout, seedname)
-      if (allocated(error)) return
-    endif
+    !if (output_file%write_vdw_data) then
+    !  call wann_write_vdw_data(num_wann, wannier_data, real_lattice, u_matrix, u_matrix_opt, &
+    !                           have_disentangled, w90_system, error, comm, stdout, seedname)
+    !  if (allocated(error)) return
+    !endif
 
     ! deallocate sub vars not passed into other subs
     deallocate (cz, stat=ierr)
@@ -4031,7 +3359,7 @@ contains
     type(localisation_vars_type), intent(out)  :: wann_spread
     type(timer_list_type), intent(inout) :: timer
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: timing_level
     integer, intent(in) :: num_wann
@@ -4156,4 +3484,4 @@ contains
 
   end subroutine wann_omega_gamma
 
-end module w90_wannierise
+end module w90_wannierise_mod

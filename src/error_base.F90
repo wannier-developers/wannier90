@@ -23,8 +23,10 @@ module w90_error_base
   type w90_error_type
     integer :: code
     character(len=256) :: message
+#ifdef W90DEV
   contains
     final :: untrapped_error
+#endif
   end type w90_error_type
 
   integer, parameter :: code_remote = -99 ! special code for error triggered by other mpi rank

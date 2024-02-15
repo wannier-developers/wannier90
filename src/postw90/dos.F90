@@ -53,7 +53,7 @@ contains
     !
     !================================================!
 
-    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
@@ -61,7 +61,7 @@ contains
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
       ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_io, only: io_file_unit, io_date, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
 
@@ -82,7 +82,7 @@ contains
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
     type(timer_list_type), intent(inout)         :: timer
-    type(w90comm_type), intent(in)               :: comm
+    type(w90_comm_type), intent(in)               :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
@@ -326,8 +326,7 @@ contains
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'
       write (stdout, '(/,3x,a)') trim(seedname)//'-dos.dat'
-      dos_unit = io_file_unit()
-      open (dos_unit, FILE=trim(seedname)//'-dos.dat', STATUS='UNKNOWN', &
+      open (newunit=dos_unit, FILE=trim(seedname)//'-dos.dat', STATUS='UNKNOWN', &
             FORM='FORMATTED')
       do ifreq = 1, num_freq
         omega = dos_energyarray(ifreq)
@@ -597,7 +596,7 @@ contains
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     ! Arguments
     type(pw90_dos_mod_type), intent(in) :: pw90_dos
@@ -608,7 +607,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(pw90_smearing_type), intent(in) :: smearing
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_elec_per_state
