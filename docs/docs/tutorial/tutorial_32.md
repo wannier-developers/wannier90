@@ -106,8 +106,15 @@
     in Ref. [@Vitale2019automated], where the authors also show
     validation of this approach on a dataset of 200 materials. You
     should now see the fitting function, as well as the
-    projectabilities, in the graph (see Fig.
-    [10](#fig:W_fit){reference-type="ref" reference="fig:W_fit"}-(a)).
+    projectabilities, in the graph [below](#fig:W_fit){reference-type="ref" reference="fig:W_fit"}.
+    <figure markdown="span" id="fig:W_fit">
+    ![Image title](./W_fit.webp){ width="500"}
+    <figcaption> Each blue dot represents the projectability as defined
+    in Eq. (22) of Ref. <span class="citation" data-cites="Vitale2019automated"></span> [@Vitale2019automated] of the state |<em>n</em><strong>k</strong>⟩ as a function of the corresponding energy <em>ϵ</em><sub><em>n</em><strong>k</strong></sub>
+    for tungsten. The yellow line shows the fitted complementary error
+    function. The vertical red line represents the value of <em>σ</em><sub><em>f</em><em>i</em><em>t</em></sub> while the vertical green line represents the optimal value of <em>μ</em><sub><em>S</em><em>C</em><em>D</em><em>M</em></sub>,
+    i.e. <em>μ</em><sub><em>S</em><em>C</em><em>D</em><em>M</em></sub> = <em>μ</em><sub><em>f</em><em>i</em><em>t</em></sub> − 3<em>σ</em><sub><em>f</em><em>i</em><em>t</em></sub>.</figcaption>
+    </figure>
 
 7.  Open `W.pw2wan` and append the following lines
 
@@ -129,8 +136,7 @@
     pw2wannier90.x -in W.pw2wan > pw2wan.out
     ```
 
-9.  Run `wannier90` to obtain the interpolated bandstructure (see Fig.
-    [10](#fig:W_fit){reference-type="ref" reference="fig:W_fit"}-(b)).
+9.  Run `wannier90` to obtain the interpolated bandstructure (see the band structure [plot](#fig:W_bs){reference-type="ref" reference="fig:W_bs"}).
     ```bash title="Terminal"
     wannier90.x W
     ```
@@ -138,24 +144,8 @@
     Please cite Ref. [@Vitale2019automated] in any publication employing
     the procedure outlined in this example to obtain $\mu$ and $\sigma$.
 
-<figure markdown="span" id="fig:W_fit">
-![Image title](./W_fit.webp){ width="500"}
-<figcaption> a) Each blue dot represents the projectability as defined
-in Eq. (22) of Ref. <span class="citation"
-data-cites="Vitale2019automated"></span> of the state <span
-class="math inline">|<em>n</em><strong>k</strong>⟩</span> as a function
-of the corresponding energy <span
-class="math inline"><em>ϵ</em><sub><em>n</em><strong>k</strong></sub></span>
-for tungsten. The yellow line shows the fitted complementary error
-function. The vertical red line represents the value of <span
-class="math inline"><em>σ</em><sub><em>f</em><em>i</em><em>t</em></sub></span>
-while the vertical green line represents the optimal value of <span
-class="math inline"><em>μ</em><sub><em>S</em><em>C</em><em>D</em><em>M</em></sub></span>,
-i.e. <span
-class="math inline"><em>μ</em><sub><em>S</em><em>C</em><em>D</em><em>M</em></sub> = <em>μ</em><sub><em>f</em><em>i</em><em>t</em></sub> − 3<em>σ</em><sub><em>f</em><em>i</em><em>t</em></sub></span>.
-b) Band structure of tungsten on the <span
-class="math inline"><em>Γ</em></span>-H-N-<span
-class="math inline"><em>Γ</em></span> path from DFT calculations (solid
-black) and Wannier interpolation using the SCDM method to construct the
+<figure markdown="span" id="fig:W_bs">
+![Image title](./W_bs.webp){ width="500"}
+<figcaption> Band structure of tungsten on the <em>Γ</em>-H-N-<em>Γ</em> path from DFT calculations (solid black) and Wannier interpolation using the SCDM method to construct the
 initial guess (red dots).</figcaption>
 </figure>

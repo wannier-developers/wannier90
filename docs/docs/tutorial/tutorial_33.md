@@ -108,16 +108,11 @@ provided in the example folder
     python kdotp_plot.py
 ```
 
-For comparison, the exact band structure calculated usingWannier90 (file `bc2n_band.dat`, generated automatically) is also plotted along (see Fig. [11](#fig:bc2n-bnd)).
+For comparison, the exact band structure calculated usingWannier90 (file `bc2n_band.dat`, generated automatically) is also plotted along (see the band dispersion [plot](#fig:bc2n-bnd)).
 
 <figure markdown="span" id="fig:bc2n-bnd">
 ![Image title](./kdotp_bands_SX.webp){ width="500"}
-<figcaption>Band dispersion of monolayer BC<span
-    class="math inline"><sub>2</sub></span>N around <span
-    class="math inline"><em>S</em></span> point. Exact results (solid dots)
-    are compared to first-order (blue) and second-order (red) <span
-    class="math inline"><em>k</em> ⋅ <em>p</em></span> model results for
-    valence and conduction bands.</figcaption>
+<figcaption>Band dispersion of monolayer BC<sub>2</sub>N around <em>S</em> point. Exact results (solid dots) are compared to first-order (blue) and second-order (red) <em>k</em>⋅ <em>p</em> model results for valence and conduction bands.</figcaption>
 </figure>
 
 &nbsp;
