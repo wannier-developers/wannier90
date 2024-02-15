@@ -1,6 +1,6 @@
 # 27: Silicon &#151; Selected columns of density matrix algorithm for automated MLWFs {#silicon-selected-columns-of-density-matrix-algorithm-for-automated-mlwfs .unnumbered}
 
-Note: This example requires a recent version of the `pw2wannier90.x`
+Note: This tutorial requires a recent version of the `pw2wannier90.x`
 post-processing code of `Quantum ESPRESSO` (v6.4 or above).
 
 -   Outline: *For bulk crystalline Silicon, generate the $A_{mn}$

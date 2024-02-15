@@ -10,7 +10,7 @@ of `pw2wannier90` is included as part of the `wannier90` distribution.
 Please see the `pwscf` directory for instructions on how to incorporate
 it into `pwscf`.
 
-Note that both the `PWSCF` executable `pw.x` *and* ` pw2wannier90.x` can
+Note that both the `pwscf` executable `pw.x` *and* ` pw2wannier90.x` can
 be run in parallel, which for large calculations can reduce the
 computation time very significantly. This requires compiling the code in
 its parallel version, using the MPI libraries. Refer to the

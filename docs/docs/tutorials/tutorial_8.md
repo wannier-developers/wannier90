@@ -21,7 +21,7 @@
 
 -   Note that in a spin-polarized calculation the spin-up and spin-down
     MLWFs are computed separately. (The more general case of spinor WFs
-    will be treated in Example 17.)
+    will be treated in Tutorial [17](../tutorial_17#iron-spin-orbit-coupled-bands-and-fermi-surface-contours).
 
 1.  Run `pwscf` to obtain the ferromagnetic ground state of
     bcc Fe
@@ -110,13 +110,14 @@ look at the final state towards the end of the file. The Wannier spreads
 have re-organized in two groups, 6+3; moreover, the six more diffuse WFs
 are off-centred: the initial atomic-like orbitals hybridized with one
 another, becoming more localized in the process. It is instructive to
-visualize the final-state MLWFs using `XCrySDen`, following Example 1.
+visualize the final-state MLWFs using `XCrySDen`, following Tutorial 
+[1](../tutorial_1#gallium-arsenide-mlwfs-for-the-valence-bands).
 For more details, see Sec. IV.B of Ref. [@wang-prb06].
 
 Let us plot the evolution of the spread functional $\Omega$,
 
 ```bash title="Terminal"
-grep SPRD iron_up.wout \> sprd_up
+grep SPRD iron_up.wout > sprd_up
 
 gnuplot
 ```
@@ -160,7 +161,7 @@ individual trial orbitals.
 
 With projected WFs the total DOS can be separated into $s$, $p$ and $d$
 contributions, in a similar way to the orbital decomposition of the
-energy bands in Example 4.
+energy bands in Tutorial [4](../tutorial_4#copper-fermi-surface-orbital-character-of-energy-bands).
 
 In order to obtain the partial DOS projected onto the $p$-type WFs, add
 to the `.win` files
@@ -191,7 +192,7 @@ the density of states at the Fermi level.
 
 <figure markdown="span" id="fig:Fe-sprd">
 ![Image title](./Fe-spread.webp){ width="500" }
-<figcaption> Fig.3: Evolution of the Wannier spread $\Omega$ of the minority (spin-up) bands of
+<figcaption> Evolution of the Wannier spread $\Omega$ of the minority (spin-up) bands of
 bcc Fe during the iterative minimization of $\widetilde{\Omega}$, starting from $s$,$p$ and
 $d$-type trial orbitals.</figcaption>
 </figure>

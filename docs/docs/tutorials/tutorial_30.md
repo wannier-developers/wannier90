@@ -3,8 +3,9 @@
 -   Outline: *Calculate the alternating current (ac) spin Hall
     conductivity of gallium arsenide considering spin-orbit coupling. To
     gain a better understanding of this tutorial, it is suggested to read
-    Ref. [@qiao-prb2018] for a detailed description of the theory and
-    Ch. 12.5 of the User Guide.*
+    Ref. [@qiao-prb2018] for a detailed description of the theory and the
+    [berry_task=shc: spin Hall conductivity](../../user_guide/postw90/berry#sec:shc) 
+    chapter of the User Guide.*
 
 -   Directory: `tutorials/tutorial30/`
 
@@ -68,8 +69,8 @@
 ## ac spin Hall conductivity {#ac-spin-hall-conductivity .unnumbered}
 
 The spin Hall conductivity is also dependent on the frequency $\omega$
-in the Eq. (12.22) of the User Guide. The direct current (dc) SHC
-calculated in the previous tutorial corresponds to
+in this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:kubo_shc) of the User Guide. 
+The direct current (dc) SHC calculated in the previous tutorial corresponds to
 $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ in the limit
 $\omega\rightarrow
 0$ and it is a real number. At finite frequency

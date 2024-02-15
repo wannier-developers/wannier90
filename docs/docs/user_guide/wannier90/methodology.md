@@ -1,4 +1,4 @@
-# Methodology
+# Methodology {#methodology}
 
 `wannier90` computes maximally-localised Wannier functions (MLWF)
 following the method of Marzari and Vanderbilt (MV) [@marzari-prb97].

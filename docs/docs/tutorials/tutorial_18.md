@@ -5,7 +5,7 @@ interface.
 
 -   Outline: *Calculate the Berry curvature, anomalous Hall
     conductivity, and (magneto)optical conductivity of ferromagnetic bcc
-    Fe with spin-orbit coupling. In preparation for this example it may
+    Fe with spin-orbit coupling. In preparation for this tutorial it may
     be useful to read Ref. [@yao-prl04] and Ch. 11 of the User Guide.*
 
 -   Directory: `tutorials/tutorial18/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial18)*
@@ -74,7 +74,7 @@ already run that example, you can reuse the output files from steps
 ## Berry curvature plots {#berry-curvature-plots .unnumbered}
 
 The Berry curvature $\Omega_{\alpha\beta}({\bf k})$ of the occupied
-states is defined in Eq. (11.18) of the User Guide. The following lines
+states is defined in this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:ahc)  of the User Guide. The following lines
 in `Fe.win` are used to calculate the energy bands and the Berry
 curvature (in bohr$^2$) along high-symmetry lines in $k$-space.
 
