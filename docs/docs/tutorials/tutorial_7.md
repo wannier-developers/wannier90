@@ -3,7 +3,7 @@
 -   Outline: *Obtain MLWFs for the occupied states of molecular silane.
     $\Gamma$-point sampling*
 
--   Directory: `tutorials/tutorial7/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial7)*
+-   Directory: `tutorials/tutorial07/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial07)*
 
 -   Input Files
 

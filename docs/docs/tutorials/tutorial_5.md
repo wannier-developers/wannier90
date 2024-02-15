@@ -2,7 +2,7 @@
 
 -   Outline: *Obtain MLWFs for the valence bands of diamond*
 
--   Directory: `tutorials/tutorial5/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial5)*
+-   Directory: `tutorials/tutorial05/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial05)*
 
 -   Input Files
 

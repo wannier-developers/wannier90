@@ -9,7 +9,7 @@
     Starting guess: five atom-centred d orbitals, and two s orbitals
     centred on one of each of the two tetrahedral interstices.*
 
--   Directory: `tutorials/tutorial4/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial4)*
+-   Directory: `tutorials/tutorial04/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial04)*
 
 -   Input Files
 

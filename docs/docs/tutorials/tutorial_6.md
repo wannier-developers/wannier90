@@ -3,7 +3,7 @@
 -   Outline: *Obtain MLWFs to describe the states around the Fermi-level
     in copper*
 
--   Directory: `tutorials/tutorial6/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial6)*
+-   Directory: `tutorials/tutorial06/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial06)*
 
 -   Input Files
 

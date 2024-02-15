@@ -15,20 +15,20 @@
 
 -   Input files
 
-    \-    `W.scf` *The `pwscf` input file for ground state
+    -    `W.scf` *The `pwscf` input file for ground state
         calculation*
 
-    \-    `W.nscf` *The `pwscf` input file to obtain Bloch
+    -    `W.nscf` *The `pwscf` input file to obtain Bloch
         states on a uniform grid*
 
-    \-    `W.pw2wan` *The input file for `pw2wannier90`*
+    -    `W.pw2wan` *The input file for `pw2wannier90`*
 
-    \-    `W.proj` *The input file for `projwfc`*
+    -    `W.proj` *The input file for `projwfc`*
 
-    \-    `generate_weights.sh` *The bash script to extract the
+    -    `generate_weights.sh` *The bash script to extract the
         projectabilities from the output of `projwfc`*
 
-    \-    `W.win` *The `wannier90` input file*
+    -    `W.win` *The `wannier90` input file*
 
 &nbsp;
 

@@ -8,19 +8,19 @@
     4$\times$4$\times$4 k-point grid.
     Starting guess: atom-centred sp$^3$ hybrid orbitals*
 
--   Directory: `tutorials/tutorial2/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial2)*
+-   Directory: `tutorials/tutorial02/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial02)*
 
 -   Input Files
 
-    \-    `lead.win` *The master input file*
+    -    `lead.win` *The master input file*
 
-    \-    `lead.mmn` *The overlap matrices
+    -    `lead.mmn` *The overlap matrices
         $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$*
 
-    \-    `lead.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
+    -    `lead.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
         states onto a set of trial localised orbitals*
 
-    \-    `lead.eig` *The Bloch eigenvalues at each k-point. For
+    -    `lead.eig` *The Bloch eigenvalues at each k-point. For
         interpolation only*
 
 The four lowest valence bands in lead are separated in energy from the

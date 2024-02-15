@@ -9,14 +9,14 @@
 
 -   Input files:
 
-    \-   `bc2n.scf` *The `pwscf` input file for ground state calculation*
+    -   `bc2n.scf` *The `pwscf` input file for ground state calculation*
 
-    \-   `bc2n.nscf` *The `pwscf` input file to obtain Bloch states on a
+    -   `bc2n.nscf` *The `pwscf` input file to obtain Bloch states on a
         uniform grid*
 
-    \-   `bc2n.pw2wan` *The input file for* `pw2wannier90`
+    -   `bc2n.pw2wan` *The input file for* `pw2wannier90`
 
-    \-   `bc2n.win` *The* `wannier90` *and* `postw90` *input file*
+    -   `bc2n.win` *The* `wannier90` *and* `postw90` *input file*
 
 &nbsp;
 

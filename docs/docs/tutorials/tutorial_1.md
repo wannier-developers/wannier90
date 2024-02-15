@@ -6,20 +6,20 @@
     pseudopotentials and a <br> 
     2$\times$2$\times$2 k-point grid. Starting guess: four bond-centred Gaussians.*
 
--   Directory: `tutorials/tutorial1/` *Files can be
-    downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial1)*
+-   Directory: `tutorials/tutorial01/` *Files can be
+    downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial01)*
 
 -   Input Files
 
-    \-    `gaas.win` *The master input file*
+    -    `gaas.win` *The master input file*
 
-    \-    `gaas.mmn` *The overlap matrices
+    -    `gaas.mmn` *The overlap matrices
         $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$*
 
-    \-    `gaas.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
+    -    `gaas.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
         states onto a set of trial localised orbitals*
 
-    \-    `UNK00001.1` *The Bloch states in the real space unit cell. For
+    -    `UNK00001.1` *The Bloch states in the real space unit cell. For
         plotting only.*
 
 1.  Run `wannier90` to minimise the MLWFs spread
