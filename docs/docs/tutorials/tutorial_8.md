@@ -192,8 +192,7 @@ the density of states at the Fermi level.
 
 <figure markdown="span" id="fig:Fe-sprd">
 ![Image title](./Fe-spread.webp){ width="500" }
-<figcaption> Fig.3: Evolution of the Wannier spread Ω of the minority (spin-up) bands of
+<figcaption markdown="span"> Fig.3: Evolution of the Wannier spread $\Omega$ of the minority (spin-up) bands of
 bcc Fe during the iterative minimization of $\widetilde{\Omega}$, starting from s, p and
 d-type trial orbitals.</figcaption>
 </figure>
-<!-- Note latex \wildtilde{\Omega} -->

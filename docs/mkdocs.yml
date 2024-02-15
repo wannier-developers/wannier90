@@ -1,15 +1,14 @@
 site_name: Wannier90
-# site_url: https://example.com/
+site_url: https://wannier.org/
 site_author: Wannier90 Developers
 site_description: >-
-  Everything about wannier90...
+  Wannier90 user guide and tutorials
 
 repo_name: wannier-developers/wannier90
 repo_url: https://github.com/wannier-developers/wannier90
 edit_uri: https://github.com/qiaojunfeng/w90-docs/edit/main/docs
-view_uri: https://github.com/qiaojunfeng/w90-docs/raw/main/docs
 
-copyright: Copyright &copy; 2016 - 2024 Wannier90 Developers
+copyright: Copyright &copy; 2006 - 2024 Wannier90 Developers
 
 nav:
    - Home: 'index.md'
@@ -132,9 +131,9 @@ extra:
   status:
     new: Recently added
     deprecated: Deprecated
-  analytics:
-    provider: google
-    property: !ENV GOOGLE_ANALYTICS_KEY
+  # analytics:
+  #   provider: google
+  #   property: !ENV GOOGLE_ANALYTICS_KEY
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/wannier-developers/wannier90

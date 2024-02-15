@@ -106,5 +106,5 @@ improved, then send us an email.
 For other questions, email the `wannier90` forum at
 ` wannier@quantum-espresso.org`. Note that first you will need to
 register in order to post emails. Emails from non-registered users are
-deleted automatically. You can register by following the links at\
+deleted automatically. You can register by following the links at
 <http://www.wannier.org/forum.html>.
