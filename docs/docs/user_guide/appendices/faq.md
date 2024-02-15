@@ -29,7 +29,7 @@ General Public Licence. See the file `LICENSE` that comes with the
 
 ### Is there a Tutorial available for `wannier90`?
 
-Yes! The `examples` directory of the `wannier90` distribution contains
+Yes! The `tutorials` directory of the `wannier90` distribution contains
 input files for a number of tutorial calculations. The ` doc` directory
 contains the accompanying tutorial handout.
 

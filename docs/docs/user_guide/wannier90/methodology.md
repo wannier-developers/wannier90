@@ -16,9 +16,11 @@ centred on a lattice site ${\bf R}$, $w_{n{\bf R}}({\bf r})$, is written
 in terms of the set of Bloch states as
 
 $$
+\begin{equation}
 w_{n{\bf R}}({\bf r})=\frac{V}{(2\pi)^3}\int_{\mathrm{BZ}}
 \left[\sum_{m} U^{({\bf k})}_{mn} \psi_{m{\bf k}}({\bf
     r})\right]e^{-\mathrm{i}{\bf k}.{\bf R}} \:\mathrm{d}{\bf k} \ ,
+\end{equation}
 $$
 
 where $V$ is the unit cell volume, the integral is over the Brillouin
@@ -28,9 +30,11 @@ not uniquely defined and different choices will lead to WF with varying
 spatial localisations. We define the spread $\Omega$ of the WF as
 
 $$
+\begin{equation}
 \Omega=\sum_n \left[\langle w_{n{\bf 0}}({\bf r})| r^2 | w_{n{\bf
       0}}({\bf r}) \rangle - | \langle w_{n{\bf 0}}({\bf r})| {\bf r}
       | w_{n{\bf 0}}({\bf r}) \rangle |^2 \right].
+\end{equation}
 $$
 
 The total spread
@@ -41,27 +45,35 @@ into terms diagonal and off-diagonal in the WF basis, $\Omega_{\rm D}$
 and $\Omega_{\rm OD}$,
 
 $$
+\begin{equation}
 \Omega=\Omega_{\rm I}+{\tilde \Omega}=\Omega_{\rm I}+\Omega_{\rm
   D}+\Omega_{\rm OD}
+\end{equation}
 $$
 
 where
 
 $$
+\begin{equation}
 \Omega_{{\rm I}}=\sum_n \left[\langle w_{n{\bf 0}}({\bf r})| r^2 | w_{n{\bf
       0}}({\bf r}) \rangle - \sum_{{\bf R}m} \left| \langle w_{m{\bf
       R}}({\bf r})| {\bf r} | w_{n{\bf 0}}({\bf r}) \rangle \right| ^2
       \right]
+\end{equation}
 $$
 
 $$
+\begin{equation}
 \Omega_{\rm D}=\sum_n \sum_{{\bf R}\neq{\bf 0}} |\langle w_{n{\bf
     R}}({\bf r})| {\bf r} | w_{n{\bf 0}}({\bf r}) \rangle|^2
+\end{equation}
 $$
 
 $$
+\begin{equation}
 \Omega_{\rm OD}=\sum_{m\neq n} \sum_{{\bf R}} |\langle w_{m{\bf R}}({\bf
   r})| {\bf r} | w_{n{\bf 0}}({\bf r}) \rangle |^2
+\end{equation}
 $$
 
 The MV method
@@ -75,7 +87,10 @@ structure calculation.
     $|u_{n{\bf k}}\rangle$
     
     $$
+    \begin{equation}
+    \label{eq:overlap-matrix}
     M_{mn}^{(\bf{k,b})}=\langle u_{m{\bf k}}|u_{n{\bf k}+{\bf b}}\rangle,
+    \end{equation}
     $$
 
     where the vectors ${\bf b}$, which connect a given k-point with its
@@ -87,7 +102,9 @@ structure calculation.
     $|g_{n}\rangle$
     
     $$
+    \begin{equation}
     A_{mn}^{(\bf{k})}=\langle \psi_{m{\bf k}}|g_{n}\rangle,
+    \end{equation}
     $$
 
 Note that $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$,
@@ -122,8 +139,10 @@ transformation amongst the Bloch states which fall within the energy
 window at each k-point:
 
 $$
+\begin{equation}
 | u_{n{\bf k}}^{{\rm opt}}\rangle = \sum_{m\in N^{({\bf k})}_{{\rm win}}}
 U^{{\rm dis}({\bf k})}_{mn} | u_{m{\bf k}}\rangle
+\end{equation}
 $$
 
 where

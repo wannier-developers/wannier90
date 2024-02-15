@@ -71,7 +71,7 @@ For further examples see Section [Master input file: `seedname.win`](../sample_
 |      spinors      |  L   | WF are spinors                                                                   |
 |    shell_list     |  I   | Which shells to use in finite difference formula                                 |
 |   search_shells   |  I   | The number of shells to search when determining finite difference formula        |
-|   skip_B1_tests   |  L   | Check the condition B1 of Ref.                                                   |
+|   skip_B1_tests   |  L   | Check the condition B1 of Ref [@marzari-prb97].                                                   |
 |      nnkpts       |  I   | Explicit list of nearest-neighbour k-points.                                     |
 |     kmesh_tol     |  R   | The tolerance to control if two kpoint belong to the same shell                  |
 
