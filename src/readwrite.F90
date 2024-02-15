@@ -1411,13 +1411,13 @@ contains
 
 !================================================
   subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, &
-                                        constants_version_str2, stdout)
+                                        constants_version_str2, mpi_size, stdout)
     !! Write a suitable header for the calculation - version authors etc
     use w90_io, only: io_date, w90_version
 
     implicit none
 
-    integer, intent(in) :: stdout
+    integer, intent(in) :: stdout, mpi_size
     character(len=*), intent(in) :: bohr_version_str, constants_version_str1, constants_version_str2
     character(len=9) :: cdate, ctime
 
@@ -1504,6 +1504,17 @@ contains
     write (stdout, '(1X,A)') '* '//bohr_version_str//'*'
     write (stdout, '(1X,A)') '******************************************************************************'
     write (stdout, *) ''
+
+    ! show parallel/serial execution
+    if (mpi_size == 1) then
+#ifdef MPI
+      write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
+#else
+      write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
+#endif
+    else
+      write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', mpi_size, ' CPUs'
+    endif
   end subroutine w90_readwrite_write_header
 
 !================================================!

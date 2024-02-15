@@ -254,17 +254,7 @@ program postw90
     open (newunit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
 
     call w90_readwrite_write_header(physics%bohr_version_str, physics%constants_version_str1, &
-                                    physics%constants_version_str2, stdout)
-    if (num_nodes == 1) then
-#ifdef MPI
-      write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
-#else
-      write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
-#endif
-    else
-      write (stdout, '(/,1x,a,i3,a/)') &
-        'Running in parallel on ', num_nodes, ' CPUs'
-    endif
+                                    physics%constants_version_str2, num_nodes, stdout)
   end if
 
   ! Read onto the root node all the input parameters from seendame.win,
