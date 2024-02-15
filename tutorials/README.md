@@ -1,6 +1,10 @@
-To run the tutorials, follow the instructions in the
-Wannier90 Tutorials, which may be found at
-.
+                      ===================
+                      WANNIER90 Tutorials
+                      ===================
+
+This folder contains all the files needed to run 
+the Wannier90 Tutorials. The instructions for how
+to run these may be found at.
 
 The tutorials are as follows:
 

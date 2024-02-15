@@ -65,7 +65,7 @@ both the up- and down-spin channels, effectively doubling their number.
 
     -   The spin matrix elements $\langle \psi_{n{\bf
                 k}}\vert \sigma_i\vert \psi_{m{\bf k}}\rangle$,
-        17=x,y,z$ (written in the `Fe.spn` file)
+        $i=x,y,z$ (written in the `Fe.spn` file)
 
     ```bash title="Terminal"
     pw2wannier90.x < Fe.pw2wan > pw2wan.out
@@ -212,7 +212,7 @@ may want to increase `kslice_2dkmesh`.)
     and without spin-orbit, and note the spin-orbit-induced avoided
     crossings.
 
--   In Tutorial 8 we obtained MLWFs separately for the up- and down-spin
+-   In Tutorial [8](../tutorial_8#iron-spin-polarized-wfs-dos-projeced-wfs-versus-mlwfs) we obtained MLWFs separately for the up- and down-spin
     channels of bcc Fe without spin-orbit. The Wannier-interpolated DOS
     was therefore automatically separated into minority and majority
     contributions. For a spinor calculation we can still spin-decompose
