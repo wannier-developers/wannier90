@@ -98,7 +98,8 @@ module w90_library
     type(wvfn_read_type) :: wvfn_read
   end type lib_common_type
 
-  private :: w90_create_kmesh ! trigers the generation of k-mesh info (as do get_nn*)
+  !private :: w90_create_kmesh ! trigers the generation of k-mesh info (as do get_nn*)
+  public :: w90_create_kmesh ! trigers the generation of k-mesh info (as do get_nn*)
   public :: w90_disentangle ! perform disentanglement
   public :: w90_get_centres ! get wannier centers
   public :: w90_get_fortran_file
