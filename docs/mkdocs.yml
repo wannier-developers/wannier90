@@ -1,4 +1,4 @@
-site_name: Wannier90
+site_name: Wannier90 Documentation
 site_url: https://wannier.org/
 site_author: Wannier90 Developers
 site_description: >-
@@ -123,9 +123,8 @@ theme:
   font:
     text: Roboto
     code: Roboto Mono
-  favicon: assets/favicon.png
-  icon:
-    logo: logo
+  logo: assets/wannier-logo-squared.svg
+  favicon: assets/wannier-logo-squared.png
 
 extra:
   status:
