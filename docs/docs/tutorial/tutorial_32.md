@@ -138,8 +138,8 @@
     Please cite Ref. [@Vitale2019automated] in any publication employing
     the procedure outlined in this example to obtain $\mu$ and $\sigma$.
 
-<figure id="fig:W_fit">
-
+<figure markdown="span" id="fig:W_fit">
+![Image title](./W_fit.webp){ width="500"}
 <figcaption> a) Each blue dot represents the projectability as defined
 in Eq. (22) of Ref. <span class="citation"
 data-cites="Vitale2019automated"></span> of the state <span
