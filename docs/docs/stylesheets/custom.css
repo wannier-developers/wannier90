@@ -1,0 +1,16 @@
+.md-typeset ul ul {
+    list-style-type: circle;
+}
+
+.md-typeset ul ul ul {
+    list-style-type: square;
+}
+
+.highlight span.filename {
+    background-color: #afadad;
+    line-height: 0.4;
+}
+
+.md-typeset h1 {
+    color: black;
+}

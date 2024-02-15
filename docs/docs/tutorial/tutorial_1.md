@@ -11,15 +11,15 @@
 
 -   Input Files
 
-    \-    `gaas.win` *The master input file*
+    -    `gaas.win` *The master input file*
 
-    \-    `gaas.mmn` *The overlap matrices
+    -    `gaas.mmn` *The overlap matrices
         $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$*
 
-    \-    `gaas.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
+    -    `gaas.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
         states onto a set of trial localised orbitals*
 
-    \-    `UNK00001.1` *The Bloch states in the real space unit cell. For
+    -    `UNK00001.1` *The Bloch states in the real space unit cell. For
         plotting only.*
 
 1.  Run `wannier90` to minimise the MLWFs spread
