@@ -112,10 +112,11 @@ program wannier
   ! open main output file
   open (newunit=stdout, file=seedname//'.wout', status="replace")
   ! open main error file
-  open (newunit=stderr, file=seedname//'.werr', status="replace")
+  call w90_get_fortran_stderr(stderr)
+  if (rank == 0) open (newunit=stderr, file=seedname//'.werr', status="replace")
 
   call io_date(cdate, ctime)
-  write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
+  if (rank == 0) write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
 
   call input_reader_special(common_data, seedname, stdout, stderr, ierr)
   if (ierr /= 0) stop
@@ -163,7 +164,7 @@ program wannier
     ! please only invoke on rank 0
     call write_kmesh(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-    !if (rank == 0) close (unit=stderr, status='delete')
+    if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
@@ -286,7 +287,7 @@ program wannier
   endif
 
   call print_times(common_data, stdout)
-  !if (rank == 0) close (unit=stderr, status='delete')
+  if (rank == 0) close (unit=stderr, status='delete')
 #ifdef MPI
   call mpi_finalize(ierr)
 #endif
