@@ -719,8 +719,8 @@ The valid options for this parameter are:
     -   `seedname-path.kpt` (list of $k$-points along the path, written
         in the `pwscf` format)
 
--   `curv` Minus the Berry curvature given by<!-- Note the eq number is not automatically setted -->
-    [Berry Eq. (15)](../berry/#mjx-eqn:eq:ahc) of
+-   `curv` Minus the Berry curvature given by
+    [Berry Eq. \[anomalous Hall Conductivity\]](../berry/#mjx-eqn:eq:ahc) of
     Ch. [Berry](../berry), in units of ` berry_curv_unit`. The following
     files are created:
 
@@ -730,8 +730,8 @@ The valid options for this parameter are:
 
     -   `seedname-curv_{x,y,z}.py` (`python` scripts)
 
--   `morb` The integrand of the $k$-space orbital magnetization formula<!-- Note the eq number is not automatically setted -->
-    \[[Berry Eq. (16)](../berry/#mjx-eqn:eq:morb) of
+-   `morb` The integrand of the $k$-space orbital magnetization formula
+    \[[Berry Eq. \[orbital magnetization\]](../berry/#mjx-eqn:eq:morb) of
     Ch. [Berry](../berry)\] in eV$\cdot$Å$^2$. Four output files are
     created:
 
@@ -742,8 +742,8 @@ The valid options for this parameter are:
     -   `seedname-morb_{x,y,z}.py` (`python` scripts)
 
 -   `shc` The band-projected Berry curvature-like term of spin Hall
-    conductivity given by<!-- Note the eq number is not automatically setted -->
-    [Berry Eq. (19)](../berry/#mjx-eqn:eq:kubo_shc_berry) of
+    conductivity given by
+    [Berry Eq. \[spin Hall conductivity\]](../berry/#mjx-eqn:eq:kubo_shc_berry) of
     Ch. [Berry](../berry), in units of ` berry_curv_unit`. The following
     files are created:
 
@@ -1621,15 +1621,16 @@ Sec. [Global variables](#sec:postw90-globalflags)).
 Shift all conduction bands by a given amount (defined by
 `boltz_bandshift_energyshift`).
 
-Note: this flag slightly differs from the global `scissors_shift` flag:
-with `boltz_bandshift`, an exact rigid shift is applied *after*
-interpolation; `scissors_shift` applies instead the shift *before*
-interpolation. As a consequence, results may slightly differ (and this
-is why we provide both possibilities). Note also that with
-`scissors_shift` you have to provide the number of valence bands
-`num_valence_bands`, while with `boltz_bandshift` you should provide the
-first band to shift `boltz_bandshift_firstband` =
-`num_valence_bands`$+1$.
+!!! note
+    this flag slightly differs from the global `scissors_shift` flag:
+    with `boltz_bandshift`, an exact rigid shift is applied *after*
+    interpolation; `scissors_shift` applies instead the shift *before*
+    interpolation. As a consequence, results may slightly differ (and this
+    is why we provide both possibilities). Note also that with
+    `scissors_shift` you have to provide the number of valence bands
+    `num_valence_bands`, while with `boltz_bandshift` you should provide the
+    first band to shift `boltz_bandshift_firstband` =
+    `num_valence_bands`$+1$.
 
 The default value is `false`.
 
