@@ -61,9 +61,8 @@
 Investigate the effect of the outer and inner energy window on the
 interpolated bands.
 
-<figure markdown="span">
+<figure markdown="span" id="fig:cu-bnd">
 ![Image title](./cu.webp){ width="500" }
-<figure id="fig:cu-bnd">
 <figcaption>Bandstructure of copper showing the position of the outer
 and inner energy windows.</figcaption>
 </figure>
