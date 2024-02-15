@@ -12,7 +12,7 @@ bands, which might instead be the intended behaviour for small molecules
 carefully placed at the centre of the cell).
 
 The core idea rests on the fact that the Wannier functions
-$w_{n\bm{\mathrm{R}}}(\bm{\mathrm{r}})$ that we build from
+$w_{n\mathrm{\rm{R}}}(\mathrm{\rm{r}})$ that we build from
 $N\times M\times L$ $k-$points are actually periodic over a supercell of
 size $N\times M\times L$, but when you use them to interpolate you want
 them to be *zero* outside this supercell. In 1D it is pretty obvious
@@ -25,31 +25,31 @@ possible among all the $N\times M\times L-$periodic equivalent copies.
 
 If the distances were between unit cells, this would be trivial, but the
 distances are between Wannier functions which are not centred on
-$\bm{\mathrm{R}}=0$. Hence, when you want to consider the matrix element
-of a generic operator $\bm{\mathrm{O}}$ (i.e., the Hamiltonian)
-$\langle w_{i\bm{\mathrm{0}}}(\bm{\mathrm{r}})|\bm{\mathrm{O}}|w_{j\bm{\mathrm{R}}}(\bm{\mathrm{r}})\rangle$
-you must take in account that the centre $\bm{\mathrm{\tau}}_i$ of
-$w_{i\bm{\mathrm{0}}}(\bm{\mathrm{r}})$ may be very far away from
-$\bm{\mathrm{0}}$ and the centre $\bm{\mathrm{\tau}}_j$ of
-$w_{j\bm{\mathrm{R}}}(\bm{\mathrm{r}})$ may be very far away from
-$\bm{\mathrm{R}}$.
+$\mathrm{\rm{R}}=0$. Hence, when you want to consider the matrix element
+of a generic operator $\mathrm{\rm{O}}$ (i.e., the Hamiltonian)
+$\langle w_{i\mathrm{\rm{0}}}(\mathrm{\rm{r}})|\mathrm{\rm{O}}|w_{j\mathrm{\rm{R}}}(\mathrm{\rm{r}})\rangle$
+you must take in account that the centre $\mathrm{\rm{\tau}}_i$ of
+$w_{i\mathrm{\rm{0}}}(\mathrm{\rm{r}})$ may be very far away from
+$\mathrm{\rm{0}}$ and the centre $\mathrm{\rm{\tau}}_j$ of
+$w_{j\mathrm{\rm{R}}}(\mathrm{\rm{r}})$ may be very far away from
+$\mathrm{\rm{R}}$.
 
 There are many way to find the shortest possible distance between
-$w_{i\bm{\mathrm{0}}}(\bm{\mathrm{r}})$ and
-$w_{j\bm{\mathrm{R}}}(\bm{\mathrm{r}}-\bm{\mathrm{R}})$, the one used
+$w_{i\mathrm{\rm{0}}}(\mathrm{\rm{r}})$ and
+$w_{j\mathrm{\rm{R}}}(\mathrm{\rm{r}}-\mathrm{\rm{R}})$, the one used
 here is to consider the distance
-$\bm{\mathrm{d}}_{ij\bm{\mathrm{R}}} = \bm{\mathrm{\tau}}_i - (\bm{\mathrm{\tau}}_j+\bm{\mathrm{R}})$
+$\mathrm{\rm{d}}_{ij\mathrm{\rm{R}}} = \mathrm{\rm{\tau}}_i - (\mathrm{\rm{\tau}}_j+\mathrm{\rm{R}})$
 and all its superlattice periodic equivalents
-$\bm{\mathrm{d}}_{ij\bm{\mathrm{R}}}+ \bm{\mathrm{\tilde R}}_{nml}$,
+$\mathrm{\rm{d}}_{ij\mathrm{\rm{R}}}+ \mathrm{\rm{\tilde R}}_{nml}$,
 with
-$\bm{\mathrm{\tilde R}}_{nml} = (Nn\bm{\mathrm{a}}_1 + Mm\bm{\mathrm{a}}_2 + Ll\bm{\mathrm{a}}_3)$
+$\mathrm{\rm{\tilde R}}_{nml} = (Nn\mathrm{\rm{a}}_1 + Mm\mathrm{\rm{a}}_2 + Ll\mathrm{\rm{a}}_3)$
 and $n,l,m = {-L,-L+1,...0,...,L-1,L}$, with $L$ controlled by the
 parameter `ws_search_size`.
 
 Then,
 
 1.  if
-    $\bm{\mathrm{d}}_{ij\bm{\mathrm{R}}}+ \bm{\mathrm{\tilde R}}_{nml}$
+    $\mathrm{\rm{d}}_{ij\mathrm{\rm{R}}}+ \mathrm{\rm{\tilde R}}_{nml}$
     is inside the $N\times M \times L$ super-WS cell, then it is the
     shortest, take it and quit
 
@@ -64,7 +64,7 @@ which can be controlled with the parameter `ws_distance_tol`.
 
 Because of how the Fourier transform is defined in the `wannier90` code
 (not the only possible choice) it is only
-$\bm{\mathrm{R}}+\bm{\mathrm{\tilde R}}_{nml}$ that enters the
+$\mathrm{\rm{R}}+\mathrm{\rm{\tilde R}}_{nml}$ that enters the
 exponential, but you still have to consider the distance among the
 actual centres of the Wannier functions. Using the centres of the
 unit-cell to which the Wannier functions belong is not enough (but is
@@ -73,7 +73,7 @@ easier, and saves you one index).
 Point 3 is not stricly necessary, but using it helps enforcing the
 symmetry of the system in the resulting band structure. You will get
 some small but evident symmetry breaking in the band plots if you just
-pick one of the equivalent $\bm{\mathrm{\tilde R}}$ vectors.
+pick one of the equivalent $\mathrm{\rm{\tilde R}}$ vectors.
 
 Note that in some cases, all this procedure does absolutely nothing, for
 instance if all the Wannier function centres are very close to 0 (e.g.,
