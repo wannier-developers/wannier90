@@ -21,5 +21,5 @@ jobs:
             restore-keys: |
               mkdocs-w90-
         - run: pip install -r docs/requirements.txt
-        - run: mkdocs build
+        - run: mkdocs build -s
           working-directory: ./docs
