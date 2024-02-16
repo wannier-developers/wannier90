@@ -560,7 +560,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_fatal
+    use w90_error, only: w90_error_type, set_error_fatal, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -579,14 +579,39 @@ contains
     complex(kind=dp), intent(inout) :: umat(:, :) !(num_bands, num_wann)
 
     ! local variables
-    complex(kind=dp) :: umatnew(num_bands, num_wann) !jj normally don't we alloc explicitly?
-    complex(kind=dp) :: ZU(num_bands, num_wann)
-    complex(kind=dp) :: deltaU(num_bands, num_wann), carr(num_bands)
+    complex(kind=dp), allocatable :: umatnew(:, :) !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: ZU(:, :) !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: deltaU(:, :) !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: carr(:) !(num_bands)
     integer :: i, m, INFO, IFAIL(2), IWORK(5*2)
     complex(kind=dp) :: HP(3), SP(3), V(2, 2), CWORK(2*2)
     real(kind=dp)    :: W(2), RWORK(7*2), sp3
-    integer :: iter
+    integer :: iter, ierr
     integer, parameter :: niter = 50
+
+    allocate (umatnew(num_bands, num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating umatnew in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    allocate (ZU(num_bands, num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ZU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    allocate (deltaU(num_bands, num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating deltaU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    allocate (carr(num_bands), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating carr in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
 
     do iter = 1, niter
       !  Z*U
@@ -641,6 +666,30 @@ contains
 
       umat(:, :) = umatnew(:, :)
     enddo ! iter
+
+    deallocate (umatnew, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating umatnew in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    deallocate (ZU, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating ZU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    deallocate (deltaU, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating deltaU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    deallocate (carr, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating carr in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
 
     return
   end subroutine sitesym_dis_extract_symmetry

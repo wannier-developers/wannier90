@@ -26,6 +26,10 @@ def parse(fname):
 
     #read the values on the second line, that are the size of the matrix
     retdict['size'] = [int(_) for _ in lines[1].split()]
+    retdict['bx'] = [float(line.split()[0]) for line in lines[2:]]
+    retdict['by'] = [float(line.split()[1]) for line in lines[2:]]
+    retdict['bz'] = [float(line.split()[2]) for line in lines[2:]]
+    retdict['wb'] = [float(line.split()[3]) for line in lines[2:]]
 
     retdict = dict(retdict)
     if show_output:
