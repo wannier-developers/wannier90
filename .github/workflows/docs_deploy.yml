@@ -18,3 +18,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_MKDOCS_GIT_COMMITTERS: True
+          CONFIG_FILE: docs/mkdocs.yml
+          REQUIREMENTS: docs/requirements.txt
