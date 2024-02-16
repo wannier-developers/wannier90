@@ -2459,6 +2459,8 @@ contains
     integer           :: kl, in, loop, pos
     character(len=maxlen) :: dummy
 
+    found = .false.
+
     ! get_vector_length only is meaningful for human text in input file
     ! not suitable for data passed via library interface (data in settings%entries)
     !if (.not.allocated(settings%in_data)) then
