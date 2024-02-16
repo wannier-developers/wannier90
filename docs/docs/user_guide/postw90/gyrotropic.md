@@ -142,7 +142,7 @@ $$
 The summations over $n$ and $l$ span the occupied ($o$)
 and empty ($e$) bands respectively, $\omega_{ln}=(E_l-E_n)/\hbar$, and
 ${\bm A}_{ln}({\bm k})$ is given by
-[Berry Eq. \[Berry connection matrix\]](../berry/#mjx-eqn:eq:berry-connection-matrix).
+[Berry Eq. \[Berry connection matrix\]](berry.md#mjx-eqn:eq:berry-connection-matrix).
 <!-- Eq. $\eqref{eq:berry-connection-matrix}$.  -->
 Finally, the matrix
 $B_{nl}^{ac}$ has both orbital and spin contributions given by

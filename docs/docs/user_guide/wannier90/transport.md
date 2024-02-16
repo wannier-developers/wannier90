@@ -17,7 +17,7 @@ calculated using the Hamiltonian in the Wannier function basis of the
 system found by `wannier90`. Setting `tran_read_ht = TRUE`
 allows the user to provide an external Hamiltonian matrix file
 `seedname_htB.dat`, from which the properties are found. See
-Section [Post-Processing](../parameters#post-processing)
+Section [Post-Processing](parameters.md#post-processing)
 for more details of the keywords required for such calculations.
 
 ### `transport_mode = lcr`
@@ -121,7 +121,7 @@ $\tilde{u}_{m\mathbf{k}}(\mathbf{G})$ are required. These are found in
 an additional file (`seedname.unkg`) that should be provided by the
 interface between the DFT code and `wannier90` . A detailed description
 of this file may be found in
-Section [`seedname.unkg`](../files/#seednameunkg).
+Section [`seedname.unkg`](files.md#seednameunkg).
 
 Additionally, the following keywords are also required in the input
 file:

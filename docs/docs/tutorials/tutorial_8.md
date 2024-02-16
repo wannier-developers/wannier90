@@ -21,7 +21,7 @@
 
 -   Note that in a spin-polarized calculation the spin-up and spin-down
     MLWFs are computed separately. (The more general case of spinor WFs
-    will be treated in Tutorial [17](../tutorial_17#iron-spin-orbit-coupled-bands-and-fermi-surface-contours).
+    will be treated in Tutorial [17](tutorial_17.md#iron-spin-orbit-coupled-bands-and-fermi-surface-contours).
 
 1.  Run `pwscf` to obtain the ferromagnetic ground state of
     bcc Fe
@@ -111,7 +111,7 @@ have re-organized in two groups, 6+3; moreover, the six more diffuse WFs
 are off-centred: the initial atomic-like orbitals hybridized with one
 another, becoming more localized in the process. It is instructive to
 visualize the final-state MLWFs using `XCrySDen`, following Tutorial 
-[1](../tutorial_1#gallium-arsenide-mlwfs-for-the-valence-bands).
+[1](tutorial_1.md#gallium-arsenide-mlwfs-for-the-valence-bands).
 For more details, see Sec. IV.B of Ref. [@wang-prb06].
 
 Let us plot the evolution of the spread functional $\Omega$,
@@ -161,7 +161,7 @@ individual trial orbitals.
 
 With projected WFs the total DOS can be separated into $s$, $p$ and $d$
 contributions, in a similar way to the orbital decomposition of the
-energy bands in Tutorial [4](../tutorial_4#copper-fermi-surface-orbital-character-of-energy-bands).
+energy bands in Tutorial [4](tutorial_4.md#copper-fermi-surface-orbital-character-of-energy-bands).
 
 In order to obtain the partial DOS projected onto the $p$-type WFs, add
 to the `.win` files

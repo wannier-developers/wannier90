@@ -20,7 +20,7 @@ interface.
 
     -    `Fe.win` *The `wannier90` and `postw90` input file*
 
-The sequence of steps below is the same of Tutorials [17](../tutorial_17#iron-spin-orbit-coupled-bands-and-fermi-surface-contours) and [18](../tutorial_18#iron-berry-curvature-anomalous-hall-conductivity-and-optical-conductivity). If you
+The sequence of steps below is the same of Tutorials [17](tutorial_17.md#iron-spin-orbit-coupled-bands-and-fermi-surface-contours) and [18](tutorial_18.md#iron-berry-curvature-anomalous-hall-conductivity-and-optical-conductivity). If you
 have already run one of those tutorials, you can reuse the output files
 from steps 1 &#151; 3 and 5. Steps 4 and 6 should be carried out again using
 the new input files `Fe.pw2wan` and `Fe.win`.
@@ -78,7 +78,7 @@ the new input files `Fe.pw2wan` and `Fe.win`.
     2.   example of parallel execution with 8 MPI processes
 
 The orbital magnetization is computed as the BZ integral of the quantity
-${\bf M}^{\rm orb}({\bf k})$ defined in this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:morb) 
+${\bf M}^{\rm orb}({\bf k})$ defined in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:morb) 
 of the User Guide.
 The relevant lines in `Fe.win` are
 
@@ -134,7 +134,5 @@ python Fe-kslice-morb_z+fermi_lines.py
 ```
 
 $M_z^{\rm orb}({\bf k})$ is much more evenly distributed in $k$-space
-than the Berry curvature (see Tutorial [18](../tutorial_18#iron-berry-curvature-anomalous-hall-conductivity-and-optical-conductivity)). As a result, the integrated
+than the Berry curvature (see Tutorial [18](tutorial_18.md#iron-berry-curvature-anomalous-hall-conductivity-and-optical-conductivity)). As a result, the integrated
 orbital magnetization converges more rapidly with the BZ sampling.
-
-

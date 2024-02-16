@@ -5,7 +5,7 @@ Introduction
 ------------
 
 The `wannier90.x` code described in
-Part [wannier90.x](../../wannier90/methodology/) calculates the maximally-localized Wannier
+Part [wannier90.x](../wannier90/methodology.md) calculates the maximally-localized Wannier
 functions.
 
 The `postw90.x` executable contains instead a series of modules that
@@ -17,7 +17,7 @@ the calculated Wannier functions is read from the checkpoint
 machine-dependent format. If you need to use this file on a different
 machine, or you want to use a version of `postw90.x` compiled with a
 different compiler, refer to
-Sec. [w90chk2chk](../../appendices/utilities/#w90chk2chkx)
+Sec. [w90chk2chk](../appendices/utilities.md#w90chk2chkx)
  in the Appendices for a description of how
 to export/import this file.
 
@@ -55,7 +55,7 @@ configured on your machine.
 The `postw90.x` uses the same `seedname.win` input file of
 `wannier90.x`. The input keywords of `postw90.x` must thus be added to
 this file, using the same syntax described in
-Sec. [wannier90.x](../../wannier90/parameters/#seednamewin-file).
+Sec. [wannier90.x](../wannier90/parameters.md#seednamewin-file).
 
 Note that `wannier90.x` checks if the syntax of the input file is
 correct, but then ignores the value of the flags that refer only to
@@ -97,7 +97,7 @@ The currently available modules in `postw90.x` are:
     spin Hall conductivity, including anomalous Hall conductivity,
     orbital magnetisation, optical conductivity, nonlinear shift current
     and spin Hall conductivity (see
-    Chap. [Berry](../berry) and tutorials 
+    Chap. [Berry](berry.md) and tutorials 
     [18](../../tutorials/tutorial_18.md), 
     [19](../../tutorials/tutorial_19.md), 
     [25](../../tutorials/tutorial_25.md), 
@@ -105,20 +105,20 @@ The currently available modules in `postw90.x` are:
     and [30](../../tutorials/tutorial_30.md) of the
     tutorial). It also includes an option to compute $k\cdot p$
     expansion coefficients (see
-    Sec. [kdotp](../berry/#sec:kdotp) and tutorial [33](../../tutorials/tutorial_33.md) of the tutorial).
+    Sec. [kdotp](berry.md#sec:kdotp) and tutorial [33](../../tutorials/tutorial_33.md) of the tutorial).
 
 -   `gyrotropic`: Calculation of gyrotropic properties, including
     natural and current0induced optical rotation, and the
     current-induced magnetization (see
-    Chap. [Gyrotropic](../gyrotropic) and tutorial [24](../../tutorials/tutorial_24.md) of the tutorial).
+    Chap. [Gyrotropic](gyrotropic.md) and tutorial [24](../../tutorials/tutorial_24.md) of the tutorial).
 
 -   `BoltzWann`: Calculation of electronic transport properties for bulk
     materials using the semiclassical Boltzmann transport equation (see
-    Chap. [BoltzWann](../boltzwann) and tutorial [16](../../tutorials/tutorial_16.md) of the tutorial).
+    Chap. [BoltzWann](boltzwann.md) and tutorial [16](../../tutorials/tutorial_16.md) of the tutorial).
 
 -   `geninterp` (Generic Band Interpolation): Calculation band energies
     (and band derivatives) on a generic list of $k$ points (see
-    Chap. [Geninterp](../geninterp)).
+    Chap. [Geninterp](geninterp.md)).
 
 Keyword List
 ------------
@@ -729,8 +729,8 @@ The valid options for this parameter are:
         in the `pwscf` format)
 
 -   `curv` Minus the Berry curvature given by
-    [Berry Eq. \[anomalous Hall Conductivity\]](../berry/#mjx-eqn:eq:ahc) of
-    Ch. [Berry](../berry), in units of ` berry_curv_unit`. The following
+    [Berry Eq. \[anomalous Hall Conductivity\]](berry.md#mjx-eqn:eq:ahc) of
+    Ch. [Berry](berry.md), in units of ` berry_curv_unit`. The following
     files are created:
 
     -   `seedname-curv.dat` (data file)
@@ -740,8 +740,8 @@ The valid options for this parameter are:
     -   `seedname-curv_{x,y,z}.py` (`python` scripts)
 
 -   `morb` The integrand of the $k$-space orbital magnetization formula
-    \[[Berry Eq. \[orbital magnetization\]](../berry/#mjx-eqn:eq:morb) of
-    Ch. [Berry](../berry)\] in eV$\cdot$Å$^2$. Four output files are
+    \[[Berry Eq. \[orbital magnetization\]](berry.md#mjx-eqn:eq:morb) of
+    Ch. [Berry](berry.md)\] in eV$\cdot$Å$^2$. Four output files are
     created:
 
     -   `seedname-morb.dat` (data file)
@@ -752,8 +752,8 @@ The valid options for this parameter are:
 
 -   `shc` The band-projected Berry curvature-like term of spin Hall
     conductivity given by
-    [Berry Eq. \[spin Hall conductivity\]](../berry/#mjx-eqn:eq:kubo_shc_berry) of
-    Ch. [Berry](../berry), in units of ` berry_curv_unit`. The following
+    [Berry Eq. \[spin Hall conductivity\]](berry.md#mjx-eqn:eq:kubo_shc_berry) of
+    Ch. [Berry](berry.md), in units of ` berry_curv_unit`. The following
     files are created:
 
     -   `seedname-shc.dat` (data file)
@@ -1154,7 +1154,7 @@ If it is `qiao/ryoo`, the ac or dc SHC is calculated using Junfeng
 Qiao's/Jihoon Ryoo's method. To calculate the Kubo formula, the spin
 current matrix elements are required, and the two methods differ in the
 degree of approximation. For details, see the section
-[shc](../berry/#sec:shc).
+[shc](berry.md#sec:shc).
 
 ### `integer :: shc_alpha`
 
@@ -1683,6 +1683,6 @@ Whether to write a single `seedname_geninterp.dat` file (all I/O is done
 by the root node); or instead multiple files (one for each node) with
 names `seedname_geninterp_NNNNN.dat`, where `NNNNN` is the node number.
 See also the discussion in
-Sec. [`seedname_geninterp.dat` or `seedname_geninterp_NNNNN.dat`](../geninterp/#sec:seedname.geninterp.dat).
+Sec. [`seedname_geninterp.dat` or `seedname_geninterp_NNNNN.dat`](geninterp.md#sec:seedname.geninterp.dat).
 
 The default value is `true`.

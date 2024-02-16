@@ -95,7 +95,7 @@ $sp^3$-like symmetry. The lower conduction states are not separated by
 an energy gap from the higher states. In order to form localised WF we
 use the disentanglement procedure introduced in Ref. [@souza-prb01]. The
 position of the inner and outer energy windows are shown in
-[this plot](../tutorial_3#fig:si.bnd){reference-type="ref" reference="fig:si.bnd"}.
+[this plot](tutorial_3.md#fig:si.bnd){reference-type="ref" reference="fig:si.bnd"}.
 
 1.  Modify the input file and run `pwscf` and `wannier90`.\
     Inspect the output file `silicon.wout`. The minimisation of the

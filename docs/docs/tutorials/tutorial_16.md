@@ -38,9 +38,9 @@
     -    `Si.eig` *The Bloch eigenvalues at each k-point. For
         interpolation only*
 
-Note the first five steps in the following are the same of Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states),
+Note the first five steps in the following are the same of Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states),
 and are needed only if you want to use the `PWscf` code of Quantum
-ESPRESSO. Otherwise, if you have already run Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states) with Quantum
+ESPRESSO. Otherwise, if you have already run Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states) with Quantum
 ESPRESSSO (in particular, the section "*Valence + Conduction States*")
 you can start from those files and continue from point 6, after having
 added the `BoltzWann` flags to the input file.
@@ -57,7 +57,7 @@ want to use it, you can start from step 5 using the files in the
 
 2.  Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid. Details on the disentanglement procedure are discussed
-    in Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states).
+    in Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states).
 
     ```bash title="Terminal"
     pw.x < Si.nscf > nscf.out
@@ -86,7 +86,7 @@ want to use it, you can start from step 5 using the files in the
 
     Inspect the output file `Si.wout` and check if the convergence was
     reached both in the disentanglement and in the wannierisation steps
-    (as discussed in further detail in Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states)). You may also want to
+    (as discussed in further detail in Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states)). You may also want to
     plot the Wannier functions and the interpolated band structure.
 
 6.  Run `postw90` to calculate the transport coefficients.\
@@ -147,5 +147,3 @@ coefficient as a function of the chemical potential $\mu$, at $T=300$ K.
     have to write a small program/script to interpolate the output of
     `BoltzWann`, that you should have run on a suitable grid of
     $(\mu,T)$ points.
-
-

@@ -4,7 +4,7 @@
     conductivity of gallium arsenide considering spin-orbit coupling. To
     gain a better understanding of this tutorial, it is suggested to read
     Ref. [@qiao-prb2018] for a detailed description of the theory and the
-    [berry_task=shc: spin Hall conductivity](../../user_guide/postw90/berry#sec:shc) 
+    [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc) 
     chapter of the User Guide.*
 
 -   Directory: `tutorials/tutorial30/`
@@ -69,7 +69,7 @@
 ## ac spin Hall conductivity {#ac-spin-hall-conductivity .unnumbered}
 
 The spin Hall conductivity is also dependent on the frequency $\omega$
-in this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:kubo_shc) of the User Guide. 
+in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) of the User Guide. 
 The direct current (dc) SHC calculated in the previous tutorial corresponds to
 $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ in the limit
 $\omega\rightarrow
@@ -120,5 +120,3 @@ Solution Booklet.
 -   Since the band gap is often under estimated by LDA/GGA calculations,
     a scissors shift is applied to recover the experimental band gap by
     using the following keywords or by
-
-

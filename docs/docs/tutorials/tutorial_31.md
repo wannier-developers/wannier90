@@ -19,7 +19,7 @@ post-processing code of `Quantum ESPRESSO` (v6.3 or above).
 -   Directory: `tutorials/tutorial31/`
 
     The input files for this tutorials are similar to the ones in Tutorial 
-    [29](../tutorial_29#platinum-spin-hall-conductivity), except that a coarser k-point grid is used and that the keywords
+    [29](tutorial_29.md#platinum-spin-hall-conductivity), except that a coarser k-point grid is used and that the keywords
     related to `postw90.x` are removed.
 
 -   Input Files:
@@ -40,7 +40,7 @@ is metallic, the low-lying bands are entangled with other high-energy
 bands, and the columns of the density matrix are not exponentially
 localized by construction. Thus, we use a modified density matrix
 [@LinLin-ArXiv2017], with the function $f(\varepsilon_{n,\mathbf{k}})$
-defined as a complementary error function. Refer to Tutorial [27](../tutorial_27#silicon-selected-columns-of-density-matrix-algorithm-for-automated-mlwfs) 
+defined as a complementary error function. Refer to Tutorial [27](tutorial_27.md#silicon-selected-columns-of-density-matrix-algorithm-for-automated-mlwfs) 
 for the definition of the modified density matrix and the functional form of
 $f(\varepsilon_{n,\mathbf{k}})$.
 
@@ -79,7 +79,7 @@ $f(\varepsilon_{n,\mathbf{k}})$.
     `pw2wannier90.x` to use the SCDM method when generating the $A_{mn}$
     matrix. The remaining three keywords defines the formula and
     parameters to define the function $f(\varepsilon_{n\mathbf{k}})$
-    (see Ref. [@LinLin-ArXiv2017] and Tutorial [27](../tutorial_27#silicon-selected-columns-of-density-matrix-algorithm-for-automated-mlwfs)).
+    (see Ref. [@LinLin-ArXiv2017] and Tutorial [27](tutorial_27.md#silicon-selected-columns-of-density-matrix-algorithm-for-automated-mlwfs)).
 
 7.  Run `pw2wannier90` to compute the overlap between Bloch states and
     the projections via the SCDM method (written in the `Pt.mmn` and
@@ -109,5 +109,3 @@ $f(\varepsilon_{n,\mathbf{k}})$.
     ```bash title="Terminal"
     wannier90.x Pt
     ```
-
-

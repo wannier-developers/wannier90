@@ -52,7 +52,7 @@ num_wann : 4
 A logical keyword can be set to `true` using any of the following
 strings: `T`, `true`, `.true.`.
 
-For further examples see Section [Master input file: `seedname.win`](../sample_inputs#winfile) and the the `wannier90` Tutorial.
+For further examples see Section [Master input file: `seedname.win`](sample_inputs.md#winfile) and the the `wannier90` Tutorial.
 
 ## Keyword List
 
@@ -197,7 +197,7 @@ window.
 |        dist_cutoff         |  P   | Cut-off for the distance between WF                          |
 |      dist_cutoff_mode      |  S   | Dimension in which the distance between WF is calculated     |
 |  translation_centre_frac   |  R   | Centre of the unit cell to which final WF are translated     |
-| use_ws_distance |  L   | Improve interpolation using minimum distance between WFs, see Chap. [Some notes on the interpolation](../notes_interpolations)|
+| use_ws_distance |  L   | Improve interpolation using minimum distance between WFs, see Chap. [Some notes on the interpolation](notes_interpolations.md)|
 | ws_distance_tol                            |  R   | Absolute tolerance for the distance to equivalent positions. |
 | ws_search_size                           |  I   | Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell |
 | write_u_matrices                           |  L   | Write $U^{(\bm{k})}$ and $U^{dis(\bm{k})}$ matrices to files |
@@ -372,7 +372,7 @@ There is no default.
 !!! note
     There is an utility provided with `wannier90`, called
     `kmesh.pl`, which helps to generate the explicit list of $k$ points
-    required by `wannier90`. See Sec. [`kmesh.pl`](../../appendices/utilities#kmeshpl).
+    required by `wannier90`. See Sec. [`kmesh.pl`](../appendices/utilities.md#kmeshpl).
 
 ### `logical :: gamma_only`
 
@@ -493,7 +493,7 @@ end projections
 If `guiding_centres`=`true`, then the projection centres are used as the
 guiding centres in the Wannierisation routine.
 
-For details see Section [Specification of projections in `seedname.win`](../projections#sec:proj).
+For details see Section [Specification of projections in `seedname.win`](projections.md#sec:proj).
 
 ## Job Control
 
@@ -571,7 +571,7 @@ to instruct the interface code to automatically generate the
 $A_{mn}^{(\mathbf{k})}$.
 
 For additional information on the behavior and on the added block, see
-Sec. [`auto_projections` block](../postproc#auto_projections-block).
+Sec. [`auto_projections` block](postproc.md#auto_projections-block).
 
 !!! note
     the interface code (e.g. `pw2wannier90.x`) must have at least
@@ -699,7 +699,7 @@ its projectability onto some localized atomic orbitals.
     this requires the `amn` file is properly normalized, i.e.,
     projectability computed from $A A^\dagger$ must be smaller than or equal
     to 1. The pseudo-atomic projection satisfies such requirement, see
-    [Projections via pseudo-atomic orbitals in pw2wannier90](../projections#projections-via-pseudo-atomic-orbitals-in-pw2wannier90).
+    [Projections via pseudo-atomic orbitals in pw2wannier90](projections.md#projections-via-pseudo-atomic-orbitals-in-pw2wannier90).
 
 Additionally, one can combine projectability disentanglement with energy
 disentanglement, i.e., enable both `dis_proj_min/max` and
@@ -1432,7 +1432,7 @@ must be provided by the five external files:
 `seedname_htL.dat, seedname_htLC.dat, seedname_htC.dat, seedname_htCR.dat, seedname_htR.dat`.
 If `tran_read_ht = false` then the Hamiltonian matrices
 are found automatically provided the supercell adheres to conditions
-outlined in Section [Automated lcr Transport Calculations: The 2c2 Geometry](../transport#sec:2c2).
+outlined in Section [Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#sec:2c2).
 
 The valid options for this parameter are:
 
@@ -1560,7 +1560,7 @@ If `tran_write_ht = true`, then the Hamiltonian matrix
 formatted for the transport calculation will be read from a set of files
 described in the parameter `transport_mode`. Set
 `tran_write_ht = false` to perform automated lcr
-calculations (see Section [Automated lcr Transport Calculations: The 2c2 Geometry](../transport#sec:2c2)).
+calculations (see Section [Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#sec:2c2)).
 
 The default value is `false`.
 
@@ -1598,7 +1598,7 @@ i.e., translate function $W_j({\bf r}-{\bf R})$ inside the Wigner-Seitz
 cell centred on WF $W_i({\bf r})$.
 
 For a longer explanation, see
-Chapter [Some notes on the interpolation](../notes_interpolations).
+Chapter [Some notes on the interpolation](notes_interpolations.md).
 
 If `false` the code puts all the WF in the home cell, only possible
 choice until wannier90 v2.0.1.
@@ -1612,7 +1612,7 @@ Tolerance when determining whether two values
 $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and
 $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as
 defined in
-chapter [Some notes on the interpolation](../notes_interpolations)) for the shortest distance between two
+chapter [Some notes on the interpolation](notes_interpolations.md)) for the shortest distance between two
 Wannier functions are equivalent. If the difference in distance (in
 Angstrom) is less than `ws_distance_tol`, they are taken to be
 equivalent.
@@ -1623,7 +1623,7 @@ The default value is $10^{-5}$.
 
 Maximum absolute value for the integers $n,m,l$ that identify the
 super-lattice vectors $\tilde{\mathbf{R}}_{nml}$ (see
-chapter [Some notes on the interpolation](../notes_interpolations)) when searching for points inside the
+chapter [Some notes on the interpolation](notes_interpolations.md)) when searching for points inside the
 Wigner-Seitz cell. If `ws_search_size` is provided as a single integer,
 then the number of repetitions of the Born-von Karman cell is the same
 along all three linear dimensions; otherwise, if three integers are

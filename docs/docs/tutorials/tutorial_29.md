@@ -161,7 +161,7 @@ may be helpful if the computation time is very long.
 
 The band-projected Berry curvature-like term
 $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ is defined in
-this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:kubo_shc) of the User Guide. 
+this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) of the User Guide. 
 The following lines in `Pt.win` are used
 to calculate the energy bands colored by the band-projected Berry
 curvature-like term
@@ -233,7 +233,7 @@ Solution Booklet.
 -   Adaptive smearing depends on a uniform kmesh, so when running
     `kpath` and `kslice` plots adaptive smearing should not be used. A
     fixed smearing is needed to avoid near zero number in the
-    denominator of the [Kubo formula](../../user_guide/postw90/berry#mjx-eqn:eq:kubo_shc) 
+    denominator of the [Kubo formula](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) 
     in the User Guide. To
     add a fixed smearing of 0.05 eV, add the following keywords in the
     `Pt.win`,
@@ -259,5 +259,3 @@ current (ac) SHC which will be introduced in the next tutorial.
 -   kslice
 
 Their meanings and usages can be found in Ch. 11.5 of the User Guide.
-
-

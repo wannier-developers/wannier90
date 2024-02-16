@@ -4,8 +4,8 @@
 
 INPUT. The master input file; contains the specification of the system
 and any parameters for the run. For a description of input parameters,
-see Chapter [Parameters](../parameters); for examples, see
-Section [`seedname.win`](../sample_inputs/#master-input-file-seednamewin) and
+see Chapter [Parameters](parameters.md); for examples, see
+Section [`seedname.win`](sample_inputs.md#master-input-file-seednamewin) and
 the `wannier90` Tutorial.
 
 ### Units
@@ -23,7 +23,7 @@ master input file:
 
 -   Convergence thresholds for the minimisation of $\Omega$
 
--   `zona` (see Section [Projections](../projections))
+-   `zona` (see Section [Projections](projections.md))
 
 -   `wannier_plot_cube`: cut-off radius for plotting WF in Gaussian cube
     format
@@ -66,33 +66,33 @@ $V=\mathbf{A}_{1}\cdot(\mathbf{A}_{2}\times\mathbf{A}_{3})$.
 ## `seedname.mmn`
 
 INPUT. Written by the underlying electronic structure code. See
-Chapter [Post-processing](../postproc)
+Chapter [Post-processing](postproc.md)
 for details.
 
 ## `seedname.amn`
 
 INPUT. Written by the underlying electronic structure code. See
-Chapter [Post-processing](../postproc)
+Chapter [Post-processing](postproc.md)
 for details.
 
 ## `seedname.dmn`
 
 INPUT. Read if `site_symmetry = .true.` (symmetry-adapted mode). Written
 by the underlying electronic structure code. See
-Chapter [Post-processing](../postproc)
+Chapter [Post-processing](postproc.md)
 for details.
 
 ## `seedname.eig`
 
 INPUT. Written by the underlying electronic structure code. See
-Chapter [Post-processing](../postproc)
+Chapter [Post-processing](postproc.md)
 for details.
 
 ## `seedname.nnkp` {#sec:old-nnkp}
 
 OUTPUT. Written by `wannier90` when `postproc_setup=.TRUE.` (or,
 alternatively, when `wannier90` is run with the `-pp` command-line
-option). See Chapter [Post-processing](../postproc) for details.
+option). See Chapter [Post-processing](postproc.md) for details.
 
 ## `seedname.wout`
 
@@ -195,7 +195,7 @@ plotting.
 
 This part of the output files provides information on the
 $\mathrm{b}$-vectors and weights chosen to satisfy the condition of
-Eq. [B1](../parameters/#mjx-eqn:eq:B1).
+Eq. [B1](parameters.md#mjx-eqn:eq:B1).
 
      *---------------------------------- K-MESH ----------------------------------*
      +----------------------------------------------------------------------------+
@@ -351,7 +351,7 @@ gradient of $\Omega$ with respect to variations in the unitary matrices
 $\mathbf{U}^{(\mathbf{k})}$, and the last is the time taken (in
 seconds). Depending on the input parameters used, the procedure either
 runs for `num_iter` iterations, or a convergence criterion is applied on
-$\Omega$. See Section [Wannierise Parameters](../parameters/#wannierise-parameters) for details.
+$\Omega$. See Section [Wannierise Parameters](parameters.md#wannierise-parameters) for details.
 
 Similarly, the command
 
@@ -370,7 +370,7 @@ gives
 which, for each iteration, reports the value of the diagonal and
 off-diagonal parts of the non-gauge-invariant spread, as well as the
 total spread, respectively. Recall from
-Section [Methodology](../methodology)
+Section [Methodology](methodology.md)
 that
 $\Omega = \Omega_{\mathrm{I}}+ \Omega_{\mathrm{D}} + \Omega_{\mathrm{OD}}$.
 

@@ -97,7 +97,7 @@ the interpolated valence bands for Silicon. Inspect the output
 file `si.wout`. In particular, look at the geometric centres of
 each WF, do they lie at the centre of the Si-Si bond as for the
 MLWFs computed from user-defined initial $s$-like projections
-(see Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states))? Plot these WFs using Vesta. Do they show the
+(see Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states))? Plot these WFs using Vesta. Do they show the
 $\sigma$ character one would expect from chemical arguments?
 
 ###Valence bands + conduction bands 
@@ -177,9 +177,9 @@ $$
 At this point, you should have obtained 8 localized Wannier
 functions and the interpolated valence and conduction bands for
 Silicon. Again, compare the results for the geometric centres
-and the individual spreads with the ones from Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states). Is the
+and the individual spreads with the ones from Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states). Is the
 final value of total spread bigger or smaller than the one from
-Tutorial [11](../tutorial_11#silicon-valence-and-low-lying-conduction-states)? 
+Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states)? 
 Look at the WFs with Vesta. Can you explain what you
 see? Where do the major lobes of the $sp3$-like WFs point in
 this case?
@@ -248,5 +248,3 @@ functions and the interpolated conduction bands for Silicon.
 From chemical intuition, we would expect these functions to be
 similar to anti-bonding orbitals of molecules with tetrahedral
 symmetry. Plot the WFs and check if this is confirmed.
-
-

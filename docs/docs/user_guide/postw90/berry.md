@@ -637,7 +637,7 @@ and position matrix elements $\langle {\bf 0}n\vert H\vert
 elements are readily available at the end of a standard MLWF calculation
 with `wannier90`. In particular, $\langle {\bf
   0}n\vert {\bf r}\vert {\bf R}m\rangle$ can be calculated by Fourier
-transforming the overlap matrices in [Methodology Eq. \[overlap matrices\]](../../wannier90/methodology/#mjx-eqn:eq:overlap-matrix),
+transforming the overlap matrices in [Methodology Eq. \[overlap matrices\]](../wannier90/methodology.md#mjx-eqn:eq:overlap-matrix),
 
 $$
 \begin{equation}
@@ -698,4 +698,3 @@ and these are evaluated by adding to the input file
 
 	write_sHu = .true.
 	write_sIu = .true.
-

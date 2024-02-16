@@ -31,7 +31,7 @@ equation but rather the *real* (in the sense of non-imaginary) states
 $\Theta_{lm_{\mathrm{r}}}$, obtained by a unitary transformation. For
 example, the canonical eigenstates associated with $l=1$, $m=\{-1,0,1\}$
 are not the real p$_{x}$, p$_{y}$ and p$_{z}$ that we want. See
-Section [Orbital Definitions](../projections/#orbital-definitions) 
+Section [Orbital Definitions](#orbital-definitions) 
 for our mathematical conventions regarding
 projection orbitals for different $n$, $l$ and $m_{\mathrm{r}}$.
 

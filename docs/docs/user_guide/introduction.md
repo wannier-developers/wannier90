@@ -18,7 +18,7 @@ about the `wannier90` code, check the official repository of
 about its functionalities.
 
 Finally, many frequently asked questions are answered in
-Appendix [FAQs](../appendices/faq/). An
+Appendix [FAQs](appendices/faq.md). An
 expanded FAQ session may be found on the Wiki page of the GitHub
 repository at
 <https://github.com/wannier-developers/wannier90/wiki/FAQ>.

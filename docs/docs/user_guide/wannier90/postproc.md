@@ -101,7 +101,7 @@ crystallographic co-ordinates relative to the direct lattice vectors.
 `l  mr  r`: three integers; $l$ and $m_\mathrm{r}$ specify the angular
 part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and $\mathrm{r}$
 specifies the radial part $R_{\mathrm{r}}(r)$ of the projection function
-(see Tables [Angular functions](../projections/#angular-functions), [Hybrids](../projections#hybrids) and [Radial functions](../projections/#radial-functions)).
+(see Tables [Angular functions](projections.md/#angular-functions), [Hybrids](projections.md#hybrids) and [Radial functions](projections.md/#radial-functions)).
 
 `z-axis`: three real numbers; default is `0.0 0.0 1.0`; defines the axis
 from which the polar angle $\theta$ in spherical polar coordinates is
@@ -215,8 +215,9 @@ spinor WFs is implemented in the `pw2wannier90` interface. See Tutorial
 
 Another automatic projection method is projectability-disentangled
 Wannier function (PDWF) [@Qiao2023-pdwf], which uses pseudo-atomic
-orbitals inside pseudopotentials as initial guesses. See Tutorial [34](../../tutorials/tutorial_34.md) and
-35.
+orbitals inside pseudopotentials as initial guesses. 
+<!-- TODO: Add a tutorial for PDWF. -->
+<!-- See Tutorial [34](../../tutorials/tutorial_34.md) and 35. -->
 
 #### An example of projections
 
@@ -247,7 +248,7 @@ and `seedname.nnkp`, generated on the first pass of `wannier90` (with
 where the first line tells us that in total four projections are
 specified, and the subsquent lines provide the projection centre, the
 angular and radial parts of the orbital (see
-Section [Orbital Definitions](../projections/#orbital-definitions) for definitions), the $z$ and $x$ axes,
+Section [Orbital Definitions](projections.md/#orbital-definitions) for definitions), the $z$ and $x$ axes,
 and the diffusivity and cut-off radius for the projection orbital.
 
 `pwscf`, or any other *ab initio* electronic structure code,

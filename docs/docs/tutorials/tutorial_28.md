@@ -4,7 +4,7 @@
     them in Gaussian cube format*
 
 -   Directory: `tutorials/tutorial28/` *The input files for this tutorials
-    are the same as the ones in Tutorial [5](../tutorial_5#diamond-mlwfs-for-the-valence-bands) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial28)*
+    are the same as the ones in Tutorial [5](tutorial_5.md#diamond-mlwfs-for-the-valence-bands) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial28)*
 
 -   Input Files
 
@@ -87,5 +87,3 @@ results to be different? (*Hint:* When using the Gaussian cube format
 the code outputs the WF on a grid that is smaller than the super
 unit-cell. The size of the grid is specified by `wannier_plot_scale` and
 `wannier_plot_radius`.)
-
-

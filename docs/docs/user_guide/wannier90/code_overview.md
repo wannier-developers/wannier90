@@ -5,7 +5,7 @@
 1.  *Post-processing mode:* read in the overlaps and projections from
     file as computed inside a first-principles code. We expect this to
     be the most common route to using `wannier90`, and is described in
-    Chapter [Post-processing](../postproc);
+    Chapter [Post-processing](postproc.md);
 
 2.  *Library mode:* as a set of library routines to be called from
     within a first-principles code that passes the overlaps and
@@ -13,7 +13,7 @@
     the unitary transformation corresponding to MLWF. This route should
     be used if the MLWF are needed within the first-principles code, for
     example in post-LDA methods such as LDA+U or SIC, and is described
-    in Chapter [Library mode](../library_mode).
+    in Chapter [Library mode](library_mode.md).
 
 <figure markdown="span">
 ![code overview](overview.webp){ width="100%" }

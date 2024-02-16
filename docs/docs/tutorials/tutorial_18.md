@@ -22,7 +22,7 @@ interface.
 
     -    `Fe.win` *The `wannier90` and `postw90` input file*
 
-The sequence of steps below is the same of Tutorial [17](../tutorial_17#iron-spin-orbit-coupled-bands-and-fermi-surface-contours). If you have
+The sequence of steps below is the same of Tutorial [17](tutorial_17.md#iron-spin-orbit-coupled-bands-and-fermi-surface-contours). If you have
 already run that example, you can reuse the output files from steps
 1 &#151; 5, and only step 6 must be carried out again using the new input file
 `Fe.win`.
@@ -74,7 +74,7 @@ already run that example, you can reuse the output files from steps
 ## Berry curvature plots {#berry-curvature-plots .unnumbered}
 
 The Berry curvature $\Omega_{\alpha\beta}({\bf k})$ of the occupied
-states is defined in this [equation](../../user_guide/postw90/berry#mjx-eqn:eq:ahc)  of the User Guide. The following lines
+states is defined in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:ahc)  of the User Guide. The following lines
 in `Fe.win` are used to calculate the energy bands and the Berry
 curvature (in bohr$^2$) along high-symmetry lines in $k$-space.
 
@@ -102,7 +102,7 @@ python Fe-bands+curv_z.py
 
 and compare with Fig. 2 of Ref. [@yao-prl04].
 
-In Tutorial [17](../tutorial_17#iron-spin-orbit-coupled-bands-and-fermi-surface-contours) we plotted the Fermi lines on the (010) plane $k_y=0$. To
+In Tutorial [17](tutorial_17.md#iron-spin-orbit-coupled-bands-and-fermi-surface-contours) we plotted the Fermi lines on the (010) plane $k_y=0$. To
 combine them with a heatmap plot of (minus) the Berry curvature set
 `kpath = false`, uncomment the following lines in `Fe.win`, re-run
 `postw90`, and issue
@@ -113,7 +113,7 @@ python Fe-kslice-curv_z+fermi_lines.py
 
 Compare with Fig. 3 in Ref. [@yao-prl04]. Note how the Berry curvature
 "hot-spots" tend to occur near spin-orbit-induced avoided crossings (the
-Fermi lines with and without spin-orbit were generated in Tutorial [17](../tutorial_17#iron-spin-orbit-coupled-bands-and-fermi-surface-contours)).
+Fermi lines with and without spin-orbit were generated in Tutorial [17](tutorial_17.md#iron-spin-orbit-coupled-bands-and-fermi-surface-contours)).
 
 ## Anomalous Hall conductivity {#anomalous-hall-conductivity .unnumbered}
 
@@ -239,7 +239,7 @@ plot 'Fe-kubo_A_xy.dat' u 1:(\$1)\*(\$3)\*0.0137 w l
 
 \-   Recompute the AHC and optical spectra of bcc Fe using projected $s$,
     $p$, and $d$-type Wannier functions instead of the hybridrized MLWFs
-    (see Tutorial [8](../tutorial_8#iron-spin-polarized-wfs-dos-projected-wfs-versus-mlwfs)), 
+    (see Tutorial [8](tutorial_8.md#iron-spin-polarized-wfs-dos-projected-wfs-versus-mlwfs)), 
     and compare the results.
 
 \-   A crude way to model the influence of heterovalent alloying on the
@@ -271,4 +271,3 @@ gnuplot
 ```gnuplot title="Gnuplot shell"
 plot 'Fe-ahc-fermiscan.dat' u 1:4 w lp
 ```
-
