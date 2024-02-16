@@ -1,0 +1,28 @@
+name: CI test docs
+on:
+  pull_request:
+    paths:
+      - docs/**
+
+jobs:
+  docs:
+      name: Build docs
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-python@v5
+          with:
+            python-version: "3.11"
+        - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+        - uses: actions/cache@v4
+          with:
+            key: mkdocs-w90-${{ env.cache_id }}
+            path: .cache
+            restore-keys: |
+              mkdocs-w90-
+        - run: pip install -r docs/requirements.txt
+        - run: mkdocs build -s
+          working-directory: ./docs
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ENABLE_MKDOCS_GIT_COMMITTERS: False

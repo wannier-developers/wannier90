@@ -3,15 +3,24 @@ repos:
   rev: v4.1.0
   hooks:
   - id: check-yaml
+    exclude: (?x)^(
+        docs/mkdocs.yml
+      )$
+  - id: check-yaml
+    name: check yaml unsafe
+    args: ['--unsafe']
+    files: (?x)^(
+        docs/mkdocs.yml
+      )$
   - id: trailing-whitespace
     files: (?x)^(
         config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        tutorials/tutorial\d\d[-]?\w*/.+win
       )$
   - id: end-of-file-fixer
     files: (?x)^(
         config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        tutorials/tutorial\d\d[-]?\w*/.+win
       )$
 - repo: https://github.com/pseewald/fprettify
   rev: v0.3.3
