@@ -2356,7 +2356,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     character(*), intent(in)  :: keyword
     !! Keyword to examine
-    logical, intent(out) :: found
+    logical, intent(inout) :: found
     !! Is keyword present
     integer, intent(in)  :: length
     !! Length of vecotr to read
