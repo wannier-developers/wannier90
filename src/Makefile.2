@@ -138,7 +138,7 @@ wannierise.o: ../wannierise.F90 hamiltonian.o constants.o io.o utility.o types.o
 plot.o: ../plot.F90 constants.o io.o utility.o types.o hamiltonian.o ws_distance.o wannier90_types.o comms.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../plot.F90
 
-ws_distance.o: ../ws_distance.F90 constants.o io.o types.o
+ws_distance.o: ../ws_distance.F90 constants.o io.o types.o utility.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../ws_distance.F90
 
 transport.o: ../transport.F90 constants.o io.o types.o hamiltonian.o wannier90_types.o
