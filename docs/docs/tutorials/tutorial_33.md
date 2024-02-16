@@ -5,7 +5,7 @@
     preparation for this example it may be useful to read Ref.
     [@ibanez-azpiroz-ArXiv2019]*
 
--   Directory: `tutorial/tutorial33/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial33)*
+-   Directory: `tutorial/tutorial33/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial33)*
 
 -   Input files:
 

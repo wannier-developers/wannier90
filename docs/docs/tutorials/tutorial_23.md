@@ -8,7 +8,7 @@ post-processing code of `yambo`.
     `yambo` code, the quasi-particle corrections (QP) are summed to
     Kohn-Sham eigenvalues, while the wavefunctions remain the same. *
 
--   Directory: `tutorials/tutorial23/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial23)*
+-   Directory: `tutorials/tutorial23/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial23)*
 
 -   Input Files
 
@@ -54,7 +54,7 @@ post-processing code of `yambo`.
     grid into the 8x8x8 reduced grid
 
     ```bash title="Terminal"
-    ./k_mapper.py 4 4 4 "../tutorials/tutorial23/WORK/nscf.gw.out"
+    ./k_mapper.py 4 4 4 "..tutorials/tutorial23/WORK/nscf.gw.out"
     ```
 
     Use the output to complete the `yambo.in` input file (you also need

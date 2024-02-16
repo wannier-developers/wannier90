@@ -8,7 +8,7 @@ structure calculations.*
 -   Outline: *Obtain the quantum conductance of a pristine single-walled
     carbon nanotube*
 
--   Directory: `tutorials/tutorial14/periodic` *Files can be downloaded fron [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial15)*
+-   Directory: `tutorials/tutorial14/periodic` *Files can be downloaded fron [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial15)*
 
 -   Input Files
 
@@ -37,7 +37,7 @@ compare the quantum conductance of this system with a defected nanotube.
 -   Outline: *Use the automated LCR routine to investigate the effect of
     a single silicon atom in a infinite (5,0) carbon nanotube.*
 
--   Directory: `tutorial/tutorial15/defected` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial15)*
+-   Directory: `tutorials/tutorial15/defected` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial15)*
 
 -   Input Files
 

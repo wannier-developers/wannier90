@@ -4,7 +4,7 @@
     them in Gaussian cube format*
 
 -   Directory: `tutorials/tutorial28/` *The input files for this tutorials
-    are the same as the ones in Tutorial [5](tutorial_5.md#diamond-mlwfs-for-the-valence-bands) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial28)*
+    are the same as the ones in Tutorial [5](tutorial_5.md#diamond-mlwfs-for-the-valence-bands) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial28)*
 
 -   Input Files
 

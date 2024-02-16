@@ -2,7 +2,8 @@
 
 -   Outline: *Obtain MLWFs for graphite (AB, Bernal)*
 
--   Directory: `tutorials/tutorial10/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial10)*
+-   Directory: `tutorials/tutorial10/` *Files can be downloaded from 
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial10)*
 
 -   Input Files
 

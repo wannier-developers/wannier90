@@ -6,7 +6,7 @@ interface.
 -   Outline: *Calculate the orbital magnetization of ferromagnetic bcc
     Fe by Wannier interpolation.*
 
--   Directory: `tutorials/tutorial19/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial19)*
+-   Directory: `tutorials/tutorial19/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial19)*
 
 -   Input files
 

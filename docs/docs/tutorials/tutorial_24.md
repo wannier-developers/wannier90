@@ -3,7 +3,7 @@
 -   Outline: *Calculate the gyrotropic effects in trigonal right-handed
     Te* Similar to the calculations of [@tsirkin-arxiv17]
 
--   Directory: `tutorials/tutorial24/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial24)*
+-   Directory: `tutorials/tutorial24/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial24)*
 
 -   Input files
 

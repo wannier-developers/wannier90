@@ -12,7 +12,7 @@ post-processing code of `Quantum ESPRESSO` (v6.4 or above).
     methods explained in Ref. [@LinLin-ArXiv2017]. More info on the
     keywords related to the SCDM method may be found in the user_guide.*
 
--   Directory: `tutorials/tutorial27/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial27)*
+-   Directory: `tutorials/tutorial27/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial27)*
 
 -   Input Files: `input_files`, and in the three subfolders
     `isolated, erfc` and `gaussian`. The `input_files` folder contains:

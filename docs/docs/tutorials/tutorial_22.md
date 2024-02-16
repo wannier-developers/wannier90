@@ -10,7 +10,7 @@ interface.
     theoretical background of the symmetry-adapted Wannier functions,
     see R. Sakuma, Phys. Rev. B **87**, 235109 (2013).*
 
--   Directory: `tutorials/tutorial22/s_at_0.00/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial22)*
+-   Directory: `tutorials/tutorial22/s_at_0.00/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial22)*
     \
 
 -   Input Files

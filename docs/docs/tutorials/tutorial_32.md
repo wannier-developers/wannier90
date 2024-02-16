@@ -11,7 +11,7 @@
     can be downloaded from the MaterialsCloud
     website[@MaterialsCloudArchiveEntry].
 
--   Directory: `tutorials/tutorial32/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial32)*
+-   Directory: `tutorials/tutorial32/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial32)*
 
 -   Input files
 

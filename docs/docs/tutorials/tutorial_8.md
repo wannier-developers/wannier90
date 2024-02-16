@@ -4,7 +4,8 @@
     functions for ferromagnetic bcc Fe. Calculate the total and
     orbital-projected density of states by Wannier interpolation.*
 
--   Directory: `tutorials/tutorial08/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial08)*
+-   Directory: `tutorials/tutorial08/` *Files can be downloaded from 
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial08)*
 
 -   Input Files
 

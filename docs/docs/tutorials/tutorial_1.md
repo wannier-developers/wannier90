@@ -6,8 +6,8 @@
     pseudopotentials and a <br> 
     2$\times$2$\times$2 k-point grid. Starting guess: four bond-centred Gaussians.*
 
--   Directory: `tutorials/tutorial01/` *Files can be
-    downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial01)*
+-   Directory: `tutorials/tutorial01/` *Files can be downloaded from 
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial01)*
 
 -   Input Files
 

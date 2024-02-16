@@ -3,7 +3,7 @@
 -   Outline: *Obtain the bandstructure, quantum conductance and density
     of states of a metallic (5,5) carbon nanotube*
 
--   Directory: `tutorials/tutorial13/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial13)*
+-   Directory: `tutorials/tutorial13/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial13)*
 
 -   Input Files
 

@@ -16,7 +16,8 @@ post-processing code of `Quantum ESPRESSO` (v6.3 or above).
     spin-noncollinear systems. For the overview of the use of SCDM
     method to spinless systems, please refer to this [tutorial](tutorial_27.md).
 
--   Directory: `tutorials/tutorial31/`
+-   Directory: `tutorials/tutorial31/` *Files can be downloaded from
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial31)*
 
     The input files for this tutorials are similar to the ones in Tutorial 
     [29](tutorial_29.md#platinum-spin-hall-conductivity), except that a coarser k-point grid is used and that the keywords

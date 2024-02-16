@@ -7,7 +7,8 @@
     [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc) 
     chapter of the User Guide.*
 
--   Directory: `tutorials/tutorial30/`
+-   Directory: `tutorials/tutorial30/` *Files can downloaded from 
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial30)*
 
 -   Input files
 

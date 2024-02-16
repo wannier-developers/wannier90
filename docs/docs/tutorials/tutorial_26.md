@@ -5,7 +5,7 @@
     Ref. [@Marianetti], which is essential reading for this tutorial
     tutorial.*
 
--   Directory: `tutorials/tutorial26/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial26)*
+-   Directory: `tutorials/tutorial26/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial26)*
 
 -   Input files:
 

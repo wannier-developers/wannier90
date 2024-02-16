@@ -7,7 +7,7 @@
 
 ## If you want to use Quantum ESPRESSO {#if-you-want-to-use-quantum-espresso .unnumbered}
 
--   Directory: `tutorials/tutorial16-withqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial16)*
+-   Directory: `tutorials/tutorial16-withqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
 
 -   Input Files
 
@@ -23,7 +23,7 @@
 
 ## If you do not want to use Quantum ESPRESSO {#if-you-do-not-want-to-use-quantum-espresso .unnumbered}
 
--   Directory: `tutorial/tutorial16-noqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial16)*
+-   Directory: `tutorials/tutorial16-noqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
 
 -   Input Files
 

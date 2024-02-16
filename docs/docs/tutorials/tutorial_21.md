@@ -8,7 +8,7 @@ interface.
     symmetry-adapted Wannier functions, see R. Sakuma, Phys. Rev. B
     **87**, 235109 (2013).*
 
--   Directory: `tutorials/tutorial21/atom_centered_As_sp/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial21)*
+-   Directory: `tutorials/tutorial21/atom_centered_As_sp/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial21)*
 
 -   Input Files
 
@@ -58,6 +58,6 @@ interface.
     ```
 
 Each directory creates different kind of symmetry-adapted Wannier
-function. See more detail in `tutorials/tutorial21/README`.
+function. See more detail in `tree/develop/tutorials/tutorial21/README`.
 
 

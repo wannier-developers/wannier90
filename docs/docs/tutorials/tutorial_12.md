@@ -4,7 +4,7 @@
 
 -   Outline: *Obtain MLWFs for the valence states of benzene*
 
--   Directory: `tutorials/tutorial12/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial12)*
+-   Directory: `tutorials/tutorial12/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial12)*
 
 -   Input Files
 

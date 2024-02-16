@@ -4,7 +4,7 @@
 
 -   Outline: *Obtain disentangled MLWFs for strained LaVO$_3$.*
 
--   Directory: `tutorials/tutorial20/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial20)*
+-   Directory: `tutorials/tutorial20/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial20)*
 
 -   Input Files
 

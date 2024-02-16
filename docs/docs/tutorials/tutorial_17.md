@@ -9,7 +9,7 @@ interface.
 -   Outline: *Plot the spin-orbit-coupled bands of ferromagnetic bcc Fe.
     Plot the Fermi-surface contours on a plane in the Brillouin zone.*
 
--   Directory: `tutorials/tutorial17/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial17)*
+-   Directory: `tutorials/tutorial17/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial17)*
 
 -   Input files
 

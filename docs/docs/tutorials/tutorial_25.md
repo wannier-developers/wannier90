@@ -4,7 +4,7 @@
     asymmetric fcc Gallium Arsenide. In preparation for this tutorial it
     may be useful to read Ref. [@ibanez-azpiroz_ab_2018]*
 
--   Directory: `tutorials/tutorial25/` *Files can be downlowaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial25)*
+-   Directory: `tutorials/tutorial25/` *Files can be downlowaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial25)*
 
 -   Input files:
 

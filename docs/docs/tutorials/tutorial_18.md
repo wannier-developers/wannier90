@@ -8,7 +8,7 @@ interface.
     Fe with spin-orbit coupling. In preparation for this tutorial it may
     be useful to read Ref. [@yao-prl04] and Ch. 11 of the User Guide.*
 
--   Directory: `tutorials/tutorial18/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial18)*
+-   Directory: `tutorials/tutorial18/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial18)*
 
 -   Input files
 
