@@ -1,8 +1,9 @@
-name: CI test docs
+name: Build docs
 on:
   pull_request:
-    paths:
-      - docs/**
+  push:
+    branches:
+      - develop
 
 jobs:
   docs:
@@ -26,3 +27,10 @@ jobs:
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             ENABLE_MKDOCS_GIT_COMMITTERS: False
+
+        - name: Deploy to GitHub Pages
+          uses: peaceiris/actions-gh-pages@v3
+          if: github.ref == 'refs/heads/develop'
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            publish_dir: ./docs/site
