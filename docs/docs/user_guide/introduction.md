@@ -15,7 +15,7 @@ register for this mailing list by following the links at
 <https://www.wannier.org/forum.html>. Alternatively, for technical issues
 about the `wannier90` code, check the official repository of
 `wannier90` on GitHub where you may raise issues or ask questions about
-about its functionalities.
+its functionalities.
 
 Finally, many frequently asked questions are answered in
 Appendix [FAQs](appendices/faq.md). An
