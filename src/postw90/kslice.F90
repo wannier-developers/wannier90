@@ -749,8 +749,8 @@ contains
               //"extent=(min(x_coord),max(x_coord),min(y_coord)," &
               //"max(y_coord)))"
             write (scriptunit, '(a)') "else: "
-            write (scriptunit, '(a)') "  valint = ml.griddata(points_x," &
-              //"points_y, val_log, xint, yint)"
+            write (scriptunit, '(a)') "  valint = interpolate.griddata((points_x," &
+              //"points_y), val_log, (grid_x,grid_y), method='nearest') # or 'cubic' or 'nearest'"
             write (scriptunit, '(a)') "  mn=int(np.floor(valint.min()))"
             write (scriptunit, '(a)') "  mx=int(np.ceil(valint.max()))"
             write (scriptunit, '(a)') "  ticks=range(mn,mx+1)"
@@ -788,8 +788,8 @@ contains
               //"extent=(min(x_coord),max(x_coord),min(y_coord)," &
               //"max(y_coord)))"
             write (scriptunit, '(a)') "else: "
-            write (scriptunit, '(a)') "  valint = ml.griddata(points_x," &
-              //"points_y, val, xint, yint)"
+            write (scriptunit, '(a)') "  valint = interpolate.griddata((points_x," &
+              //"points_y), val_log, (grid_x,grid_y), method='nearest') # or 'cubic' or 'nearest'"
             write (scriptunit, '(a)') "  pl.imshow(valint,origin='lower'," &
               //"extent=(min(xint),max(xint),min(yint),max(yint)))"
             write (scriptunit, '(a)') "cbar=pl.colorbar()"
@@ -1105,7 +1105,6 @@ contains
 
     write (scriptunit, '(a)') "import pylab as pl"
     write (scriptunit, '(a)') "import numpy as np"
-    write (scriptunit, '(a)') "import matplotlib.mlab as ml"
     write (scriptunit, '(a)') "from scipy import interpolate"
     write (scriptunit, '(a)') "from collections import OrderedDict"
     write (scriptunit, '(a)') " "
