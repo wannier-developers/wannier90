@@ -1,5 +1,6 @@
 site_name: Wannier90 Documentation
-site_url: https://wannier.org/
+site_url: https://wannier-developers.github.io/wannier90/
+# site_url: https://wannier.org/
 site_author: Wannier90 Developers
 site_description: >-
   Wannier90 user guide and tutorials
