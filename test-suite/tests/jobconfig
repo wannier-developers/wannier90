@@ -133,6 +133,11 @@ program = WANNIER90_UMAT
 inputs_args = ('gaas.win', '')
 output = gaas_u.mat
 
+[testw90_write_u_matrices_disent]
+program = WANNIER90_UMAT
+inputs_args = ('wannier.win', '')
+output = wannier_u_dis.mat
+
 # Benzene, valence and conduction
 [testw90_benzene_gamma_valcond/]
 program = WANNIER90_WOUT_OK

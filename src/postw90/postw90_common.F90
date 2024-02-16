@@ -65,15 +65,15 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_stopwatch_start, io_stopwatch_stop
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
-    use w90_comms, only: mpirank, w90comm_type, comms_bcast
+    use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
 
     type(print_output_type), intent(in) :: print_output
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -92,8 +92,7 @@ contains
     if (effective_model) then
       if (on_root) then
         ! nrpts is read from file, together with num_wann
-        file_unit = io_file_unit()
-        open (file_unit, file=trim(seedname)//'_HH_R.dat', form='formatted', &
+        open (newunit=file_unit, file=trim(seedname)//'_HH_R.dat', form='formatted', &
               status='old', err=101)
         read (file_unit, *) !header
         read (file_unit, *) num_wann_loc
@@ -171,13 +170,13 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time
-    use w90_comms, only: mpirank, mpisize, w90comm_type, comms_bcast
+    use w90_io, only: io_date, io_time
+    use w90_comms, only: mpirank, mpisize, w90_comm_type, comms_bcast
     use w90_postw90_types, only: kpoint_dist_type
 
     ! arguments
     type(kpoint_dist_type), intent(inout) :: kpoint_dist
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     ! local variables
@@ -192,9 +191,8 @@ contains
 
     if (my_node_id == 0) on_root = .true.
 
-    k_unit = io_file_unit()
     if (on_root) then
-      open (unit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
+      open (newunit=k_unit, file='kpoint.dat', status='old', form='formatted', err=106)
       read (k_unit, *) kpoint_dist%num_int_kpts
     end if
     call comms_bcast(kpoint_dist%num_int_kpts, 1, error, comm)
@@ -295,8 +293,8 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_file_unit, io_date, io_time
-    use w90_comms, only: mpirank, w90comm_type, comms_bcast
+    use w90_io, only: io_date, io_time
+    use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_types
     use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
       pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
@@ -319,12 +317,12 @@ contains
     type(pw90_gyrotropic_type), intent(inout) :: pw90_gyrotropic
     type(pw90_geninterp_mod_type), intent(inout) :: pw90_geninterp
     type(pw90_boltzwann_type), intent(inout) :: pw90_boltzwann
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     real(kind=dp), allocatable, intent(inout) :: fermi_energy_list(:)
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), pointer, intent(inout) :: eigval(:, :)
     real(kind=dp), intent(inout) :: real_lattice(3, 3)
     real(kind=dp), intent(inout) :: scissors_shift
     integer, intent(inout) :: num_kpts
@@ -784,15 +782,15 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_file_unit, io_date, io_time
+    use w90_io, only: io_date, io_time
     use w90_types, only: dis_manifold_type, wannier_data_type
-    use w90_comms, only: w90comm_type, mpirank, comms_bcast
+    use w90_comms, only: w90_comm_type, mpirank, comms_bcast
 
     implicit none
 
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(wannier_data_type), intent(inout) :: wannier_data
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
     integer, intent(in) :: num_valence_bands
@@ -807,18 +805,18 @@ contains
 
     if (mpirank(comm) == 0) on_root = .true.
 
-    if (.not. on_root) then
-      ! wannier_centres is allocated in w90_wannier90_readwrite_read, so only on root node
-      ! It is then read in w90_wannier90_readwrite_read_chpkt
-      ! Therefore, now we need to allocate it on all nodes, and then broadcast it
-      allocate (wannier_data%centres(3, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist', comm)
-        return
-      endif
-    end if
-    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
-    if (allocated(error)) return
+!    if (.not. on_root) then
+!      ! wannier_centres is allocated in w90_wannier90_readwrite_read, so only on root node
+!      ! It is then read in w90_wannier90_readwrite_read_chpkt
+!      ! Therefore, now we need to allocate it on all nodes, and then broadcast it
+!      allocate (wannier_data%centres(3, num_wann), stat=ierr)
+!      if (ierr /= 0) then
+!        call set_error_alloc(error, 'Error allocating wannier_centres in pw90common_wanint_data_dist', comm)
+!        return
+!      endif
+!    end if
+!    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
+!    if (allocated(error)) return
 
     ! -------------------
     ! Ivo: added 8april11
@@ -1030,7 +1028,7 @@ contains
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1040,7 +1038,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1119,7 +1117,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1129,7 +1127,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1216,7 +1214,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1226,7 +1224,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1333,7 +1331,7 @@ contains
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1343,7 +1341,7 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
@@ -1482,7 +1480,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1492,7 +1490,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1593,7 +1591,7 @@ contains
     use w90_types, only: ws_region_type, wannier_data_type, ws_distance_type
     use w90_ws_distance, only: ws_translate_dist
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1603,7 +1601,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1701,7 +1699,7 @@ contains
     use w90_ws_distance, only: ws_translate_dist
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat
     use w90_postw90_types, only: wigner_seitz_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
 
     implicit none
 
@@ -1711,7 +1709,7 @@ contains
     type(ws_distance_type), intent(inout) :: ws_distance
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
@@ -1905,7 +1903,7 @@ contains
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: print_output_type, timer_list_type
     use w90_utility, only: utility_metric
-    use w90_comms, only: w90comm_type, mpirank
+    use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_types, only: wigner_seitz_type
 
     ! irvec(i,irpt)     The irpt-th Wigner-Seitz grid point has components
@@ -1916,7 +1914,7 @@ contains
     ! arguments
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(w90_error_type), allocatable, intent(out) :: error
 

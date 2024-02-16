@@ -93,6 +93,16 @@ $(DYNLIBRARY): $(OBJS) $(OBJS) $(OBJS_LIBV1)
 clean:
 	rm -f *.o *.mod *.MOD *.obj
 
+library_interface.o : ../library_interface.F90 \
+	comms.o constants.o error_base.o io.o kmesh.o overlap.o plot.o transport.o \
+	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../library_interface.F90
+
+c_interface.o : ../c_interface.F90 \
+	library_interface.o comms.o constants.o error_base.o io.o kmesh.o overlap.o plot.o transport.o \
+	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../c_interface.F90
+
 constants.o: ../constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../constants.F90
 
@@ -188,13 +198,6 @@ postw90_types.o: $(POSTDIR)postw90_types.F90 comms.o types.o utility.o constants
 
 postw90_readwrite.o: $(POSTDIR)postw90_readwrite.F90 comms.o postw90_types.o types.o utility.o constants.o io.o error.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $(POSTDIR)postw90_readwrite.F90
-
-wannier_lib.o: ./constants.o ./io.o ./utility.o ./types.o \
-	./hamiltonian.o ./kmesh.o ./overlap.o ./disentangle.o \
-	./wannierise.o ./plot.o ./transport.o ./wannier90_types.o \
-	./wannier90_readwrite.o ../wannier_lib.F90
-	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../wannier_lib.F90
-
 
 .PHONY: wannier libs post clean mpi_test w90spn2spn
 
