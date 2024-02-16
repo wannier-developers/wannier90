@@ -21,6 +21,8 @@ module w90_dos
   !! Compute Density of States
 
   use w90_constants, only: dp
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+    set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -41,7 +43,7 @@ contains
                       wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, u_matrix, v_matrix, &
                       eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
                       num_wann, effective_model, have_disentangled, spin_decomp, seedname, stdout, &
-                      comm)
+                      timer, error, comm)
     !================================================!
     !
     !! Computes the electronic density of states. Can
@@ -51,15 +53,15 @@ contains
     !
     !================================================!
 
-    use w90_comms, only: comms_reduce, w90comm_type, mpirank, mpisize
+    use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
       pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
       kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, w90_system_type, ws_distance_type
+      ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_get_oper, only: get_HH_R, get_SS_R
-    use w90_io, only: io_error, io_file_unit, io_date, io_stopwatch
+    use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
 
@@ -79,7 +81,9 @@ contains
     type(wannier_data_type), intent(in)          :: wannier_data
     type(ws_distance_type), intent(inout)        :: ws_distance
     type(wigner_seitz_type), intent(inout)       :: wigner_seitz
-    type(w90comm_type), intent(in)               :: comm
+    type(timer_list_type), intent(inout)         :: timer
+    type(w90_comm_type), intent(in)               :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
     complex(kind=dp), allocatable, intent(inout) :: HH_R(:, :, :)
     complex(kind=dp), allocatable, intent(inout) :: SS_R(:, :, :, :)
@@ -131,29 +135,46 @@ contains
     d_omega = (pw90_dos%energy_max - pw90_dos%energy_min)/(num_freq - 1)
 
     allocate (dos_energyarray(num_freq), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating dos_energyarray in ' &
-                                 //'dos subroutine', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating dos_energyarray in dos subroutine', comm)
+      return
+    endif
+
     do ifreq = 1, num_freq
       dos_energyarray(ifreq) = pw90_dos%energy_min + real(ifreq - 1, dp)*d_omega
     end do
 
     allocate (HH(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating HH in dos', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating HH in dos', comm)
+      return
+    endif
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating delHH in dos', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating delHH in dos', comm)
+      return
+    endif
     allocate (UU(num_wann, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating UU in dos', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating UU in dos', comm)
+      return
+    endif
 
-    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, eigval, &
-                  real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
-                  w90_system%num_valence_bands, effective_model, have_disentangled, seedname, stdout, &
-                  comm)
+    call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
+                  eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
+                  w90_system%num_valence_bands, effective_model, have_disentangled, seedname, &
+                  stdout, timer, error, comm)
+
+    if (allocated(error)) return
 
     if (spin_decomp) then
       ndim = 3
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
                     wigner_seitz%irvec, wigner_seitz%nrpts, num_bands, num_kpts, num_wann, &
-                    have_disentangled, seedname, stdout, comm)
+                    have_disentangled, seedname, stdout, timer, error, comm)
+
+      if (allocated(error)) return
+
     else
       ndim = 1
     end if
@@ -163,7 +184,7 @@ contains
 
     if (print_output%iprint > 0) then
 
-      if (print_output%timing_level > 1) call io_stopwatch('dos', 1, stdout, seedname)
+      if (print_output%timing_level > 1) call io_stopwatch_start('dos', timer)
 
 !       write(stdout,'(/,1x,a)') '============'
 !       write(stdout,'(1x,a)')   'Calculating:'
@@ -212,26 +233,36 @@ contains
       do loop_tot = 1, kpoint_dist%num_int_kpts_on_node(my_node_id)
         kpt(:) = kpoint_dist%int_kpts(:, loop_tot)
         if (pw90_dos%smearing%use_adaptive) then
-          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
-                                   ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                   del_eig, eig, eigval, kpt, real_lattice, &
-                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                   w90_system%num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm)
+          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, delHH, &
+                                   HH, HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                   real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                   num_wann, w90_system%num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+
           call dos_get_levelspacing(del_eig, pw90_dos%kmesh%mesh, levelspacing_k, num_wann, &
                                     recip_lattice)
-          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
-                         pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
-                         pw90_dos%smearing, levelspacing_k=levelspacing_k, UU=UU)
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
+                         dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                         pw90_dos%smearing, error, comm, levelspacing_k=levelspacing_k, UU=UU)
+          if (allocated(error)) return
+
         else
-          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
-                                         kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
-          call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
-                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
-                         SS_R, pw90_dos%smearing, UU=UU)
+          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
+          if (allocated(error)) return
+
+          call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
+          if (allocated(error)) return
+
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
+                         dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                         pw90_dos%smearing, error, comm, UU=UU)
+          if (allocated(error)) return
+
         end if
         dos_all = dos_all + dos_k*kpoint_dist%weight(loop_tot)
       end do
@@ -251,26 +282,36 @@ contains
         kpt(2) = real(loop_y, dp)/real(pw90_dos%kmesh%mesh(2), dp)
         kpt(3) = real(loop_z, dp)/real(pw90_dos%kmesh%mesh(3), dp)
         if (pw90_dos%smearing%use_adaptive) then
-          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, print_output, wannier_data, &
-                                   ws_distance, wigner_seitz, delHH, HH, HH_R, u_matrix, UU, v_matrix, &
-                                   del_eig, eig, eigval, kpt, real_lattice, &
-                                   scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
-                                   w90_system%num_valence_bands, effective_model, have_disentangled, &
-                                   seedname, stdout, comm)
+          call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
+                                   print_output, wannier_data, ws_distance, wigner_seitz, delHH, &
+                                   HH, HH_R, u_matrix, UU, v_matrix, del_eig, eig, eigval, kpt, &
+                                   real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
+                                   num_wann, w90_system%num_valence_bands, effective_model, &
+                                   have_disentangled, seedname, stdout, timer, error, comm)
+          if (allocated(error)) return
+
           call dos_get_levelspacing(del_eig, pw90_dos%kmesh%mesh, levelspacing_k, num_wann, &
                                     recip_lattice)
-          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
-                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
-                         SS_R, pw90_dos%smearing, levelspacing_k=levelspacing_k, UU=UU)
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
+                         dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                         pw90_dos%smearing, error, comm, levelspacing_k=levelspacing_k, UU=UU)
+          if (allocated(error)) return
+
         else
-          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, HH_R, &
-                                         kpt, real_lattice, mp_grid, 0, num_wann, seedname, stdout)
-          call utility_diagonalize(HH, num_wann, eig, UU, stdout, seedname)
-          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, dos_k, &
-                         num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
-                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, &
-                         SS_R, pw90_dos%smearing, UU=UU)
+          call pw90common_fourier_R_to_k(ws_region, wannier_data, ws_distance, wigner_seitz, HH, &
+                                         HH_R, kpt, real_lattice, mp_grid, 0, num_wann, error, comm)
+          if (allocated(error)) return
+
+          call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
+          if (allocated(error)) return
+
+          call dos_get_k(w90_system%num_elec_per_state, ws_region, kpt, dos_energyarray, eig, &
+                         dos_k, num_wann, wannier_data, real_lattice, mp_grid, pw90_dos, &
+                         spin_decomp, pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                         pw90_dos%smearing, error, comm, UU=UU)
+          if (allocated(error)) return
+
         end if
         dos_all = dos_all + dos_k*kweight
       end do
@@ -279,28 +320,37 @@ contains
 
     ! Collect contributions from all nodes
     !
-    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', stdout, seedname, comm)
+    call comms_reduce(dos_all(1, 1), num_freq*ndim, 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') 'Output data files:'
       write (stdout, '(/,3x,a)') trim(seedname)//'-dos.dat'
-      dos_unit = io_file_unit()
-      open (dos_unit, FILE=trim(seedname)//'-dos.dat', STATUS='UNKNOWN', &
+      open (newunit=dos_unit, FILE=trim(seedname)//'-dos.dat', STATUS='UNKNOWN', &
             FORM='FORMATTED')
       do ifreq = 1, num_freq
         omega = dos_energyarray(ifreq)
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
       enddo
       close (dos_unit)
-      if (print_output%timing_level > 1) call io_stopwatch('dos', 2, stdout, seedname)
+      if (print_output%timing_level > 1) call io_stopwatch_stop('dos', timer)
     end if
 
     deallocate (HH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating HH in dos_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating HH in dos_main', comm)
+      return
+    endif
     deallocate (delHH, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating delHH in dos_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating delHH in dos_main', comm)
+      return
+    endif
     deallocate (UU, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating UU in dos_main', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating UU in dos_main', comm)
+      return
+    endif
 
   end subroutine dos_main
 
@@ -536,10 +586,9 @@ contains
   !================================================!
   subroutine dos_get_k(num_elec_per_state, ws_region, kpt, EnergyArray, eig_k, dos_k, num_wann, &
                        wannier_data, real_lattice, mp_grid, pw90_dos, spin_decomp, &
-                       pw90_spin, ws_distance, wigner_seitz, stdout, seedname, HH_R, SS_R, &
-                       smearing, levelspacing_k, UU)
+                       pw90_spin, ws_distance, wigner_seitz, HH_R, SS_R, &
+                       smearing, error, comm, levelspacing_k, UU)
     !================================================!
-    use w90_io, only: io_error
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type, &
@@ -547,6 +596,7 @@ contains
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
+    use w90_comms, only: w90_comm_type
 
     ! Arguments
     type(pw90_dos_mod_type), intent(in) :: pw90_dos
@@ -556,12 +606,13 @@ contains
     type(wigner_seitz_type), intent(in) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(pw90_smearing_type), intent(in) :: smearing
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_elec_per_state
     integer, intent(in) :: num_wann
     !integer, intent(in) :: smr_index
-    integer, intent(in) :: stdout
 
     real(kind=dp), intent(in) :: kpt(3)
     real(kind=dp), intent(in) :: eig_k(:)
@@ -578,7 +629,6 @@ contains
     complex(kind=dp), intent(in), optional :: UU(:, :)
 
     logical, intent(in) :: spin_decomp
-    character(len=50), intent(in) :: seedname
 
     ! local variables
     real(kind=dp) :: eta_smr, arg ! Adaptive smearing
@@ -588,13 +638,17 @@ contains
     logical :: DoSmearing
 
     if (present(levelspacing_k)) then
-      if (.not. smearing%use_adaptive) &
-        call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'without adptative smearing', stdout, seedname)
+      if (.not. smearing%use_adaptive) then
+        call set_error_input(error, 'Cannot call doskpt with levelspacing_k and ' &
+                             //'without adptative smearing', comm)
+        return
+      endif
     else
-      if (smearing%use_adaptive) &
-        call io_error('Cannot call doskpt without levelspacing_k and ' &
-                      //'with adptative smearing', stdout, seedname)
+      if (smearing%use_adaptive) then
+        call set_error_input(error, 'Cannot call doskpt without levelspacing_k and ' &
+                             //'with adptative smearing', comm)
+        return
+      endif
     end if
 
     r_num_elec_per_state = real(num_elec_per_state, kind=dp)
@@ -603,7 +657,9 @@ contains
     !
     if (spin_decomp) then
       call spin_get_nk(ws_region, pw90_spin, wannier_data, ws_distance, wigner_seitz, HH_R, SS_R, &
-                       kpt, real_lattice, spn_nk, mp_grid, num_wann, seedname, stdout)
+                       kpt, real_lattice, spn_nk, mp_grid, num_wann, error, comm)
+      if (allocated(error)) return
+
     endif
 
     binwidth = EnergyArray(2) - EnergyArray(1)
@@ -649,7 +705,8 @@ contains
         ! kind of smearing read from input (internal smearing_index variable)
         if (DoSmearing) then
           arg = (EnergyArray(loop_f) - eig_k(i))/eta_smr
-          rdum = utility_w0gauss(arg, smearing%type_index, stdout, seedname)/eta_smr
+          rdum = utility_w0gauss(arg, smearing%type_index, error, comm)/eta_smr
+          if (allocated(error)) return
         else
           rdum = 1._dp/(EnergyArray(2) - EnergyArray(1))
         end if

@@ -20,26 +20,26 @@ program postw90
 
   !! The postw90 program
 
+  use w90_berry, only: berry_main
+  use w90_boltzwann
+  use w90_comms, only: comms_bcast, comms_barrier, w90_comm_type, mpirank, mpisize
   use w90_constants, only: dp, eps6, pw90_physical_constants_type
-  use w90_types
-  use w90_postw90_types
-  use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header
-  use w90_postw90_readwrite
+  use w90_dos
+  use w90_error
+  use w90_geninterp
+  use w90_gyrotropic
   use w90_io
   use w90_kmesh
-  use w90_comms, only: comms_end, comms_bcast, comms_barrier, w90comm_type, mpirank, mpisize
-  use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
-
-  use w90_dos
-  use w90_berry, only: berry_main
-  use w90_gyrotropic
-  use w90_spin
   use w90_kpath
   use w90_kslice
-
-  use w90_boltzwann
-  use w90_geninterp
+  use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
+    pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
+  use w90_postw90_readwrite
+  use w90_postw90_types
+  use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header, &
+    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+  use w90_spin
+  use w90_types
 
 #ifdef MPI
 #  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
@@ -60,16 +60,18 @@ program postw90
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
-  type(pw90_physical_constants_type) :: physics
-  integer :: nkp, len_seedname
-  integer :: stdout
-  character(len=50) :: seedname
-  logical :: have_gamma
-  real(kind=dp) :: time0, time1, time2
-  character(len=9) :: stat, pos
-  logical :: wpout_found, werr_found, dryrun
-  character(len=50) :: prog
   character(len=20) :: checkpoint
+  character(len=:), allocatable :: prog
+  character(len=:), allocatable :: seednamedyn
+  character(len=50) :: seedname
+  character(len=9) :: stat, pos
+  integer :: nkp, len_seedname
+  integer :: stdout, stderr
+  logical :: have_gamma
+  logical :: wpout_found, dryrun !, werr_found
+  real(kind=dp) :: time0, time1, time2
+  type(pw90_physical_constants_type) :: physics
+
   ! this is a dummy that is not used in postw90, DO NOT use
   complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
 
@@ -85,7 +87,8 @@ program postw90
   complex(kind=dp), allocatable :: CC_R(:, :, :, :, :) ! <0|r_alpha.H(r-R)_beta|R>
   !! $$\langle 0n | \hat{r}_{\alpha}.H.(\hat{r}- R)_{\beta} | Rm \rangle$$
 
-  complex(kind=dp), allocatable :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
+  ! This is unused because get_FF_R doesn't seem to be called anywhere BGS
+  !complex(kind=dp), allocatable :: FF_R(:, :, :, :, :) ! <0|r_alpha.(r-R)_beta|R>
   !! $$\langle 0n | \hat{r}_{\alpha}.(\hat{r}-R)_{\beta} | Rm \rangle$$
 
   complex(kind=dp), allocatable :: SS_R(:, :, :, :) ! <0n|sigma_x,y,z|Rm>
@@ -108,22 +111,24 @@ program postw90
   complex(kind=dp), allocatable :: SBB_R(:, :, :, :, :) ! <0n|sigma_x,y,z.H.(r-R)_alpha|Rm>
   !! $$\langle 0n | \sigma_{x,y,z}.H.(\hat{r}-R)_{\alpha}  | Rm \rangle$$
 
-  ! w90_parameters stuff
-  type(print_output_type) :: verbose
-  integer :: optimisation
-  type(w90_system_type) :: system
   integer, allocatable :: exclude_bands(:)
-  integer :: num_exclude_bands
-  type(ws_region_type) :: ws_region
-  type(wannier_data_type) :: wann_data
-  type(kmesh_input_type) :: kmesh_data
-  type(kmesh_info_type) :: kmesh_info
-  real(kind=dp), allocatable :: kpt_latt(:, :)
-  integer :: num_kpts
-  type(dis_manifold_type) :: dis_window
-  real(kind=dp), allocatable :: fermi_energy_list(:)
   integer :: fermi_n
+  integer :: num_exclude_bands
+  integer :: num_kpts
+  integer :: optimisation
+  real(kind=dp), allocatable :: fermi_energy_list(:)
+  real(kind=dp), allocatable :: kpt_latt(:, :)
   type(atom_data_type) :: atoms
+  type(dis_manifold_type) :: dis_window
+  type(kmesh_info_type) :: kmesh_info
+  type(kmesh_input_type) :: kmesh_data
+  type(print_output_type) :: verbose
+  type(timer_list_type) :: timer
+  type(w90_system_type) :: system
+  type(wannier_data_type) :: wann_data
+  type(ws_region_type) :: ws_region
+  type(settings_type) :: settings
+  !! container for input file (.win) data and options set via library interface
 
   integer :: num_bands
   !! Number of bands
@@ -136,7 +141,7 @@ program postw90
   ! a_matrix      = projection of trial orbitals on bloch states
   ! m_matrix_orig = overlap of bloch states
   !BGS disentangle, hamiltonian, a wannierise print, and postw90/get_oper
-  real(kind=dp), allocatable :: eigval(:, :)
+  real(kind=dp), pointer :: eigval(:, :)
 
   ! u_matrix_opt in postw90 only for generation of v_matrix
   ! u_matrix_opt gives the num_wann dimension optimal subspace from the
@@ -150,12 +155,7 @@ program postw90
   integer :: mp_grid(3)
   !! Dimensions of the Monkhorst-Pack grid
 
-  integer :: num_proj
-
   real(kind=dp) :: real_lattice(3, 3)
-
-  !parameters derived from input
-  !real(kind=dp) :: recip_lattice(3, 3)
 
   type(kpoint_path_type) :: spec_points
   ! end w90_parameters
@@ -164,69 +164,84 @@ program postw90
 
   logical :: eig_found ! used to control broadcast of eigval
 
-  type(pw90_oper_read_type) :: postw90_oper
-  type(pw90_spin_mod_type) :: pw90_spin
-  type(pw90_band_deriv_degen_type) :: pw90_ham
-  type(pw90_kpath_mod_type) :: kpath
-  type(pw90_kslice_mod_type) :: kslice
-
-  ! module  d o s
-  ! No need to save 'dos_plot', only used here (introduced 'dos_task')
-  logical :: dos_plot
-
-  type(pw90_dos_mod_type) :: dos_data
-  type(pw90_berry_mod_type) :: berry
-  type(pw90_spin_hall_type) :: spin_hall
-  type(pw90_gyrotropic_type) :: gyrotropic
-  type(pw90_geninterp_mod_type) :: geninterp
-  type(pw90_boltzwann_type) :: boltz
-  ! end w90_postw90_types
-  ! from postw90_common
   complex(kind=dp), allocatable :: v_matrix(:, :, :)
-  type(wigner_seitz_type) :: ws_vec
-  type(kpoint_dist_type) :: kpt_dist
+
+  integer :: my_node_id, num_nodes, ierr
+
+  logical :: effective_model = .false.
   logical :: gamma_only
   logical :: have_disentangled
-  logical :: effective_model = .false.
+  logical :: on_root
+  logical :: lpp ! logical preprocessing flag (used only by w90)
 
-  ! local vars
-  integer :: my_node_id, num_nodes, ierr
-  logical :: on_root = .false.
-  type(w90comm_type) :: comm
-  type(ws_distance_type) :: ws_distance
-  type(pw90_extra_io_type) :: write_data
   real(kind=dp) :: omega_invariant
+
+  type(kpoint_dist_type) :: kpt_dist
+  type(pw90_band_deriv_degen_type) :: pw90_ham
+  type(pw90_berry_mod_type) :: berry
+  type(pw90_boltzwann_type) :: boltz
+  type(pw90_dos_mod_type) :: dos_data
+  type(pw90_extra_io_type) :: write_data
+  type(pw90_geninterp_mod_type) :: geninterp
+  type(pw90_gyrotropic_type) :: gyrotropic
+  type(pw90_kpath_mod_type) :: kpath
+  type(pw90_kslice_mod_type) :: kslice
+  type(pw90_oper_read_type) :: postw90_oper
+  type(pw90_spin_hall_type) :: spin_hall
+  type(pw90_spin_mod_type) :: pw90_spin
+  type(w90_comm_type) :: comm
+  type(wigner_seitz_type) :: ws_vec
+  type(ws_distance_type) :: ws_distance
+
+  ! error condition
+  type(w90_error_type), allocatable :: error
+
+  stdout = 6 ! stdout stream
+  stderr = 0 ! stderr stream
+  prog = "postw90" ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
+  seednamedyn = "wannier"
 
 #ifdef MPI
   comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)  ! JJ, fixme, what are stdout, seedname here?  unassigned!
+  if (ierr .ne. 0) then
+    call set_error_fatal(error, 'MPI initialisation error', comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+  endif
 #endif
 
   my_node_id = mpirank(comm)
   num_nodes = mpisize(comm)
+  on_root = .false.
   if (my_node_id == 0) on_root = .true.
+
+  ! global inits (non-type based) from readwrite files
+  optimisation = 3
+  num_wann = -99
+  eig_found = .false.
+  scissors_shift = 0.0_dp
+  dis_window%win_min = -1.0_dp
+  dis_window%win_max = 0.0_dp
+  !effective_model = .false.
+  ! end global inits
 
   if (on_root) then
     time0 = io_time()
-    prog = 'postw90'
-    call io_commandline(prog, dryrun, seedname)
+    call io_commandline(prog, dryrun, lpp, seednamedyn)
+    seedname = seednamedyn(1:len(seednamedyn))
     len_seedname = len(seedname)
   end if
-  call comms_bcast(len_seedname, 1, stdout, seedname, comm)
-  call comms_bcast(seedname, len_seedname, stdout, seedname, comm)
-  call comms_bcast(dryrun, 1, stdout, seedname, comm)
+
+  call comms_bcast(len_seedname, 1, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+  call comms_bcast(seedname, len_seedname, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+  call comms_bcast(dryrun, 1, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
-    ! If an error file (generated by postw90) exists, I delete it
-    ! Note: I do it only for the error file generated from the root node;
-    ! If error files generated by other nodes exist, I don't do anything for them
-    inquire (file=trim(seedname)//'.node_00000.werr', exist=werr_found)
-    if (werr_found) then
-      stdout = io_file_unit()
-      open (unit=stdout, file=trim(seedname)//'.node_00000.werr', status='old', position='append')
-      close (stdout, status='delete')
-    end if
+    ! new error handler: only root writes error to logfile
+    open (newunit=stderr, file=trim(seedname)//'.werr')
 
     inquire (file=trim(seedname)//'.wpout', exist=wpout_found)
     if (wpout_found) then
@@ -236,38 +251,39 @@ program postw90
     endif
     pos = 'append'
 
-    stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
+    open (newunit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
 
     call w90_readwrite_write_header(physics%bohr_version_str, physics%constants_version_str1, &
-                                    physics%constants_version_str2, stdout)
-    if (num_nodes == 1) then
-#ifdef MPI
-      write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
-#else
-      write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
-#endif
-    else
-      write (stdout, '(/,1x,a,i3,a/)') &
-        'Running in parallel on ', num_nodes, ' CPUs'
-    endif
+                                    physics%constants_version_str2, num_nodes, stdout)
   end if
 
   ! Read onto the root node all the input parameters from seendame.win,
   ! as well as the energy eigenvalues on the ab-initio q-mesh from seedname.eig
 
-  if (on_root) then
-    call w90_postw90_readwrite_read(ws_region, system, exclude_bands, verbose, wann_data, kmesh_data, &
-                                    kpt_latt, num_kpts, dis_window, fermi_energy_list, atoms, num_bands, &
-                                    num_wann, eigval, mp_grid, real_lattice, spec_points, &
-                                    pw90_calcs, postw90_oper, scissors_shift, effective_model, pw90_spin, &
-                                    pw90_ham, kpath, kslice, dos_data, berry, spin_hall, gyrotropic, &
-                                    geninterp, boltz, eig_found, write_data, gamma_only, physics%bohr, &
-                                    optimisation, stdout, seedname)
+  ! copy input file to in_data structure
+  call w90_readwrite_in_file(settings, seedname, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
+  call w90_postw90_readwrite_read(settings, ws_region, system, exclude_bands, verbose, &
+                                  kmesh_data, kpt_latt, num_kpts, dis_window, fermi_energy_list, &
+                                  atoms, num_bands, num_wann, eigval, mp_grid, real_lattice, &
+                                  spec_points, pw90_calcs, postw90_oper, scissors_shift, &
+                                  effective_model, pw90_spin, pw90_ham, kpath, kslice, dos_data, &
+                                  berry, spin_hall, gyrotropic, geninterp, boltz, eig_found, &
+                                  write_data, gamma_only, physics%bohr, optimisation, stdout, &
+                                  seedname, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+
+  call w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+  call w90_readwrite_read_final_alloc((num_bands > num_wann), dis_window, wann_data, num_wann, &
+                                      num_bands, num_kpts, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+
+  if (on_root) then
     call w90_postw90_readwrite_write(verbose, system, fermi_energy_list, atoms, num_wann, &
-                                     real_lattice, spec_points, pw90_calcs, postw90_oper, scissors_shift, &
-                                     pw90_spin, kpath, kslice, dos_data, berry, &
+                                     real_lattice, spec_points, pw90_calcs, postw90_oper, &
+                                     scissors_shift, pw90_spin, kpath, kslice, dos_data, berry, &
                                      gyrotropic, geninterp, boltz, write_data, optimisation, stdout)
     time1 = io_time()
     write (stdout, '(1x,a25,f11.3,a)') &
@@ -287,13 +303,17 @@ program postw90
       ! the position operator in reciprocal space. Also need
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
-
-      call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                     num_kpts, gamma_only, seedname, stdout)
-      time2 = io_time()
-      write (stdout, '(1x,a25,f11.3,a)') &
-        'Time to get kmesh        ', time2 - time1, ' (sec)'
     endif
+  endif ! on_root
+
+  call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
+                 num_kpts, gamma_only, stdout, timer, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+
+  if (on_root) then
+    time2 = io_time()
+    write (stdout, '(1x,a25,f11.3,a)') &
+      'Time to get kmesh        ', time2 - time1, ' (sec)'
 
     ! GP, May 10, 2012: for the moment I leave this commented
     ! since we need first to tune that routine so that it doesn't
@@ -315,13 +335,17 @@ program postw90
   endif
 
   ! We now distribute a subset of the parameters to the other nodes
-
-  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, num_kpts, &
-                                                      dis_window, system, fermi_energy_list, num_bands, num_wann, &
-                                                      eigval, mp_grid, real_lattice, pw90_calcs, &
-                                                      scissors_shift, effective_model, pw90_spin, pw90_ham, kpath, &
-                                                      kslice, dos_data, berry, spin_hall, gyrotropic, geninterp, &
-                                                      boltz, eig_found, stdout, seedname, comm)
+  ! surely this function name is toooo long? --JJ fixme
+!  call pw90common_wanint_w90_wannier90_readwrite_dist(verbose, ws_region, kmesh_info, kpt_latt, &
+!                                                      num_kpts, dis_window, system, &
+!                                                      fermi_energy_list, num_bands, num_wann, &
+!                                                      eigval, mp_grid, real_lattice, pw90_calcs, &
+!                                                      scissors_shift, effective_model, pw90_spin, &
+!                                                      pw90_ham, kpath, kslice, dos_data, berry, &
+!                                                      spin_hall, gyrotropic, geninterp, &
+!                                                      boltz, eig_found, error, comm)
+!  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+!
   fermi_n = 0
   if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
 
@@ -330,14 +354,27 @@ program postw90
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
 
-    if (on_root) then
-      num_exclude_bands = 0
-      if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
-      call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, m_matrix, &
-                                    u_matrix, u_matrix_opt, real_lattice, omega_invariant, &
-                                    mp_grid, num_bands, num_exclude_bands, num_kpts, num_wann, checkpoint, &
-                                    have_disentangled, .true., seedname, stdout)
-    endif
+    !-----------------JJ
+    !if (on_root) then
+    allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
+    allocate (u_matrix(num_bands, num_wann, num_kpts), stat=ierr)
+    allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
+    !else
+    !  allocate (m_matrix(0, 0, 0, 0))
+    !endif
+    !m_matrix = cmplx_0
+    !-----------------JJ
+
+    !if (on_root) then
+    num_exclude_bands = 0
+    if (allocated(exclude_bands)) num_exclude_bands = size(exclude_bands)
+    call w90_readwrite_read_chkpt(dis_window, exclude_bands, kmesh_info, kpt_latt, wann_data, &
+                                  m_matrix, u_matrix, u_matrix_opt, real_lattice, &
+                                  omega_invariant, mp_grid, num_bands, num_exclude_bands, &
+                                  num_kpts, num_wann, checkpoint, have_disentangled, .true., &
+                                  seedname, stdout, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+    !endif
 
     ! Distribute the information in the um and chk files to the other nodes
     !
@@ -347,21 +384,24 @@ program postw90
     !
     call pw90common_wanint_data_dist(num_wann, num_kpts, num_bands, u_matrix_opt, u_matrix, &
                                      dis_window, wann_data, scissors_shift, v_matrix, &
-                                     system%num_valence_bands, have_disentangled, stdout, &
-                                     seedname, comm)
+                                     system%num_valence_bands, have_disentangled, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   end if
   ! Read list of k-points in irreducible BZ and their weights
   !
   ! Should this be done on root node only?
   !
-  if (berry%wanint_kpoint_file) call pw90common_wanint_get_kpoint_file(kpt_dist, stdout, &
-                                                                       seedname, comm)
+  if (berry%wanint_kpoint_file) then
+    call pw90common_wanint_get_kpoint_file(kpt_dist, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
+  endif
 
   ! Setup a number of common variables for all interpolation tasks
 
   call pw90common_wanint_setup(num_wann, verbose, real_lattice, mp_grid, effective_model, &
-                               ws_vec, stdout, seedname, comm)
+                               ws_vec, stdout, seedname, timer, error, comm)
+  if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
     time1 = io_time()
@@ -380,7 +420,8 @@ program postw90
                   pw90_spin, ws_region, system, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                   SS_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
                   mp_grid, num_bands, num_kpts, num_wann, effective_model, have_disentangled, &
-                  pw90_calcs%spin_decomp, seedname, stdout, comm)
+                  pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   endif
 
 ! find_fermi_level commented for the moment in dos.F90
@@ -395,7 +436,8 @@ program postw90
                 ws_distance, ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, &
                 SBB_R, v_matrix, u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, &
                 mp_grid, fermi_n, num_wann, num_bands, num_kpts, system%num_valence_bands, &
-                effective_model, have_disentangled, seedname, stdout, comm)
+                effective_model, have_disentangled, seedname, stdout, timer, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   ! ---------------------------------------------------------------------------
@@ -403,13 +445,13 @@ program postw90
   ! ---------------------------------------------------------------------------
 
   if (pw90_calcs%kslice) then
-
     call k_slice(berry, dis_window, fermi_energy_list, kmesh_info, kpt_latt, kslice, postw90_oper, &
                  pw90_ham, pw90_spin, ws_region, spin_hall, verbose, wann_data, ws_distance, &
                  ws_vec, AA_R, BB_R, CC_R, HH_R, SH_R, SHR_R, SR_R, SS_R, SAA_R, SBB_R, v_matrix, &
                  u_matrix, physics%bohr, eigval, real_lattice, scissors_shift, mp_grid, fermi_n, &
                  num_bands, num_kpts, num_wann, system%num_valence_bands, effective_model, &
-                 have_disentangled, seedname, stdout, comm)
+                 have_disentangled, seedname, stdout, timer, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   ! --------------------
@@ -421,7 +463,9 @@ program postw90
                          pw90_spin, ws_region, verbose, wann_data, ws_distance, ws_vec, HH_R, &
                          SS_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                          num_wann, num_bands, num_kpts, system%num_valence_bands, effective_model, &
-                         have_disentangled, berry%wanint_kpoint_file, seedname, stdout, comm)
+                         have_disentangled, berry%wanint_kpoint_file, seedname, stdout, timer, &
+                         error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   ! -------------------------------------------------------------------
@@ -449,7 +493,8 @@ program postw90
                     SAA_R, SBB_R, u_matrix, v_matrix, eigval, real_lattice, scissors_shift, &
                     mp_grid, fermi_n, num_wann, num_kpts, num_bands, system%num_valence_bands, &
                     effective_model, have_disentangled, pw90_calcs%spin_decomp, seedname, stdout, &
-                    comm)
+                    timer, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
   ! -----------------------------------------------------------------
   ! Boltzmann transport coefficients (BoltzWann module)
@@ -464,7 +509,8 @@ program postw90
                         ws_distance, ws_vec, HH_R, v_matrix, u_matrix, eigval, real_lattice, &
                         scissors_shift, mp_grid, num_bands, num_kpts, num_wann, &
                         system%num_valence_bands, effective_model, have_disentangled, seedname, &
-                        stdout, comm)
+                        stdout, timer, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   if (pw90_calcs%boltzwann) then
@@ -472,7 +518,8 @@ program postw90
                         physics, ws_region, system, wann_data, ws_distance, ws_vec, verbose, HH_R, &
                         SS_R, v_matrix, u_matrix, eigval, real_lattice, scissors_shift, mp_grid, &
                         num_wann, num_bands, num_kpts, effective_model, have_disentangled, &
-                        pw90_calcs%spin_decomp, seedname, stdout, comm)
+                        pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   end if
 
   if (pw90_calcs%gyrotropic) then
@@ -480,7 +527,9 @@ program postw90
                          physics, postw90_oper, pw90_ham, ws_region, system, verbose, wann_data, &
                          ws_vec, ws_distance, AA_R, BB_R, CC_R, HH_R, SS_R, u_matrix, v_matrix, &
                          eigval, real_lattice, scissors_shift, mp_grid, num_bands, num_kpts, &
-                         num_wann, effective_model, have_disentangled, seedname, stdout, comm)
+                         num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
+                         error, comm)
+    if (allocated(error)) call prterr(error, ierr, stdout, stderr, comm)
   endif
 
   if (on_root .and. pw90_calcs%boltzwann) then
@@ -489,19 +538,19 @@ program postw90
       'Time for BoltzWann (Boltzmann transport) ', time2 - time1, ' (sec)'
   endif
 
-  ! I put a barrier here before calling the final time printing routines,
-  ! just to be sure that all processes have arrived here.
-  call comms_barrier(comm)
   if (on_root) then
-    write (stdout, '(/,1x,a25,f11.3,a)') &
-      'Total Execution Time     ', io_time(), ' (sec)'
-    if (verbose%timing_level > 0) call io_print_timings(stdout)
+    write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time(), ' (sec)'
+
+    if (verbose%timing_level > 0) call io_print_timings(timer, stdout)
+
     write (stdout, *)
-    write (stdout, '(/,1x,a)') 'All done: postw90 exiting'
+    write (stdout, '(1x,a)') 'All done: postw90 exiting'
+
     close (stdout)
-  end if
+    close (stderr, status='delete') ! this should not be unit 0
+  endif
 
-  call comms_end
-
+#ifdef MPI
+  call mpi_finalize(ierr)
+#endif
 end program postw90
-

@@ -74,8 +74,6 @@ end module w90chk_parameters
 module wannchk_data
 
   use w90_constants, only: dp
-  use w90_io, only: maxlen
-
   use w90_wannier90_types
 
   implicit none
@@ -111,12 +109,29 @@ module w90_conv
   !! Module to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_error
   implicit none
 
   logical, save :: export_flag
   character(len=33), save :: header
 contains
+
+  subroutine io_error(error_msg, stdout)
+    !================================================
+    !
+    !! Abort the code giving an error message
+    !
+    !================================================
+
+    implicit none
+
+    character(len=*), intent(in) :: error_msg
+    integer :: stdout
+
+    close (stdout)
+    write (*, '(1x,a)') trim(error_msg)
+    write (*, '(A)') "Error: examine the output/error file for details"
+    stop
+  end subroutine io_error
 
   subroutine print_usage(stdout)
 
@@ -156,7 +171,7 @@ contains
       call get_command_argument(2, seedname)
     else
       call print_usage(stdout)
-      call io_error('Wrong command line arguments, see logfile for usage', stdout, seedname)
+      call io_error('Wrong command line arguments, see logfile for usage', stdout)
     end if
 
     ! If on the command line the whole seedname.win was passed, I strip the last ".win"
@@ -178,7 +193,7 @@ contains
     else
       write (stdout, '(A)') 'Wrong command line action: '//trim(ctemp)
       call print_usage(stdout)
-      call io_error('Wrong command line arguments, see logfile for usage', stdout, seedname)
+      call io_error('Wrong command line arguments, see logfile for usage', stdout)
     end if
 
   end subroutine conv_get_seedname
@@ -192,7 +207,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
     use wannchk_data
 
@@ -204,8 +218,7 @@ contains
 
     write (stdout, '(1x,3a)') 'Reading information from file ', trim(seedname), '.chk :'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
 
     ! Read comment line
     read (chk_unit) header
@@ -216,10 +229,10 @@ contains
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
     read (chk_unit) num_exclude_bands                   ! Number of excluded bands
     if (num_exclude_bands < 0) then
-      call io_error('Invalid value for num_exclude_bands', stdout, seedname)
+      call io_error('Invalid value for num_exclude_bands', stdout)
     endif
     allocate (exclude_bands(num_exclude_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt', stdout, seedname)
+    if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt', stdout)
     read (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
     write (stdout, '(a)', advance='no') "Excluded bands: "
     if (num_exclude_bands == 0) then
@@ -240,7 +253,7 @@ contains
     write (stdout, '(a)') "mp_grid: read."
     if (.not. allocated(kpt_latt)) then
       allocate (kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt', stdout)
     endif
     read (chk_unit) ((kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     write (stdout, '(a)') "kpt_latt: read."
@@ -264,15 +277,25 @@ contains
       ! lwindow
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt', stdout)
       endif
       read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (stdout, '(a)') "lwindow: read."
 
+      ! nfirstwin
+      ! this info is not presently codified in the ckpt file (although it belongs with ndimwin)
+      ! -JJ
+      !if (.not. allocated(dis_manifold%nfirstwin)) then
+      !  allocate (dis_manifold%nfirstwin(num_kpts), stat=ierr)
+      !  if (ierr /= 0) call io_error('Error allocating nfirstwin in conv_read_chkpt', stdout)
+      !endif
+      !read (chk_unit, err=123) (dis_manifold%nfirstwin(nkp), nkp=1, num_kpts)
+      !write (stdout, '(a)') "nfirstwin: read."
+
       ! ndimwin
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt', stdout)
       endif
       read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
       write (stdout, '(a)') "ndimwin: read."
@@ -280,7 +303,7 @@ contains
       ! U_matrix_opt
       if (.not. allocated(u_matrix_opt)) then
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in conv_read_chkpt', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in conv_read_chkpt', stdout)
       endif
       read (chk_unit, err=124) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
       write (stdout, '(a)') "U_matrix_opt: read."
@@ -292,7 +315,7 @@ contains
     ! U_matrix
     if (.not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating u_matrix in conv_read_chkpt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating u_matrix in conv_read_chkpt', stdout)
     endif
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
     write (stdout, '(a)') "U_matrix: read."
@@ -300,7 +323,7 @@ contains
     ! M_matrix
     if (.not. allocated(m_matrix)) then
       allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating m_matrix in conv_read_chkpt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating m_matrix in conv_read_chkpt', stdout)
     endif
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
     write (stdout, '(a)') "M_matrix: read."
@@ -308,7 +331,7 @@ contains
     ! wannier_centres
     if (.not. allocated(wannier_data%centres)) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt', stdout)
     end if
     read (chk_unit, err=127) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
     write (stdout, '(a)') "wannier_centres: read."
@@ -316,7 +339,7 @@ contains
     ! wannier spreads
     if (.not. allocated(wannier_data%spreads)) then
       allocate (wannier_data%spreads(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt', stdout)
     end if
     read (chk_unit, err=128) (wannier_data%spreads(i), i=1, num_wann)
     write (stdout, '(a)') "wannier_spreads: read."
@@ -327,14 +350,14 @@ contains
 
     return
 
-121 call io_error('Error opening '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
-128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in conv_read_chkpt', stdout, seedname)
+121 call io_error('Error opening '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
+128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in conv_read_chkpt', stdout)
 
   end subroutine conv_read_chkpt
 
@@ -346,7 +369,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_error, io_file_unit
     use w90chk_parameters
     use wannchk_data
 
@@ -362,8 +384,7 @@ contains
 
     write (stdout, '(1x,3a)') 'Reading information from formatted file ', trim(seedname), '.chk.fmt :'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk.fmt', status='old', position='rewind', form='formatted', err=121)
+    open (newunit=chk_unit, file=trim(seedname)//'.chk.fmt', status='old', position='rewind', form='formatted', err=121)
 
     ! Read comment line
     read (chk_unit, '(A)') header
@@ -374,10 +395,10 @@ contains
     write (stdout, '(a,i0)') "Number of bands: ", num_bands
     read (chk_unit, *) num_exclude_bands                   ! Number of excluded bands
     if (num_exclude_bands < 0) then
-      call io_error('Invalid value for num_exclude_bands', stdout, seedname)
+      call io_error('Invalid value for num_exclude_bands', stdout)
     endif
     allocate (exclude_bands(num_exclude_bands), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt_fmt', stdout, seedname)
+    if (ierr /= 0) call io_error('Error allocating exclude_bands in conv_read_chkpt_fmt', stdout)
     do i = 1, num_exclude_bands
       read (chk_unit, *) exclude_bands(i) ! Excluded bands
     end do
@@ -400,7 +421,7 @@ contains
     write (stdout, '(a)') "mp_grid: read."
     if (.not. allocated(kpt_latt)) then
       allocate (kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt_fmt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating kpt_latt in conv_read_chkpt_fmt', stdout)
     endif
     do nkp = 1, num_kpts
       read (chk_unit, *, err=115) (kpt_latt(i, nkp), i=1, 3)
@@ -422,7 +443,7 @@ contains
       have_disentangled = .false.
     else
       write (cdum, '(I0)') idum
-      call io_error('Error reading formatted chk: have_distenangled should be 0 or 1, it is instead '//cdum, stdout, seedname)
+      call io_error('Error reading formatted chk: have_distenangled should be 0 or 1, it is instead '//cdum, stdout)
     end if
 
     if (have_disentangled) then
@@ -434,7 +455,7 @@ contains
       ! lwindow
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt_fmt', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating lwindow in conv_read_chkpt_fmt', stdout)
       endif
       do nkp = 1, num_kpts
         do i = 1, num_bands
@@ -445,7 +466,7 @@ contains
             dis_manifold%lwindow(i, nkp) = .false.
           else
             write (cdum, '(I0)') idum
-            call io_error('Error reading formatted chk: lwindow(i,nkp) should be 0 or 1, it is instead '//cdum, stdout, seedname)
+            call io_error('Error reading formatted chk: lwindow(i,nkp) should be 0 or 1, it is instead '//cdum, stdout)
           end if
         end do
       end do
@@ -454,7 +475,7 @@ contains
       ! ndimwin
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt_fmt', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating ndimwin in conv_read_chkpt_fmt', stdout)
       endif
       do nkp = 1, num_kpts
         read (chk_unit, *, err=123) dis_manifold%ndimwin(nkp)
@@ -464,7 +485,7 @@ contains
       ! U_matrix_opt
       if (.not. allocated(u_matrix_opt)) then
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in conv_read_chkpt_fmt', stdout, seedname)
+        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in conv_read_chkpt_fmt', stdout)
       endif
       do nkp = 1, num_kpts
         do j = 1, num_wann
@@ -483,7 +504,7 @@ contains
     ! U_matrix
     if (.not. allocated(u_matrix)) then
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating u_matrix in conv_read_chkpt_fmt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating u_matrix in conv_read_chkpt_fmt', stdout)
     endif
     do k = 1, num_kpts
       do j = 1, num_wann
@@ -498,7 +519,7 @@ contains
     ! M_matrix
     if (.not. allocated(m_matrix)) then
       allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating m_matrix in conv_read_chkpt_fmt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating m_matrix in conv_read_chkpt_fmt', stdout)
     endif
     do l = 1, num_kpts
       do k = 1, kmesh_info%nntot
@@ -515,7 +536,7 @@ contains
     ! wannier_centres
     if (.not. allocated(wannier_data%centres)) then
       allocate (wannier_data%centres(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt', stdout)
     end if
     do j = 1, num_wann
       read (chk_unit, *, err=127) (wannier_data%centres(i, j), i=1, 3)
@@ -525,7 +546,7 @@ contains
     ! wannier spreads
     if (.not. allocated(wannier_data%spreads)) then
       allocate (wannier_data%spreads(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt', stdout, seedname)
+      if (ierr /= 0) call io_error('Error allocating wannier_centres in conv_read_chkpt_fmt', stdout)
     end if
     do i = 1, num_wann
       read (chk_unit, *, err=128) wannier_data%spreads(i)
@@ -538,15 +559,15 @@ contains
 
     return
 
-115 call io_error('Error reading variable from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-121 call io_error('Error opening '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
-128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout, seedname)
+115 call io_error('Error reading variable from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+121 call io_error('Error opening '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+!122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+!125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+!126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
+128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk.fmt in conv_read_chkpt_fmt', stdout)
 
   end subroutine conv_read_chkpt_fmt
 
@@ -557,7 +578,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90chk_parameters
     use wannchk_data
 
@@ -568,12 +589,11 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
+    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', form='unformatted')
 
     write (chk_unit) header                                   ! Date and time from the read file
     write (chk_unit) num_bands                                ! Number of bands
@@ -613,7 +633,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90chk_parameters
     use wannchk_data
 
@@ -624,12 +644,11 @@ contains
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    character(len=9) :: cdate, ctime
+    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing formatted checkpoint file ', trim(seedname), '.chk.fmt...'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk.fmt', form='formatted', status='replace', position='rewind')
+    open (newunit=chk_unit, file=trim(seedname)//'.chk.fmt', form='formatted', status='replace', position='rewind')
 
     write (chk_unit, '(A33)') header                                   ! Date and time from the read file
     write (chk_unit, '(I0)') num_bands                                ! Number of bands
@@ -709,50 +728,21 @@ program w90chk2chk
   !! Program to convert checkpoint files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit, io_error
   use w90_conv
-  use w90_comms, only: comms_end, w90comm_type, mpisize
-
-#ifdef MPI08
-  use mpi_f08 ! use f08 interface if possible
-#endif
-#ifdef MPI90
-  use mpi ! next best, use fortran90 interface
-#endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
 
   ! Export mode:
   !  TRUE:  create formatted .chk.fmt from unformatted .chk ('-export')
   !  FALSE: create unformatted .chk from formatted .chk.fmt ('-import')
   integer :: stdout
-  logical :: file_found
-  integer :: file_unit
+  !logical :: file_found
+  !integer :: file_unit
   character(len=20) :: checkpoint
   character(len=50) :: seedname
-  integer :: num_nodes, ierr
+  !integer :: num_nodes, ierr
 
-  type(w90comm_type) :: comm
-
-#ifdef MPI
-  comm%comm = MPI_COMM_WORLD
-  call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-  num_nodes = mpisize(comm)
-#else
-  num_nodes = 1
-#endif
-
-  stdout = io_file_unit()
-  open (unit=stdout, file='w90chk2chk.log')
-
-  if (num_nodes /= 1) then
-    call io_error('w90chk2chk can only be used in serial...', stdout, seedname)
-  endif
+  open (newunit=stdout, file='w90chk2chk.log')
 
   call conv_get_seedname(stdout, seedname)
 
@@ -765,8 +755,6 @@ program w90chk2chk
   end if
 
   close (unit=stdout)
-
-  call comms_end
 
 end program w90chk2chk
 

@@ -23,44 +23,36 @@ module w90_readwrite
   !! Common read/write routines for data needed by both
   !! wannier90.x and postw90.x executables
 
-  use w90_constants, only: dp
-  use w90_io, only: maxlen
+  use w90_constants, only: dp, maxlen
   use w90_types
+  use w90_comms, only: w90_comm_type, mpisize
 
   implicit none
 
   private
 
-  ! Private data for processing input file
-  integer :: num_lines
-  character(len=maxlen), allocatable :: in_data(:)
-
+  public :: w90_readwrite_read_distk
   public :: w90_readwrite_chkpt_dist
   public :: w90_readwrite_dealloc
   public :: w90_readwrite_get_convention_type
   public :: w90_readwrite_get_smearing_type
   public :: w90_readwrite_lib_set_atoms
   public :: w90_readwrite_read_chkpt
+  public :: w90_readwrite_read_chkpt_header
+  public :: w90_readwrite_read_chkpt_matrices
   public :: w90_readwrite_write_header
-  ! for postw90 parameters
   public :: w90_readwrite_get_block_length
   public :: w90_readwrite_get_centre_constraints
-  public :: w90_readwrite_get_keyword
-  public :: w90_readwrite_get_keyword_block
-  public :: w90_readwrite_get_keyword_vector
   public :: w90_readwrite_get_projections
   public :: w90_readwrite_get_range_vector
   public :: w90_readwrite_get_smearing_index
   public :: w90_readwrite_get_vector_length
   public :: w90_readwrite_in_file
   public :: w90_readwrite_set_kmesh
-  public :: w90_readwrite_uppercase
-  ! common read routines
   public :: w90_readwrite_clean_infile
   public :: w90_readwrite_clear_keywords
   public :: w90_readwrite_read_algorithm_control
   public :: w90_readwrite_read_atoms
-  public :: w90_readwrite_read_devel
   public :: w90_readwrite_read_dis_manifold
   public :: w90_readwrite_read_eigvals
   public :: w90_readwrite_read_exclude_bands
@@ -79,276 +71,394 @@ module w90_readwrite
   public :: w90_readwrite_read_verbosity
   public :: w90_readwrite_read_ws_data
 
-  private :: clear_block
+  public :: w90_readwrite_get_keyword
+  public :: w90_readwrite_get_keyword_block
+  public :: w90_readwrite_get_keyword_vector
+
+  public :: expand_settings
+  public :: init_settings
 
 contains
-
   !================================================!
-  subroutine w90_readwrite_read_verbosity(print_output, stdout, seedname)
+  subroutine w90_readwrite_read_verbosity(settings, print_output, svd_omega, error, comm)
+    use w90_error, only: w90_error_type
+    use w90_comms, only: mpirank
     implicit none
     type(print_output_type), intent(inout) :: print_output
+    logical, intent(inout) :: svd_omega
     logical :: found
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
-    print_output%timing_level = 1 ! Verbosity of timing output info
-    call w90_readwrite_get_keyword(stdout, seedname, 'timing_level', found, i_value=print_output%timing_level)
+    integer :: unlucky_rank
 
-    print_output%iprint = 1 ! Verbosity
-    call w90_readwrite_get_keyword(stdout, seedname, 'iprint', found, i_value=print_output%iprint)
+    call w90_readwrite_get_keyword(settings, 'timing_level', found, error, comm, &
+                                   i_value=print_output%timing_level)
+    if (allocated(error)) return
 
+    ! special test case; use the timing_level variable to
+    ! communicate a kill to remote process, testing error handling
+    call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm, i_value=unlucky_rank)
+    if (found) then
+      if (unlucky_rank > 0) then
+        print_output%timing_level = -unlucky_rank
+      endif
+    endif
+
+    call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm, &
+                                   i_value=print_output%iprint)
+    if (allocated(error)) return
+
+    if (print_output%iprint >= 2) svd_omega = .true. ! a printout that does not have its own option flag
+
+    if (mpirank(comm) /= 0) print_output%iprint = 0 ! supress printing non-rank-0
   end subroutine w90_readwrite_read_verbosity
 
-  subroutine w90_readwrite_read_algorithm_control(optimisation, stdout, seedname)
+  subroutine w90_readwrite_read_algorithm_control(settings, optimisation, error, comm)
+    use w90_error, only: w90_error_type
     implicit none
     integer, intent(inout) :: optimisation
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(settings_type), intent(inout) :: settings
+
     logical :: found
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
 
-    optimisation = 3 ! Verbosity
-    call w90_readwrite_get_keyword(stdout, seedname, 'optimisation', found, i_value=optimisation)
-
+    call w90_readwrite_get_keyword(settings, 'optimisation', found, error, comm, &
+                                   i_value=optimisation)
+    if (allocated(error)) return
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(lenconfac, length_unit, bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_units(settings, lenconfac, length_unit, energy_unit, bohr, error, &
+                                      comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    real(kind=dp), intent(out) :: lenconfac
-    integer, intent(in) :: stdout
-    character(len=*), intent(out) :: length_unit
-    character(len=50), intent(in)  :: seedname
+    real(kind=dp), intent(inout) :: lenconfac
+    character(len=*), intent(inout) :: length_unit
+    character(len=*), intent(inout) :: energy_unit
     real(kind=dp), intent(in) :: bohr
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
+    integer :: ic
     logical :: found
 
-    length_unit = 'ang'
-    lenconfac = 1.0_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'length_unit', found, c_value=length_unit)
-    if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') &
-      call io_error('Error: value of length_unit not recognised in w90_wannier90_readwrite_read', stdout, seedname)
-    if (length_unit .eq. 'bohr') lenconfac = 1.0_dp/bohr
+    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm, c_value=energy_unit)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm, c_value=length_unit)
+    if (allocated(error)) return
+    if (found) then ! if not specified, it may take already have capitalised values, Ang or Bohr
+      if (length_unit .ne. 'ang' .and. length_unit .ne. 'bohr') then
+        call set_error_input(error, 'Error: value of length_unit not recognised in w90_readwrite_read_units', comm)
+        return
+      else if (length_unit .eq. 'bohr') then
+        lenconfac = 1.0_dp/bohr
+      endif
+    endif
+
+    ! Length unit (ang --> Ang, bohr --> Bohr)
+    ! this is set to uppercase only for printout...
+    ic = ichar(length_unit(1:1))
+    if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+      length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
+
   end subroutine w90_readwrite_read_units
 
-  subroutine w90_readwrite_read_num_wann(num_wann, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_num_wann(settings, num_wann, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
-    integer, intent(out) :: num_wann
-    character(len=50), intent(in)  :: seedname
+    integer, intent(inout) :: num_wann
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found
 
-    num_wann = -99
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_wann', found, i_value=num_wann)
-    if (.not. found) call io_error('Error: You must specify num_wann', stdout, seedname)
-    if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero', stdout, seedname)
+    call w90_readwrite_get_keyword(settings, 'num_wann', found, error, comm, i_value=num_wann)
+    if (allocated(error)) return
+
+    if (.not. found) then
+      call set_error_input(error, 'Error: You must specify num_wann', comm)
+      return
+    endif
+    if (num_wann <= 0) then
+      call set_error_input(error, 'Error: num_wann must be greater than zero', comm)
+      return
+    endif
   end subroutine w90_readwrite_read_num_wann
 
-  subroutine w90_readwrite_read_exclude_bands(exclude_bands, num_exclude_bands, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_distk(settings, distk, nkin, error, comm)
+    ! read distribution of kpoints
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
+    implicit none
+
+    integer, allocatable, intent(inout) :: distk(:)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+    integer, intent(in) :: nkin
+
+    integer :: nk
+    logical :: found
+
+    call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .true., error, comm)
+    if (allocated(error)) return
+
+    if (found) then
+      if (nk /= nkin) then
+        call set_error_input(error, 'incorrect length of k-distribution', comm)
+        return
+      endif
+
+      allocate (distk(nkin))
+
+      call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
+      if (allocated(error)) return
+    else
+      allocate (distk(nkin))
+
+      distk = 0 ! default to no distribution if not specified
+    end if
+  endsubroutine w90_readwrite_read_distk
+
+  subroutine w90_readwrite_read_exclude_bands(settings, exclude_bands, num_exclude_bands, error, &
+                                              comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
     integer, intent(out) :: num_exclude_bands
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: ierr
-    logical :: found
+    logical :: found = .false.
 
     num_exclude_bands = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                        num_exclude_bands, lcount=.true.)
+    call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, num_exclude_bands, &
+                                        .true., error, comm)
+    if (allocated(error)) return
+
     if (found) then
-      if (num_exclude_bands < 1) call io_error('Error: problem reading exclude_bands', stdout, seedname)
+      if (num_exclude_bands < 1) then
+        call set_error_input(error, 'Error: problem reading exclude_bands', comm)
+        return
+      endif
       if (allocated(exclude_bands)) deallocate (exclude_bands)
       allocate (exclude_bands(num_exclude_bands), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating exclude_bands in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'exclude_bands', found, &
-                                          num_exclude_bands, .false., exclude_bands)
-      if (any(exclude_bands < 1)) &
-        call io_error('Error: exclude_bands must contain positive numbers', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating exclude_bands in w90_readwrite_read_exclude_bands', comm)
+        return
+      endif
+      call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, num_exclude_bands, &
+                                          .false., error, comm, exclude_bands)
+      if (allocated(error)) return
+      if (any(exclude_bands < 1)) then
+        call set_error_input(error, 'Error: exclude_bands must contain positive numbers', comm)
+        return
+      endif
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
-  subroutine w90_readwrite_read_num_bands(pw90_effective_model, library, num_exclude_bands, num_bands, &
-                                          num_wann, library_w90_wannier90_readwrite_read_first_pass, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_num_bands(settings, pw90_effective_model, num_bands, num_wann, &
+                                          stdout, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    logical, intent(in) :: pw90_effective_model, library
-    integer, intent(in) :: num_exclude_bands
+    logical, intent(in) :: pw90_effective_model
     integer, intent(inout) :: num_bands
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
-    logical, intent(in) :: library_w90_wannier90_readwrite_read_first_pass
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i_temp
     logical :: found
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_bands', found, i_value=i_temp)
-    if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
-    if (.not. library .and. .not. pw90_effective_model) then
-      if (found) num_bands = i_temp
-      if (.not. found) num_bands = num_wann
-    end if
-    ! GP: I subtract it here, but only the first time when I pass the total number of bands
-    ! In later calls, I need to pass instead num_bands already subtracted.
-    if (library .and. library_w90_wannier90_readwrite_read_first_pass) num_bands = num_bands - num_exclude_bands
+    call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm, i_value=i_temp)
+    if (allocated(error)) return
+
+    ! in the pw90_effective_model case, this variable is ignored
     if (.not. pw90_effective_model) then
-      if (found .and. num_bands < num_wann) then
-        write (stdout, *) 'num_bands', num_bands
-        write (stdout, *) 'num_wann', num_wann
-        call io_error('Error: num_bands must be greater than or equal to num_wann', stdout, seedname)
+      if (found) then
+        num_bands = i_temp
+        if (num_bands < num_wann) then
+          write (stdout, *) 'num_bands', num_bands
+          write (stdout, *) 'num_wann', num_wann
+          call set_error_input(error, 'Error: num_bands must be greater than or equal to num_wann', comm)
+          return
+        endif
+      else
+        num_bands = num_wann
       endif
     endif
   end subroutine w90_readwrite_read_num_bands
 
-  subroutine w90_readwrite_read_devel(devel_flag, stdout, seedname)
+  subroutine w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
-    character(len=*), intent(out) :: devel_flag
-    character(len=50), intent(in)  :: seedname
-
-    logical :: found
-
-    devel_flag = ' '
-    call w90_readwrite_get_keyword(stdout, seedname, 'devel_flag', found, c_value=devel_flag)
-  end subroutine w90_readwrite_read_devel
-
-  subroutine w90_readwrite_read_gamma_only(gamma_only, num_kpts, library, stdout, seedname)
-    use w90_io, only: io_error
-    implicit none
-    integer, intent(in) :: stdout
     logical, intent(inout) :: gamma_only
     integer, intent(in) :: num_kpts
-    logical, intent(in) :: library
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found, ltmp
 
     ltmp = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'gamma_only', found, l_value=ltmp)
-    if (.not. library) then
-      gamma_only = ltmp
-      if (gamma_only .and. (num_kpts .ne. 1)) &
-        call io_error('Error: gamma_only is true, but num_kpts > 1', stdout, seedname)
-    else
-      if (found) write (stdout, '(a)') ' Ignoring <gamma_only> in input file'
+    call w90_readwrite_get_keyword(settings, 'gamma_only', found, error, comm, l_value=ltmp)
+    if (allocated(error)) return
+    gamma_only = ltmp
+    if (gamma_only .and. (num_kpts .ne. 1)) then
+      call set_error_input(error, 'Error: gamma_only is true, but num_kpts > 1', comm)
+      return
     endif
   end subroutine w90_readwrite_read_gamma_only
 
-  subroutine w90_readwrite_read_mp_grid(pw90_effective_model, library, mp_grid, num_kpts, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_mp_grid(settings, pw90_effective_model, mp_grid, num_kpts, error, &
+                                        comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
-    logical, intent(in) :: pw90_effective_model, library
+    logical, intent(in) :: pw90_effective_model
     integer, intent(inout) :: mp_grid(3), num_kpts
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: iv_temp(3)
     logical :: found
 
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'mp_grid', found, 3, i_value=iv_temp)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <mp_grid> in input file'
-    if (.not. library .and. .not. pw90_effective_model) then
+    call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 3, error, comm, &
+                                          i_value=iv_temp)
+    if (allocated(error)) return
+
+    ! ignored in pw90_effective_model case
+    if (.not. pw90_effective_model) then
       if (found) mp_grid = iv_temp
       if (.not. found) then
-        call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid', stdout, seedname)
+        call set_error_input(error, 'Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid', comm)
+        return
       elseif (any(mp_grid < 1)) then
-        call io_error('Error: mp_grid must be greater than zero', stdout, seedname)
+        call set_error_input(error, 'Error: mp_grid must be greater than zero', comm)
+        return
       end if
       num_kpts = mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
   end subroutine w90_readwrite_read_mp_grid
 
-  subroutine w90_readwrite_read_system(library, w90_system, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_system(settings, w90_system, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    integer, intent(in) :: stdout
-    logical, intent(in) :: library
     type(w90_system_type), intent(inout) :: w90_system
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found, ltmp
+    integer :: itmp
 
     ltmp = .false.  ! by default our WF are not spinors
-    call w90_readwrite_get_keyword(stdout, seedname, 'spinors', found, l_value=ltmp)
-    if (.not. library) then
+    call w90_readwrite_get_keyword(settings, 'spinors', found, error, comm, l_value=ltmp)
+    if (allocated(error)) return
+    if (found) then
       w90_system%spinors = ltmp
     else
-      if (found) write (stdout, '(a)') ' Ignoring <spinors> in input file'
+      w90_system%spinors = .false. ! specify a default behaviour
     endif
-!    if(spinors .and. (2*(num_wann/2))/=num_wann) &
-!       call io_error('Error: For spinor WF num_wann must be even')
-
     ! We need to know if the bands are double degenerate due to spin, e.g. when
     ! calculating the DOS
     if (w90_system%spinors) then
       w90_system%num_elec_per_state = 1
     else
-      w90_system%num_elec_per_state = 2
+      w90_system%num_elec_per_state = 2 ! the default
     endif
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_elec_per_state', found, &
-                                   i_value=w90_system%num_elec_per_state)
-    if ((w90_system%num_elec_per_state /= 1) .and. (w90_system%num_elec_per_state /= 2)) &
-      call io_error('Error: num_elec_per_state can be only 1 or 2', stdout, seedname)
-    if (w90_system%spinors .and. w90_system%num_elec_per_state /= 1) &
-      call io_error('Error: when spinors = T num_elec_per_state must be 1', stdout, seedname)
 
-    ! set to a negative default value
-    w90_system%num_valence_bands = -99
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_valence_bands', found, i_value=w90_system%num_valence_bands)
-    if (found .and. (w90_system%num_valence_bands .le. 0)) &
-      call io_error('Error: num_valence_bands should be greater than zero', stdout, seedname)
-    ! there is a check on this parameter later
+    call w90_readwrite_get_keyword(settings, 'num_elec_per_state', found, error, comm, &
+                                   i_value=itmp)
+    if (allocated(error)) return
+    if (found) then
+      if (itmp /= 1 .and. itmp /= 2) then
+        call set_error_input(error, 'Error: num_elec_per_state can be only 1 or 2', comm)
+        return
+      else
+        if (w90_system%spinors .and. itmp /= 1) then
+          call set_error_input(error, 'Error: when spinors = T num_elec_per_state must be 1', comm)
+          return
+        else
+          w90_system%num_elec_per_state = itmp
+        endif
+      endif
+    endif
 
+    call w90_readwrite_get_keyword(settings, 'num_valence_bands', found, error, comm, &
+                                   i_value=w90_system%num_valence_bands)
+    if (allocated(error)) return
+    if (found .and. (w90_system%num_valence_bands .le. 0)) then
+      call set_error_input(error, 'Error: num_valence_bands should be greater than zero', comm)
+      return
+    endif
   end subroutine w90_readwrite_read_system
 
-  subroutine w90_readwrite_read_kpath(library, kpoint_path, ok, bands_plot, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_kpath(settings, kpoint_path, ok, bands_plot, error, comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
-    logical, intent(in) :: library, bands_plot
-    type(kpoint_path_type), intent(out) :: kpoint_path
-    integer, intent(in) :: stdout
+    logical, intent(in) :: bands_plot
+    type(kpoint_path_type), intent(inout) :: kpoint_path
     logical, intent(out) :: ok
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i_temp, ierr, bands_num_spec_points
     logical :: found
 
     bands_num_spec_points = 0
-    call w90_readwrite_get_block_length(stdout, seedname, 'kpoint_path', found, i_temp, library)
+    call w90_readwrite_get_block_length(settings, 'kpoint_path', found, i_temp, error, comm)
+    if (allocated(error)) return
     if (found) then
       ok = .true.
       bands_num_spec_points = i_temp*2
       if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating labels in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating labels in w90_wannier90_readwrite_read', comm)
+        return
+      endif
       if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating points in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating points in w90_wannier90_readwrite_read', comm)
+        return
+      endif
+      call w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
+      if (allocated(error)) return
     else
       ok = .false.
     end if
-    kpoint_path%num_points_first_segment = 100
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_num_points', found, &
+    call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm, &
                                    i_value=kpoint_path%num_points_first_segment)
-    ! checks
+    if (allocated(error)) return
     if (bands_plot) then
-      if (kpoint_path%num_points_first_segment < 0) &
-        call io_error('Error: bands_num_points must be positive', stdout, seedname)
+      if (kpoint_path%num_points_first_segment < 0) then
+        call set_error_input(error, 'Error: bands_num_points must be positive', comm)
+        return
+      endif
     endif
   end subroutine w90_readwrite_read_kpath
 
-  subroutine w90_readwrite_read_fermi_energy(found_fermi_energy, fermi_energy_list, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_fermi_energy(settings, found_fermi_energy, fermi_energy_list, &
+                                             error, comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
     logical, intent(out) :: found_fermi_energy
     real(kind=dp), allocatable, intent(out) :: fermi_energy_list(:)
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     real(kind=dp) :: fermi_energy
     logical :: fermi_energy_scan
@@ -360,28 +470,40 @@ contains
 
     n = 0
     found_fermi_energy = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy', found, r_value=fermi_energy)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy', found, error, comm, &
+                                   r_value=fermi_energy)
+    if (allocated(error)) return
     if (found) then
       found_fermi_energy = .true.
       n = 1
     endif
 
     fermi_energy_scan = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found, r_value=fermi_energy_min)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm, &
+                                   r_value=fermi_energy_min)
+    if (allocated(error)) return
     if (found) then
-      if (found_fermi_energy) call io_error( &
-        'Error: Cannot specify both fermi_energy and fermi_energy_min', stdout, seedname)
+      if (found_fermi_energy) then
+        call set_error_input(error, 'Error: Cannot specify both fermi_energy and fermi_energy_min', comm)
+        return
+      endif
       fermi_energy_scan = .true.
       fermi_energy_max = fermi_energy_min + 1.0_dp
-      call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found, &
+      call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm, &
                                      r_value=fermi_energy_max)
-      if (found .and. fermi_energy_max <= fermi_energy_min) call io_error( &
-        'Error: fermi_energy_max must be larger than fermi_energy_min', stdout, seedname)
+      if (allocated(error)) return
+      if (found .and. fermi_energy_max <= fermi_energy_min) then
+        call set_error_input(error, 'Error: fermi_energy_max must be larger than fermi_energy_min', comm)
+        return
+      endif
       fermi_energy_step = 0.01_dp
-      call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_step', found, &
+      call w90_readwrite_get_keyword(settings, 'fermi_energy_step', found, error, comm, &
                                      r_value=fermi_energy_step)
-      if (found .and. fermi_energy_step <= 0.0_dp) call io_error( &
-        'Error: fermi_energy_step must be positive', stdout, seedname)
+      if (allocated(error)) return
+      if (found .and. fermi_energy_step <= 0.0_dp) then
+        call set_error_input(error, 'Error: fermi_energy_step must be positive', comm)
+        return
+      endif
       n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
     endif
 
@@ -400,305 +522,356 @@ contains
       do i = 1, n
         fermi_energy_list(i) = fermi_energy_min + (i - 1)*fermi_energy_step
       enddo
-!!    elseif(nfermi==0) then
-!!        ! This happens when both found_fermi_energy=.false. and
-!!        ! fermi_energy_scan=.false. Functionalities that require
-!!        ! specifying a Fermi level should give an error message
-!!        allocate(fermi_energy_list(1),stat=ierr) ! helps streamline things
-!!
-!! AAM_2017-03-27: if nfermi is zero (ie, fermi_energy* parameters are not set in input file)
+!! AAM_2017-03-27: if fermi_energy* parameters are not set in input file
 !! then allocate fermi_energy_list with length 1 and set to zero as default.
     else
       if (allocated(fermi_energy_list)) deallocate (fermi_energy_list)
       allocate (fermi_energy_list(1), stat=ierr)
       fermi_energy_list(1) = 0.0_dp
     endif
-    if (ierr /= 0) call io_error( &
-      'Error allocating fermi_energy_list in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, &
+                           'Error allocating fermi_energy_list in w90_readwrite_read_fermi_energy', comm)
+      return
+    endif
   end subroutine w90_readwrite_read_fermi_energy
 
-  subroutine w90_readwrite_read_ws_data(ws_region, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_ws_data(settings, ws_region, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
     type(ws_region_type), intent(inout) :: ws_region
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i
     logical :: found
 
-    ws_region%use_ws_distance = .true.
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_ws_distance', found, l_value=ws_region%use_ws_distance)
+    call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm, &
+                                   l_value=ws_region%use_ws_distance)
+    if (allocated(error)) return
 
-    ws_region%ws_distance_tol = 1.e-5_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found, r_value=ws_region%ws_distance_tol)
+    call w90_readwrite_get_keyword(settings, 'ws_distance_tol', found, error, comm, &
+                                   r_value=ws_region%ws_distance_tol)
+    if (allocated(error)) return
 
-    ws_region%ws_search_size = 2
-
-    call w90_readwrite_get_vector_length(stdout, seedname, 'ws_search_size', found, length=i)
+    call w90_readwrite_get_vector_length(settings, 'ws_search_size', found, i, error, comm)
+    if (allocated(error)) return
     if (found) then
       if (i .eq. 1) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 1, &
+        call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 1, error, comm, &
                                               i_value=ws_region%ws_search_size)
+        if (allocated(error)) return
         ws_region%ws_search_size(2) = ws_region%ws_search_size(1)
         ws_region%ws_search_size(3) = ws_region%ws_search_size(1)
       elseif (i .eq. 3) then
-        call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 3, &
+        call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 3, error, comm, &
                                               i_value=ws_region%ws_search_size)
+        if (allocated(error)) return
       else
-        call io_error('Error: ws_search_size must be provided as either one integer or a vector of three integers', &
-                      stdout, seedname)
+        call set_error_input(error, &
+                             'Error: ws_search_size must be provided as either one integer or a vector of three integers', comm)
+        return
       end if
-      if (any(ws_region%ws_search_size <= 0)) &
-        call io_error('Error: ws_search_size elements must be greater than zero', stdout, seedname)
+      if (any(ws_region%ws_search_size <= 0)) then
+        call set_error_input(error, 'Error: ws_search_size elements must be greater than zero', comm)
+        return
+      endif
     end if
   end subroutine w90_readwrite_read_ws_data
 
-  subroutine w90_readwrite_read_eigvals(pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot, &
-                                        disentanglement, eig_found, eigval, library, postproc_setup, &
-                                        num_bands, num_kpts, stdout, seedname)
+  subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, &
+                                        seedname, error, comm)
+    !! Read the eigenvalues from wannier.eig
 
-    use w90_io, only: io_file_unit, io_error
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
     implicit none
+
+    character(len=*), intent(in)  :: seedname
     integer, intent(in) :: num_bands, num_kpts
     integer, intent(in) :: stdout
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    character(len=50), intent(in)  :: seedname
-    logical, intent(in) :: disentanglement, library, postproc_setup
-    logical, intent(in) :: pw90_effective_model, pw90_boltzwann, pw90_geninterp, w90_plot
-    logical, intent(out) :: eig_found
-    integer :: i, j, k, n, eig_unit, ierr
+    logical, intent(inout) :: eig_found
+    real(kind=dp), intent(inout) :: eigval(:, :)
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
-    ! Read the eigenvalues from wannier.eig
-    eig_found = .false.
-    if (.not. library .and. .not. pw90_effective_model) then
+    ! local
+    integer :: i, j, k, n, eig_unit
 
-      if (.not. postproc_setup) then
-        inquire (file=trim(seedname)//'.eig', exist=eig_found)
-        if (.not. eig_found) then
-          if (disentanglement) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement', stdout, seedname)
-          else if ((w90_plot .or. pw90_boltzwann .or. pw90_geninterp)) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation', stdout, seedname)
+    inquire (file=trim(seedname)//'.eig', exist=eig_found)
+    if (.not. eig_found) then
+      call set_error_file(error, 'No '//trim(seedname)//'.eig file found. Needed for disentanglement', comm)
+      return
+    else
+      open (newunit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+      do k = 1, num_kpts
+        do n = 1, num_bands
+          read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
+          if ((i .ne. n) .or. (j .ne. k)) then
+            write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
+            write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
+            write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
+            write (stdout, '(a)') ' '
+            write (stdout, '(a)') 'A common cause of this error is using the wrong'
+            write (stdout, '(a)') 'number of bands. Check your input files.'
+            write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
+            write (stdout, '(a)') 'to account for these electrons.'
+            write (stdout, '(a)') ' '
+            call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', comm)
+            return
           end if
-        else
-          ! Allocate only here
-          allocate (eigval(num_bands, num_kpts), stat=ierr)
-          if (ierr /= 0) call io_error('Error allocating eigval in w90_wannier90_readwrite_read', stdout, seedname)
-
-          eig_unit = io_file_unit()
-          open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
-          do k = 1, num_kpts
-            do n = 1, num_bands
-              read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
-              if ((i .ne. n) .or. (j .ne. k)) then
-                write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
-                write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
-                write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
-                write (stdout, '(a)') ' '
-                write (stdout, '(a)') 'A common cause of this error is using the wrong'
-                write (stdout, '(a)') 'number of bands. Check your input files.'
-                write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
-                write (stdout, '(a)') 'to account for these electrons.'
-                write (stdout, '(a)') ' '
-                call io_error('w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', stdout, seedname)
-              end if
-            enddo
-          end do
-          close (eig_unit)
-        end if
-      end if
+        enddo
+      end do
+      close (eig_unit)
     end if
-
-    if (library .and. allocated(eigval)) eig_found = .true.
 
     return
 
-105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig', stdout, seedname)
-106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig', stdout, seedname)
-
+105 call set_error_file(error, 'Error: Problem opening eigenvalue file '//trim(seedname)//'.eig', comm)
+    return
+106 call set_error_file(error, 'Error: Problem reading eigenvalue file '//trim(seedname)//'.eig', comm)
+    return
   end subroutine w90_readwrite_read_eigvals
 
-  subroutine w90_readwrite_read_dis_manifold(eig_found, dis_manifold, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_dis_manifold(settings, eig_found, dis_manifold, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
+
+    ! arguments
     logical, intent(in) :: eig_found
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
+    ! local
     logical :: found, found2
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found, r_value=dis_manifold%win_min)
+    call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm, &
+                                   r_value=dis_manifold%win_min)
+    if (allocated(error)) return
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found, r_value=dis_manifold%win_max)
-    if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) &
-      call io_error('Error: w90_wannier90_readwrite_read: check disentanglement windows', stdout, seedname)
+    call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm, &
+                                   r_value=dis_manifold%win_max)
+    if (allocated(error)) return
+    ! eig_found check because eigenvalue reading may reset win_min,max limits
+    if (eig_found .and. (dis_manifold%win_max .lt. dis_manifold%win_min)) then
+      call set_error_input(error, &
+                           'Error: w90_readwrite_read_dis_manifold: check disentanglement windows (win_max < win_min !)', comm)
+      return
+    endif
 
-    dis_manifold%froz_min = -1.0_dp; dis_manifold%froz_max = 0.0_dp
-    ! no default for dis_froz_max
-    dis_manifold%frozen_states = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_max', found, r_value=dis_manifold%froz_max)
+    call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm, &
+                                   r_value=dis_manifold%froz_max)
+    if (allocated(error)) return
     if (found) then
       dis_manifold%frozen_states = .true.
-      dis_manifold%froz_min = dis_manifold%win_min ! default value for the bottom of frozen window
     end if
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_min', found2, r_value=dis_manifold%froz_min)
+    call w90_readwrite_get_keyword(settings, 'dis_froz_min', found2, error, comm, &
+                                   r_value=dis_manifold%froz_min)
+    if (allocated(error)) return
     if (eig_found) then
-      if (dis_manifold%froz_max .lt. dis_manifold%froz_min) &
-        call io_error('Error: w90_wannier90_readwrite_read: check disentanglement frozen windows', stdout, seedname)
-      if (found2 .and. .not. found) &
-        call io_error('Error: w90_wannier90_readwrite_read: found dis_froz_min but not dis_froz_max', stdout, seedname)
+      if (dis_manifold%froz_max .lt. dis_manifold%froz_min) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement frozen windows', comm)
+        return
+      endif
+      if (found2 .and. .not. found) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: found dis_froz_min but not dis_froz_max', comm)
+        return
+      endif
     endif
-    ! ndimwin/lwindow are not read
   end subroutine w90_readwrite_read_dis_manifold
 
-  subroutine w90_readwrite_read_kmesh_data(kmesh_input, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
-    type(kmesh_input_type), intent(out) :: kmesh_input
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(kmesh_input_type), intent(inout) :: kmesh_input
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
     integer :: itmp, ierr
     logical :: found
 
-    kmesh_input%search_shells = 36
-    call w90_readwrite_get_keyword(stdout, seedname, 'search_shells', found, i_value=kmesh_input%search_shells)
-    if (kmesh_input%search_shells < 0) call io_error('Error: search_shells must be positive', stdout, seedname)
+    call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm, &
+                                   i_value=kmesh_input%search_shells)
+    if (allocated(error)) return
+    if (kmesh_input%search_shells < 0) then
+      call set_error_input(error, 'Error: search_shells must be positive', comm)
+      return
+    endif
 
-    kmesh_input%tol = 0.000001_dp
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_tol', found, r_value=kmesh_input%tol)
-    if (kmesh_input%tol < 0.0_dp) call io_error('Error: kmesh_tol must be positive', stdout, seedname)
+    call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm, &
+                                   r_value=kmesh_input%tol)
+    if (allocated(error)) return
+    if (kmesh_input%tol < 0.0_dp) then
+      call set_error_input(error, 'Error: kmesh_tol must be positive', comm)
+      return
+    endif
 
-    kmesh_input%num_shells = 0
-    call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, lcount=.true.)
+    call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
+                                        .true., error, comm)
+    if (allocated(error)) return
     if (found) then
-      if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) &
-        call io_error('Error: number of shell in shell_list must be between zero and six', stdout, seedname)
-      if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > max_shells) then
+        call set_error_input(error, 'Error: number of shell in shell_list must be between zero and six', comm)
+        return
+      endif
+      !if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
       allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating shell_list in w90_wannier90_readwrite_read', stdout, seedname)
-      call w90_readwrite_get_range_vector(stdout, seedname, 'shell_list', found, kmesh_input%num_shells, .false., &
-                                          kmesh_input%shell_list)
-      if (any(kmesh_input%shell_list < 1)) &
-        call io_error('Error: shell_list must contain positive numbers', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read', comm)
+        return
+      endif
+      call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
+                                          .false., error, comm, kmesh_input%shell_list)
+      if (allocated(error)) return
+      if (any(kmesh_input%shell_list < 1)) then
+        call set_error_input(error, 'Error: shell_list must contain positive numbers', comm)
+        return
+      endif
     else
-      if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      !if (allocated(kmesh_input%shell_list)) deallocate (kmesh_input%shell_list)
+      ! this is the default allocation of the shell_list--used by kmesh_shell_automatic()
       allocate (kmesh_input%shell_list(max_shells), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating shell_list in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating shell_list in w90_readwrite_read_kmesh_data', comm)
+        return
+      endif
     end if
 
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_shells', found, i_value=itmp)
-    if (found .and. (itmp /= kmesh_input%num_shells)) &
-      call io_error('Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', stdout, seedname)
+    call w90_readwrite_get_keyword(settings, 'num_shells', found, error, comm, i_value=itmp)
+    if (allocated(error)) return
+    if (found .and. (itmp /= kmesh_input%num_shells)) then
+      call set_error_input(error, 'Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', comm)
+      return
+    endif
 
     ! If .true., does not perform the check of B1 of
     ! Marzari, Vanderbild, PRB 56, 12847 (1997)
     ! in kmesh.F90
     ! mainly needed for the interaction with Z2PACK
     ! By default: .false. (perform the tests)
-    kmesh_input%skip_B1_tests = .false.
-    call w90_readwrite_get_keyword(stdout, seedname, 'skip_b1_tests', found, l_value=kmesh_input%skip_B1_tests)
-
+    call w90_readwrite_get_keyword(settings, 'skip_b1_tests', found, error, comm, &
+                                   l_value=kmesh_input%skip_B1_tests)
+    if (allocated(error)) return
   end subroutine w90_readwrite_read_kmesh_data
 
-  subroutine w90_readwrite_read_kpoints(pw90_effective_model, library, kpt_latt, num_kpts, &
-                                        bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_kpoints(settings, pw90_effective_model, kpt_latt, num_kpts, bohr, &
+                                        error, comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
-    character(len=50), intent(in)  :: seedname
+    ! arguments
     integer, intent(in) :: num_kpts
-    integer, intent(in) :: stdout
-    logical, intent(in) :: pw90_effective_model, library
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    real(kind=dp), allocatable :: kpt_cart(:, :)
+    logical, intent(in) :: pw90_effective_model
+    real(kind=dp), allocatable, intent(out) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
+    type(settings_type), intent(inout) :: settings
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
+    ! local variables
+    real(kind=dp), allocatable :: kpt_cart(:, :)
     integer :: ierr
     logical :: found
 
-    if (.not. pw90_effective_model) allocate (kpt_cart(3, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating kpt_cart in w90_wannier90_readwrite_read', stdout, seedname)
-    if (.not. library) then
-      allocate (kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in w90_wannier90_readwrite_read', stdout, seedname)
-    end if
+    ! pw90_effective_model ignores kpt_cart
+    ! this routine allocates the intent(out) kpt_latt
 
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, num_kpts, 3, bohr, &
-                                         r_value=kpt_cart)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
-    if (.not. library .and. .not. pw90_effective_model) then
+    ierr = 0
+
+    allocate (kpt_latt(3, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_kpoints', comm)
+      return
+    endif
+
+    if (.not. pw90_effective_model) then
+      allocate (kpt_cart(3, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
+        return
+      endif
+
+      call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
+                                           comm, r_value=kpt_cart)
+      if (allocated(error)) return
+      if (.not. found) then
+        call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
+        return
+      endif
       kpt_latt = kpt_cart
-      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file', stdout, seedname)
-    end if
 
-    ! Calculate the kpoints in cartesian coordinates
-    !if (.not. pw90_effective_model) then
-    !  do nkp = 1, num_kpts
-    !    k_points%kpt_cart(:, nkp) = matmul(k_points%kpt_latt(:, nkp), recip_lattice(:, :))
-    !  end do
-    !endif
-    deallocate (kpt_cart, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating kpt_cart in w90_wannier90_readwrite_read', stdout, seedname)
-
+      deallocate (kpt_cart, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_kpoints', comm)
+        return
+      endif
+    endif
   end subroutine w90_readwrite_read_kpoints
 
-  subroutine w90_readwrite_read_lattice(library, real_lattice, bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_lattice(settings, real_lattice, bohr, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    logical, intent(in) :: library
-    integer, intent(in) :: stdout
     real(kind=dp), intent(out) :: real_lattice(3, 3)
     real(kind=dp) :: real_lattice_tmp(3, 3)
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     logical :: found
 
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 3, 3, bohr, r_value=real_lattice_tmp)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
-    if (.not. library) then
-      real_lattice = transpose(real_lattice_tmp)
-      if (.not. found) call io_error('Error: Did not find the cell information in the input file', stdout, seedname)
-    end if
+    call w90_readwrite_get_keyword_block(settings, 'unit_cell_cart', found, 3, 3, bohr, error, &
+                                         comm, r_value=real_lattice_tmp)
+    if (allocated(error)) return
+    real_lattice = transpose(real_lattice_tmp)
+    if (.not. found) then
+      call set_error_input(error, 'Error: Did not find the cell information in the input file', comm)
+      return
+    endif
   end subroutine w90_readwrite_read_lattice
 
-  subroutine w90_readwrite_read_atoms(library, atom_data, real_lattice, bohr, stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_read_atoms(settings, atom_data, real_lattice, bohr, error, comm)
+    use w90_error, only: w90_error_type, set_error_input
     implicit none
-    logical, intent(in) :: library
-    integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atom_data
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: i_temp, i_temp2
     logical :: found, found2, lunits
 
+    if (allocated(settings%entries)) return ! don't attempt this read in library mode
+
     ! Atoms
-    if (.not. library) atom_data%num_atoms = 0
-    call w90_readwrite_get_block_length(stdout, seedname, 'atoms_frac', found, i_temp, library)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call w90_readwrite_get_block_length(stdout, seedname, 'atoms_cart', found2, i_temp2, library, lunits)
-    if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
-    if (.not. library) then
-      if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart', stdout, seedname)
-      if (found .and. i_temp > 0) then
-        lunits = .false.
-        atom_data%num_atoms = i_temp
-      elseif (found2 .and. i_temp2 > 0) then
-        atom_data%num_atoms = i_temp2
-        if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
-      end if
-      if (atom_data%num_atoms > 0) then
-        call readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
-      end if
-    endif
+    call w90_readwrite_get_block_length(settings, 'atoms_frac', found, i_temp, error, comm)
+    if (allocated(error)) return
+    call w90_readwrite_get_block_length(settings, 'atoms_cart', found2, i_temp2, error, comm, lunits)
+    if (allocated(error)) return
+    if (found .and. found2) then
+      call set_error_input(error, 'Error: Cannot specify both atoms_frac and atoms_cart', comm)
+      return
+    elseif (found .and. i_temp > 0) then
+      lunits = .false.
+      atom_data%num_atoms = i_temp
+    elseif (found2 .and. i_temp2 > 0) then
+      atom_data%num_atoms = i_temp2
+      ! when units are specified, one fewer line than the total contains atom information
+      if (lunits) atom_data%num_atoms = atom_data%num_atoms - 1
+    end if
+    if (atom_data%num_atoms > 0) then
+      call readwrite_get_atoms(settings, atom_data, lunits, real_lattice, bohr, error, comm)
+      if (allocated(error)) return
+    end if
   end subroutine w90_readwrite_read_atoms
 
-  subroutine w90_readwrite_clear_keywords(stdout, seedname)
+  subroutine w90_readwrite_clear_keywords(settings, comm)
     ! wannier90.x and postw90.x now only read their own subset of the valid tokens in the ctrl file
     ! checking of the ctrl file is by testing for the presence of any remaining strings in the file
     ! after removing all valid keys.
@@ -712,314 +885,377 @@ contains
     !
     ! (for _vector: just specify zero length)
     ! (for _block: small modification to skip checking/failure when rows=0 )
-    use w90_io, only: io_error
+    !use w90_io, only: io_error
+    use w90_error, only: w90_error_type
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
+
+    ! this error is never returned (i.e. errors here are discarded)
+    type(w90_error_type), allocatable :: error
 
     logical :: found
+    integer :: lx
+    integer, allocatable :: lxa(:)
 
     ! keywords for wannier.x
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'dis_spheres', found, 0, 0, 0.0_dp)
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'kpoints', found, 0, 0, 0.0_dp)
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'nnkpts', found, 0, 0, 0.0_dp)
-    call w90_readwrite_get_keyword_block(stdout, seedname, 'unit_cell_cart', found, 0, 0, 0.0_dp)
-    call clear_block(stdout, seedname, 'projections')
-    call clear_block(stdout, seedname, 'kpoint_path')
-    call w90_readwrite_get_keyword(stdout, seedname, 'auto_projections', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_num_points', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_dim', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_format', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'bands_plot_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'calc_only_A', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_noise_amp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_noise_num', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'conv_window', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'cp_pp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'devel_flag', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_conv_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_conv_window', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_froz_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_mix_ratio', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_num_iter', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_spheres_first_wann', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_spheres_num', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_hc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dist_cutoff_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dis_win_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_num_points', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_plot_format', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fermi_surface_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'fixed_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gamma_only', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'guiding_centres', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'hr_cutoff', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'hr_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'iprint', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kmesh_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'length_unit', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_bands', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_cg_steps', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_dump_cycles', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_elec_per_state', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_guide_cycles', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_iter', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_no_guide_iter', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_print_cycles', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_shells', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_valence_bands', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'num_wann', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'one_dim_axis', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'optimisation', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'postproc_setup', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'precond', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'restart', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'search_shells', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'site_symmetry', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'skip_b1_tests', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_constrain', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_lambda', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'slwf_num', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spinors', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'symmetrize_eps', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'timing_level', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_easy_fix', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_group_threshold', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_bandc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_bb', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cell_ll', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cell_rr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_cr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_lc', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_ll', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_num_rr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_read_ht', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'translate_home_cell', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'transport', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'transport_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_use_same_lead', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_win_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_win_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'tran_write_ht', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'trial_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_bloch_phases', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_ws_distance', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_format', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_radius', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_scale', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_spinor_mode', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wannier_plot_spinor_phase', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_bvec', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_hr_diag', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_hr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_proj', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_r2mn', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_rmn', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_tb', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_u_matrices', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_vdw_data', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'write_xyz', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'ws_distance_tol', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wvfn_formatted', found)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kmesh', found, 0) ! the absent arrays have zero length ;-)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'mp_grid', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'translation_centre_frac', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'wannier_plot_supercell', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'ws_search_size', found, 0)
+
+    call clear_block(settings, 'atoms_cart', error, comm)
+    call clear_block(settings, 'atoms_frac', error, comm)
+    call clear_block(settings, 'dis_spheres', error, comm)
+    call clear_block(settings, 'kpoint_path', error, comm)
+    call clear_block(settings, 'kpoints', error, comm)
+    call clear_block(settings, 'nnkpts', error, comm)
+    call clear_block(settings, 'projections', error, comm)
+    call clear_block(settings, 'slwf_centres', error, comm)
+    call clear_block(settings, 'unit_cell_cart', error, comm)
+    call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot_dim', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot_format', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'bands_plot_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'calc_only_A', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'cp_pp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'devel_flag', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_froz_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_mix_ratio', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_num_iter', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_spheres_first_wann', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_spheres_num', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dist_cutoff', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dist_cutoff_hc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dist_cutoff_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_surface_num_points', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_surface_plot_format', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fermi_surface_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'fixed_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gamma_only', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'guiding_centres', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'hr_cutoff', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'hr_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_cg_steps', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_dump_cycles', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_elec_per_state', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_guide_cycles', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_iter', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_no_guide_iter', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_print_cycles', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_shells', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_valence_bands', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'num_wann', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'one_dim_axis', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'optimisation', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'postproc_setup', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'precond', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'restart', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'site_symmetry', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'skip_b1_tests', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'slwf_constrain', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'slwf_lambda', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'slwf_num', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spinors', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'symmetrize_eps', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'timing_level', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_easy_fix', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_group_threshold', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_bandc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_bb', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cell_ll', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cell_rr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_cr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_lc', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_ll', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_num_rr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_read_ht', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'translate_home_cell', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'transport', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'transport_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_use_same_lead', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_win_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_win_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tran_write_ht', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'trial_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_format', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_radius', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_scale', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_spinor_mode', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_plot_spinor_phase', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_bvec', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_hr_diag', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_hr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_proj', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_r2mn', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_rmn', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_tb', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_u_matrices', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_vdw_data', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'write_xyz', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'ws_distance_tol', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wvfn_formatted', found, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kmesh', found, 0, error, comm) ! the absent arrays have zero length ;-)
+    call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'translation_centre_frac', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'wannier_plot_supercell', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 0, error, comm)
+    call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_read_exclude_bands(settings, lxa, lx, error, comm)
     ! ends list of wannier.x keywords
 
     ! keywords for postw90.x
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_adpt_kmesh_thresh', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_curv_unit', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'berry_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_2d_dir', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift_energyshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift_firstband', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_bandshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_calc_also_dos', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_dos_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_mu_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_relax_time', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_tdf_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltz_temp_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'boltzwann', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'degen_thr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_energy_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'dos_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'effective_model', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp_alsofirstder', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'geninterp_single_file', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_degen_thresh', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_eigval_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_freq_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_max_arg', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'gyrotropic_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_bands_colour', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_num_points', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kpath_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice_fermi_lines_colour', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kslice_task', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kdotp_num_bands', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr_fac', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_adpt_smr_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_eigval_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_max', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_min', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_freq_step', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'kubo_smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_eta', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'scissors_shift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_phase_conv', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_use_eta_corr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'sc_w_thr', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_alpha', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift_energyshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift_firstband', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_bandshift', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_beta', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_freq_scan', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_gamma', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'shc_method', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_fixed_en_width', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_max_arg', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'smr_type', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_axis_azimuth', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_axis_polar', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_decomp', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_kmesh_spacing', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spin_moment', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'spn_formatted', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'transl_inv', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'uhu_formatted', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'use_degen_pert', found)
-    call w90_readwrite_get_keyword(stdout, seedname, 'wanint_kpoint_file', found)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'berry_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'boltz_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'dos_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b1', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b2', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_b3', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_box_center', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'gyrotropic_kmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kdotp_kpoint', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_2dkmesh', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b1', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_b2', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'kslice_corner', found, 0)
-    call w90_readwrite_get_keyword_vector(stdout, seedname, 'spin_kmesh', found, 0)
-    ! BGS what about get_range_vectors and gyrotropic_band_list, kdotp_bands etc?
+    call w90_readwrite_get_keyword(settings, 'adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh_thresh', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_curv_unit', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'berry_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_2d_dir', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_bandshift_energyshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_bandshift_firstband', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_bandshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_calc_also_dos', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_mu_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_mu_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_mu_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_relax_time', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_tdf_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_tdf_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_tdf_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_temp_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_temp_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltz_temp_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'boltzwann', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'degen_thr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_energy_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_energy_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_energy_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dos_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'effective_model', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'geninterp_alsofirstder', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'geninterp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'geninterp_single_file', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_degen_thresh', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_eigval_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_max_arg', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'gyrotropic_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath_bands_colour', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath_num_points', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kpath_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kslice_fermi_lines_colour', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kslice', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kslice_task', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kdotp_num_bands', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_fac', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_eigval_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_freq_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_freq_min', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_freq_step', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'kubo_smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_eta', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'scissors_shift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_phase_conv', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_use_eta_corr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'sc_w_thr', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_alpha', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_bandshift_energyshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_bandshift_firstband', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_bandshift', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_beta', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_freq_scan', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_gamma', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'shc_method', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'smr_fixed_en_width', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'smr_max_arg', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'smr_type', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_axis_azimuth', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_axis_polar', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_decomp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_kmesh_spacing', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spin_moment', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'spn_formatted', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'transl_inv', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'uhu_formatted', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'use_degen_pert', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wanint_kpoint_file', found, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'berry_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'boltz_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'dos_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b1', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b2', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b3', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_center', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kdotp_kpoint', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_2dkmesh', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_b1', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_b2', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'kslice_corner', found, 0, error, comm)
+    call w90_readwrite_get_keyword_vector(settings, 'spin_kmesh', found, 0, error, comm)
+    call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .true., error, comm)
+    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .false., error, comm, lxa)
+    deallocate (lxa)
     ! ends list of postw90 keywords
-
+    if (allocated(error)) deallocate (error)
   end subroutine w90_readwrite_clear_keywords
 
-  subroutine w90_readwrite_clean_infile(stdout, seedname)
-    use w90_io, only: io_error
+  subroutine w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
+    use w90_error, only: w90_error_type, set_error_input, set_error_dealloc
     implicit none
     integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer :: loop, ierr
 
     ! filter out any remaining accepted keywords from both wannier90.x and postw90.x sets
-    call w90_readwrite_clear_keywords(stdout, seedname)
+    ! assumes settings%in_data is allocated
+    call w90_readwrite_clear_keywords(settings, comm)
 
-    if (any(len_trim(in_data(:)) > 0)) then
+    if (any(len_trim(settings%in_data(:)) > 0)) then
       write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
       write (stdout, *)
-      do loop = 1, num_lines
-        if (len_trim(in_data(loop)) > 0) then
-          write (stdout, '(1x,a)') trim(in_data(loop))
+      do loop = 1, settings%num_lines
+        if (len_trim(settings%in_data(loop)) > 0) then
+          write (stdout, '(1x,a)') trim(settings%in_data(loop))
         end if
       end do
       write (stdout, *)
-      call io_error('Unrecognised keyword(s) in input file, see also output file', stdout, seedname)
+      call set_error_input(error, 'Unrecognised keyword(s) in input file, see also output file', comm)
+      return
     end if
 
-    deallocate (in_data, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating in_data in w90_wannier90_readwrite_read', stdout, seedname)
-
+    deallocate (settings%in_data, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating in_data in w90_readwrite_clean_infile', comm)
+      return
+    endif
+    settings%num_lines = 0
   end subroutine w90_readwrite_clean_infile
 
-  subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, &
-                                            num_wann, num_bands, num_kpts, stdout, seedname)
+  subroutine w90_readwrite_read_final_alloc(disentanglement, dis_manifold, wannier_data, num_wann, &
+                                            num_bands, num_kpts, error, comm)
     !================================================== !
     ! Some checks and initialisations !
+    ! conditionally allocates:
+    !   dis_manifold%lwindow(num_bands, num_kpts)
+    !   dis_manifold%ndimwin(num_kpts)
+    !   dis_manifold%nfirstwin(num_kpts)
+    !   wannier_data%centres(3, num_wann)
+    !   wannier_data%spreads(num_wann)
+    !     small arrays... maybe overkill here?
+    !
+    !   this is currenty only called by the legacy library (Jun 23)
     !================================================== !
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc
     implicit none
-    integer, intent(in) :: stdout
     logical, intent(in) :: disentanglement
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(wannier_data_type), intent(inout) :: wannier_data
     integer, intent(in) :: num_wann, num_bands, num_kpts
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: ierr
 
     if (disentanglement) then
       if (allocated(dis_manifold%ndimwin)) deallocate (dis_manifold%ndimwin)
       allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating ndimwin in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_read_final_alloc()', comm)
+        return
+      endif
+      if (allocated(dis_manifold%nfirstwin)) deallocate (dis_manifold%nfirstwin)
+      allocate (dis_manifold%nfirstwin(num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating nfirstwin in w90_wannier90_read_final_alloc()', comm)
+        return
+      endif
       if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
       allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating lwindow in w90_wannier90_readwrite_read', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_read_final_alloc()', comm)
+        return
+      endif
     endif
 
 !    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
@@ -1033,11 +1269,17 @@ contains
 
     if (allocated(wannier_data%centres)) deallocate (wannier_data%centres)
     allocate (wannier_data%centres(3, num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating wannier_centres in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating wannier_centres in w90_wannier90_readwrite_read', comm)
+      return
+    endif
     wannier_data%centres = 0.0_dp
     if (allocated(wannier_data%spreads)) deallocate (wannier_data%spreads)
     allocate (wannier_data%spreads(num_wann), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wannier_spreads in w90_wannier90_readwrite_read', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in w90_wannier90_readwrite_read', comm)
+      return
+    endif
     wannier_data%spreads = 0.0_dp
   end subroutine w90_readwrite_read_final_alloc
 
@@ -1071,7 +1313,6 @@ contains
     do i = 1, 3
       mesh(i) = int(floor(blen(i)/spacing)) + 1
     end do
-
   end subroutine w90_readwrite_set_kmesh
 
   function w90_readwrite_get_smearing_type(smearing_index)
@@ -1116,20 +1357,20 @@ contains
 
   end function w90_readwrite_get_convention_type
 
-  function w90_readwrite_get_smearing_index(string, keyword, stdout, seedname)
+  function w90_readwrite_get_smearing_index(string, keyword, error, comm)
     !! This function parses a string containing the type of
     !! smearing and returns the correct index for the smearing_index variable
     !
     !! If the string is not valid, an io_error is issued
-    use w90_io, only: io_error
-    integer, intent(in) :: stdout
+    use w90_error, only: w90_error_type, set_error_input
     character(len=*), intent(in) :: string
     !! The string read from input
     character(len=*), intent(in) :: keyword
     !! The keyword that was read (e.g., smr_type), so that we can print a more useful error message
-    character(len=50), intent(in)  :: seedname
-    integer :: w90_readwrite_get_smearing_index
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
+    integer :: w90_readwrite_get_smearing_index
     integer :: pos
 
     w90_readwrite_get_smearing_index = 0 ! To avoid warnings of unset variables
@@ -1143,8 +1384,10 @@ contains
         w90_readwrite_get_smearing_index = 1
       else
         read (string(pos + 3:), *, err=337) w90_readwrite_get_smearing_index
-        if (w90_readwrite_get_smearing_index < 0) &
-          call io_error('Wrong m-p smearing order in keyword '//trim(keyword), stdout, seedname)
+        if (w90_readwrite_get_smearing_index < 0) then
+          call set_error_input(error, 'Wrong m-p smearing order in keyword '//trim(keyword), comm)
+          return
+        endif
       end if
     elseif (index(string, 'f-d') > 0) then
       w90_readwrite_get_smearing_index = -99
@@ -1155,69 +1398,26 @@ contains
       w90_readwrite_get_smearing_index = 0
       ! Unrecognised keyword
     else
-      call io_error('Unrecognised value for keyword '//trim(keyword), stdout, seedname)
+      call set_error_input(error, 'Unrecognised value for keyword '//trim(keyword), comm)
+      return
     end if
 
     return
 
-337 call io_error('Wrong m-p smearing order in keyword '//trim(keyword), stdout, seedname)
+337 call set_error_input(error, 'Wrong m-p smearing order in keyword '//trim(keyword), comm)
+    return
 
   end function w90_readwrite_get_smearing_index
 
 !================================================
-  subroutine w90_readwrite_uppercase(atom_data, kpoint_path, length_unit)
-    !================================================
-    !! Convert a few things to uppercase to look nice in the output
-    !
-    !================================================
-
-    implicit none
-
-    type(atom_data_type), intent(inout) :: atom_data
-    type(kpoint_path_type), intent(inout) :: kpoint_path
-    character(len=*), intent(inout) :: length_unit
-    integer :: nsp, ic, loop, inner_loop
-
-    ! Atom labels (eg, si --> Si)
-    do nsp = 1, atom_data%num_species
-      ic = ichar(atom_data%label(nsp) (1:1))
-      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atom_data%label(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    enddo
-
-    do nsp = 1, atom_data%num_species
-      ic = ichar(atom_data%symbol(nsp) (1:1))
-      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atom_data%symbol(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    enddo
-
-    ! Bands labels (eg, x --> X)
-    if (allocated(kpoint_path%labels)) then
-      do loop = 1, size(kpoint_path%labels)
-        do inner_loop = 1, len(kpoint_path%labels(loop))
-          ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
-          if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-            kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
-        enddo
-      enddo
-    endif
-
-    ! Length unit (ang --> Ang, bohr --> Bohr)
-    ic = ichar(length_unit(1:1))
-    if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-      length_unit(1:1) = char(ic + ichar('Z') - ichar('z'))
-
-    return
-
-  end subroutine w90_readwrite_uppercase
-
-  subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, constants_version_str2, stdout)
+  subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, &
+                                        constants_version_str2, mpi_size, stdout)
     !! Write a suitable header for the calculation - version authors etc
     use w90_io, only: io_date, w90_version
 
     implicit none
 
-    integer, intent(in) :: stdout
+    integer, intent(in) :: stdout, mpi_size
     character(len=*), intent(in) :: bohr_version_str, constants_version_str1, constants_version_str2
     character(len=9) :: cdate, ctime
 
@@ -1305,127 +1505,148 @@ contains
     write (stdout, '(1X,A)') '******************************************************************************'
     write (stdout, *) ''
 
+    ! show parallel/serial execution
+    if (mpi_size == 1) then
+#ifdef MPI
+      write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
+#else
+      write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
+#endif
+    else
+      write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', mpi_size, ' CPUs'
+    endif
   end subroutine w90_readwrite_write_header
 
 !================================================!
   subroutine w90_readwrite_dealloc(exclude_bands, wannier_data, input_proj, kmesh_input, kpt_latt, &
-                                   dis_manifold, atom_data, eigval, kpoint_path, stdout, seedname)
+                                   dis_manifold, atom_data, eigval, kpoint_path, error, comm)
     !================================================!
     !! release memory from allocated parameters
     !
     !================================================
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_dealloc
 
     implicit none
 
+    integer, allocatable, intent(inout) :: exclude_bands(:)
+    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
+    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
     type(atom_data_type), intent(inout) :: atom_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
     type(kmesh_input_type), intent(inout) :: kmesh_input
     type(kpoint_path_type), intent(inout) :: kpoint_path
-    type(proj_input_type), intent(inout) :: input_proj
+    type(proj_type), allocatable, intent(inout) :: input_proj(:)
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
     type(wannier_data_type), intent(inout) :: wannier_data
-    integer, allocatable, intent(inout) :: exclude_bands(:)
-    integer, intent(in) :: stdout
-    real(kind=dp), allocatable, intent(inout) :: eigval(:, :)
-    real(kind=dp), allocatable, intent(inout) :: kpt_latt(:, :)
-    character(len=50), intent(in)  :: seedname
 
     integer :: ierr
 
     if (allocated(dis_manifold%ndimwin)) then
       deallocate (dis_manifold%ndimwin, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating ndimwin in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ndimwin in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(dis_manifold%lwindow)) then
       deallocate (dis_manifold%lwindow, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating lwindow in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lwindow in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(eigval)) then
       deallocate (eigval, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating eigval in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating eigval in w90_readwrite_dealloc', comm)
+        return
+      endif
     endif
     if (allocated(kmesh_input%shell_list)) then
       deallocate (kmesh_input%shell_list, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating shell_list in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating shell_list in w90_readwrite_dealloc', comm)
+        return
+      endif
     endif
     if (allocated(kpt_latt)) then
       deallocate (kpt_latt, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating kpt_latt in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating kpt_latt in w90_readwrite_dealloc', comm)
+        return
+      endif
     endif
     if (allocated(kpoint_path%labels)) then
       deallocate (kpoint_path%labels, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating labels in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating labels in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(kpoint_path%points)) then
       deallocate (kpoint_path%points, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating points in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating points in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(atom_data%label)) then
       deallocate (atom_data%label, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_label in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_label in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(atom_data%symbol)) then
       deallocate (atom_data%symbol, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_symbol in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(atom_data%pos_cart)) then
       deallocate (atom_data%pos_cart, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_pos_cart in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(atom_data%species_num)) then
       deallocate (atom_data%species_num, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_species_num in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
-    if (allocated(input_proj%site)) then
-      deallocate (input_proj%site, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_site in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%l)) then
-      deallocate (input_proj%l, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_l in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%m)) then
-      deallocate (input_proj%m, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_m in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%s)) then
-      deallocate (input_proj%s, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_s in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%s_qaxis)) then
-      deallocate (input_proj%s_qaxis, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_s_qaxis in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%z)) then
-      deallocate (input_proj%z, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_z in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%x)) then
-      deallocate (input_proj%x, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_x in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%radial)) then
-      deallocate (input_proj%radial, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_radial in w90_readwrite_dealloc', stdout, seedname)
-    end if
-    if (allocated(input_proj%zona)) then
-      deallocate (input_proj%zona, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating input_proj_zona in w90_readwrite_dealloc', stdout, seedname)
+    if (allocated(input_proj)) then
+      deallocate (input_proj, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating input_proj in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(exclude_bands)) then
       deallocate (exclude_bands, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating exclude_bands in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating exclude_bands in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(wannier_data%centres)) then
       deallocate (wannier_data%centres, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_centres in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wannier_centres in w90_readwrite_dealloc', comm)
+        return
+      endif
     end if
     if (allocated(wannier_data%spreads)) then
       deallocate (wannier_data%spreads, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating wannier_spreads in w90_readwrite_dealloc', stdout, seedname)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wannier_spreads in w90_readwrite_dealloc', comm)
+        return
+      endif
     endif
-    return
-
   end subroutine w90_readwrite_dealloc
 
 !~  !================================================!
@@ -1437,7 +1658,7 @@ contains
 !~    !================================================!
 !~
 !~
-!~    use w90_io,        only : io_file_unit,io_error,seedname,io_date
+!~    use w90_io,        only : io_error,seedname,io_date
 !~    implicit none
 !~
 !~    integer :: i,j,k,l,um_unit
@@ -1447,8 +1668,7 @@ contains
 !~    call io_date(cdate, ctime)
 !~    header='written on '//cdate//' at '//ctime
 !~
-!~    um_unit=io_file_unit()
-!~    open(unit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
+!~    open(newunit=um_unit,file=trim(seedname)//'_um.dat',form='unformatted')
 !~    write(um_unit) header
 !~    write(um_unit) omega_invariant
 !~    write(um_unit) num_wann,num_kpts,num_nnmax
@@ -1468,7 +1688,7 @@ contains
 !~    !                                !
 !~    !================================================!
 !~
-!~    use w90_io,        only : io_file_unit,io_error,seedname
+!~    use w90_io,        only : io_error,seedname
 !~    implicit none
 !~
 !~    integer       :: tmp_num_wann,tmp_num_kpts,tmp_num_nnmax
@@ -1476,8 +1696,7 @@ contains
 !~    character(len=33) :: header
 !~    real(kind=dp) :: tmp_omi
 !~
-!~    um_unit=io_file_unit()
-!~    open(unit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
+!~    open(newunit=um_unit,file=trim(seedname)//'_um.dat',status="old",form='unformatted',err=105)
 !~    read(um_unit) header
 !~    write(stdout,'(1x,4(a))') 'Reading U and M from file ',trim(seedname),'_um.dat ', header
 !~    read(um_unit) tmp_omi
@@ -1508,10 +1727,74 @@ contains
 ! $  end subroutine w90_wannier90_readwrite_read_um
 
 !================================================!
-  subroutine w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, wannier_data, m_matrix, &
-                                      u_matrix, u_matrix_opt, real_lattice, &
-                                      omega_invariant, mp_grid, num_bands, num_exclude_bands, num_kpts, &
-                                      num_wann, checkpoint, have_disentangled, ispostw90, seedname, stdout)
+  subroutine w90_readwrite_read_chkpt(dis_manifold, exclude_bands, kmesh_info, kpt_latt, &
+                                      wannier_data, m_matrix, u_matrix, u_matrix_opt, &
+                                      real_lattice, omega_invariant, mp_grid, num_bands, &
+                                      num_exclude_bands, num_kpts, num_wann, checkpoint, &
+                                      have_disentangled, ispostw90, seedname, stdout, error, comm)
+    !================================================!
+    !! Read checkpoint file
+    !! This is used to allocate the matrices.
+    !!
+    !! Note on parallelization: this function should be called
+    !! from the root node only!
+    !!
+    !================================================!
+
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
+    use w90_utility, only: utility_recip_lattice
+
+    implicit none
+
+    ! arguments
+    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(wannier_data_type), intent(inout) :: wannier_data
+
+    integer, allocatable, intent(inout) :: exclude_bands(:)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_exclude_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(inout) :: omega_invariant
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    character(len=*), intent(inout) :: checkpoint
+    character(len=*), intent(in)  :: seedname
+
+    logical, intent(in) :: ispostw90 ! Are we running postw90?
+    logical, intent(out) :: have_disentangled
+
+    ! local variables
+    integer :: chk_unit
+
+    call w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
+                                         mp_grid, num_bands, num_exclude_bands, num_kpts, &
+                                         num_wann, checkpoint, have_disentangled, ispostw90, &
+                                         seedname, chk_unit, stdout, error, comm)
+    if (allocated(error)) return
+
+    call w90_readwrite_read_chkpt_matrices(dis_manifold, kmesh_info, wannier_data, m_matrix, &
+                                           u_matrix, u_matrix_opt, omega_invariant, num_bands, &
+                                           num_kpts, num_wann, have_disentangled, seedname, &
+                                           chk_unit, stdout, error, comm)
+  end subroutine w90_readwrite_read_chkpt
+
+!================================================!
+  subroutine w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
+                                             mp_grid, num_bands, num_exclude_bands, num_kpts, &
+                                             num_wann, checkpoint, have_disentangled, ispostw90, &
+                                             seedname, io_unit, stdout, error, comm)
     !================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -1523,16 +1806,16 @@ contains
     !================================================!
 
     use w90_constants, only: eps6
-    use w90_io, only: io_file_unit, io_error
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
     use w90_utility, only: utility_recip_lattice
 
     implicit none
 
     integer, allocatable, intent(inout) :: exclude_bands(:)
-    type(wannier_data_type), intent(inout) :: wannier_data
     type(kmesh_info_type), intent(in) :: kmesh_info
     real(kind=dp), intent(in) :: kpt_latt(:, :)
-    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_bands
@@ -1540,15 +1823,11 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_exclude_bands
-
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: m_matrix(:, :, :, :)
+    integer, intent(out) :: io_unit
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    real(kind=dp), intent(inout) :: omega_invariant
 
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
@@ -1556,15 +1835,15 @@ contains
 
     ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
-    integer :: chk_unit, nkp, i, j, k, l, ntmp, ierr
+    integer :: chk_unit, nkp, i, j, ntmp
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands), tmp_mp_grid(1:3)
 
     write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
-    chk_unit = io_file_unit()
-    open (unit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
+    open (newunit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
+    io_unit = chk_unit
 
     ! Read comment line
     read (chk_unit) header
@@ -1572,57 +1851,132 @@ contains
 
     ! Consistency checks
     read (chk_unit) ntmp                           ! Number of bands
-    if (ntmp .ne. num_bands) call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_bands', stdout, seedname)
+    if (ntmp .ne. num_bands) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_bands', comm)
+      return
+    endif
     read (chk_unit) ntmp                           ! Number of excluded bands
-    if (ntmp .ne. num_exclude_bands) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_exclude_bands', stdout, seedname)
+    if (ntmp .ne. num_exclude_bands) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_exclude_bands', comm)
+      return
+    endif
     read (chk_unit) (tmp_excl_bands(i), i=1, num_exclude_bands) ! Excluded bands
     do i = 1, num_exclude_bands
-      if (tmp_excl_bands(i) .ne. exclude_bands(i)) &
-        call io_error('w90_wannier90_readwrite_read_chk: Mismatch in exclude_bands', stdout, seedname)
+      if (tmp_excl_bands(i) .ne. exclude_bands(i)) then
+        call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in exclude_bands', comm)
+        return
+      endif
     enddo
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Real lattice
     do j = 1, 3
       do i = 1, 3
-        if (abs(tmp_latt(i, j) - real_lattice(i, j)) .gt. eps6) &
-          call io_error('w90_wannier90_readwrite_read_chk: Mismatch in real_lattice', stdout, seedname)
+        if (abs(tmp_latt(i, j) - real_lattice(i, j)) .gt. eps6) then
+          call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in real_lattice', comm)
+          return
+        endif
       enddo
     enddo
-    call utility_recip_lattice(real_lattice, recip_lattice, volume, stdout, seedname)
+    call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Reciprocal lattice
     do j = 1, 3
       do i = 1, 3
-        if (abs(tmp_latt(i, j) - recip_lattice(i, j)) .gt. eps6) &
-          call io_error('w90_wannier90_readwrite_read_chk: Mismatch in recip_lattice', stdout, seedname)
+        if (abs(tmp_latt(i, j) - recip_lattice(i, j)) .gt. eps6) then
+          call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in recip_lattice', comm)
+          return
+        endif
       enddo
     enddo
     read (chk_unit) ntmp                ! K-points
-    if (ntmp .ne. num_kpts) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_kpts', stdout, seedname)
+    if (ntmp .ne. num_kpts) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_kpts', comm)
+      return
+    endif
     read (chk_unit) (tmp_mp_grid(i), i=1, 3)         ! M-P grid
     do i = 1, 3
-      if (tmp_mp_grid(i) .ne. mp_grid(i)) &
-        call io_error('w90_wannier90_readwrite_read_chk: Mismatch in mp_grid', stdout, seedname)
+      if (tmp_mp_grid(i) .ne. mp_grid(i)) then
+        call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in mp_grid', comm)
+        return
+      endif
     enddo
     read (chk_unit) ((tmp_kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     do nkp = 1, num_kpts
       do i = 1, 3
-        if (abs(tmp_kpt_latt(i, nkp) - kpt_latt(i, nkp)) .gt. eps6) &
-          call io_error('w90_wannier90_readwrite_read_chk: Mismatch in kpt_latt', stdout, seedname)
+        if (abs(tmp_kpt_latt(i, nkp) - kpt_latt(i, nkp)) .gt. eps6) then
+          call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in kpt_latt', comm)
+          return
+        endif
       enddo
     enddo
     read (chk_unit) ntmp                ! nntot
-    if (ntmp .ne. kmesh_info%nntot) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in nntot', stdout, seedname)
+    if (ntmp .ne. kmesh_info%nntot) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in nntot', comm)
+      return
+    endif
     read (chk_unit) ntmp                ! num_wann
-    if (ntmp .ne. num_wann) &
-      call io_error('w90_wannier90_readwrite_read_chk: Mismatch in num_wann', stdout, seedname)
+    if (ntmp .ne. num_wann) then
+      call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_wann', comm)
+      return
+    endif
     ! End of consistency checks
 
     read (chk_unit) checkpoint             ! checkpoint
     checkpoint = adjustl(trim(checkpoint))
 
     read (chk_unit) have_disentangled      ! whether a disentanglement has been performed
+
+    return
+
+121 if (ispostw90) then
+      call set_error_file(error, 'Error opening '//trim(seedname) &
+                          //'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', comm)
+    else
+      call set_error_file(error, 'Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    end if
+  end subroutine w90_readwrite_read_chkpt_header
+
+!================================================!
+  subroutine w90_readwrite_read_chkpt_matrices(dis_manifold, kmesh_info, wannier_data, m_matrix, &
+                                               u_matrix, u_matrix_opt, omega_invariant, num_bands, &
+                                               num_kpts, num_wann, have_disentangled, seedname, &
+                                               chk_unit, stdout, error, comm)
+    !================================================!
+    !! Read checkpoint file
+    !! IMPORTANT! If you change the chkpt format, adapt
+    !! accordingly also the w90chk2chk.x utility!
+    !!
+    !! Note on parallelization: this function should be called
+    !! from the root node only!
+    !!
+    !================================================!
+
+    use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
+    use w90_utility, only: utility_recip_lattice
+
+    implicit none
+
+    type(dis_manifold_type), intent(inout) :: dis_manifold
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(wannier_data_type), intent(inout) :: wannier_data
+
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout, chk_unit
+
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :)
+
+    real(kind=dp), intent(inout) :: omega_invariant
+
+    character(len=*), intent(in)  :: seedname
+
+    logical, intent(in) :: have_disentangled
+
+    ! local variables
+    integer :: nkp, i, j, k, l, ierr
 
     if (have_disentangled) then
 
@@ -1631,38 +1985,32 @@ contains
       ! lwindow
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating lwindow in w90_readwrite_read_chkpt', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_read_chkpt', comm)
+          return
+        endif
       endif
       read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
 
       ! ndimwin
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating ndimwin in w90_readwrite_read_chkpt', stdout, seedname)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_read_chkpt', comm)
+          return
+        endif
       endif
       read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
-      if (.not. allocated(u_matrix_opt)) then
-        allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating u_matrix_opt in w90_readwrite_read_chkpt', stdout, seedname)
-      endif
       read (chk_unit, err=124) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
 
     endif
 
     ! U_matrix
-    if (.not. allocated(u_matrix)) then
-      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating u_matrix in w90_readwrite_read_chkpt', stdout, seedname)
-    endif
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
-    if (.not. allocated(m_matrix)) then
-      allocate (m_matrix(num_wann, num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating m_matrix in w90_readwrite_read_chkpt', stdout, seedname)
-    endif
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
     ! wannier_centres
@@ -1677,26 +2025,27 @@ contains
 
     return
 
-121 if (ispostw90) then
-      call io_error('Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt: did you run wannier90.x first?', stdout, &
-                    seedname)
-    else
-      call io_error('Error opening '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-    end if
-122 call io_error('Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-123 call io_error('Error reading ndimwin from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-124 call io_error('Error reading u_matrix_opt from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-125 call io_error('Error reading u_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-126 call io_error('Error reading m_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-127 call io_error('Error reading wannier_centres from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-128 call io_error('Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', stdout, seedname)
-
-  end subroutine w90_readwrite_read_chkpt
+122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+    return
+  end subroutine w90_readwrite_read_chkpt_matrices
 
 !================================================!
-  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, omega_invariant, &
-                                      num_bands, num_kpts, num_wann, checkpoint, have_disentangled, &
-                                      seedname, stdout, comm)
+  subroutine w90_readwrite_chkpt_dist(dis_manifold, wannier_data, u_matrix, u_matrix_opt, &
+                                      m_matrix, m_matrix_local, omega_invariant, num_bands, &
+                                      num_kpts, num_wann, nntot, checkpoint, have_disentangled, &
+                                      distk, error, comm)
     !================================================!
     !
     !! Distribute the chk files
@@ -1704,89 +2053,102 @@ contains
     !================================================!
 
     use w90_constants, only: dp
-    use w90_io, only: io_error, io_file_unit, io_date, io_time, io_stopwatch
-    use w90_comms, only: comms_bcast, w90comm_type, mpirank
+    use w90_io, only: io_date, io_time
+    use w90_comms, only: comms_bcast, w90_comm_type, mpirank
+    use w90_error, only: w90_error_type, set_error_alloc
 
     implicit none
 
     ! arguments
     type(wannier_data_type), intent(inout) :: wannier_data
     type(dis_manifold_type), intent(inout) :: dis_manifold
-    type(w90comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
-    integer, intent(in) :: stdout
-    integer, intent(inout) :: num_bands
-    integer, intent(inout) :: num_wann
-    integer, intent(inout) :: num_kpts
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: nntot
+    integer, intent(in) :: distk(:)
 
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix(:, :, :)
-    complex(kind=dp), allocatable, intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix_local(:, :, :, :)
+    complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) !only alloc/assigned on root
     real(kind=dp), intent(inout) :: omega_invariant
 
-    character(len=50), intent(in)  :: seedname
     character(len=*), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
     ! local variables
-    integer :: ierr
-
+    integer :: ierr, ikl, nkl, ikg, rank
     logical :: on_root = .false.
 
-    if (mpirank(comm) == 0) on_root = .true.
+    rank = mpirank(comm)
+    if (rank == 0) on_root = .true.
 
-    call comms_bcast(checkpoint, len(checkpoint), stdout, seedname, comm)
+    call comms_bcast(checkpoint, len(checkpoint), error, comm)
+    if (allocated(error)) return
 
-    if (.not. on_root .and. .not. allocated(u_matrix)) then
-      allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
-      if (ierr /= 0) &
-        call io_error('Error allocating u_matrix in w90_readwrite_chkpt_dist', stdout, seedname)
-    endif
-    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, stdout, seedname, comm)
+    ! assumes u is alloc'd on all nodes
+    call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
+    if (allocated(error)) return
 
-!    if (.not.on_root .and. .not.allocated(m_matrix)) then
-!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-!       if (ierr/=0)&
-!            call io_error('Error allocating m_matrix in w90_readwrite_chkpt_dist')
-!    endif
-!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
+    ! assumes m is alloc'd on all nodes
+    call comms_bcast(m_matrix(1, 1, 1, 1), num_wann*num_wann*nntot*num_kpts, error, comm)
+    if (allocated(error)) return
 
-    call comms_bcast(have_disentangled, 1, stdout, seedname, comm)
+    ! copy global m into local m
+    nkl = count(distk(:) == rank)
+    ikl = 1
+    do ikg = 1, num_kpts
+      if (distk(ikg) == rank) then
+        m_matrix_local(:, :, :, ikl) = m_matrix(:, :, :, ikg)
+        ikl = ikl + 1
+      endif
+    enddo
+
+    call comms_bcast(have_disentangled, 1, error, comm)
+    if (allocated(error)) return
 
     if (have_disentangled) then
       if (.not. on_root) then
 
-        if (.not. allocated(u_matrix_opt)) then
-          allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
-          if (ierr /= 0) &
-            call io_error('Error allocating u_matrix_opt in w90_readwrite_chkpt_dist', stdout, seedname)
-        endif
-
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
-          if (ierr /= 0) &
-            call io_error('Error allocating lwindow in w90_readwrite_chkpt_dist', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_chkpt_dist', comm)
+            return
+          endif
         endif
 
         if (.not. allocated(dis_manifold%ndimwin)) then
           allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
-          if (ierr /= 0) &
-            call io_error('Error allocating ndimwin in w90_readwrite_chkpt_dist', stdout, seedname)
+          if (ierr /= 0) then
+            call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_chkpt_dist', comm)
+            return
+          endif
         endif
 
       end if
 
-      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, stdout, seedname, comm)
-      call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, stdout, seedname, comm)
-      call comms_bcast(dis_manifold%ndimwin(1), num_kpts, stdout, seedname, comm)
-      call comms_bcast(omega_invariant, 1, stdout, seedname, comm)
+      call comms_bcast(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
+      if (allocated(error)) return
+      call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, error, comm)
+      if (allocated(error)) return
+      call comms_bcast(dis_manifold%ndimwin(1), num_kpts, error, comm)
+      if (allocated(error)) return
+      call comms_bcast(omega_invariant, 1, error, comm)
+      if (allocated(error)) return
     end if
-    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, stdout, seedname, comm)
-    call comms_bcast(wannier_data%spreads(1), num_wann, stdout, seedname, comm)
-
+    call comms_bcast(wannier_data%centres(1, 1), 3*num_wann, error, comm)
+    if (allocated(error)) return
+    call comms_bcast(wannier_data%spreads(1), num_wann, error, comm)
+    if (allocated(error)) return
   end subroutine w90_readwrite_chkpt_dist
 
 !================================================!
-  subroutine w90_readwrite_in_file(seedname, stdout)
+  subroutine w90_readwrite_in_file(settings, seedname, error, comm)
     !================================================!
     !! Load the *.win file into a character
     !! array in_file, ignoring comments and
@@ -1795,22 +2157,23 @@ contains
     !================================================!
 
     use w90_utility, only: utility_lowercase
-    use w90_io, only: io_file_unit, io_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    character(len=*), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
-    integer           :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
+    integer :: in_unit, tot_num_lines, ierr, line_counter, loop, in1, in2
     character(len=maxlen) :: dummy
-    integer           :: pos
+    integer :: pos
     character, parameter :: TABCHAR = char(9)
 
-    in_unit = io_file_unit()
-    open (in_unit, file=trim(seedname)//'.win', form='formatted', status='old', err=101)
+    open (newunit=in_unit, file=trim(seedname)//'.win', form='formatted', status='old', err=101)
 
-    num_lines = 0; tot_num_lines = 0
+    settings%num_lines = 0; tot_num_lines = 0
     do
       read (in_unit, '(a)', iostat=ierr, err=200, end=210) dummy
       ! [GP-begin, Apr13, 2012]: I convert all tabulation characters to spaces
@@ -1823,18 +2186,23 @@ contains
       dummy = adjustl(dummy)
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
-        if (len(trim(dummy)) > 0) num_lines = num_lines + 1
+        if (len(trim(dummy)) > 0) settings%num_lines = settings%num_lines + 1
       endif
 
     end do
 
-101 call io_error('Error: Problem opening input file '//trim(seedname)//'.win', stdout, seedname)
-200 call io_error('Error: Problem reading input file '//trim(seedname)//'.win', stdout, seedname)
+101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.win', comm)
+    return
+200 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.win', comm)
+    return
 210 continue
     rewind (in_unit)
 
-    allocate (in_data(num_lines), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating in_data in w90_readwrite_in_file', stdout, seedname)
+    allocate (settings%in_data(settings%num_lines), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating settings%in_data in w90_readwrite_in_file', comm)
+      return
+    endif
 
     line_counter = 0
     do loop = 1, tot_num_lines
@@ -1853,30 +2221,27 @@ contains
       line_counter = line_counter + 1
       in1 = index(dummy, '!')
       in2 = index(dummy, '#')
-      if (in1 == 0 .and. in2 == 0) in_data(line_counter) = dummy
-      if (in1 == 0 .and. in2 > 0) in_data(line_counter) = dummy(:in2 - 1)
-      if (in2 == 0 .and. in1 > 0) in_data(line_counter) = dummy(:in1 - 1)
-      if (in2 > 0 .and. in1 > 0) in_data(line_counter) = dummy(:min(in1, in2) - 1)
+      if (in1 == 0 .and. in2 == 0) settings%in_data(line_counter) = dummy
+      if (in1 == 0 .and. in2 > 0) settings%in_data(line_counter) = dummy(:in2 - 1)
+      if (in2 == 0 .and. in1 > 0) settings%in_data(line_counter) = dummy(:in1 - 1)
+      if (in2 > 0 .and. in1 > 0) settings%in_data(line_counter) = dummy(:min(in1, in2) - 1)
     end do
 
     close (in_unit)
-
   end subroutine w90_readwrite_in_file
 
   !================================================!
-  subroutine w90_readwrite_get_keyword(stdout, seedname, keyword, found, c_value, l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword(settings, keyword, found, error, comm, c_value, l_value, i_value, r_value)
     !================================================!
     !
     !! Finds the value of the required keyword.
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -1889,6 +2254,9 @@ contains
     !! Keyword value
     real(kind=dp), optional, intent(inout) :: r_value
     !! Keyword value
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer           :: kl, in, loop, itmp
     character(len=maxlen) :: dummy
@@ -1897,60 +2265,93 @@ contains
 
     found = .false.
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
-      if (in == 0 .or. in > 1) cycle
-      itmp = in + len(trim(keyword))
-      if (in_data(loop) (itmp:itmp) /= '=' &
-          .and. in_data(loop) (itmp:itmp) /= ':' &
-          .and. in_data(loop) (itmp:itmp) /= ' ') cycle
-      if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
-      endif
-      found = .true.
-      dummy = in_data(loop) (kl + 1:)
-      in_data(loop) (1:maxlen) = ' '
-      dummy = adjustl(dummy)
-      if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
-        dummy = dummy(2:)
-        dummy = adjustl(dummy)
-      end if
-    end do
-
-    if (found) then
-      if (present(c_value)) c_value = dummy
-      if (present(l_value)) then
-        if (index(dummy, 't') > 0) then
-          l_value = .true.
-        elseif (index(dummy, 'f') > 0) then
-          l_value = .false.
-        else
-          call io_error('Error: Problem reading logical keyword '//trim(keyword), stdout, seedname)
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
+    elseif (allocated(settings%entries)) then
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
+          if (present(i_value)) then
+            i_value = settings%entries(loop)%idata
+          else if (present(r_value)) then
+            r_value = settings%entries(loop)%rdata
+          else if (present(l_value)) then
+            l_value = settings%entries(loop)%ldata
+          else if (present(c_value)) then
+            c_value = settings%entries(loop)%txtdata
+          else
+            call set_error_fatal(error, 'Error: keyword sought, but no variable provided to assign to. (readwrite.F90)', comm)
+            return
+          endif
+          found = .true.
+          return
         endif
-      endif
-      if (present(i_value)) read (dummy, *, err=220, end=220) i_value
-      if (present(r_value)) read (dummy, *, err=220, end=220) r_value
-    end if
+      enddo
+    else if (allocated(settings%in_data)) then
+      ! by default, scan the input file
+
+      do loop = 1, settings%num_lines
+        in = index(settings%in_data(loop), trim(keyword))
+        if (in == 0 .or. in > 1) cycle
+        itmp = in + len(trim(keyword))
+        if (settings%in_data(loop) (itmp:itmp) /= '=' &
+            .and. settings%in_data(loop) (itmp:itmp) /= ':' &
+            .and. settings%in_data(loop) (itmp:itmp) /= ' ') cycle
+        if (found) then
+          call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
+          return
+        endif
+        found = .true.
+        dummy = settings%in_data(loop) (kl + 1:)
+        settings%in_data(loop) (1:maxlen) = ' '
+        dummy = adjustl(dummy)
+        if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
+          dummy = dummy(2:)
+          dummy = adjustl(dummy)
+        end if
+      end do
+
+      if (found) then
+        if (present(c_value)) c_value = dummy
+        if (present(l_value)) then
+          if (index(dummy, 't') > 0) then
+            l_value = .true.
+          elseif (index(dummy, 'f') > 0) then
+            l_value = .false.
+          else
+            call set_error_input(error, 'Error: Problem reading logical keyword '//trim(keyword), comm)
+            return
+          endif
+        endif
+        if (present(i_value)) read (dummy, *, err=220, end=220) i_value
+        if (present(r_value)) read (dummy, *, err=220, end=220) r_value
+      end if
+    else
+      ! error condition
+    endif
 
     return
-
-220 call io_error('Error: Problem reading keyword '//trim(keyword), stdout, seedname)
-
+220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
+    return
   end subroutine w90_readwrite_get_keyword
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_vector(stdout, seedname, keyword, found, length, c_value, &
-                                              l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
+                                              c_value, l_value, i_value, r_value)
     !================================================!
     !
     !! Finds the values of the required keyword vector
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -1965,8 +2366,7 @@ contains
     !! Keyword data
     real(kind=dp), optional, intent(inout) :: r_value(length)
     !! Keyword data
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(settings_type), intent(inout) :: settings
 
     integer           :: kl, in, loop, i
     character(len=maxlen) :: dummy
@@ -1975,120 +2375,177 @@ contains
 
     found = .false.
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
-      if (in == 0 .or. in > 1) cycle
-      if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
-      endif
-      found = .true.
-      dummy = in_data(loop) (kl + 1:)
-      in_data(loop) (1:maxlen) = ' '
-      dummy = adjustl(dummy)
-      if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
-        dummy = dummy(2:)
-        dummy = adjustl(dummy)
-      end if
-    end do
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
+    elseif (allocated(settings%entries)) then
 
-    if (found) then
-      if (present(c_value)) read (dummy, *, err=230, end=230) (c_value(i), i=1, length)
-      if (present(l_value)) then
-        ! I don't think we need this. Maybe read into a dummy charater
-        ! array and convert each element to logical
-        call io_error('w90_readwrite_get_keyword_vector unimplemented for logicals', stdout, seedname)
-      endif
-      if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
-      if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
-    end if
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
+          if (present(i_value)) then
+            i_value = settings%entries(loop)%i1d
+          else if (present(r_value)) then
+            r_value = settings%entries(loop)%r1d
+          else
+            call set_error_fatal(error, 'Error: vector sought, but no variable provided to assign to. (readwrite.F90)', comm)
+            return
+          end if
+          found = .true.
+        end if
+      enddo
+
+    else if (allocated(settings%in_data)) then
+
+      do loop = 1, settings%num_lines
+        in = index(settings%in_data(loop), trim(keyword))
+        if (in == 0 .or. in > 1) cycle
+        if (found) then
+          call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
+          return
+        endif
+        found = .true.
+        dummy = settings%in_data(loop) (kl + 1:)
+        settings%in_data(loop) (1:maxlen) = ' '
+        dummy = adjustl(dummy)
+        if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
+          dummy = dummy(2:)
+          dummy = adjustl(dummy)
+        end if
+      end do
+
+      if (found) then
+        if (present(c_value)) read (dummy, *, err=230, end=230) (c_value(i), i=1, length)
+        if (present(l_value)) then
+          ! I don't think we need this. Maybe read into a dummy charater
+          ! array and convert each element to logical
+          call set_error_input(error, 'w90_readwrite_get_keyword_vector unimplemented for logicals', comm)
+          return
+        endif
+        if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
+        if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
+      end if
+    endif
 
     return
 
-230 call io_error('Error: Problem reading keyword '//trim(keyword)//' in w90_readwrite_get_keyword_vector', stdout, seedname)
-
+230 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword)//' in w90_readwrite_get_keyword_vector', comm)
+    return
   end subroutine w90_readwrite_get_keyword_vector
 
 !================================================!
-  subroutine w90_readwrite_get_vector_length(stdout, seedname, keyword, found, length)
+  subroutine w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
     !================================================!
     !
     !! Returns the length of a keyword vector
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
     !! Is keyword present
     integer, intent(out)  :: length
     !! length of vector
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     integer           :: kl, in, loop, pos
     character(len=maxlen) :: dummy
 
-    kl = len_trim(keyword)
+    ! get_vector_length only is meaningful for human text in input file
+    ! not suitable for data passed via library interface (data in settings%entries)
+    !if (.not.allocated(settings%in_data)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_vector_length called with no input file (seeking '//trim(keyword)//')', comm)
+    !  return
+    !elseif (allocated(settings%entries)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_vector_length called with unspent option arrays', comm)
+    !  return
+    !endif
 
-    found = .false.
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
+      return
+    elseif (allocated(settings%entries)) then
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
-      if (in == 0 .or. in > 1) cycle
-      if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
-      endif
-      found = .true.
-      dummy = in_data(loop) (kl + 1:)
-      dummy = adjustl(dummy)
-      if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
-        dummy = dummy(2:)
-        dummy = adjustl(dummy)
-      end if
-    end do
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        ! memory beyond num_entries is not initialised
+        if (settings%entries(loop)%keyword == keyword) then
+          if (allocated(settings%entries(loop)%i1d)) then
+            length = size(settings%entries(loop)%i1d)
+          else if (allocated(settings%entries(loop)%r1d)) then
+            length = size(settings%entries(loop)%r1d)
+          else
+            call set_error_input(error, 'lib array not i or r', comm)
+          endif
+          found = .true.
+        end if
+      enddo
 
-    length = 0
-    if (found) then
-      if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank', stdout, seedname)
-      length = 1
-      dummy = adjustl(dummy)
-      do
-        pos = index(dummy, ' ')
-        dummy = dummy(pos + 1:)
-        dummy = adjustl(dummy)
-        if (len_trim(dummy) > 0) then
-          length = length + 1
-        else
-          exit
+    else if (allocated(settings%in_data)) then
+
+      kl = len_trim(keyword)
+      found = .false.
+      do loop = 1, settings%num_lines
+        in = index(settings%in_data(loop), trim(keyword))
+        if (in == 0 .or. in > 1) cycle
+        if (found) then
+          call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
+          return
         endif
-
+        found = .true.
+        dummy = settings%in_data(loop) (kl + 1:)
+        dummy = adjustl(dummy)
+        if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
+          dummy = dummy(2:)
+          dummy = adjustl(dummy)
+        end if
       end do
 
-    end if
-
-    return
-
+      length = 0
+      if (found) then
+        if (len_trim(dummy) == 0) then
+          call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank', comm)
+          return
+        endif
+        length = 1
+        dummy = adjustl(dummy)
+        do
+          pos = index(dummy, ' ')
+          dummy = dummy(pos + 1:)
+          dummy = adjustl(dummy)
+          if (len_trim(dummy) > 0) then
+            length = length + 1
+          else
+            exit
+          endif
+        end do
+      end if
+    endif ! in_data
   end subroutine w90_readwrite_get_vector_length
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_block(stdout, seedname, keyword, found, rows, columns, &
-                                             bohr, c_value, l_value, i_value, r_value)
+  subroutine w90_readwrite_get_keyword_block(settings, keyword, found, rows, columns, bohr, error, comm, &
+                                             c_value, l_value, i_value, r_value)
     !================================================!
     !
     !!   Finds the values of the required data block
+    ! i.e. matrix data
+    ! applies to: dis_spheres, kpoints, nnkpts, unit_cell_cart
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
@@ -2106,9 +2563,12 @@ contains
     real(kind=dp), optional, intent(inout) :: r_value(columns, rows)
     !! keyword block data
     real(kind=dp), intent(in) :: bohr
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
-    integer           :: in, ins, ine, loop, i, line_e, line_s, counter, blen
-    logical           :: found_e, found_s, lconvert
+    integer :: in, ins, ine, loop, i, line_e, line_s, counter, blen
+    logical :: found_e, found_s, lconvert
     character(len=maxlen) :: dummy, end_st, start_st
 
     found_s = .false.
@@ -2117,134 +2577,179 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
-      if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
-      if (in == 0 .or. in > 1) cycle
-      line_s = loop
-      if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
-      endif
-      found_s = .true.
-    end do
-
-    if (.not. found_s) then
-      found = .false.
+    if (allocated(settings%entries) .and. allocated(settings%in_data)) then
+      call set_error_fatal(error, 'Error: (library use) options interface and .win parsing clash.'// &
+                           '  See library documentation "setting options." (readwrite.F90)', comm)
       return
-    end if
+    elseif (allocated(settings%entries)) then
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
-      if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
-      if (in == 0 .or. in > 1) cycle
-      line_e = loop
-      if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+      do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+        if (settings%entries(loop)%keyword == keyword) then
+          if (present(i_value)) then
+            i_value = settings%entries(loop)%i2d
+          else if (present(r_value)) then
+            r_value = settings%entries(loop)%r2d
+          else
+            call set_error_fatal(error, 'Error: block sought, but no variable provided to assign to. (readwrite.F90)', comm)
+            return
+          end if
+          found = .true.
+        end if
+      enddo
+
+    else if (allocated(settings%in_data)) then
+      do loop = 1, settings%num_lines
+        ins = index(settings%in_data(loop), trim(keyword))
+        if (ins == 0) cycle
+        in = index(settings%in_data(loop), 'begin')
+        if (in == 0 .or. in > 1) cycle
+        line_s = loop
+        if (found_s) then
+          call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+          return
+        endif
+        found_s = .true.
+      end do
+
+      if (.not. found_s) then
+        found = .false.
+        return
+      end if
+
+      do loop = 1, settings%num_lines
+        ine = index(settings%in_data(loop), trim(keyword))
+        if (ine == 0) cycle
+        in = index(settings%in_data(loop), 'end')
+        if (in == 0 .or. in > 1) cycle
+        line_e = loop
+        if (found_e) then
+          call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+          return
+        endif
+        found_e = .true.
+      end do
+
+      if (.not. found_e) then
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+        return
+      end if
+
+      if (line_e <= line_s) then
+        call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+        return
+      end if
+
+      ! number of lines of data in block
+      blen = line_e - line_s - 1
+
+      !    if( blen /= rows) then
+      !       if ( index(trim(keyword),'unit_cell_cart').ne.0 ) then
+      !          if ( blen /= rows+1 ) call io_error('Error: Wrong number of lines in block '//trim(keyword))
+      !       else
+      !          call io_error('Error: Wrong number of lines in block '//trim(keyword))
+      !       endif
+      !    endif
+
+      if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) then
+        call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
+        return
       endif
-      found_e = .true.
-    end do
 
-    if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
-    end if
-
-    if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
-    end if
-
-    ! number of lines of data in block
-    blen = line_e - line_s - 1
-
-    !    if( blen /= rows) then
-    !       if ( index(trim(keyword),'unit_cell_cart').ne.0 ) then
-    !          if ( blen /= rows+1 ) call io_error('Error: Wrong number of lines in block '//trim(keyword))
-    !       else
-    !          call io_error('Error: Wrong number of lines in block '//trim(keyword))
-    !       endif
-    !    endif
-
-    if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) &
-      call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout, seedname)
-
-    if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. (index(trim(keyword), 'unit_cell_cart') .eq. 0)) &
-      call io_error('Error: Wrong number of lines in block '//trim(keyword), stdout, seedname)
-
-    found = .true.
-
-    lconvert = .false.
-    if (blen == rows + 1) then
-      dummy = in_data(line_s + 1)
-      if (index(dummy, 'ang') .ne. 0) then
-        lconvert = .false.
-      elseif (index(dummy, 'bohr') .ne. 0) then
-        lconvert = .true.
-      else
-        call io_error('Error: Units in block '//trim(keyword)//' not recognised', stdout, seedname)
+      if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. &
+          (index(trim(keyword), 'unit_cell_cart') .eq. 0)) then
+        call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
+        return
       endif
-      in_data(line_s) (1:maxlen) = ' '
-      line_s = line_s + 1
+
+      found = .true.
+
+      lconvert = .false.
+      if (blen == rows + 1) then
+        dummy = settings%in_data(line_s + 1)
+        if (index(dummy, 'ang') .ne. 0) then
+          lconvert = .false.
+        elseif (index(dummy, 'bohr') .ne. 0) then
+          lconvert = .true.
+        else
+          call set_error_input(error, 'Error: Units in block '//trim(keyword)//' not recognised', comm)
+          return
+        endif
+        settings%in_data(line_s) (1:maxlen) = ' '
+        line_s = line_s + 1
+      endif
+
+      !    r_value=1.0_dp
+      counter = 0
+      do loop = line_s + 1, line_e - 1
+        dummy = settings%in_data(loop)
+        counter = counter + 1
+        if (present(c_value)) read (dummy, *, err=240, end=240) (c_value(i, counter), i=1, columns)
+        if (present(l_value)) then
+          ! I don't think we need this. Maybe read into a dummy charater
+          ! array and convert each element to logical
+          call set_error_input(error, 'w90_readwrite_get_keyword_block unimplemented for logicals', comm)
+          return
+        endif
+        if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
+        if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
+      end do
+
+      if (lconvert) then
+        if (present(r_value)) then
+          r_value = r_value*bohr
+        endif
+      endif
+
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '
     endif
-
-!    r_value=1.0_dp
-    counter = 0
-    do loop = line_s + 1, line_e - 1
-      dummy = in_data(loop)
-      counter = counter + 1
-      if (present(c_value)) read (dummy, *, err=240, end=240) (c_value(i, counter), i=1, columns)
-      if (present(l_value)) then
-        ! I don't think we need this. Maybe read into a dummy charater
-        ! array and convert each element to logical
-        call io_error('w90_readwrite_get_keyword_block unimplemented for logicals', stdout, seedname)
-      endif
-      if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
-      if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
-    end do
-
-    if (lconvert) then
-      if (present(r_value)) then
-        r_value = r_value*bohr
-      endif
-    endif
-
-    in_data(line_s:line_e) (1:maxlen) = ' '
-
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword), stdout, seedname)
-
+240 call set_error_input(error, 'Error: Problem reading block keyword '//trim(keyword), comm)
+    return
   end subroutine w90_readwrite_get_keyword_block
 
   !================================================!
-  subroutine w90_readwrite_get_block_length(stdout, seedname, keyword, found, rows, library, lunits)
+  subroutine w90_readwrite_get_block_length(settings, keyword, found, rows, error, comm, lunits)
     !================================================!
     !
     !! Finds the length of the data block
     !
     !================================================!
 
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
     character(*), intent(in)  :: keyword
     !! Keyword to examine
     logical, intent(out) :: found
     !! Is keyword present
     integer, intent(out) :: rows
     !! Number of rows
-    logical, intent(in) :: library
     logical, optional, intent(out) :: lunits
     !! Have we found a unit specification
+    type(settings_type), intent(inout) :: settings
 
     integer           :: i, in, ins, ine, loop, line_e, line_s
     logical           :: found_e, found_s
     character(len=maxlen) :: end_st, start_st, dummy
     character(len=2)  :: atsym
     real(kind=dp)     :: atpos(3)
+
+    ! get_block_length only is meaningful for human text in input file
+    ! not suitable for data passed via library interface (data in settings%entries)
+    !if (.not. allocated(settings%in_data)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_block_length called with no input file (seeking '//trim(keyword)//')', comm)
+    !  return
+    !elseif (allocated(settings%entries)) then
+    !  call set_error_fatal(error, 'w90_readwrite_get_block_length called with unspent option arrays', comm)
+    !  return
+    !endif
+
+    found = .false.
+    if (allocated(settings%entries)) return ! don't try to do this in library mode
 
     rows = 0
     found_s = .false.
@@ -2253,14 +2758,15 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+        return
       endif
       found_s = .true.
     end do
@@ -2270,46 +2776,42 @@ contains
       return
     end if
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+      return
     end if
 
     rows = line_e - line_s - 1
 
     found = .true.
 
-    ! Ignore atoms_cart and atoms_frac blocks if running in library mode
-    if (library) then
-      if (trim(keyword) .eq. 'atoms_cart' .or. trim(keyword) .eq. 'atoms_frac') then
-        in_data(line_s:line_e) (1:maxlen) = ' '
-      endif
-    endif
-
     if (present(lunits)) then
-      dummy = in_data(line_s + 1)
+      dummy = settings%in_data(line_s + 1)
       read (dummy, *, end=555) atsym, (atpos(i), i=1, 3)
       lunits = .false.
     endif
 
     if (rows <= 0) then !cope with empty blocks
       found = .false.
-      in_data(line_s:line_e) (1:maxlen) = ' '
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '
     end if
 
     return
@@ -2318,15 +2820,12 @@ contains
 
     if (rows <= 1) then !cope with empty blocks
       found = .false.
-      in_data(line_s:line_e) (1:maxlen) = ' '
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '
     end if
-
-    return
-
   end subroutine w90_readwrite_get_block_length
 
   !================================================!
-  subroutine readwrite_get_atoms(atom_data, library, lunits, real_lattice, bohr, stdout, seedname)
+  subroutine readwrite_get_atoms(settings, atom_data, lunits, real_lattice, bohr, error, comm)
     !================================================!
     !
     !!   Fills the atom data block
@@ -2334,17 +2833,17 @@ contains
     !================================================!
 
     use w90_utility, only: utility_frac_to_cart, utility_cart_to_frac, utility_inverse_mat
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
     implicit none
 
     type(atom_data_type), intent(inout) :: atom_data
-    integer, intent(in) :: stdout
-    logical, intent(in) :: library
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
     logical, intent(in) :: lunits
     !! Do we expect a first line with the units
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: bohr
-    character(len=50), intent(in)  :: seedname
 
     real(kind=dp)     :: inv_lattice(3, 3)
     real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
@@ -2358,9 +2857,12 @@ contains
     character(len=maxlen) :: atoms_label_tmp(atom_data%num_atoms)
     logical           :: lconvert
 
+    call utility_inverse_mat(real_lattice, inv_lattice)
+
     keyword = "atoms_cart"
     frac = .false.
-    call w90_readwrite_get_block_length(stdout, seedname, "atoms_frac", found, i_temp, library)
+    call w90_readwrite_get_block_length(settings, "atoms_frac", found, i_temp, error, comm)
+    if (allocated(error)) return
     if (found) then
       keyword = "atoms_frac"
       frac = .true.
@@ -2372,55 +2874,60 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+        return
       endif
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+      return
     end if
 
     lconvert = .false.
     if (lunits) then
-      dummy = in_data(line_s + 1)
+      dummy = settings%in_data(line_s + 1)
       if (index(dummy, 'ang') .ne. 0) then
         lconvert = .false.
       elseif (index(dummy, 'bohr') .ne. 0) then
         lconvert = .true.
       else
-        call io_error('Error: Units in block atoms_cart not recognised in readwrite_get_atoms', stdout, seedname)
+        call set_error_input(error, 'Error: Units in block atoms_cart not recognised in readwrite_get_atoms', comm)
+        return
       endif
-      in_data(line_s) (1:maxlen) = ' '
+      settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
     endif
 
     counter = 0
     do loop = line_s + 1, line_e - 1
-      dummy = in_data(loop)
+      dummy = settings%in_data(loop)
       counter = counter + 1
       if (frac) then
         read (dummy, *, err=240, end=240) atoms_label_tmp(counter), (atoms_pos_frac_tmp(i, counter), i=1, 3)
@@ -2431,7 +2938,7 @@ contains
 
     if (lconvert) atoms_pos_cart_tmp = atoms_pos_cart_tmp*bohr
 
-    in_data(line_s:line_e) (1:maxlen) = ' '
+    settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
     if (frac) then
       do loop = 1, atom_data%num_atoms
@@ -2457,11 +2964,20 @@ contains
     end do
 
     allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_species_num in readwrite_get_atoms', comm)
+      return
+    endif
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_label in readwrite_get_atoms', comm)
+      return
+    endif
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_symbol in readwrite_get_atoms', comm)
+      return
+    endif
     atom_data%species_num(:) = 0
 
     do loop = 1, atom_data%num_species
@@ -2475,7 +2991,10 @@ contains
 
     max_sites = maxval(atom_data%species_num)
     allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in readwrite_get_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_pos_cart in readwrite_get_atoms', comm)
+      return
+    endif
 
     do loop = 1, atom_data%num_species
       counter = 0
@@ -2498,13 +3017,13 @@ contains
 
     return
 
-240 call io_error('Error: Problem reading block keyword '//trim(keyword), stdout, seedname)
-
+240 call set_error_alloc(error, 'Error: Problem reading block keyword '//trim(keyword), comm)
+    return
   end subroutine readwrite_get_atoms
 
   !================================================!
-  subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, real_lattice, &
-                                         stdout, seedname)
+  subroutine w90_readwrite_lib_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, &
+                                         real_lattice, error, comm)
     !================================================!
     !
     !!   Fills the atom data block during a library call
@@ -2512,22 +3031,22 @@ contains
     !================================================!
 
     use w90_utility, only: utility_cart_to_frac, utility_inverse_mat, utility_lowercase
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc
 
     implicit none
 
-    integer, intent(in) :: stdout
     type(atom_data_type), intent(inout) :: atom_data
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
     character(len=*), intent(in) :: atoms_label_tmp(atom_data%num_atoms)
     !! Atom labels
-    real(kind=dp), intent(in)      :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
+    real(kind=dp), intent(in) :: atoms_pos_cart_tmp(3, atom_data%num_atoms)
     !! Atom positions
     real(kind=dp), intent(in) :: real_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
 
-    real(kind=dp)     :: inv_lattice(3, 3)
-    real(kind=dp)     :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
-    integer           :: loop2, max_sites, ierr, ic, loop, counter
+    real(kind=dp) :: inv_lattice(3, 3)
+    real(kind=dp) :: atoms_pos_frac_tmp(3, atom_data%num_atoms)
+    integer :: loop2, max_sites, ierr, ic, loop, counter
     character(len=maxlen) :: ctemp(atom_data%num_atoms)
     character(len=maxlen) :: tmp_string
 
@@ -2551,11 +3070,20 @@ contains
     end do
 
     allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_species_num in w90_readwrite_lib_set_atoms', comm)
+      return
+    endif
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_label in w90_readwrite_lib_set_atoms', comm)
+      return
+    endif
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_symbol in w90_readwrite_lib_set_atoms', comm)
+      return
+    endif
     atom_data%species_num(:) = 0
 
     do loop = 1, atom_data%num_species
@@ -2569,7 +3097,10 @@ contains
 
     max_sites = maxval(atom_data%species_num)
     allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in w90_readwrite_lib_set_atoms', stdout, seedname)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating atoms_pos_cart in w90_readwrite_lib_set_atoms', comm)
+      return
+    endif
 
     do loop = 1, atom_data%num_species
       counter = 0
@@ -2592,24 +3123,24 @@ contains
       atom_data%symbol(loop) (1:2) = tmp_string(1:2)
       tmp_string = trim(adjustl(utility_lowercase(atom_data%label(loop))))
       atom_data%label(loop) (1:2) = tmp_string(1:2)
+
+      ! Upper case the atom labels (eg, si --> Si)
+      ic = ichar(atom_data%label(loop) (1:1))
+      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+        atom_data%label(loop) (1:1) = char(ic + ichar('Z') - ichar('z'))
     end do
-
-    return
-
   end subroutine w90_readwrite_lib_set_atoms
 
   !================================================!
-  subroutine w90_readwrite_get_range_vector(stdout, seedname, keyword, found, length, lcount, i_value)
+  subroutine w90_readwrite_get_range_vector(settings, keyword, found, length, lcount, error, comm, i_value)
     !================================================!
     !!   Read a range vector eg. 1,2,3,4-10  or 1 3 400:100
     !!   if(lcount) we return the number of states in length
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input, set_error_fatal
 
     implicit none
 
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
     character(*), intent(in)    :: keyword
     !! Keyword to examine
     logical, intent(out)   :: found
@@ -2618,8 +3149,11 @@ contains
     !! Number of states
     logical, intent(in)    :: lcount
     !! If T only count states
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
     integer, optional, intent(out)   :: i_value(length)
     !! States specified in range vector
+    type(settings_type), intent(inout) :: settings
 
     integer   :: kl, in, loop, num1, num2, i_punc
     integer   :: counter, i_digit, loop_r, range_size
@@ -2630,22 +3164,38 @@ contains
     character(len=5), parameter :: c_punc = " ,;-:"
     character(len=5)  :: c_num1, c_num2
 
-    if (lcount .and. present(i_value)) call io_error('w90_readwrite_get_range_vector: incorrect call', stdout, seedname)
+    if (lcount .and. present(i_value)) then
+      call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call', comm)
+      return
+    endif
+
+    if (allocated(settings%entries)) then ! shortcut for library case
+      if (lcount) then
+        call w90_readwrite_get_vector_length(settings, keyword, found, length, error, comm)
+        return
+      else
+        call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
+                                              i_value=i_value)
+        return
+      endif
+    endif ! end library branch
 
     kl = len_trim(keyword)
 
     found = .false.
 
-    do loop = 1, num_lines
-      in = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      in = index(settings%in_data(loop), trim(keyword))
       if (in == 0 .or. in > 1) cycle
       if (found) then
-        call io_error('Error: Found keyword '//trim(keyword)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found keyword '//trim(keyword) &
+                             //' more than once in input file', comm)
+        return
       endif
       found = .true.
-      dummy = in_data(loop) (kl + 1:)
+      dummy = settings%in_data(loop) (kl + 1:)
       dummy = adjustl(dummy)
-      if (.not. lcount) in_data(loop) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(loop) (1:maxlen) = ' '
       if (dummy(1:1) == '=' .or. dummy(1:1) == ':') then
         dummy = dummy(2:)
         dummy = adjustl(dummy)
@@ -2655,11 +3205,17 @@ contains
     if (.not. found) return
 
     counter = 0
-    if (len_trim(dummy) == 0) call io_error('Error: keyword '//trim(keyword)//' is blank', stdout, seedname)
+    if (len_trim(dummy) == 0) then
+      call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank', comm)
+      return
+    endif
     dummy = adjustl(dummy)
     do
       i_punc = scan(dummy, c_punc)
-      if (i_punc == 0) call io_error('Error parsing keyword '//trim(keyword), stdout, seedname)
+      if (i_punc == 0) then
+        call set_error_input(error, 'Error parsing keyword '//trim(keyword), comm)
+        return
+      endif
       c_num1 = dummy(1:i_punc - 1)
       read (c_num1, *, err=101, end=101) num1
       dummy = adjustl(dummy(i_punc:))
@@ -2682,7 +3238,10 @@ contains
       end if
 
       if (scan(dummy, c_sep) == 1) dummy = adjustl(dummy(2:))
-      if (scan(dummy, c_range) == 1) call io_error('Error parsing keyword '//trim(keyword)//' incorrect range', stdout, seedname)
+      if (scan(dummy, c_range) == 1) then
+        call set_error_input(error, 'Error parsing keyword '//trim(keyword)//' incorrect range', comm)
+        return
+      endif
       if (index(dummy, ' ') == 1) exit
     end do
 
@@ -2690,38 +3249,41 @@ contains
     if (.not. lcount) then
       do loop = 1, counter - 1
         do loop_r = loop + 1, counter
-          if (i_value(loop) == i_value(loop_r)) &
-            call io_error('Error parsing keyword '//trim(keyword)//' duplicate values', stdout, seedname)
+          if (i_value(loop) == i_value(loop_r)) then
+            call set_error_input(error, 'Error parsing keyword '//trim(keyword)//' duplicate values', comm)
+            return
+          endif
         end do
       end do
     end if
 
     return
 
-101 call io_error('Error parsing keyword '//trim(keyword), stdout, seedname)
-
+101 call set_error_input(error, 'Error parsing keyword '//trim(keyword), comm)
+    return
   end subroutine w90_readwrite_get_range_vector
 
-  subroutine w90_readwrite_get_centre_constraints(ccentres_frac, ccentres_cart, &
-                                                  proj_site, num_wann, real_lattice, stdout, seedname)
+  subroutine w90_readwrite_get_centre_constraints(settings, ccentres_frac, ccentres_cart, &
+                                                  proj_site, num_wann, real_lattice, error, comm)
     !================================================!
     !!  assigns projection centres as default centre constraints and global
     !!  Lagrange multiplier as individual Lagrange multipliers then reads
     !!  the centre_constraints block for individual centre constraint parameters
     !
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
     use w90_utility, only: utility_frac_to_cart
-    integer, intent(in) :: stdout
+    implicit none
     real(kind=dp), intent(inout) :: ccentres_frac(:, :), ccentres_cart(:, :)
     real(kind=dp), intent(in) :: proj_site(:, :)
     integer, intent(in) :: num_wann
-    character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(in) :: real_lattice(3, 3)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
-    integer           :: loop1, index1, constraint_num, loop2
-    integer           :: column, start, finish, wann
-    !logical           :: found
+    integer :: loop1, index1, constraint_num, loop2
+    integer :: column, start, finish, wann
     character(len=maxlen) :: dummy
 
     do loop1 = 1, num_wann
@@ -2731,17 +3293,23 @@ contains
     end do
 
     constraint_num = 0
-    do loop1 = 1, num_lines
-      dummy = in_data(loop1)
+    do loop1 = 1, settings%num_lines
+      dummy = settings%in_data(loop1)
       if (constraint_num > 0) then
         if (trim(dummy) == '') cycle
         index1 = index(dummy, 'begin')
-        if (index1 > 0) call io_error("slwf_centres block hasn't ended yet", stdout, seedname)
+        if (index1 > 0) then
+          call set_error_input(error, "slwf_centres block hasn't ended yet", comm)
+          return
+        endif
         index1 = index(dummy, 'end')
         if (index1 > 0) then
           index1 = index(dummy, 'slwf_centres')
-          if (index1 == 0) call io_error('Wrong ending of block (need to end slwf_centres)', stdout, seedname)
-          in_data(loop1) (1:maxlen) = ' '
+          if (index1 == 0) then
+            call set_error_input(error, 'Wrong ending of block (need to end slwf_centres)', comm)
+            return
+          endif
+          settings%in_data(loop1) (1:maxlen) = ' '
           exit
         end if
         column = 0
@@ -2755,7 +3323,8 @@ contains
             if (dummy(loop2:loop2) == ' ') then
               finish = loop2 - 1
               call get_centre_constraint_from_column(column, start, finish, &
-                                                     wann, dummy, ccentres_frac, stdout, seedname)
+                                                     wann, dummy, ccentres_frac, error, comm)
+              if (allocated(error)) return
               start = loop2 + 1
               finish = start
             end if
@@ -2763,12 +3332,13 @@ contains
           if (loop2 == len_trim(dummy) .and. dummy(loop2:loop2) /= ' ') then
             finish = loop2
             call get_centre_constraint_from_column(column, start, finish, &
-                                                   wann, dummy, ccentres_frac, stdout, seedname)
+                                                   wann, dummy, ccentres_frac, error, comm)
+            if (allocated(error)) return
             start = loop2 + 1
             finish = start
           end if
         end do
-        in_data(loop1) (1:maxlen) = ' '
+        settings%in_data(loop1) (1:maxlen) = ' '
         constraint_num = constraint_num + 1
       end if
       index1 = index(dummy, 'slwf_centres')
@@ -2776,7 +3346,7 @@ contains
         index1 = index(dummy, 'begin')
         if (index1 > 0) then
           constraint_num = 1
-          in_data(loop1) (1:maxlen) = ' '
+          settings%in_data(loop1) (1:maxlen) = ' '
         end if
       end if
     end do
@@ -2787,34 +3357,38 @@ contains
   end subroutine w90_readwrite_get_centre_constraints
 
   !================================================!
-  subroutine get_centre_constraint_from_column(column, start, finish, &
-                                               wann, dummy, ccentres_frac, stdout, seedname)
+  subroutine get_centre_constraint_from_column(column, start, finish, wann, dummy, ccentres_frac, &
+                                               error, comm)
     !================================================!
     !
     !!  assigns value read to constraint
     !!  parameters based on column
     !
     !================================================!
-    use w90_io, only: io_error
-    integer, intent(in) :: stdout
+    use w90_error, only: w90_error_type, set_error_input
+    implicit none
     integer, intent(inout):: column, start, finish, wann
     character(len=maxlen), intent(inout):: dummy
-    character(len=50), intent(in)  :: seedname
     real(kind=dp), intent(inout) :: ccentres_frac(:, :)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     if (column == 0) then
       read (dummy(start:finish), '(i3)') wann
     end if
     if (column > 0) then
-      if (column > 4) call io_error("Didn't expect anything else after Lagrange multiplier", stdout, seedname)
+      if (column > 4) then
+        call set_error_input(error, "Didn't expect anything else after Lagrange multiplier", comm)
+        return
+      endif
       if (column < 4) read (dummy(start:finish), '(f10.10)') ccentres_frac(wann, column)
     end if
     column = column + 1
   end subroutine get_centre_constraint_from_column
 
   !================================================!
-  subroutine w90_readwrite_get_projections(num_proj, atom_data, num_wann, input_proj, proj, &
-                                           inv_lattice, lcount, spinors, bohr, stdout, seedname)
+  subroutine w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, input_proj, &
+                                           inv_lattice, lcount, spinors, bohr, stdout, error, comm)
     !================================================!
     !
     !!  Fills the projection data block
@@ -2823,20 +3397,21 @@ contains
 
     use w90_constants, only: eps6, eps2
     use w90_utility, only: utility_cart_to_frac, utility_string_to_coord, utility_strip
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_input
 
     implicit none
 
     ! arguments
     type(atom_data_type), intent(in) :: atom_data
-    type(proj_input_type), intent(inout) :: input_proj
-    type(proj_input_type), intent(inout) :: proj ! intent(out)?
+    type(proj_type), allocatable, intent(inout) :: input_proj(:)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
     integer, intent(in) :: num_wann
     integer, intent(inout) :: num_proj
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(in) :: inv_lattice(3, 3)
-    character(len=50), intent(in)  :: seedname
     logical, intent(in)    :: lcount
     logical, intent(in) :: spinors
 
@@ -2881,109 +3456,77 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-!     if(spinors) num_proj=num_wann/2
-
     if (.not. lcount) then
-      allocate (input_proj%site(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_site in w90_readwrite_get_projections', stdout, seedname)
-      allocate (input_proj%l(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_l in w90_readwrite_get_projections', stdout, seedname)
-      allocate (input_proj%m(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_m in w90_readwrite_get_projections', stdout, seedname)
-      allocate (input_proj%z(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_z in w90_readwrite_get_projections', stdout, seedname)
-      allocate (input_proj%x(3, num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_x in w90_readwrite_get_projections', stdout, seedname)
-      allocate (input_proj%radial(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_radial in w90_readwrite_get_projections', stdout, seedname)
-      allocate (input_proj%zona(num_proj), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating input_proj_zona in w90_readwrite_get_projections', stdout, seedname)
-      if (spinors) then
-        allocate (input_proj%s(num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_s in w90_readwrite_get_projections', stdout, seedname)
-        allocate (input_proj%s_qaxis(3, num_proj), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating input_proj_s_qaxis in w90_readwrite_get_projections', stdout, seedname)
-      endif
-
-      allocate (proj%site(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_site in w90_readwrite_get_projections', stdout, seedname)
-      allocate (proj%l(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_l in w90_readwrite_get_projections', stdout, seedname)
-      allocate (proj%m(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_m in w90_readwrite_get_projections', stdout, seedname)
-      allocate (proj%z(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_z in w90_readwrite_get_projections', stdout, seedname)
-      allocate (proj%x(3, num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_x in w90_readwrite_get_projections', stdout, seedname)
-      allocate (proj%radial(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_radial in w90_readwrite_get_projections', stdout, seedname)
-      allocate (proj%zona(num_wann), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating proj_zona in w90_readwrite_get_projections', stdout, seedname)
-      if (spinors) then
-        allocate (proj%s(num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_s in w90_readwrite_get_projections', stdout, seedname)
-        allocate (proj%s_qaxis(3, num_wann), stat=ierr)
-        if (ierr /= 0) call io_error('Error allocating proj_s_qaxis in w90_readwrite_get_projections', stdout, seedname)
+      allocate (input_proj(num_proj), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating input_proj in w90_readwrite_get_projections', comm)
+        return
       endif
     endif
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+        return
       endif
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('w90_readwrite_get_projections: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, &
+                             'w90_readwrite_get_projections: Found '//trim(end_st)//' more than once in input file', comm)
+        return
       endif
       found_e = .true.
     end do
 
     if (.not. found_e) then
-      call io_error('w90_readwrite_get_projections: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, &
-                    seedname)
+      call set_error_input(error, 'w90_readwrite_get_projections: Found '//trim(start_st) &
+                           //' but no '//trim(end_st)//' in input file', comm)
+      return
     end if
 
     if (line_e <= line_s) then
-      call io_error('w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, &
-                    seedname)
+      call set_error_input(error, &
+                           'w90_readwrite_get_projections: '//trim(end_st)//' comes before '//trim(start_st) &
+                           //' in input file', comm)
+      return
     end if
 
-    dummy = in_data(line_s + 1)
+    dummy = settings%in_data(line_s + 1)
     lconvert = .false.
     lrandom = .false.
     lpartrandom = .false.
     if (index(dummy, 'ang') .ne. 0) then
-      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
     elseif (index(dummy, 'bohr') .ne. 0) then
-      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
       lconvert = .true.
     elseif (index(dummy, 'random') .ne. 0) then
-      if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+      if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
-      if (index(in_data(line_s + 1), end_st) .ne. 0) then
+      if (index(settings%in_data(line_s + 1), end_st) .ne. 0) then
         lrandom = .true.     ! all projections random
       else
         lpartrandom = .true. ! only some projections random
-        if (index(in_data(line_s + 1), 'ang') .ne. 0) then
-          if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+        if (index(settings%in_data(line_s + 1), 'ang') .ne. 0) then
+          if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
           line_s = line_s + 1
-        elseif (index(in_data(line_s + 1), 'bohr') .ne. 0) then
-          if (.not. lcount) in_data(line_s) (1:maxlen) = ' '
+        elseif (index(settings%in_data(line_s + 1), 'bohr') .ne. 0) then
+          if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
           line_s = line_s + 1
           lconvert = .true.
         endif
@@ -3008,29 +3551,35 @@ contains
           spn_counter = 1
         endif
         ! Strip input line of all spaces
-        dummy = utility_strip(in_data(line))
+        dummy = utility_strip(settings%in_data(line))
         dummy = adjustl(dummy)
         pos1 = index(dummy, ':')
-        if (pos1 == 0) &
-          call io_error('w90_wannier90_readwrite_read_projection: malformed projection definition: '//trim(dummy), stdout, &
-                        seedname)
+        if (pos1 == 0) then
+          call set_error_input(error, &
+                               'w90_wannier90_readwrite_read_projection: malformed projection definition: '//trim(dummy), comm)
+          return
+        endif
         sites = 0
         ctemp = dummy(:pos1 - 1)
         ! Read the atomic site
         if (index(ctemp, 'c=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
-          call utility_string_to_coord(ctemp, pos_cart, stdout, seedname)
+          call utility_string_to_coord(ctemp, pos_cart, error, comm)
+          if (allocated(error)) return
           if (lconvert) pos_cart = pos_cart*bohr
           call utility_cart_to_frac(pos_cart(:), pos_frac(:), inv_lattice)
         elseif (index(ctemp, 'f=') > 0) then
           sites = -1
           ctemp = ctemp(3:)
-          call utility_string_to_coord(ctemp, pos_frac, stdout, seedname)
+          call utility_string_to_coord(ctemp, pos_frac, error, comm)
+          if (allocated(error)) return
         else
-          if (atom_data%num_species == 0) &
-            call io_error('w90_wannier90_readwrite_read_projection: Atom centred projection requested but no atoms defined', &
-                          stdout, seedname)
+          if (atom_data%num_species == 0) then
+            call set_error_input(error, 'w90_wannier90_readwrite_read_projection: ' &
+                                 //'Atom centred projection requested but no atoms defined', comm)
+            return
+          endif
           do loop = 1, atom_data%num_species
             if (trim(ctemp) == atom_data%label(loop)) then
               species = loop
@@ -3038,8 +3587,8 @@ contains
               exit
             end if
             if (loop == atom_data%num_species) then
-              call io_error('w90_wannier90_readwrite_read_projection: Atom site not recognised '//trim(ctemp), &
-                            stdout, seedname)
+              call set_error_input(error, 'w90_wannier90_readwrite_read_projection: Atom site not recognised '//trim(ctemp), comm)
+              return
             endif
           end do
         end if
@@ -3052,14 +3601,20 @@ contains
           if (pos1 > 0) then
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ']')
-            if (pos2 == 0) call io_error &
-              ('w90_readwrite_get_projections: no closing square bracket for spin quantisation dir', stdout, seedname)
+            if (pos2 == 0) then
+              call set_error_input(error, &
+                                   'w90_readwrite_get_projections: no closing square bracket for spin quantisation dir', comm)
+              return
+            endif
             ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, stdout, seedname)
+            call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, error, comm)
             dummy = dummy(:pos1 - 1) ! remove [ ] section
           endif
         else
-          if (pos1 > 0) call io_error('w90_readwrite_get_projections: spin qdir is defined but spinors=.false.', stdout, seedname)
+          if (pos1 > 0) then
+            call set_error_input(error, 'w90_readwrite_get_projections: spin qdir is defined but spinors=.false.', comm)
+            return
+          endif
         endif
 
         ! scan for up or down
@@ -3069,21 +3624,28 @@ contains
             proj_u_tmp = .false.; proj_d_tmp = .false.
             ctemp = (dummy(pos1 + 1:))
             pos2 = index(ctemp, ')')
-            if (pos2 == 0) call io_error('w90_readwrite_get_projections: no closing bracket for spin', stdout, seedname)
+            if (pos2 == 0) then
+              call set_error_input(error, 'w90_readwrite_get_projections: no closing bracket for spin', comm)
+              return
+            endif
             ctemp = ctemp(:pos2 - 1)
             if (index(ctemp, 'u') > 0) proj_u_tmp = .true.
             if (index(ctemp, 'd') > 0) proj_d_tmp = .true.
             if (proj_u_tmp .and. proj_d_tmp) then
               spn_counter = 2
             elseif (.not. proj_u_tmp .and. .not. proj_d_tmp) then
-              call io_error('w90_readwrite_get_projections: found brackets but neither u or d', stdout, seedname)
+              call set_error_input(error, 'w90_readwrite_get_projections: found brackets but neither u or d', comm)
+              return
             else
               spn_counter = 1
             endif
             dummy = dummy(:pos1 - 1) ! remove ( ) section
           endif
         else
-          if (pos1 > 0) call io_error('w90_readwrite_get_projections: spin is defined but spinors=.false.', stdout, seedname)
+          if (pos1 > 0) then
+            call set_error_input(error, 'w90_readwrite_get_projections: spin is defined but spinors=.false.', comm)
+            return
+          endif
         endif
 
         !Now we know the sites for this line. Get the angular momentum states
@@ -3108,8 +3670,10 @@ contains
             else
               read (ctemp3(3:), *, err=101, end=101) l_tmp
             end if
-            if (l_tmp < -5 .or. l_tmp > 3) call io_error('w90_readwrite_get_projections: Incorrect l state requested', stdout, &
-                                                         seedname)
+            if (l_tmp < -5 .or. l_tmp > 3) then
+              call set_error_input(error, 'w90_readwrite_get_projections: Incorrect l state requested', comm)
+              return
+            endif
             if (mstate == 0) then
               if (l_tmp >= 0) then
                 do loop_m = 1, 2*l_tmp + 1
@@ -3127,8 +3691,10 @@ contains
                 ang_states(1:6, l_tmp) = 1
               endif
             else
-              if (index(ctemp3, 'mr=') /= mstate + 1) &
-                call io_error('w90_readwrite_get_projections: Problem reading m state', stdout, seedname)
+              if (index(ctemp3, 'mr=') /= mstate + 1) then
+                call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state', comm)
+                return
+              endif
               ctemp4 = ctemp3(mstate + 4:)
               do
                 pos3 = index(ctemp4, ',')
@@ -3139,18 +3705,25 @@ contains
                 endif
                 read (ctemp5(1:), *, err=102, end=102) m_tmp
                 if (l_tmp >= 0) then
-                  if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) call io_error('w90_readwrite_get_projections: m is > l !', &
-                                                                             stdout, seedname)
+                  if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) then
+                    call set_error_input(error, 'w90_readwrite_get_projections: m is > l !', comm)
+                    return
+                  endif
                 elseif (l_tmp == -1 .and. (m_tmp > 2 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (1)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (1)', comm)
+                  return
                 elseif (l_tmp == -2 .and. (m_tmp > 3 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (2)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (2)', comm)
+                  return
                 elseif (l_tmp == -3 .and. (m_tmp > 4 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (3)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (3)', comm)
+                  return
                 elseif (l_tmp == -4 .and. (m_tmp > 5 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (4)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (4)', comm)
+                  return
                 elseif (l_tmp == -5 .and. (m_tmp > 6 .or. m_tmp <= 0)) then
-                  call io_error('w90_readwrite_get_projections: m has incorrect value (5)', stdout, seedname)
+                  call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (5)', comm)
+                  return
                 endif
                 ang_states(m_tmp, l_tmp) = 1
                 if (pos3 == 0) exit
@@ -3256,7 +3829,8 @@ contains
               case ('sp3d2-6')
                 ang_states(6, -5) = 1
               case default
-                call io_error('w90_readwrite_get_projections: Problem reading l state '//trim(ctemp3), stdout, seedname)
+                call set_error_input(error, 'w90_readwrite_get_projections: Problem reading l state '//trim(ctemp3), comm)
+                return
               end select
               if (pos3 == 0) exit
               ctemp3 = ctemp3(pos3 + 1:)
@@ -3274,7 +3848,8 @@ contains
             ctemp = (dummy(pos1 + 2:))
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_z_tmp, stdout, seedname)
+            call utility_string_to_coord(ctemp, proj_z_tmp, error, comm)
+            if (allocated(error)) return
           endif
           ! x axis
           pos1 = index(dummy, 'x=')
@@ -3282,7 +3857,8 @@ contains
             ctemp = (dummy(pos1 + 2:))
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
-            call utility_string_to_coord(ctemp, proj_x_tmp, stdout, seedname)
+            call utility_string_to_coord(ctemp, proj_x_tmp, error, comm)
+            if (allocated(error)) return
           endif
           ! diffusivity of orbital
           pos1 = index(dummy, 'zona=')
@@ -3316,22 +3892,22 @@ contains
                 do loop_s = 1, spn_counter
                   counter = counter + 1
                   if (lcount) cycle
-                  input_proj%site(:, counter) = pos_frac
-                  input_proj%l(counter) = loop_l
-                  input_proj%m(counter) = loop_m
-                  input_proj%z(:, counter) = proj_z_tmp
-                  input_proj%x(:, counter) = proj_x_tmp
-                  input_proj%radial(counter) = proj_radial_tmp
-                  input_proj%zona(counter) = proj_zona_tmp
+                  input_proj(counter)%site(:) = pos_frac
+                  input_proj(counter)%l = loop_l
+                  input_proj(counter)%m = loop_m
+                  input_proj(counter)%z(:) = proj_z_tmp
+                  input_proj(counter)%x(:) = proj_x_tmp
+                  input_proj(counter)%radial = proj_radial_tmp
+                  input_proj(counter)%zona = proj_zona_tmp
                   if (spinors) then
                     if (spn_counter == 1) then
-                      if (proj_u_tmp) input_proj%s(counter) = 1
-                      if (proj_d_tmp) input_proj%s(counter) = -1
+                      if (proj_u_tmp) input_proj(counter)%s = 1
+                      if (proj_d_tmp) input_proj(counter)%s = -1
                     else
-                      if (loop_s == 1) input_proj%s(counter) = 1
-                      if (loop_s == 2) input_proj%s(counter) = -1
+                      if (loop_s == 1) input_proj(counter)%s = 1
+                      if (loop_s == 2) input_proj(counter)%s = -1
                     endif
-                    input_proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
+                    input_proj(counter)%s_qaxis(:) = proj_s_qaxis_tmp
                   endif
                 end do
               endif
@@ -3345,24 +3921,24 @@ contains
                   do loop_s = 1, spn_counter
                     counter = counter + 1
                     if (lcount) cycle
-                    call utility_cart_to_frac(atom_data%pos_cart(:, loop_sites, species), pos_frac, &
-                                              inv_lattice)
-                    input_proj%site(:, counter) = pos_frac(:)
-                    input_proj%l(counter) = loop_l
-                    input_proj%m(counter) = loop_m
-                    input_proj%z(:, counter) = proj_z_tmp
-                    input_proj%x(:, counter) = proj_x_tmp
-                    input_proj%radial(counter) = proj_radial_tmp
-                    input_proj%zona(counter) = proj_zona_tmp
+                    call utility_cart_to_frac(atom_data%pos_cart(:, loop_sites, species), &
+                                              pos_frac, inv_lattice)
+                    input_proj(counter)%site(:) = pos_frac(:)
+                    input_proj(counter)%l = loop_l
+                    input_proj(counter)%m = loop_m
+                    input_proj(counter)%z(:) = proj_z_tmp
+                    input_proj(counter)%x(:) = proj_x_tmp
+                    input_proj(counter)%radial = proj_radial_tmp
+                    input_proj(counter)%zona = proj_zona_tmp
                     if (spinors) then
                       if (spn_counter == 1) then
-                        if (proj_u_tmp) input_proj%s(counter) = 1
-                        if (proj_d_tmp) input_proj%s(counter) = -1
+                        if (proj_u_tmp) input_proj(counter)%s = 1
+                        if (proj_d_tmp) input_proj(counter)%s = -1
                       else
-                        if (loop_s == 1) input_proj%s(counter) = 1
-                        if (loop_s == 2) input_proj%s(counter) = -1
+                        if (loop_s == 1) input_proj(counter)%s = 1
+                        if (loop_s == 2) input_proj(counter)%s = -1
                       endif
-                      input_proj%s_qaxis(:, counter) = proj_s_qaxis_tmp
+                      input_proj(counter)%s_qaxis(:) = proj_s_qaxis_tmp
                     endif
                   end do
                 end if
@@ -3375,8 +3951,10 @@ contains
 
       ! check there are enough projections and add random projections if required
       if (.not. lpartrandom) then
-        if (counter .lt. num_wann) call io_error( &
-          'w90_readwrite_get_projections: too few projection functions defined', stdout, seedname)
+        if (counter .lt. num_wann) then
+          call set_error_input(error, 'w90_readwrite_get_projections: too few projection functions defined', comm)
+          return
+        endif
       end if
     end if ! .not. lrandom
 
@@ -3391,29 +3969,31 @@ contains
 
     if (lpartrandom .or. lrandom) then
       call random_seed()  ! comment out this line for reproducible random positions!
+      num_proj = num_wann
+      ! input_proj is allocated 1:num_wann when 'random'
       do loop = counter + 1, num_wann
-        call random_number(input_proj%site(:, loop))
-        input_proj%l(loop) = 0
-        input_proj%m(loop) = 1
-        input_proj%z(:, loop) = proj_z_def
-        input_proj%x(:, loop) = proj_x_def
-        input_proj%zona(loop) = proj_zona_def
-        input_proj%radial(loop) = proj_radial_def
+        call random_number(input_proj(loop)%site(:))
+        input_proj(loop)%l = 0
+        input_proj(loop)%m = 1
+        input_proj(loop)%z(:) = proj_z_def
+        input_proj(loop)%x(:) = proj_x_def
+        input_proj(loop)%zona = proj_zona_def
+        input_proj(loop)%radial = proj_radial_def
         if (spinors) then
           if (modulo(loop, 2) == 1) then
-            input_proj%s(loop) = 1
+            input_proj(loop)%s = 1
           else
-            input_proj%s(loop) = -1
+            input_proj(loop)%s = -1
           end if
-          input_proj%s_qaxis(1, loop) = 0.
-          input_proj%s_qaxis(2, loop) = 0.
-          input_proj%s_qaxis(3, loop) = 1.
+          input_proj(loop)%s_qaxis(1) = 0.0_dp
+          input_proj(loop)%s_qaxis(2) = 0.0_dp
+          input_proj(loop)%s_qaxis(3) = 1.0_dp
         end if
       enddo
     endif
 
     ! I shouldn't get here, but just in case
-    if (.not. lcount) in_data(line_s:line_e) (1:maxlen) = ' '
+    if (.not. lcount) settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
 !~     ! Check
 !~     do loop=1,num_wann
@@ -3426,30 +4006,30 @@ contains
     ! Normalise z-axis and x-axis and check/fix orthogonality
     do loop = 1, num_proj
 
-      znorm = sqrt(sum(input_proj%z(:, loop)*input_proj%z(:, loop)))
-      xnorm = sqrt(sum(input_proj%x(:, loop)*input_proj%x(:, loop)))
-      input_proj%z(:, loop) = input_proj%z(:, loop)/znorm             ! normalise z
-      input_proj%x(:, loop) = input_proj%x(:, loop)/xnorm             ! normalise x
-      cosphi = sum(input_proj%z(:, loop)*input_proj%x(:, loop))
+      znorm = sqrt(sum(input_proj(loop)%z(:)*input_proj(loop)%z(:)))
+      xnorm = sqrt(sum(input_proj(loop)%x(:)*input_proj(loop)%x(:)))
+      input_proj(loop)%z(:) = input_proj(loop)%z(:)/znorm             ! normalise z
+      input_proj(loop)%x(:) = input_proj(loop)%x(:)/xnorm             ! normalise x
+      cosphi = sum(input_proj(loop)%z(:)*input_proj(loop)%x(:))
 
       ! Check whether z-axis and z-axis are orthogonal
       if (abs(cosphi) .gt. eps6) then
 
         ! Special case of circularly symmetric projections (pz, dz2, fz3)
         ! just choose an x-axis that is perpendicular to the given z-axis
-        if ((input_proj%l(loop) .ge. 0) .and. (input_proj%m(loop) .eq. 1)) then
-          proj_x_tmp(:) = input_proj%x(:, loop)            ! copy of original x-axis
+        if ((input_proj(loop)%l .ge. 0) .and. (input_proj(loop)%m .eq. 1)) then
+          proj_x_tmp(:) = input_proj(loop)%x(:)            ! copy of original x-axis
           call random_seed()
           call random_number(proj_z_tmp(:))         ! random vector
           ! calculate new x-axis as the cross (vector) product of random vector with z-axis
-          input_proj%x(1, loop) = proj_z_tmp(2)*input_proj%z(3, loop) &
-                                  - proj_z_tmp(3)*input_proj%z(2, loop)
-          input_proj%x(2, loop) = proj_z_tmp(3)*input_proj%z(1, loop) &
-                                  - proj_z_tmp(1)*input_proj%z(3, loop)
-          input_proj%x(3, loop) = proj_z_tmp(1)*input_proj%z(2, loop) &
-                                  - proj_z_tmp(2)*input_proj%z(1, loop)
-          xnorm_new = sqrt(sum(input_proj%x(:, loop)*input_proj%x(:, loop)))
-          input_proj%x(:, loop) = input_proj%x(:, loop)/xnorm_new   ! normalise
+          input_proj(loop)%x(1) = proj_z_tmp(2)*input_proj(loop)%z(3) &
+                                  - proj_z_tmp(3)*input_proj(loop)%z(2)
+          input_proj(loop)%x(2) = proj_z_tmp(3)*input_proj(loop)%z(1) &
+                                  - proj_z_tmp(1)*input_proj(loop)%z(3)
+          input_proj(loop)%x(3) = proj_z_tmp(1)*input_proj(loop)%z(2) &
+                                  - proj_z_tmp(2)*input_proj(loop)%z(1)
+          xnorm_new = sqrt(sum(input_proj(loop)%x(:)*input_proj(loop)%x(:)))
+          input_proj(loop)%x(:) = input_proj(loop)%x(:)/xnorm_new   ! normalise
           goto 555
         endif
 
@@ -3457,22 +4037,24 @@ contains
         ! user may have made a mistake and should check
         if (abs(cosphi) .gt. eps2) then
           write (stdout, *) ' Projection:', loop
-          call io_error(' Error in projections: z and x axes are not orthogonal', stdout, seedname)
+          call set_error_input(error, ' Error in projections: z and x axes are not orthogonal', comm)
+          return
         endif
 
         ! If projection axes are "reasonably orthogonal", project x-axis
         ! onto plane perpendicular to z-axis to make them more so
         sinphi = sqrt(1 - cosphi*cosphi)
-        proj_x_tmp(:) = input_proj%x(:, loop)               ! copy of original x-axis
+        proj_x_tmp(:) = input_proj(loop)%x(:)               ! copy of original x-axis
         ! calculate new x-axis:
         ! x = z \cross (x_tmp \cross z) / sinphi = ( x_tmp - z(z.x_tmp) ) / sinphi
-        input_proj%x(:, loop) = (proj_x_tmp(:) - cosphi*input_proj%z(:, loop))/sinphi
+        input_proj(loop)%x(:) = (proj_x_tmp(:) - cosphi*input_proj(loop)%z(:))/sinphi
 
         ! Final check
-555     cosphi_new = sum(input_proj%z(:, loop)*input_proj%x(:, loop))
+555     cosphi_new = sum(input_proj(loop)%z(:)*input_proj(loop)%x(:))
         if (abs(cosphi_new) .gt. eps6) then
-          write (stdout, *) ' Projection:', loop
-          call io_error(' Error: z and x axes are still not orthogonal after projection', stdout, seedname)
+          write (stdout, *) ' Projection:'
+          call set_error_input(error, ' Error: z and x axes are still not orthogonal after projection', comm)
+          return
         endif
 
       endif
@@ -3481,31 +4063,36 @@ contains
 
     return
 
-101 call io_error('w90_readwrite_get_projections: Problem reading l state into integer '//trim(ctemp3), stdout, seedname)
-102 call io_error('w90_readwrite_get_projections: Problem reading m state into integer '//trim(ctemp3), stdout, seedname)
-104 call io_error('w90_readwrite_get_projections: Problem reading zona into real '//trim(ctemp), stdout, seedname)
-105 call io_error('w90_readwrite_get_projections: Problem reading radial state into integer '//trim(ctemp), stdout, seedname)
-106 call io_error('w90_readwrite_get_projections: Problem reading m state into string '//trim(ctemp3), stdout, seedname)
-
+101 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading l state into integer '//trim(ctemp3), comm)
+    return
+102 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state into integer '//trim(ctemp3), comm)
+    return
+104 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading zona into real '//trim(ctemp), comm)
+    return
+105 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading radial state into integer '//trim(ctemp), comm)
+    return
+106 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state into string '//trim(ctemp3), comm)
+    return
   end subroutine w90_readwrite_get_projections
 
   !================================================!
-  subroutine w90_readwrite_get_keyword_kpath(kpoint_path, stdout, seedname)
+  subroutine w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
     !================================================!
     !
     !!  Fills the kpath data block
     !
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
     type(kpoint_path_type), intent(inout) :: kpoint_path
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(settings_type), intent(inout) :: settings
 
     character(len=20) :: keyword
-    integer           :: in, ins, ine, loop, i, line_e, line_s, counter
+    integer           :: ic, in, ins, ine, loop, inner_loop, i, line_e, line_s, counter
     logical           :: found_e, found_s
     character(len=maxlen) :: dummy, end_st, start_st
 
@@ -3517,71 +4104,91 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+        return
       endif
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+        return
       endif
       found_e = .true.
     end do
 
-    if (.not. found_e) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+    if (found_s .and. .not. found_e) then
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+      return
     end if
 
-    if (line_e <= line_s) then
-      call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+    if (found_s .and. found_e) then
+      if (line_e <= line_s) then
+        call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+        return
+      endif
+    else
+      return !just not found
     end if
 
     counter = 0
     do loop = line_s + 1, line_e - 1
 
       counter = counter + 2
-      dummy = in_data(loop)
+      dummy = settings%in_data(loop)
       read (dummy, *, err=240, end=240) kpoint_path%labels(counter - 1), &
         (kpoint_path%points(i, counter - 1), i=1, 3), &
         kpoint_path%labels(counter), (kpoint_path%points(i, counter), i=1, 3)
     end do
 
-    in_data(line_s:line_e) (1:maxlen) = ' '
+    ! Upper case bands labels (eg, x --> X)
+    if (allocated(kpoint_path%labels)) then
+      do loop = 1, size(kpoint_path%labels)
+        do inner_loop = 1, len(kpoint_path%labels(loop))
+          ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
+          if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+            kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
+        enddo
+      enddo
+    endif
+
+    settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
     return
 
-240 call io_error('w90_readwrite_get_keyword_kpath: Problem reading kpath '//trim(dummy), stdout, seedname)
-
+240 call set_error_input(error, 'w90_readwrite_get_keyword_kpath: Problem reading kpath '//trim(dummy), comm)
+    return
   end subroutine w90_readwrite_get_keyword_kpath
 
   !================================================!
-  subroutine clear_block(stdout, seedname, keyword)
+  subroutine clear_block(settings, keyword, error, comm)
     !================================================!
     ! a dummy read routine to remove unused but legitimate input block from input stream
     ! needed to preserve input file error checking (i.e. input stream should be empty after all
     ! legitimate keywords/blocks are read)
     !================================================!
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
     ! arguments
-    integer, intent(in) :: stdout
-    character(len=50), intent(in) :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
     character(len=*), intent(in) :: keyword
+    type(settings_type), intent(inout) :: settings
 
     ! local variables
     integer :: in, ins, ine, loop, line_e, line_s
@@ -3594,45 +4201,70 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
-    do loop = 1, num_lines
-      ins = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
-      in = index(in_data(loop), 'begin')
+      in = index(settings%in_data(loop), 'begin')
       if (in == 0 .or. in > 1) cycle
       line_s = loop
       if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
+        return
       endif
       found_s = .true.
     end do
 
-    do loop = 1, num_lines
-      ine = index(in_data(loop), trim(keyword))
+    do loop = 1, settings%num_lines
+      ine = index(settings%in_data(loop), trim(keyword))
       if (ine == 0) cycle
-      in = index(in_data(loop), 'end')
+      in = index(settings%in_data(loop), 'end')
       if (in == 0 .or. in > 1) cycle
       line_e = loop
       if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file', stdout, seedname)
+        call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
+        return
       endif
       found_e = .true.
     end do
 
     if (found_s .and. (.not. found_e)) then
-      call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file', comm)
+      return
     end if
 
     if (found_e .and. (.not. found_s)) then
-      call io_error('Error: Found '//trim(end_st)//' but no '//trim(start_st)//' in input file', stdout, seedname)
+      call set_error_input(error, 'Error: Found '//trim(end_st)//' but no '//trim(start_st)//' in input file', comm)
+      return
     end if
 
     if (found_s .and. found_e) then
       if (line_e <= line_s) then
-        call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', stdout, seedname)
+        call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
+        return
       end if
 
-      in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
+      settings%in_data(line_s:line_e) (1:maxlen) = ' '  ! clear the block from the input stream
     end if ! found tags
   end subroutine clear_block
+
+  subroutine init_settings(settings)
+    implicit none
+    type(settings_type), intent(inout) :: settings
+    integer, parameter :: defsize = 20 ! default size of settings array
+    allocate (settings%entries(defsize))
+    settings%num_entries = 0
+    settings%num_entries_max = defsize
+  end subroutine init_settings
+
+  subroutine expand_settings(settings) ! this is a compromise to avoid a fixed size
+    type(settings_data), allocatable :: nentries(:); 
+    type(settings_type), intent(inout) :: settings
+    integer :: n, m ! old, new sizes
+    integer, parameter :: incsize = 20 ! default increment when settings array grows
+    n = settings%num_entries_max
+    m = n + incsize
+    allocate (nentries(m)); nentries(1:n) = settings%entries(1:n); call move_alloc(nentries, settings%entries) !f2003, note that "new" space not initialised
+    settings%num_entries_max = m
+  end subroutine expand_settings
 
 end module w90_readwrite

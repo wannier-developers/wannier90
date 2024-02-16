@@ -49,6 +49,8 @@ module w90_constants
   complex(kind=dp), parameter, public :: cmplx_1 = (1.0_dp, 0.0_dp)
   !! 1 as a complex variable
 
+  integer, parameter, public :: maxlen = 255                     !! Max column width of input file
+
   !~~ NUMERICAL CONVERGENCE CONSTANTS ~~!
   real(kind=dp), parameter, public    :: eps2 = 1.0e-2_dp
   !! numerical convergence constant

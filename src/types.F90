@@ -26,8 +26,7 @@ module w90_types
   !! Types specific to wannier90.x (not used by postw90.x) are defined in wannier90_types.F90.
   !! Types specific to postw90.x (not used by wannier90.x) are defined in postw90/postw90_types.F90.
 
-  use w90_constants, only: dp
-  use w90_io, only: maxlen
+  use w90_constants, only: dp, maxlen
 
   implicit none
 
@@ -38,30 +37,45 @@ module w90_types
     !! Contains variables to control output file formatting and verbosity.
     !!==================================================
     ! verbosity flags - w90_readwrite_read_verbosity
-    integer :: iprint
+    integer :: iprint = 1
     ! Controls the verbosity of the output
-    integer :: timing_level
+    integer :: timing_level = 1
     ! REVIEW_2021-07-22: we agree that we don't need both length_unit and lenconfac;
     ! REVIEW_2021-07-22: instead could have a utility function.
-    character(len=20) :: length_unit ! MAYBE, just have a separate variable?
+    character(len=20) :: length_unit = 'ang' ! MAYBE, just have a separate variable?
     ! Units for length
-    real(kind=dp) :: lenconfac !lots of write statements in wannier90
+    real(kind=dp) :: lenconfac = 1.0_dp !lots of write statements in wannier90
   end type print_output_type
 
   type w90_system_type
     !!==================================================
     !! Contains physical information about the material being calculated.
     !!==================================================
-    integer :: num_valence_bands !wannierise, postw90/postw90_common, get_oper and berry
-    integer :: num_elec_per_state !wannierise and postw90 dos and boltzwann
-    logical :: spinors   !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
+    integer :: num_valence_bands !**no sensibe default**
+    integer :: num_elec_per_state = 2 ! used in: wannierise and postw90 dos and boltzwann
+    logical :: spinors = .false.  !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
 
+  ! timer from io.F90
+  type timing_data_type                                          !! Data about each stopwatch - for timing routines
+    integer :: ncalls                                            !! Number of times stopwatch has been called
+    real(kind=DP) :: ctime                                       !! Total time on stopwatch
+    real(kind=DP) :: ptime                                       !! Temporary record of time when watch is started
+    character(len=60) :: label                                   !! What is this stopwatch timing
+  end type timing_data_type
+
+  integer, parameter :: nmax = 100                               !! Maximum number of stopwatches
+  type timer_list_type
+    type(timing_data_type) :: clocks(nmax)                         !! Data for the stopwatches
+    integer :: nnames = 0                                          !! Number of active stopwatches
+    logical :: overflow = .false.
+  end type timer_list_type
+
   type ws_region_type
-    logical :: use_ws_distance !ws_distance, plot and postw90_common
-    real(kind=dp) :: ws_distance_tol !ws_distance, hamiltonian and postw90_common
+    logical :: use_ws_distance = .true. !ws_distance, plot and postw90_common
+    real(kind=dp) :: ws_distance_tol = 1.e-5_dp !ws_distance, hamiltonian and postw90_common
     !! absolute tolerance for the distance to equivalent positions
-    integer :: ws_search_size(3) ! ws_distance, hamiltonian
+    integer :: ws_search_size(3) = 2 ! ws_distance, hamiltonian
     !! maximum extension in each direction of the supercell of the BvK cell
     !! to search for points inside the Wigner-Seitz cell
   end type ws_region_type
@@ -105,13 +119,13 @@ module w90_types
     !!==================================================
     !! Contains information that can be provided by the user about determining the kmesh
     !!==================================================
-    integer :: num_shells
+    integer :: num_shells = 0
     !! no longer an input keyword
-    logical :: skip_B1_tests
+    logical :: skip_B1_tests = .false.
     !! do not check the B1 condition
     integer, allocatable :: shell_list(:)
-    integer :: search_shells
-    real(kind=dp) :: tol
+    integer :: search_shells = 36
+    real(kind=dp) :: tol = 0.000001_dp
   end type kmesh_input_type
 
   !AAM: There are a number of ways one can handle the initial guess. (i) specify explicit
@@ -121,7 +135,7 @@ module w90_types
   !AAM: (vi) An external code may also simply supply to w90 an Amn(k) matrix that is has independently
   !AAM: generated, in which case projection_type is not needed.
   !AAM: It makes sense to keep the projection sites separate from the projection_type data below.
-  type proj_input_type
+  type proj_type
     !!==================================================
     !! Contains information that can be provided by the user about the projections
     !!==================================================
@@ -130,19 +144,18 @@ module w90_types
     ! REVIEW_2021-07-22: In the future this can be logically distinct from the projection sites.
     ! REVIEW_2021-07-22: For now, when defining proj_input_type, also define sites inside the
     ! REVIEW_2021-07-22: new guiding centres type.
-    real(kind=dp), allocatable :: site(:, :)
-    integer, allocatable :: l(:)
-    integer, allocatable :: m(:)
-    integer, allocatable :: s(:)
-    real(kind=dp), allocatable :: s_qaxis(:, :)
-    real(kind=dp), allocatable :: z(:, :)
-    real(kind=dp), allocatable :: x(:, :)
-    integer, allocatable :: radial(:)
-    real(kind=dp), allocatable :: zona(:)
-    ! a u t o m a t i c   p r o j e c t i o n s
-    ! vv: Writes a new block in .nnkp
-    logical :: auto_projections
-  end type proj_input_type
+
+    ! regarding defaults: specific flow in readwrite means all values are assigned anyway
+    ! using defaults here requires restructuring get_projections() (readwrite.F90)
+    ! site, l, m don't have reasonable defaults
+    integer :: l, m, s
+    integer :: radial = 1
+    real(kind=dp) :: site(3)
+    real(kind=dp) :: s_qaxis(3) = (/0.0_dp, 0.0_dp, 1.0_dp/)
+    real(kind=dp) :: z(3) = (/0.0_dp, 0.0_dp, 1.0_dp/)
+    real(kind=dp) :: x(3) = (/1.0_dp, 0.0_dp, 0.0_dp/)
+    real(kind=dp) :: zona = 1.0_dp
+  end type proj_type
 
   ! kmesh information (set in kmesh)
   type kmesh_info_type
@@ -167,18 +180,21 @@ module w90_types
     !!==================================================
     !! Contains information about the manifold of states from which the MLWFs are to be disentangled.
     !!==================================================
-    real(kind=dp) :: win_min
+    real(kind=dp) :: win_min = -huge(0.0_dp)
     !! lower bound of the disentanglement outer window
-    real(kind=dp) :: win_max
+    real(kind=dp) :: win_max = huge(0.0_dp)
     !! upper bound of the disentanglement outer window
-    real(kind=dp) :: froz_min
+    real(kind=dp) :: froz_min = -huge(0.0_dp)
     !! lower bound of the disentanglement inner (frozen) window
-    real(kind=dp) :: froz_max
+    real(kind=dp) :: froz_max = huge(0.0_dp)
     !! upper bound of the disentanglement inner (frozen) window
-    logical :: frozen_states
+    logical :: frozen_states = .false.
     ! disentangle parameters
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)
+    !! number of bands in outer window at each k
+    integer, allocatable :: nfirstwin(:)
+    !! index of first band in outer window at each k
     logical, allocatable :: lwindow(:, :)
   end type dis_manifold_type
 
@@ -192,8 +208,8 @@ module w90_types
     integer, allocatable :: species_num(:)
     character(len=maxlen), allocatable :: label(:)
     character(len=2), allocatable :: symbol(:)
-    integer :: num_atoms
-    integer :: num_species
+    integer :: num_atoms = 0
+    integer :: num_species = 0
   end type atom_data_type
 
   ! plot.F90 and postw90/kpath
@@ -203,9 +219,42 @@ module w90_types
     !! Note: The length of bands_label and the second index of bands_spec_points is twice the
     !! number of segments specified by the user. Each pair of special points defines a segment.
     !!==================================================
-    integer num_points_first_segment
+    integer :: num_points_first_segment = 100
     character(len=20), allocatable :: labels(:)
     real(kind=dp), allocatable :: points(:, :)
   end type kpoint_path_type
+
+  type settings_data
+    !!==================================================
+    !! structure to hold a scalar and array settings
+    !!==================================================
+    ! for simplicity, consider arrays of different rank
+    ! as different types; otherwise reshape, etc.
+    character(len=:), allocatable :: keyword ! token
+    character(len=:), allocatable :: txtdata ! text data item
+    ! integer data
+    integer, allocatable :: i1d(:)
+    integer, allocatable :: i2d(:, :)
+    integer :: idata
+    ! logical data
+    logical, allocatable :: l1d(:)
+    logical :: ldata
+    ! fp data
+    real(kind=dp), allocatable :: r1d(:)
+    real(kind=dp), allocatable :: r2d(:, :)
+    real(kind=dp) :: rdata
+  end type settings_data
+
+  type settings_type
+    !!==================================================
+    !! structure to hold input var/values
+    !! contents of .win file and settings set by library interface
+    !!==================================================
+    integer :: num_entries = 0, num_entries_max = 0 ! number of keywords stored and max
+    type(settings_data), allocatable :: entries(:)
+    ! data for processing input file
+    integer :: num_lines
+    character(len=maxlen), allocatable :: in_data(:) ! contents of .win file
+  end type settings_type
 
 end module w90_types

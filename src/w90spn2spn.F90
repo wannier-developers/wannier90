@@ -33,7 +33,6 @@ module w90_conv_spn
   !! Module to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_error
 
   implicit none
 
@@ -43,6 +42,24 @@ module w90_conv_spn
   complex(kind=dp), allocatable, save :: spn_o(:, :, :, :)
 
 contains
+
+  subroutine io_error(error_msg, stdout)
+    !================================================
+    !
+    !! Abort the code giving an error message
+    !
+    !================================================
+
+    implicit none
+
+    character(len=*), intent(in) :: error_msg
+    integer :: stdout
+
+    close (stdout)
+    write (*, '(1x,a)') trim(error_msg)
+    write (*, '(A)') "Error: examine the output/error file for details"
+    stop
+  end subroutine io_error
 
   !================================================!
   subroutine print_usage(stdout)
@@ -93,7 +110,7 @@ contains
       call get_command_argument(2, seedname)
     else
       call print_usage(stdout)
-      call io_error('Wrong command line arguments, see logfile for usage', stdout, seedname)
+      call io_error('Wrong command line arguments, see logfile for usage', stdout)
     end if
 
     ! If on the command line the whole seedname.win was passed, I strip the last ".win"
@@ -115,7 +132,7 @@ contains
     else
       write (stdout, '(A)') 'Wrong command line action: '//trim(ctemp)
       call print_usage(stdout)
-      call io_error('Wrong command line arguments, see logfile for usage', stdout, seedname)
+      call io_error('Wrong command line arguments, see logfile for usage', stdout)
     end if
 
   end subroutine conv_get_seedname
@@ -129,7 +146,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: io_error, io_file_unit
     use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
@@ -142,8 +158,7 @@ contains
 
     write (stdout, '(3a)') 'Reading information from unformatted file ', trim(seedname), '.spn :'
 
-    spn_unit = io_file_unit()
-    open (unit=spn_unit, file=trim(seedname)//'.spn', status='old', form='unformatted', err=109)
+    open (newunit=spn_unit, file=trim(seedname)//'.spn', status='old', form='unformatted', err=109)
 
     ! Read comment line
     read (spn_unit, err=110, end=110) header
@@ -156,10 +171,10 @@ contains
     write (stdout, '(1x,a,i0)') "Number of k-points: ", num_kpts
 
     allocate (spn_o(num_bands, num_bands, num_kpts, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout)
 
     allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_read_spn', stdout)
     do ik = 1, num_kpts
       read (spn_unit) ((spn_temp(s, m), s=1, 3), m=1, (num_bands*(num_bands + 1))/2)
       counter = 0
@@ -187,14 +202,14 @@ contains
     write (stdout, '(1x,a)') "spn: read."
 
     deallocate (spn_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error in deallocating spm_temp in conv_read_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in deallocating spm_temp in conv_read_spn', stdout)
 
     write (stdout, '(1x,a)') 'read done.'
 
     return
 
-109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout, seedname)
-110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout, seedname)
+109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout)
+110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn', stdout)
 
   end subroutine conv_read_spn
 
@@ -207,7 +222,6 @@ contains
     !================================================!
 
     use w90_constants, only: eps6, dp
-    use w90_io, only: io_error, io_file_unit
     use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
@@ -220,8 +234,7 @@ contains
 
     write (stdout, '(3a)') 'Reading information from formatted file ', trim(seedname), '.spn.fmt :'
 
-    spn_unit = io_file_unit()
-    open (unit=spn_unit, file=trim(seedname)//'.spn.fmt', status='old', position='rewind', form='formatted', err=109)
+    open (newunit=spn_unit, file=trim(seedname)//'.spn.fmt', status='old', position='rewind', form='formatted', err=109)
 
     ! Read comment line
     read (spn_unit, '(a)') header
@@ -234,7 +247,7 @@ contains
     write (stdout, '(1x,a,i0)') "Number of k-points: ", num_kpts
 
     allocate (spn_o(num_bands, num_bands, num_kpts, 3), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spn_o in conv_read_spn_fmt', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spn_o in conv_read_spn_fmt', stdout)
 
     do ik = 1, num_kpts
       do m = 1, num_bands
@@ -266,8 +279,8 @@ contains
 
     return
 
-109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout, seedname)
-110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout, seedname)
+109 call io_error('Error opening '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout)
+110 call io_error('Error reading '//trim(seedname)//'.spn.fmt in conv_read_spn_fmt', stdout)
 
   end subroutine conv_read_spn_fmt
 
@@ -279,7 +292,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
@@ -292,11 +305,10 @@ contains
 
     write (stdout, '(3a)') 'Writing information to unformatted file ', trim(seedname), '.spn :'
 
-    spn_unit = io_file_unit()
-    open (unit=spn_unit, file=trim(seedname)//'.spn', form='unformatted')
+    open (newunit=spn_unit, file=trim(seedname)//'.spn', form='unformatted')
 
     allocate (spn_temp(3, (num_bands*(num_bands + 1))/2), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_write_spn', stdout, seedname)
+    if (ierr /= 0) call io_error('Error in allocating spm_temp in conv_write_spn', stdout)
 
     write (spn_unit) header
     write (spn_unit) num_bands, num_kpts
@@ -328,7 +340,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: io_file_unit, io_date
+    use w90_io, only: io_date
     use w90spn_parameters, only: num_bands, num_kpts
 
     implicit none
@@ -340,8 +352,7 @@ contains
 
     write (stdout, '(3a)') 'Writing information to formatted file ', trim(seedname), '.spn.fmt :'
 
-    spn_unit = io_file_unit()
-    open (unit=spn_unit, file=trim(seedname)//'.spn.fmt', form='formatted', status='replace', position='rewind')
+    open (newunit=spn_unit, file=trim(seedname)//'.spn.fmt', form='formatted', status='replace', position='rewind')
 
     write (spn_unit, *) header
     write (spn_unit, *) num_bands, num_kpts
@@ -368,48 +379,20 @@ program w90spn2spn
   !! Program to convert spn files from formatted to unformmated
   !! and vice versa - useful for switching between computers
   use w90_constants, only: dp
-  use w90_io, only: io_file_unit, io_error
   use w90_conv_spn
-  use w90_comms, only: comms_end, mpisize, w90comm_type
-
-#ifdef MPI08
-  use mpi_f08 ! use f08 interface if possible
-#endif
-#ifdef MPI90
-  use mpi ! next best, use fortran90 interface
-#endif
 
   implicit none
-
-#ifdef MPIH
-  include 'mpif.h' ! worst case, use legacy interface
-#endif
 
   ! Export mode:
   !  TRUE:  create formatted .spn.fmt from unformatted .spn ('-export')
   !  FALSE: create unformatted .spn from formatted .spn.fmt ('-import')
 
-  type(w90comm_type) :: comm
-  logical :: file_found
-  integer :: file_unit
-  integer :: stdout, ierr, num_nodes
+  !logical :: file_found
+  !integer :: file_unit
+  integer :: stdout !, ierr, num_nodes
   character(len=50) :: seedname
 
-#ifdef MPI
-  comm%comm = MPI_COMM_WORLD
-  call mpi_init(ierr)
-  if (ierr .ne. 0) call io_error('MPI initialisation error', stdout, seedname)
-  num_nodes = mpisize(comm)
-#else
-  num_nodes = 1
-#endif
-
-  stdout = io_file_unit()
-  open (unit=stdout, file='w90spn2spn.log')
-
-  if (num_nodes /= 1) then
-    call io_error('w90spn2spn can only be used in serial...', stdout, seedname)
-  endif
+  open (newunit=stdout, file='w90spn2spn.log')
 
   call conv_get_seedname(stdout, seedname)
 
@@ -424,8 +407,6 @@ program w90spn2spn
   end if
 
   close (unit=stdout)
-
-  call comms_end
 
 end program w90spn2spn
 

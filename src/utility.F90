@@ -21,6 +21,7 @@ module w90_utility
   !! Module contains lots of useful general routines
 
   use w90_constants, only: dp
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
@@ -165,7 +166,7 @@ contains
   end subroutine utility_zgemm_new
   !================================================!
   function utility_zdotu(a, b)
-    complex(kind=dp), intent(in), dimension(:)  :: a, b
+    complex(kind=dp), intent(in) :: a(:), b(:)
     complex(kind=dp) :: utility_zdotu
     utility_zdotu = sum(a*b)
     return
@@ -184,15 +185,13 @@ contains
     ! is returned.
     !================================================!
 
-    complex(kind=dp), dimension(:, :), intent(in)  :: a, b, c
-    character(len=1), intent(in)                  :: transa, transb, transc
-    real(kind=dp), dimension(:), optional, &
-      intent(in)       :: eigval
-    complex(kind=dp), dimension(:, :), optional, &
-      intent(out) :: prod1, prod2
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :), c(:, :)
+    character(len=1), intent(in) :: transa, transb, transc
+    real(kind=dp), intent(in), optional :: eigval(:)
+    complex(kind=dp), intent(out), optional :: prod1(:, :), prod2(:, :)
 
-    complex(kind=dp), dimension(:, :), allocatable :: tmp
-    integer                                       :: nb, mc, i, j
+    complex(kind=dp), allocatable :: tmp(:, :)
+    integer :: nb, mc, i, j
 
     ! query matrix sizes
     ! naming convention:
@@ -220,9 +219,11 @@ contains
 
     if (present(prod2) .and. present(eigval)) then
       ! tmp = diag(eigval).tmp
-      forall (i=1:nb, j=1:mc)
-      tmp(i, j) = eigval(i)*tmp(i, j)
-      end forall
+      do j = 1, mc
+        do i = 1, nb
+          tmp(i, j) = eigval(i)*tmp(i, j)
+        enddo
+      enddo
       ! prod2 = op(a).tmp
       call utility_zgemm_new(a, tmp, prod2, transa, 'N')
     end if
@@ -317,7 +318,6 @@ contains
     !================================================
 
     use w90_constants, only: dp, twopi, eps5
-    use w90_io, only: io_error
 
     implicit none
     real(kind=dp), intent(in)  :: real_lat(3, 3)
@@ -335,7 +335,7 @@ contains
 
   end subroutine utility_recip_lattice_base
 
-  subroutine utility_recip_lattice(real_lat, recip_lat, volume, stdout, seedname)  !
+  subroutine utility_recip_lattice(real_lat, recip_lat, volume, error, comm)
     !================================================!
     !
     !!  Calculates the reciprical lattice vectors and the cell volume
@@ -345,19 +345,20 @@ contains
     !================================================
 
     use w90_constants, only: dp, twopi, eps5
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
+    type(w90_error_type), allocatable :: error
     real(kind=dp), intent(in)  :: real_lat(3, 3)
     real(kind=dp), intent(out) :: recip_lat(3, 3)
     real(kind=dp), intent(out) :: volume
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_comm_type), intent(in) :: comm
 
     call utility_recip_lattice_base(real_lat, recip_lat, volume)
 
     if (abs(volume) < eps5) then
-      call io_error(' Found almost zero Volume in utility_recip_lattice', stdout, seedname)
+      call set_error_fatal(error, ' Found almost zero Volume in utility_recip_lattice', comm)
+      return
     end if
 
     return
@@ -456,9 +457,9 @@ contains
 
     implicit none
 
-    real(kind=dp), intent(in)  :: inv_lat(3, 3)
-    real(kind=dp), intent(out)  :: frac(3)
-    real(kind=dp), intent(in)  :: cart(3)
+    real(kind=dp), intent(in) :: inv_lat(3, 3)
+    real(kind=dp), intent(out) :: frac(3)
+    real(kind=dp), intent(in) :: cart(3)
 
     integer :: i
 
@@ -478,7 +479,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
 
     implicit none
 
@@ -515,7 +516,7 @@ contains
     !
     !================================================!
 
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
 
     implicit none
 
@@ -543,30 +544,34 @@ contains
   end function utility_lowercase
 
   !================================================!
-  subroutine utility_string_to_coord(string_tmp, outvec, stdout, seedname)!
+  subroutine utility_string_to_coord(string_tmp, outvec, error, comm)
     !================================================!
     !
     !! Takes a string in the form 0.0,1.0,0.5
     !! and returns an array of the real num
     !
     !================================================!
-    use w90_io, only: io_error, maxlen
+    use w90_constants, only: maxlen
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
-    integer, intent(in) :: stdout
     character(len=maxlen), intent(in)  :: string_tmp
     real(kind=dp), intent(out) :: outvec(3)
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: pos
-    character(len=maxlen)  :: ctemp
-    character(len=maxlen)  :: ctemp2
+    character(len=maxlen) :: ctemp
+    character(len=maxlen) :: ctemp2
 
     ctemp = string_tmp
     pos = index(ctemp, ',')
-    if (pos <= 0) &
-      call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), stdout, seedname)
+    if (pos <= 0) then
+      call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
+      return
+    endif
+
     ctemp2 = ctemp(1:pos - 1)
     read (ctemp2, *, err=100, end=100) outvec(1)
     ctemp = ctemp(pos + 1:)
@@ -578,7 +583,8 @@ contains
 
     return
 
-100 call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), stdout, seedname)
+100 call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
+    return ! this is kinda ugly, JJ
 
   end subroutine utility_string_to_coord
 
@@ -626,7 +632,7 @@ contains
   end subroutine utility_translate_home
 
   !================================================!
-  subroutine utility_diagonalize(mat, dim, eig, rot, stdout, seedname)
+  subroutine utility_diagonalize(mat, dim, eig, rot, error, comm)
     !================================================!
     !
     !! Diagonalize the dim x dim  hermitian matrix 'mat' and
@@ -635,18 +641,19 @@ contains
     !================================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_fatal
 
-    integer, intent(in)           :: dim
-    integer, intent(in)           :: stdout
-    complex(kind=dp), intent(in)  :: mat(dim, dim)
-    real(kind=dp), intent(out)    :: eig(dim)
+    integer, intent(in) :: dim
+    complex(kind=dp), intent(in) :: mat(dim, dim)
+    real(kind=dp), intent(out) :: eig(dim)
     complex(kind=dp), intent(out) :: rot(dim, dim)
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
-    complex(kind=dp)   :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
-    real(kind=dp)      :: rwork(7*dim)
-    integer            :: i, j, info, nfound, iwork(5*dim), ifail(dim)
+    complex(kind=dp) :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
+    real(kind=dp) :: rwork(7*dim)
+    integer :: i, j, info, nfound, iwork(5*dim), ifail(dim)
+    character(len=120) :: errormsg
 
     do j = 1, dim
       do i = 1, j
@@ -657,13 +664,16 @@ contains
     call ZHPEVX('V', 'A', 'U', dim, mat_pack, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
                 nfound, eig(1), rot, dim, cwork, rwork, iwork, ifail, info)
     if (info < 0) then
-      write (stdout, '(a,i3,a)') 'THE ', -info, &
+      write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: THE ', -info, &
         ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-      call io_error('Error in utility_diagonalize', stdout, seedname)
+      call set_error_fatal(error, errormsg, comm)
+      return
     endif
     if (info > 0) then
-      write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-      call io_error('Error in utility_diagonalize', stdout, seedname)
+      write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: ', info, &
+        ' EIGENVECTORS FAILED TO CONVERGE'
+      call set_error_fatal(error, errormsg, comm)
+      return
     endif
 
   end subroutine utility_diagonalize
@@ -804,7 +814,7 @@ contains
     !================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    complex(kind=dp), dimension(:, :), intent(in) :: a, b
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :)
     real(kind=dp) :: utility_re_tr_prod
     real(kind=dp) :: s
     integer       :: i, j, n, m
@@ -831,7 +841,7 @@ contains
     !================================================!
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    complex(kind=dp), dimension(:, :), intent(in) :: a, b
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :)
 
     real(kind=dp) :: utility_im_tr_prod
     real(kind=dp) :: s
@@ -859,8 +869,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    real(kind=dp)                    :: utility_re_tr
-    complex(kind=dp), dimension(:, :) :: mat
+    real(kind=dp) :: utility_re_tr
+    complex(kind=dp) :: mat(:, :)
 
     integer          :: i, mydim
     complex(kind=dp) :: cdum
@@ -884,8 +894,8 @@ contains
 
     use w90_constants, only: dp, cmplx_0
 
-    real(kind=dp)                    :: utility_im_tr
-    complex(kind=dp), dimension(:, :) :: mat
+    real(kind=dp) :: utility_im_tr
+    complex(kind=dp) :: mat(:, :)
 
     integer          :: i, mydim
     complex(kind=dp) :: cdum
@@ -978,7 +988,7 @@ contains
     return
   end function utility_wgauss
 
-  function utility_w0gauss(x, n, stdout, seedname)
+  function utility_w0gauss(x, n, error, comm)
     !-----------------------------------------------------------------------
     !
     !! the derivative of utility_wgauss:  an approximation to the delta function
@@ -991,7 +1001,7 @@ contains
     !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
     !
     use w90_constants, only: dp, pi
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
@@ -1002,8 +1012,8 @@ contains
     !! input: the point where to compute the function
     integer, intent(in) :: n
     !! input: the order of the smearing function
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp) :: a, arg, hp, hd, sqrtpm1
@@ -1016,8 +1026,9 @@ contains
     ! counter on n values
     ! counter on 2n values
 
-    ! Fermi-Dirac smearing
+    utility_w0gauss = 0.d0 ! in case of error return
 
+    ! Fermi-Dirac smearing
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
@@ -1038,8 +1049,10 @@ contains
 
     endif
 
-    if (n .gt. 10 .or. n .lt. 0) &
-      call io_error('utility_w0gauss higher order smearing is untested and unstable', stdout, seedname)
+    if (n .gt. 10 .or. n .lt. 0) then
+      call set_error_input(error, 'utility_w0gauss higher order (n>10) smearing is untested and unstable', comm)
+      return
+    endif
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
@@ -1060,7 +1073,7 @@ contains
     return
   end function utility_w0gauss
 
-  function utility_w0gauss_vec(x, n, stdout, seedname) result(res)
+  function utility_w0gauss_vec(x, n, error, comm) result(res)
     !-----------------------------------------------------------------------
     !  Stepan Tsirkin: a vectorized version of the outine, gets x as an array.
     !
@@ -1074,19 +1087,19 @@ contains
     !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
     !
     use w90_constants, only: dp, pi
-    use w90_io, only: io_error
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
     ! arguments
-    integer, intent(in) :: stdout
-    character(len=50), intent(in)  :: seedname
+    type(w90_error_type), allocatable, intent(out) :: error
     real(kind=dp), intent(in) ::  x(:)
     real(kind=dp), allocatable  :: res(:), arg(:)
     !! output: the value of the function
     !! input: the point where to compute the function
     integer :: n
     !! input: the order of the smearing function
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp) :: sqrtpm1
@@ -1096,23 +1109,31 @@ contains
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
-      call io_error('utility_w0gauss_vec not implemented for n == 99', stdout, seedname)
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == 99', comm)
+      return
     endif
 
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
-      call io_error('utility_w0gauss_vec not implemented for n == -1', stdout, seedname)
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == -1', comm)
+      return
     endif
 
-    if (n .gt. 10 .or. n .lt. 0) &
-      call io_error('utility_w0gauss higher order smearing is untested and unstable', stdout, seedname)
+    if (n .gt. 10 .or. n .lt. 0) then
+      call set_error_input(error, 'utility_w0gauss higher order smearing is untested and unstable', comm)
+      return
+    endif
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
     res = exp(-arg)*sqrtpm1
-    if (n .eq. 0) return
-    call io_error('utility_w0gauss_vec not implemented for n >0 ', stdout, seedname)
-    return
+
+    if (n .eq. 0) then
+      return
+    else
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n >0 ', comm)
+      return
+    endif
   end function utility_w0gauss_vec
 
   function qe_erf(x)
