@@ -83,22 +83,19 @@ clean:
 		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf obj ; \
 	fi )
-	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
-	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
+	cd $(ROOTDIR)/docs && rm -r site
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
 	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a libwan2.a w90chk2chk.x w90spn2spn.x
-	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
-	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
-	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps
+	cd $(ROOTDIR)/docs && rm -r site
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
-	$(MAKE) -C $(ROOTDIR)/doc/user_guide
-	$(MAKE) -C $(ROOTDIR)/doc/tutorial
+	@(echo "The latex user_guide and tutorials have been migrated to markdown \
+	format, for more details see 'docs/README.md' file.")
 
 # For now hardcoded to 3.1.0, and using HEAD
 # Better to get the version from the io.F90 file and use
