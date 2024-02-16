@@ -23,3 +23,6 @@ jobs:
         - run: pip install -r docs/requirements.txt
         - run: mkdocs build -s
           working-directory: ./docs
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ENABLE_MKDOCS_GIT_COMMITTERS: False

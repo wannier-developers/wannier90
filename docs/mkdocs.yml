@@ -191,8 +191,10 @@ plugins:
       enable_creation_date: true
       type: timeago
   - git-committers:
+      # enabled: !ENV ["ENABLE_MKDOCS_GIT_COMMITTERS"]
       repository: wannier-developers/wannier90
       branch: develop
+      token: !ENV ["GITHUB_TOKEN"]
   - search
   - glightbox
   - bibtex:
