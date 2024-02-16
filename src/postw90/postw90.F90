@@ -330,7 +330,12 @@ program postw90
       write (stdout, *) '                                   DRYRUN             '
       write (stdout, *) '                       No problems found with win file'
       write (stdout, *) '                       ==============================='
+      close (stdout)
+      close (stderr, status='delete') ! this should not be unit 0
     endif
+#ifdef MPI
+    call mpi_finalize(ierr)
+#endif
     stop
   endif
 
