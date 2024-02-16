@@ -4,7 +4,8 @@
     curvature-like term of fcc Pt considering spin-orbit coupling. To
     gain a better understanding of this tutorial, it is suggested to read
     Ref. [@qiao-prb2018] for a detailed description of the theory and
-    Ch. 12.5 of the User Guide.*
+    the [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc) 
+    chapter of the User Guide.*
 
 -   Directory: `tutorials/tutorial29/` *Files can be downloaded [here](https://github.com/wannier-developers/wannier90/tutorials/tutorial29)*
 
@@ -161,7 +162,7 @@ may be helpful if the computation time is very long.
 
 The band-projected Berry curvature-like term
 $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ is defined in
-this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) of the User Guide. 
+this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc_berry) of the User Guide. 
 The following lines in `Pt.win` are used
 to calculate the energy bands colored by the band-projected Berry
 curvature-like term
@@ -258,4 +259,6 @@ current (ac) SHC which will be introduced in the next tutorial.
 
 -   kslice
 
-Their meanings and usages can be found in Ch. 11.5 of the User Guide.
+Their meanings and usages can be found in the 
+[berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)
+ chapter of the User Guide.
