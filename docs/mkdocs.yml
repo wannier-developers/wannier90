@@ -191,6 +191,7 @@ plugins:
       enable_creation_date: true
       type: timeago
   - git-committers:
+      repository: wannier-developers/wannier90
       branch: develop
   - search
   - glightbox
