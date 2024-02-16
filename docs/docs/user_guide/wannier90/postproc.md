@@ -17,7 +17,7 @@ Once the overlaps and projection have been computed and written to files
 `.false.` and run the code. Output is written to the file
 `seedname.wout`.
 
-### `seedname.nnkp` file
+## `seedname.nnkp` file
 
 OUTPUT, if `postproc_setup = .true.`
 
@@ -32,7 +32,7 @@ Much of the information in `seedname.nnkp` is arranged in blocks
 delimited by the strings `begin block_name` ... `end block_name`, as
 described below.
 
-#### Keywords
+### Keywords
 
 The first line of the file is a user comment, e.g., the date and time:
 
@@ -42,7 +42,7 @@ The only logical keyword is `calc_only_A`, eg,
 
 `calc_only_A  :  F`
 
-#### `Real_lattice` block
+### `Real_lattice` block
 
     begin real_lattice
      2.250000   0.000000   0.000000
@@ -52,7 +52,7 @@ The only logical keyword is `calc_only_A`, eg,
 
 The real lattice vectors in units of Angstrom.
 
-#### `Recip_lattice` block
+### `Recip_lattice` block
 
     begin recip_lattice
      2.792527   0.000000   0.000000
@@ -62,7 +62,7 @@ The real lattice vectors in units of Angstrom.
 
 The reciprocal lattice vectors in units of inverse Angstrom.
 
-#### `Kpoints` block
+### `Kpoints` block
 
     begin kpoints
       8
@@ -78,7 +78,7 @@ The first line in the block is the total number of k-points `num_kpts`.
 The subsequent `num_kpts` lines specify the k-points in crystallographic
 co-ordinates relative to the reciprocal lattice vectors.
 
-#### `Projections` block
+### `Projections` block
 
     begin projections
        n_proj
@@ -115,7 +115,7 @@ spherical polar coordinates is measured.
 `zona`: real number; the value of $\frac{Z}{a}$ associated with the
 radial part of the atomic orbital. Units are in reciprocal Angstrom.
 
-#### `spinor_projections` block
+### `spinor_projections` block
 
     begin spinor_projections
        n_proj
@@ -139,7 +139,7 @@ states.
 `spn_quant`: three real numbers. Defines the spin quantisation axis in
 Cartesian coordinates.
 
-#### `nnkpts` block
+### `nnkpts` block
 
     begin nnkpts
       10
@@ -162,7 +162,7 @@ integers give the G-vector, in reciprocal lattice units, that brings the
 k-point specified by the second integer (which is in the first BZ) to
 the actual $\mathbf{k+b}$ that we need.
 
-#### `exclude_bands` block
+### `exclude_bands` block
 
     begin exclude_bands 
       8 
@@ -177,7 +177,7 @@ overlap and projection matrices, for example to ignore shallow-core
 states. The first line is the number of states to exclude, the following
 lines give the states for be excluded.
 
-#### `auto_projections` block
+### `auto_projections` block
 
     begin auto_projections
        8
@@ -219,7 +219,7 @@ orbitals inside pseudopotentials as initial guesses.
 <!-- TODO: Add a tutorial for PDWF. -->
 <!-- See Tutorial [34](../../tutorials/tutorial_34.md) and 35. -->
 
-#### An example of projections
+### An example of projections
 
 As a concrete example: one wishes to have a set of four sp$^3$
 projection orbitals on, say, a carbon atom at (0.5,0.5,0.5) in
@@ -255,7 +255,7 @@ and the diffusivity and cut-off radius for the projection orbital.
 then reads `seedname.nnkp` file, calculates the projections and writes
 them to `seedname.amn`.
 
-### `seedname.mmn` file
+## `seedname.mmn` file
 
 INPUT.
 
@@ -284,7 +284,7 @@ respectively, of the actual scalar product $M_{mn}^{(\mathbf{k,b})}$ for
 $m,n \in [1,\texttt{num_bands}]$. The order of these elements is such that
 the first index $m$ is fastest.
 
-### `seedname.amn` file
+## `seedname.amn` file
 
 INPUT.
 
@@ -303,7 +303,7 @@ to its position in the list of $k$-points in `seedname.win`. The real
 numbers are the real and imaginary parts, respectively, of the actual
 $A_{mn}^{(\mathbf{k})}$.
 
-### `seedname.dmn` file
+## `seedname.dmn` file
 
 INPUT.
 
@@ -370,7 +370,7 @@ $\texttt{ikirr} \in [1,\texttt{nkptirr}]$. The order of the elements is such
 that left indices run faster than right indices (`m`: fastest, `ikirr`:
 slowest).
 
-### `seedname.eig` file
+## `seedname.eig` file
 
 INPUT.
 
@@ -394,7 +394,7 @@ E.g.,
             4           1   19.3977795287298
 ```
 
-### Interface with pwscf
+## Interface with pwscf
 
 Interfaces between `wannier90` and many ab-initio codes such as
 `pwscf`, `abinit` (<http://www.abinit.org>), `siesta`
@@ -430,7 +430,7 @@ instructions.
 Examples of how the interface with `pwscf` works are given
 in the `wannier90` Tutorial.
 
-#### `seedname.pw2wan`
+### `seedname.pw2wan`
 
 A number of keywords may be specified in the `pw2wannier90` input file:
 
@@ -513,6 +513,9 @@ A number of keywords may be specified in the `pw2wannier90` input file:
     additional input `seedname.sym` is required. Default is `.false.`
     (only relevant if `write_dmn=.true.`).
 
+-   `irr_bz` -- Set to `.true.` to use the irreducible BZ calculation
+    (see [Section "Irreducible BZ calculation"](#irreducible-bz-calculation)).
+
 -   `atom_proj` -- Set to `.true.` to use pseudo-atomic orbitals for
     computing `amn`. Default is `.false.`.
 
@@ -531,7 +534,7 @@ A number of keywords may be specified in the `pw2wannier90` input file:
 
 For examples of use, refer to the `wannier90` Tutorial.
 
-#### `seedname.sym`
+### `seedname.sym`
 
 If `read_sym = .true.`, then this additional input file is required for
 `pw2wannier90.x`
@@ -562,3 +565,181 @@ matrix), and $\bf t$ is the fractional translation in the unit of
 "`alat`" (refer the definition of "`alat`" to the manual of
 `pwscf`). Both data are given in Cartesian coordinates. The
 symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$.
+
+## Irreducible BZ calculation
+
+This section explains how to construct Wannier functions using wavefunctions 
+calculated only in the irreducible BZ (IBZ). Using this option, users only
+have to calculate wavefunctions, overlap matrices ($M_{mn}$) and projection
+matrices ($A_{mn}$) in the IBZ, which will reduce the computational cost.
+Currently, this feature is implemented only in the interface code with
+Quantum ESPRESSO and requires an additional python package,
+[symWannier](https://github.com/wannier-utils-dev/symWannier). See also
+the [website of symWannier](https://github.com/wannier-utils-dev/symWannier)
+and Ref. [@Koretsune2023].
+
+!!! note
+
+    The `symWannier` package also has the ability to construct
+    symmetry-adapted Wannier functions only from the `.mmn, `.amn` and `.eig`
+    files in the IBZ and some symmetry information.
+
+The procedure is as follows.
+
+1.  Run `scf`/`nscf` calculation(s) with Quantum ESPRESSO `pw.x`. In the `nscf`
+    calculation, users only have to calculate k-points in the IBZ.
+
+    E.g.:
+    ```vi title="Input file"
+    K_POINTS {automatic}
+    4 4 4 0 0 0
+    ```
+    Users also have the option to skip the `nscf` calculation, if the grid
+    of the `scf` step is already sufficient.
+
+2.  Run Wannier90 with `postproc_setup = .true.` (or equivalently with
+    the `-pp` command line flag) to generate the file `seedname.nnkp`.
+
+3.  Run `pw2wannier90` with `irr_bz = .true.` in the input file.
+    `pw2wannier90` then generates the files `seedname.immn`, `seedname.iamn`,
+    `seedname.ieig` and `seedname.isym`.
+
+4.  Run the python code `write_full_data.py`, part of the `symWannier` package.
+    You can first install the package from
+    [GitHub](https://github.com/wannier-utils-dev/symWannier) and then
+    run the script as
+    ```bash title="Terminal"
+    python write_full_data.py <seedname>
+    ```
+    (replace `<seedname>` with the seedname of your calculation).
+
+    This python script generates the $M_{mn}$ and $A_{mn}$ matrices, and Kohn-Sham
+    eigenvalues in the full BZ (`seedname.mmn`, `seedname.amn`, and
+    `seedname.eig`) from those in the IBZ (`seedname.immn`,
+    `seedname.iamn`, and `seedname.ieig`) by using the symmetry
+    information (`seedname.isym`). The relations between these quantites
+    in the IBZ and full BZ are explained in Ref. [@Koretsune2023].
+
+5.  Run `wannier90` (with `postproc_setup = .false.` or, equivalently,
+    without the `-pp` command line option).
+
+## `seedname.immn` file
+
+INPUT
+
+The format is the same as `seedname.mmn`, except that the number of
+kpoints is the number of k-points in the IBZ. See also [the section on the  `seedname.mmn` file](#seednamemmn-file).
+
+`seedname.iamn` file
+--------------------
+
+INPUT
+
+The format is the same as `seedname.amn`, except that the number of
+kpoints is the number of k-points in the IBZ. See also
+See also [the section on the  `seedname.amn` file](#seednameamn-file).
+
+`seedname.ieig` file
+--------------------
+
+INPUT
+
+The format is the same as `seedname.eig`, except that the number of
+kpoints is the number of k-points in the IBZ. See also
+See also [the section on the  `seedname.eig` file](#seednameeig-file).
+
+`seedname.isym` file
+--------------------
+
+INPUT
+
+The file `seedname.isym` contains the data needed to construct Wannier
+functions from imformation computed only in the IBZ.
+
+First line: a user comment, e.g., the date and time
+
+Second line: 2 integers: `nsymmetry`, `spinors`, where:
+
+- `nsymmetry`: the number of symmetry operations
+- `spinors`: `1` for spinor case or `0` for non-spinor case
+
+Then: `nsymmetry` blocks of data. Each block describes a symmetry
+operation, $\hat{g}$, and consists of 7 lines (11 lines for the spinor
+case). The order of the data in each block is as follows:
+
+Non-spinor case:
+```
+       a comment
+       R(1,1)   R(2,1)   R(3,1)
+       R(1,2)   R(2,2)   R(3,2)
+       R(1,3)   R(2,3)   R(3,3)
+        t(1)     t(2)     t(3)
+        T
+        invs
+```
+
+Spinor case:
+```
+       a comment
+       R(1,1)   R(2,1)   R(3,1)
+       R(1,2)   R(2,2)   R(3,2)
+       R(1,3)   R(2,3)   R(3,3)
+        t(1)     t(2)     t(3)
+        T
+       u(1,1).real  u(1,1).imag
+       u(2,1).real  u(2,1).imag
+       u(1,2).real  u(1,2).imag
+       u(2,2).real  u(2,2).imag
+        invs
+```
+
+Here, $R$ is the rotational part of symmetry operations, ($3 \times 3$
+integer matrix), and $\bf t$ is the fractional translation in
+crystal coordinates. The symmetry operations act on a point $\bf r$ in
+crystal coordinates as $\hat{g} {\bf r} = {\bf r} R - {\bf t}$.
+$T=1$ ($T=0$) indicates that this symmetry operation includes (does not
+include) time-reversal operation, respectively.
+$u$ is the SU(2) rotation matrix for
+the spinor part. 
+`invs` represents the symmetry operation
+corresponding to $\hat{g}^{-1}$.
+
+2 blank lines
+
+Then: An integer: `nk_ibz`, the number of k-points in the IBZ.
+
+Then: `nk_ibz` lines, with 3 real numbers on each line corresponding
+to a list of k-points in the IBZ in crystal coordinates.
+
+2 blank lines
+
+Then: 2 integers: `num_bands`, `nblocks`
+
+Then: `nblocks` blocks of data for $h_{mn}({\bf k})$.
+`nblocks` is a number of symmetry operations, $\hat{h}({\bf k})$, where
+$\hat{h} \bf k = \bf k$ and $\bf k \in$ IBZ.
+
+First line of each block: 3 integers. These specify the k-point in the
+IBZ (a number from 1 to `nk_ibz`), the symmetry operation,
+$\hat{h}({\bf k})$, (a number from 1 to `nsymmetry`) and a number
+of non-zero elements of $\hat{h}({\bf k})$.
+
+Subsequent lines of each block: 2 integers and 2 real numbers per line.
+These specify band indeces, $m$ and $n$, and real and imaginary parts of
+$h_{mn}({\bf k})$. Only non-zero components of $h_{mn}({\bf k})$ are
+written.
+
+2 blank lines
+
+Then: An integer: `num_wann`: The number of Wannier functions.
+
+Then: `nsymmetry` blocks of data.
+
+First line of each block: 2 integers. These specify the symmetry
+operation, $\hat{g}$, and a number of non-zero elements of the rotation
+matrix, $D_{mn}(\hat{g})$.
+
+Subsequent lines of each block: 2 integers and 2 real numbers per line.
+These specify indeces of Wannier functions, $m$ and $n$, and real and
+imaginary parts of $D_{mn}(\hat{g})$.
+
