@@ -286,12 +286,6 @@ contains
     complex(kind=dp), allocatable :: utmp(:, :)       !(num_bands, num_wann)
     complex(kind=dp) :: fac
 
-    allocate (eigval2(num_wann, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating eigval2 in hamiltonian_get_hr', comm)
-      return
-    endif
-
     if (print_output%timing_level > 1) call io_stopwatch_start('hamiltonian: get_hr', timer)
 
     if (ham_logical%have_ham_r) then
@@ -305,6 +299,14 @@ contains
     if (ham_logical%have_ham_k) go to 100
 
     ham_k = cmplx_0
+
+    allocate (eigval2(num_wann, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating eigval2 in hamiltonian_get_hr', comm)
+      return
+    endif
+
+    eigval2 = 0.0_dp
 
     if (have_disentangled) then
 
@@ -322,7 +324,6 @@ contains
       endif
 
       eigval_opt = 0.0_dp
-      eigval2 = 0.0_dp
       ! end allocation of eigval_opt, utmp
 
       ! slim down eigval to contain states within the outer window
@@ -469,6 +470,30 @@ contains
       deallocate (shift_vec, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating shift_vec in hamiltonian_get_hr', comm)
+        return
+      endif
+    end if
+
+    if (allocated(eigval2)) then
+      deallocate (eigval2, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating eigval2 in hamiltonian_get_hr', comm)
+        return
+      endif
+    end if
+
+    if (allocated(eigval_opt)) then
+      deallocate (eigval_opt, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating eigval_opt in hamiltonian_get_hr', comm)
+        return
+      endif
+    end if
+
+    if (allocated(utmp)) then
+      deallocate (utmp, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating utmp in hamiltonian_get_hr', comm)
         return
       endif
     end if

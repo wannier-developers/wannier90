@@ -560,7 +560,7 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_fatal, set_error_alloc
+    use w90_error, only: w90_error_type, set_error_fatal, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -666,6 +666,30 @@ contains
 
       umat(:, :) = umatnew(:, :)
     enddo ! iter
+
+    deallocate (umatnew, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating umatnew in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    deallocate (ZU, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating ZU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    deallocate (deltaU, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating deltaU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
+    deallocate (carr, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating carr in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
 
     return
   end subroutine sitesym_dis_extract_symmetry
