@@ -579,9 +579,9 @@ contains
     complex(kind=dp), intent(inout) :: umat(:, :) !(num_bands, num_wann)
 
     ! local variables
-    complex(kind=dp), allocatable :: umatnew(:,:) !(num_bands, num_wann)
-    complex(kind=dp), allocatable :: ZU(:,:) !(num_bands, num_wann)
-    complex(kind=dp), allocatable :: deltaU(:,:) !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: umatnew(:, :) !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: ZU(:, :) !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: deltaU(:, :) !(num_bands, num_wann)
     complex(kind=dp), allocatable :: carr(:) !(num_bands)
     integer :: i, m, INFO, IFAIL(2), IWORK(5*2)
     complex(kind=dp) :: HP(3), SP(3), V(2, 2), CWORK(2*2)
@@ -590,29 +590,29 @@ contains
     integer, parameter :: niter = 50
 
     allocate (umatnew(num_bands, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating umatnew in sitesym_dis_extract_symmetry', comm)
-        return
-      endif
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating umatnew in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
 
     allocate (ZU(num_bands, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating ZU in sitesym_dis_extract_symmetry', comm)
-        return
-      endif
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating ZU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
 
     allocate (deltaU(num_bands, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating deltaU in sitesym_dis_extract_symmetry', comm)
-        return
-      endif
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating deltaU in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
 
     allocate (carr(num_bands), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating carr in sitesym_dis_extract_symmetry', comm)
-        return
-      endif
-    
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating carr in sitesym_dis_extract_symmetry', comm)
+      return
+    endif
+
     do iter = 1, niter
       !  Z*U
       call zgemm('N', 'N', n, num_wann, n, cmplx_1, zmat, num_bands, umat, num_bands, cmplx_0, ZU, &

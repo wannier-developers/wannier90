@@ -280,10 +280,10 @@ contains
     ! local variables
     integer          :: loop_kpt, i, j, m, irpt, ierr, counter
     real(kind=dp)    :: rdotk
-    real(kind=dp), allocatable    :: eigval_opt(:,:) !(num_bands, num_kpts)
-    real(kind=dp), allocatable    :: eigval2(:,:)    !(num_wann, num_kpts)
+    real(kind=dp), allocatable    :: eigval_opt(:, :) !(num_bands, num_kpts)
+    real(kind=dp), allocatable    :: eigval2(:, :)    !(num_wann, num_kpts)
     real(kind=dp)    :: irvec_tmp(3)
-    complex(kind=dp), allocatable :: utmp(:,:)       !(num_bands, num_wann)
+    complex(kind=dp), allocatable :: utmp(:, :)       !(num_bands, num_wann)
     complex(kind=dp) :: fac
 
     allocate (eigval2(num_wann, num_kpts), stat=ierr)
