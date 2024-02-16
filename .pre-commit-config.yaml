@@ -3,6 +3,15 @@ repos:
   rev: v4.1.0
   hooks:
   - id: check-yaml
+    exclude: (?x)^(
+        docs/mkdocs.yml
+      )$
+  - id: check-yaml
+    name: check yaml unsafe
+    args: ['--unsafe']
+    files: (?x)^(
+        docs/mkdocs.yml
+      )$
   - id: trailing-whitespace
     files: (?x)^(
         config/make[.]inc[.\w]*|
