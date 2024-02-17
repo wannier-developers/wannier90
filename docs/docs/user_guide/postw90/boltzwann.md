@@ -32,7 +32,7 @@ obtained using the `BoltzWann` module:
 > basis*,
 > Comp. Phys. Comm. 185, 422 (2014), DOI:10.1016/j.cpc.2013.09.015.
 
-### Theory {#sec:boltzwann-theory}
+## Theory
 
 The theory of the electronic transport using the Boltzmann transport
 equations can be found for instance in
@@ -45,8 +45,10 @@ flux density) $\mathrm{\bm{J}}_Q$ can be written, respectively, as
 $$
 \begin{equation}
 \begin{aligned}
-  \mathrm{\bm{J}}   &= \mathrm{\bm{\sigma}}(\mathrm{\bm{E}} - \mathrm{\bm{S}} \mathrm{\bm{\nabla }}T) \\
-  \mathrm{\bm{J}}_Q &= T \mathrm{\bm{\sigma }}\mathrm{\bm{S}} \mathrm{\bm{E}} - \mathrm{\bm{K}} \mathrm{\bm{\nabla }}T,
+  \mathrm{\bm{J}}   &= \mathrm{\bm{\sigma}}(\mathrm{\bm{E}} - \mathrm{\bm{S}}
+  \mathrm{\bm{\nabla }}T) \\
+  \mathrm{\bm{J}}_Q &= T \mathrm{\bm{\sigma }}\mathrm{\bm{S}} \mathrm{\bm{E}} -
+  \mathrm{\bm{K}} \mathrm{\bm{\nabla }}T,
 \end{aligned}
 \end{equation}
 $$
@@ -61,7 +63,8 @@ $\mathrm{\bm{K}}$ are $3\times 3$ tensors, in general.
     heat current per unit of temperature gradient in open-circuit
     experiments (i.e., with $\mathrm{\bm{J}}=0$) is not precisely
     $\mathrm{\bm{K}}$, but
-    $\mathrm{\bm{\kappa }}= \mathrm{\bm{K}}-\mathrm{\bm{S}} \mathrm{\bm{\sigma }}\mathrm{\bm{S}} T$
+    $\mathrm{\bm{\kappa }}= \mathrm{\bm{K}}-\mathrm{\bm{S}}
+    \mathrm{\bm{\sigma }}\mathrm{\bm{S}} T$
     (see for instance Eq. (7.89) of Ref. [@ziman-book72] or Eq. (XI-57b) of
     Ref. [@grosso-book00]). The thermal conductivity $\mathrm{\bm{\kappa}}$
     can be then calculated from the $\mathrm{\bm{\sigma}}$,
@@ -74,9 +77,16 @@ $$
 \begin{equation}
 \label{eq:boltz-sigmas}
 \begin{aligned}
-  \mathrm{[\bm{\sigma}]}_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)\Sigma_{ij}(\varepsilon), \\
-  [\mathrm{\bm{\sigma }}\mathrm{\bm{S}}]_{ij}(\mu,T)&=\frac e T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)\Sigma_{ij}(\varepsilon),\\
-  [\mathrm{\bm{K}}]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),
+  \mathrm{[\bm{\sigma}]}_{ij}(\mu,T)&=e^2 \int_{-\infty}^{+\infty} d\varepsilon
+  \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)
+  \Sigma_{ij}(\varepsilon), \\
+  [\mathrm{\bm{\sigma }}\mathrm{\bm{S}}]_{ij}(\mu,T)&=\frac e T
+  \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial
+  f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)
+  \Sigma_{ij}(\varepsilon),\\
+  [\mathrm{\bm{K}}]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty}
+  d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}
+  {\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),
 \end{aligned}
 \end{equation}
 $$
@@ -98,7 +108,9 @@ tensor, defined as
 
 $$
 \begin{equation}
-\Sigma_{ij}(\varepsilon) = \frac 1 V \sum_{n,\mathrm{\bm{k}}} v_i(n,\mathrm{\bm{k}}) v_j(n,\mathrm{\bm{k}}) \tau(n,\mathrm{\bm{k}}) \delta(\varepsilon - E_{n,k}).
+\Sigma_{ij}(\varepsilon) = \frac 1 V \sum_{n,\mathrm{\bm{k}}}
+v_i(n,\mathrm{\bm{k}}) v_j(n,\mathrm{\bm{k}}) \tau(n,\mathrm{\bm{k}})
+\delta(\varepsilon - E_{n,k}).
 \end{equation}
 $$
 
@@ -115,9 +127,9 @@ approximation* adopted here, $\tau$ is assumed as a constant, i.e., it
 is independent of $n$ and $\mathrm{\bm{k}}$ and its value (in fs) is
 read from the input variable `boltz_relax_time`.
 
-### Files
+## Files
 
-#### `seedname_boltzdos.dat`
+### `seedname_boltzdos.dat`
 
 OUTPUT. Written by `postw90` if `boltz_calc_also_dos` is `true`. Note
 that even if there are other general routines in `postw90` which
@@ -132,7 +144,8 @@ describe the content of the file. Then, there is a line for each energy
 $\varepsilon$ on the grid, containing a number of columns. The first
 column is the energy $\varepsilon$. The following is the DOS at the
 given energy $\varepsilon$. The DOS can either be calculated using the
-adaptive smearing scheme (see the following note) if `boltz_dos_adpt_smr` is `true`, or using
+adaptive smearing scheme (see the following note) if `boltz_dos_adpt_smr`
+is `true`, or using
 a "standard" fixed smearing, whose type and value are defined by
 `boltz_dos_smr_type` and `boltz_dos_smr_fixed_en_width`, respectively.
 If spin decomposition is required (input flag `spin_decomp`), further
@@ -148,7 +161,7 @@ spin-down projection.
     the DOS may be slightly different with respect to that given by the
     `dos` module.
 
-#### `seedname_tdf.dat`
+### `seedname_tdf.dat`
 
 OUTPUT. This file contains the Transport Distribution Function (TDF)
 tensor $\mathrm{\bm{\Sigma}}$ on a grid of energies.
@@ -168,7 +181,7 @@ The energy $\varepsilon$ is in eV, while $\mathrm{\bm{\Sigma}}$ is in
 $\displaystyle\frac{1}{\hbar^2}\cdot{\mathrm{eV}\cdot\mathrm{fs}}\cdot
 {\mathring{\mathrm{A}}^{-1}}$.
 
-#### `seedname_elcond.dat`
+### `seedname_elcond.dat`
 
 OUTPUT. This file contains the electrical conductivity tensor
 $\mathrm{\bm{\sigma}}$ on the grid of $T$ and $\mu$ points.
@@ -183,7 +196,7 @@ The chemical potential is in eV, the temperature is in K, and the
 components of the electrical conductivity tensor ar in SI units, i.e. in
 1/$\Omega$/m.
 
-#### `seedname_sigmas.dat`
+### `seedname_sigmas.dat`
 
 OUTPUT. This file contains the tensor
 $\mathrm{\bm{\sigma}}\mathrm{\bm{S}}$, i.e. the product of the
@@ -200,7 +213,7 @@ symmetric).
 The chemical potential is in eV, the temperature is in K, and the
 components of the tensor ar in SI units, i.e. in A/m/K.
 
-#### `seedname_seebeck.dat`
+### `seedname_seebeck.dat`
 
 OUTPUT. This file contains the Seebeck tensor $\mathrm{\bm{S}}$ on the
 grid of $T$ and $\mu$ points.
@@ -222,10 +235,10 @@ from the other three files (elcond, sigmas and kappa)!
 The chemical potential is in eV, the temperature is in K, and the
 components of the Seebeck tensor ar in SI units, i.e. in V/K.
 
-#### `seedname_kappa.dat`
+### `seedname_kappa.dat`
 
 OUTPUT. This file contains the tensor $\mathrm{\bm{K}}$ defined in
-Sec. [Theory](#sec:boltzwann-theory) on the grid of $T$ and $\mu$ points.
+Sec. [Theory](#theory) on the grid of $T$ and $\mu$ points.
 
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each

@@ -7,7 +7,7 @@ curvature, orbital magnetization and spin Hall conductivity are also
 called when `kpath = true` and `kpath_task = {curv,morb,shc}`, or when
 `kslice = true` and `kslice_task = {curv,morb,shc}`.
 
-### Background: Berry connection and curvature
+## Background: Berry connection and curvature
 
 The Berry connection is defined in terms of the cell-periodic Bloch
 states $\vert u_{n{\bf k}}\rangle=e^{-i{\bf k}\cdot{\bf r}}\vert
@@ -56,7 +56,7 @@ $$
 \end{equation}
 $$
 
-### `berry_task=kubo`: optical conductivity and joint density of states
+## `berry_task=kubo`: optical conductivity and joint density of states
 
 The Kubo-Greenwood formula for the optical conductivity of a crystal in
 the independent-particle approximation reads
@@ -167,8 +167,8 @@ f_{n{\bf k}}(1-f_{m{\bf k}})
 \end{equation}
 $$
 
-Equations $\eqref{eq:lorentzian}$--$\eqref{eq:jdos}$ contain the parameter $\eta$, whose value can be
-chosen using the keyword
+Equations $\eqref{eq:lorentzian}$--$\eqref{eq:jdos}$ contain the parameter
+$\eta$, whose value can be chosen using the keyword
 `[kubo_]smr_fixed_en_width`. Better results can often be achieved by
 adjusting the value of $\eta$ for each pair of states, i.e.,
 $\eta\rightarrow \eta_{nm\bf k}$. This is done as follows (see
@@ -203,7 +203,7 @@ $$
 whose independent components are written as a function
 of frequency onto nine separate files.
 
-### `berry_task=ahc`: anomalous Hall conductivity
+## `berry_task=ahc`: anomalous Hall conductivity
 
 The antisymmetric tensor $\sigma^{\rm A}_{\alpha\beta}$ is odd under
 time reversal, and therefore vanishes in non-magnetic systems, while in
@@ -260,7 +260,7 @@ Eq. $\eqref{eq:ahc}$ can
 be evaluated by Wannier interpolation as described in
 Refs. [@wang-prb06; @lopez-prb12], with no truncation involved.
 
-### `berry_task=morb`: orbital magnetization
+## `berry_task=morb`: orbital magnetization
 
 The ground-state orbital magnetization of a crystal is given
 by [@xiao-rmp10; @ceresoli-prb06]
@@ -288,7 +288,7 @@ Note that the definition of ${\bf M}^{\rm orb}({\bf k})$ used here
 differs by a factor of $-1/2$ from the one in Eq. (97) and Fig. 2 of
 that work.
 
-### `berry_task=shc`: spin Hall conductivity {#sec:shc}
+## `berry_task=shc`: spin Hall conductivity {#sec:shc}
 
 The Kubo-Greenwood formula for the intrinsic spin Hall conductivity
 (SHC) of a crystal in the independent-particle approximation reads
@@ -328,8 +328,10 @@ elements are evaluated,
 
 $$
 \begin{equation}
-\langle u_{n{\bf k}}\vert\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}}\rangle,
-\langle u_{n{\bf k}}\vert\sigma_\gamma \vert u_{m{\bf k}+{\bf b}}\rangle, \gamma = x, y, z
+\langle u_{n{\bf k}}\vert\sigma_\gamma H_{\bf k}
+\vert u_{m{\bf k}+{\bf b}}\rangle,
+\langle u_{n{\bf k}}\vert \sigma_\gamma \vert u_{m{\bf k}+{\bf b}}\rangle,
+\gamma = x, y, z
 \end{equation}
 $$
 
@@ -415,7 +417,7 @@ or
 > principles using maximally localized Wannier functions*,
 > Phys. Rev. B. 99, 235113 (2019), DOI:10.1103/PhysRevB.99.235113.
 
-### `berry_task=sc`: shift current
+## `berry_task=sc`: shift current
 
 The shift-current contribution to the second-order response is
 characterized by a frequency-dependent third-rank tensor [@sipe-prb00]
@@ -476,7 +478,7 @@ the keyword `[kubo_]adpt_smr`.
 Please cite Ref. [@ibanez-azpiroz_ab_2018] when publishing shift-current
 results using this method.
 
-### `berry_task=kdotp`: $k\cdot p$ coefficients {#sec:kdotp}
+## `berry_task=kdotp`: $k\cdot p$ coefficients {#sec:kdotp}
 
 Consider a Hamiltonian
 
@@ -549,8 +551,10 @@ where $a,b=x,y,z$, and
 $$
 \begin{equation}
 \begin{aligned}
-&H_{a}^{(W)}(0)=\left. \dfrac{\partial H^{(W)}(\bm{k})}{\partial k_{a}}\right\rvert_{\bm{k}=0}\\
-&H_{ab}^{(W)}(0)=\left. \dfrac{\partial^{2} H^{(W)}(\bm{k})}{\partial k_{a}\partial k_{b}}\right\rvert_{\bm{k}=0}
+&H_{a}^{(W)}(0)=\left. \dfrac{\partial H^{(W)}(\bm{k})}{\partial k_{a}}
+\right\rvert_{\bm{k}=0}\\
+&H_{ab}^{(W)}(0)=\left. \dfrac{\partial^{2} H^{(W)}(\bm{k})}
+{\partial k_{a}\partial k_{b}}\right\rvert_{\bm{k}=0}
 \end{aligned}
 \end{equation}
 $$
@@ -562,8 +566,10 @@ $H(\bm{k})$,
 $$
 \begin{equation}
 \label{eq:Hbar}
-H(\bm{k})=\overbrace{\overline{H}}^{H^{0}} + \overbrace{\sum_{a}\overline{H}_{a}k_{a}
-+\dfrac{1}{2}\sum_{ab}\overline{H}_{ab}k_{a}k_{b}}^{H^{\prime}} + \mathcal{O}(k^{3}),
+H(\bm{k})=\overbrace{\overline{H}}^{H^{0}} +
+\overbrace{\sum_{a}\overline{H}_{a}k_{a}
++\dfrac{1}{2}\sum_{ab}\overline{H}_{ab}k_{a}k_{b}}^{H^{\prime}} +
+\mathcal{O}(k^{3}),
 \end{equation}
 $$
 
@@ -621,13 +627,14 @@ The implementation in `wannier90` follows the scheme proposed in
 Ref. [@ibanez-azpiroz-ArXiv2019], and outputs $\overline{H}_{mm'}$ in
 `seedname-kdotp_0.dat`, $\left(\overline{H}_{a}\right)_{mm'}$ in
 `seedname-kdotp_1.dat`, and
-$\left[\left(\overline{H}_{ab}\right)_{mm'} + \left({T}_{ab}\right)_{mm'}\right]/2$
+$\left[\left(\overline{H}_{ab}\right)_{mm'} +
+\left({T}_{ab}\right)_{mm'}\right]/2$
 in `seedname-kdotp_2.dat`.
 
 Please cite Ref. [@ibanez-azpiroz-ArXiv2019] when publishing $k\cdot p$
 results using this method.
 
-### Needed matrix elements
+## Needed matrix elements
 
 All the quantities entering the formulas for the optical conductivity
 and AHC can be calculated by Wannier interpolation once the Hamiltonian
@@ -637,7 +644,8 @@ and position matrix elements $\langle {\bf 0}n\vert H\vert
 elements are readily available at the end of a standard MLWF calculation
 with `wannier90`. In particular, $\langle {\bf
   0}n\vert {\bf r}\vert {\bf R}m\rangle$ can be calculated by Fourier
-transforming the overlap matrices in [Methodology Eq. \[overlap matrices\]](../wannier90/methodology.md#mjx-eqn:eq:overlap-matrix),
+transforming the overlap matrices in
+[Methodology Eq. \[overlap matrices\]](../wannier90/methodology.md#mjx-eqn:eq:overlap-matrix),
 
 $$
 \begin{equation}
@@ -691,7 +699,8 @@ further matrix elements are needed:
 $$
 \begin{equation}
 \langle u_{n{\bf k}}\vert
-\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}}\rangle, \langle u_{n{\bf k}}\vert
+\sigma_\gamma H_{\bf k}\vert u_{m{\bf k}+{\bf b}}\rangle,
+\langle u_{n{\bf k}}\vert
 \sigma_\gamma \vert u_{m{\bf k}+{\bf b}}\rangle,
 \gamma = x, y, z
 \end{equation}

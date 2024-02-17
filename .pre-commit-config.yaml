@@ -35,4 +35,4 @@ repos:
   rev: v0.12.1
   hooks:
   - id: markdownlint-cli2
-    args: ['--fix']
+    args: ['--fix', 'docs/**.md']

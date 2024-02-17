@@ -1,10 +1,9 @@
-
-## Utilities
+# Utilities
 
 The `wannier90` code is shipped with a few utility programs that may be
 useful in some occasions. In this chapter, we describe their use.
 
-### `kmesh.pl`
+## `kmesh.pl`
 
 The `wannier90` code requires the definition of a full Monkhorst--Pack
 grid of $k$ points. In the input file the size of this mesh is given by
@@ -55,7 +54,7 @@ allows to provide the $k$ point coordinates with the accuracy required
 by `wannier90`, and moreover it makes sure that the $k$ grid used in the
 ab-initio code and in `wannier90` are the same.
 
-### `w90chk2chk.x`
+## `w90chk2chk.x`
 
 During the calculation of the Wannier functions, `wannier90` produces a
 `.chk` file that contains some information to restart the calculation.
@@ -125,7 +124,7 @@ A typical use is the following:
 
 5. Run the `postw90` code.
 
-### `PL_assessment`
+## `PL_assessment`
 
 The function of this utility is to assess the length of a principal
 layer (in the context of a Landauer-Buttiker quantum conductance
@@ -171,7 +170,7 @@ four columns
 
 4. Maximum absolute value in (2)
 
-### `w90vdw`
+## `w90vdw`
 
 This utility provides an implementation of a method for calculating van
 der Waals energies based on the idea of density decomposition via MLWFs.
@@ -187,7 +186,7 @@ For further details of this program, please see the documentation in
 `utility/w90vdw/doc/` and the related examples in
 `utility/w90vdw/examples/`.
 
-### `w90pov`
+## `w90pov`
 
 An utility to create Pov files (to render the Wannier functions using
 the PovRay utility) is provided inside `utility/w90pov`.
@@ -195,7 +194,7 @@ the PovRay utility) is provided inside `utility/w90pov`.
 Please refer to the documentation inside `utility/w90pov/doc` for more
 information.
 
-### `k_mapper.py`
+## `k_mapper.py`
 
 The `wannier90` code requires the definition of a full Monkhorst--Pack
 grid of $\mathbf{k}$-vectors, which can be obtained by means of the
@@ -214,7 +213,7 @@ path/k_mapper.py nx ny nz QE_nscf_output
 where `path` is the path of `utility` folder, `QE_nscf_output` is the
 path of the QE nscf output file given to Yambo.
 
-### `gw2wannier90.py`
+## `gw2wannier90.py`
 
 This utility allows to sort in energy the input data of `wannier90`
 (e.g. overlap matrices and energy eigenvalues). `gw2wannier90.py` allows
@@ -231,9 +230,11 @@ where `path` is the path of
 
 Available options are:
 
-    mmn, amn, spn, unk, uhu, uiu,
-    spn_formatted, unk_formatted, uhu_formatted, uiu_formatted,
-    write_formatted
+```bash title="Terminal"
+mmn, amn, spn, unk, uhu, uiu,
+spn_formatted, unk_formatted, uhu_formatted, uiu_formatted,
+write_formatted
+```
 
 If no options are specified, all the files
 (`mmn, amn, spn, UNK, uHu, uIu`) are considered.
@@ -248,7 +249,7 @@ In default, the output format is the same as the input format. To
 generate formatted files with unformatted input, use option:
 `write_formatted`
 
-### `w90spn2spn.x`
+## `w90spn2spn.x`
 
 The interface between ab-initio code and `wannier90` (e.g.
 `pw2wannier90.x`) can produce a `.spn` file that is used by `postw90` to
@@ -326,7 +327,7 @@ rerun `pw2wannier90.x`, then `w90spn2spn.x` can be useful. Also, once a
 if `spn_formatted` is set to `true` in `postw90` input file
 `seedname.win`.
 
-### `write_pdwf_projectors.py`
+## `write_pdwf_projectors.py`
 
 A python script to extract projectors from a `UPF` file and write them
 into a `pw2wannier90.x`-recognizable `dat` file, which can be used to

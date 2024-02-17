@@ -108,12 +108,11 @@ structure calculation.
     $$
 
 Note that $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$,
-$\mathbf{A}^{(\mathbf{k})}$ and $\mathbf{U}^{(\mathbf{k})}$ are all
-small, $N \times N$ matrices (see the following note) that are independent of the basis set
-used to obtain the original Bloch states.
+$\mathbf{A}^{(\mathbf{k})}$ and $\mathbf{U}^{(\mathbf{k})}$ are all small,
+$N \times N$ matrices (see the following note) that are independent of the basis
+set used to obtain the original Bloch states.
 
 !!! note
-
     Technically, this is true for the case of an isolated group of $N$
     bands from which we obtain $N$ MLWF. When using the disentanglement
     procedure of Ref. [@souza-prb01], $\mathbf{A}^{(\mathbf{k})}$, for

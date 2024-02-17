@@ -1337,7 +1337,7 @@ option starts with a '-'):
     Output file: `seedname-gyrotropic-K_orb.dat` ( see Sec.
     [output data format](#output-data-format) for file format description)
 
-  - `-spin` : if this task is present, compute also the spin
+    - `-spin` : if this task is present, compute also the spin
         contribution.
 
         Output file: `seedname-gyrotropic-K_spin.dat`
@@ -1347,7 +1347,7 @@ option starts with a '-'):
     Output file: `seedname-gyrotropic-NOA_orb.dat` ( see Sec.
     [output data format](#output-data-format) for file format description)
 
-  - `-spin` : if this task is present, compute also the spin
+    - `-spin` : if this task is present, compute also the spin
         contribution.
 
         Output file: `seedname-gyrotropic-NOA_spin.dat`
