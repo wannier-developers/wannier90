@@ -48,14 +48,14 @@ parameter `ws_search_size`.
 
 Then,
 
-1.  if
+1. if
     $\mathrm{\rm{d}}_{ij\mathrm{\rm{R}}}+ \mathrm{\rm{\tilde R}}_{nml}$
     is inside the $N\times M \times L$ super-WS cell, then it is the
     shortest, take it and quit
 
-2.  if it is outside the WS, then it is not the shortest, throw it away
+2. if it is outside the WS, then it is not the shortest, throw it away
 
-3.  if it is on the border/corner of the WS then it is the shortest, but
+3. if it is on the border/corner of the WS then it is the shortest, but
     there are other choices of $(n,m,l)$ which are equivalent, find all
     of them
 

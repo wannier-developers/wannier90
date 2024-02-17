@@ -101,7 +101,7 @@ crystallographic co-ordinates relative to the direct lattice vectors.
 `l  mr  r`: three integers; $l$ and $m_\mathrm{r}$ specify the angular
 part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and $\mathrm{r}$
 specifies the radial part $R_{\mathrm{r}}(r)$ of the projection function
-(see Tables [Angular functions](projections.md/#angular-functions), [Hybrids](projections.md#hybrids) and [Radial functions](projections.md/#radial-functions)).
+(see Tables [Angular functions](projections.md#angular-functions), [Hybrids](projections.md#hybrids) and [Radial functions](projections.md#radial-functions)).
 
 `z-axis`: three real numbers; default is `0.0 0.0 1.0`; defines the axis
 from which the polar angle $\theta$ in spherical polar coordinates is
@@ -215,7 +215,7 @@ spinor WFs is implemented in the `pw2wannier90` interface. See Tutorial
 
 Another automatic projection method is projectability-disentangled
 Wannier function (PDWF) [@Qiao2023-pdwf], which uses pseudo-atomic
-orbitals inside pseudopotentials as initial guesses. 
+orbitals inside pseudopotentials as initial guesses.
 <!-- TODO: Add a tutorial for PDWF. -->
 <!-- See Tutorial [34](../../tutorials/tutorial_34.md) and 35. -->
 
@@ -246,9 +246,9 @@ and `seedname.nnkp`, generated on the first pass of `wannier90` (with
     end projections
 
 where the first line tells us that in total four projections are
-specified, and the subsquent lines provide the projection centre, the
+specified, and the subsequent lines provide the projection centre, the
 angular and radial parts of the orbital (see
-Section [Orbital Definitions](projections.md/#orbital-definitions) for definitions), the $z$ and $x$ axes,
+Section [Orbital Definitions](projections.md#orbital-definitions) for definitions), the $z$ and $x$ axes,
 and the diffusivity and cut-off radius for the projection orbital.
 
 `pwscf`, or any other *ab initio* electronic structure code,
@@ -387,6 +387,7 @@ the $k$-point in the list of $k$-points in `seedname.win`, and the real
 number is the eigenvalue.
 
 E.g.,
+
 ```
             1           1  -6.43858831271328
             2           1   19.3977795287297
@@ -408,12 +409,12 @@ post-processing interface `pw2wannier90.x`. Please refer to the
 documentation that comes with the Quantum ESPRESSO distribution for
 instructions.
 
-1.  Run 'scf'/'nscf' calculation(s) with `pw`
+1. Run 'scf'/'nscf' calculation(s) with `pw`
 
-2.  Run `wannier90` with `postproc_setup` = `.true.` to generate
+2. Run `wannier90` with `postproc_setup` = `.true.` to generate
     `seedname.nnkp`
 
-3.  Run `pw2wannier90`. First it reads an input file, e.g.,
+3. Run `pw2wannier90`. First it reads an input file, e.g.,
     `seedname.pw2wan`, which defines `prefix` and `outdir` for the
     underlying 'scf' calculation, as well as the name of the file
     `seedname.nnkp`, and does a consistency check between the direct and
@@ -423,7 +424,7 @@ instructions.
     and `seedname.sym` files are additionally created when
     `write_dmn = .true.` (see below).
 
-4.  Run `wannier90` with `postproc_setup` = `.false.` to disentangle
+4. Run `wannier90` with `postproc_setup` = `.false.` to disentangle
     bands (if required), localise MLWF, and use MLWF for plotting,
     bandstructures, Fermi surfaces etc.
 
@@ -434,23 +435,23 @@ in the `wannier90` Tutorial.
 
 A number of keywords may be specified in the `pw2wannier90` input file:
 
--   `outdir` -- Location to write output files. Default is `` `./' ``
+- `outdir` -- Location to write output files. Default is `` `./' ``
 
--   `prefix` -- Prefix for the `pwscf` calculation. Default
+- `prefix` -- Prefix for the `pwscf` calculation. Default
     is `` ` ' ``
 
--   `seedname` -- Seedname for the `wannier90` calculation. Default is
+- `seedname` -- Seedname for the `wannier90` calculation. Default is
     `` `wannier' ``
 
--   `spin_component` -- Spin component. Takes values `` `up' ``,
+- `spin_component` -- Spin component. Takes values `` `up' ``,
     `` `down' `` or `` `none' `` (default).
 
--   `wan_mode` -- Either `` `standalone' `` (default) or `` `library' ``
+- `wan_mode` -- Either `` `standalone' `` (default) or `` `library' ``
 
--   `write_unk` -- Set to `.true.` to write the periodic part of the
+- `write_unk` -- Set to `.true.` to write the periodic part of the
     Bloch functions for plotting in `wannier90`. Default is `.false.`
 
--   `reduce_unk` -- Set to `.true.` to reduce file-size (and resolution)
+- `reduce_unk` -- Set to `.true.` to reduce file-size (and resolution)
     of Bloch functions by a factor of 8. Default is `.false.` (only
     relevant if `write_unk=.true.`)
 
@@ -461,24 +462,24 @@ A number of keywords may be specified in the `pw2wannier90` input file:
         version (if available) or the CVS version of `pw2wannier90.f90`,
         which has been fixed.
 
--   `wvfn_formatted` -- Set to `.true.` to write formatted
+- `wvfn_formatted` -- Set to `.true.` to write formatted
     wavefunctions. Default is `.false.` (only relevant if
     `write_unk=.true.`)
 
--   `write_amn` -- Set to `.false.` if $A_{mn}^{(\mathbf{k})}$ not
+- `write_amn` -- Set to `.false.` if $A_{mn}^{(\mathbf{k})}$ not
     required. Default is `.true.`
 
--   `write_mmn` -- Set to `.false.` if $M_{mn}^{(\mathbf{k,b})}$ not
+- `write_mmn` -- Set to `.false.` if $M_{mn}^{(\mathbf{k,b})}$ not
     required. Default is `.true.`
 
--   `write_spn` -- Set to `.true.` to write out the matrix elements of
+- `write_spn` -- Set to `.true.` to write out the matrix elements of
     $S$ between Bloch states (non-collinear spin calculation only).
     Default is `.false.`
 
--   `spn_formatted` -- Set to `.true.` to write spn data as a formatted
+- `spn_formatted` -- Set to `.true.` to write spn data as a formatted
     file. Default is `.false.` (only relevant if `write_spn=.true.`)
 
--   `write_uHu` -- Set to `.true.` to write out the matrix elements
+- `write_uHu` -- Set to `.true.` to write out the matrix elements
 
     $$
     \langle u_{n{\bf k}+{\bf b}_1}\vert
@@ -487,10 +488,10 @@ A number of keywords may be specified in the `pw2wannier90` input file:
 
     Default is `.false.`
 
--   `uHu_formatted` -- Set to `.true.` to write uHu data as a formatted
+- `uHu_formatted` -- Set to `.true.` to write uHu data as a formatted
     file. Default is `.false.` (only relevant if `write_uHu=.true.`)
 
--   `write_uIu` -- Set to `.true.` to write out the matrix elements of
+- `write_uIu` -- Set to `.true.` to write out the matrix elements of
 
     $$
     \langle  u_{n{\bf k}+{\bf b}_1}\vert
@@ -499,36 +500,36 @@ A number of keywords may be specified in the `pw2wannier90` input file:
 
     Default is `.false.`
 
--   `uIu_formatted` -- Set to `.true.` to write uIu data as a formatted
+- `uIu_formatted` -- Set to `.true.` to write uIu data as a formatted
     file. Default is `.false.` (only relevant if `write_uIu=.true.`)
 
--   `write_unkg` -- Set to `.true.` to write the first few Fourier
+- `write_unkg` -- Set to `.true.` to write the first few Fourier
     components of the periodic parts of the Bloch functions.
 
--   `write_dmn` -- Set to `.true.` to construct symmetry-adapted Wannier
+- `write_dmn` -- Set to `.true.` to construct symmetry-adapted Wannier
     functions. Default is `.false.`
 
--   `read_sym` -- Set to `.true.` to customize symmetry operations to be
+- `read_sym` -- Set to `.true.` to customize symmetry operations to be
     used in symmetry-adapted mode. When `read_sym = .true.`, an
     additional input `seedname.sym` is required. Default is `.false.`
     (only relevant if `write_dmn=.true.`).
 
--   `irr_bz` -- Set to `.true.` to use the irreducible BZ calculation
+- `irr_bz` -- Set to `.true.` to use the irreducible BZ calculation
     (see [Section "Irreducible BZ calculation"](#irreducible-bz-calculation)).
 
--   `atom_proj` -- Set to `.true.` to use pseudo-atomic orbitals for
+- `atom_proj` -- Set to `.true.` to use pseudo-atomic orbitals for
     computing `amn`. Default is `.false.`.
 
--   `atom_proj_exclude` -- A list of integers specifying the indices of
+- `atom_proj_exclude` -- A list of integers specifying the indices of
     pseudo-atomic projectors to be excluded from computing `amn`. Used
     only when `atom_proj = .true.`. No default.
 
--   `atom_proj_ext` -- Set to `.true.` to use external pseudo-atomic
+- `atom_proj_ext` -- Set to `.true.` to use external pseudo-atomic
     orbitals for computing `amn`, will read data files from directory
     `atom_proj_dir`. Used only when `atom_proj = .true.`. Default is
     `.false.`.
 
--   `atom_proj_dir` -- A string specifying the directory for external
+- `atom_proj_dir` -- A string specifying the directory for external
     pseudo-atomic projectors. Used only when `atom_proj = .true.` and
     `atom_proj_ext = .true.`. No default.
 
@@ -568,7 +569,7 @@ symmetry operations act on a point $\bf r$ as ${\bf r} R - {\bf t}$.
 
 ## Irreducible BZ calculation
 
-This section explains how to construct Wannier functions using wavefunctions 
+This section explains how to construct Wannier functions using wavefunctions
 calculated only in the irreducible BZ (IBZ). Using this option, users only
 have to calculate wavefunctions, overlap matrices ($M_{mn}$) and projection
 matrices ($A_{mn}$) in the IBZ, which will reduce the computational cost.
@@ -586,31 +587,35 @@ and Ref. [@Koretsune2023].
 
 The procedure is as follows.
 
-1.  Run `scf`/`nscf` calculation(s) with Quantum ESPRESSO `pw.x`. In the `nscf`
+1. Run `scf`/`nscf` calculation(s) with Quantum ESPRESSO `pw.x`. In the `nscf`
     calculation, users only have to calculate k-points in the IBZ.
 
     E.g.:
+
     ```vi title="Input file"
     K_POINTS {automatic}
     4 4 4 0 0 0
     ```
+
     Users also have the option to skip the `nscf` calculation, if the grid
     of the `scf` step is already sufficient.
 
-2.  Run Wannier90 with `postproc_setup = .true.` (or equivalently with
+2. Run Wannier90 with `postproc_setup = .true.` (or equivalently with
     the `-pp` command line flag) to generate the file `seedname.nnkp`.
 
-3.  Run `pw2wannier90` with `irr_bz = .true.` in the input file.
+3. Run `pw2wannier90` with `irr_bz = .true.` in the input file.
     `pw2wannier90` then generates the files `seedname.immn`, `seedname.iamn`,
     `seedname.ieig` and `seedname.isym`.
 
-4.  Run the python code `write_full_data.py`, part of the `symWannier` package.
+4. Run the python code `write_full_data.py`, part of the `symWannier` package.
     You can first install the package from
     [GitHub](https://github.com/wannier-utils-dev/symWannier) and then
     run the script as
+
     ```bash title="Terminal"
     python write_full_data.py <seedname>
     ```
+
     (replace `<seedname>` with the seedname of your calculation).
 
     This python script generates the $M_{mn}$ and $A_{mn}$ matrices, and Kohn-Sham
@@ -620,7 +625,7 @@ The procedure is as follows.
     information (`seedname.isym`). The relations between these quantites
     in the IBZ and full BZ are explained in Ref. [@Koretsune2023].
 
-5.  Run `wannier90` (with `postproc_setup = .false.` or, equivalently,
+5. Run `wannier90` (with `postproc_setup = .false.` or, equivalently,
     without the `-pp` command line option).
 
 ## `seedname.immn` file
@@ -668,6 +673,7 @@ operation, $\hat{g}$, and consists of 7 lines (11 lines for the spinor
 case). The order of the data in each block is as follows:
 
 Non-spinor case:
+
 ```
        a comment
        R(1,1)   R(2,1)   R(3,1)
@@ -679,6 +685,7 @@ Non-spinor case:
 ```
 
 Spinor case:
+
 ```
        a comment
        R(1,1)   R(2,1)   R(3,1)
@@ -700,7 +707,7 @@ crystal coordinates as $\hat{g} {\bf r} = {\bf r} R - {\bf t}$.
 $T=1$ ($T=0$) indicates that this symmetry operation includes (does not
 include) time-reversal operation, respectively.
 $u$ is the SU(2) rotation matrix for
-the spinor part. 
+the spinor part.
 `invs` represents the symmetry operation
 corresponding to $\hat{g}^{-1}$.
 
@@ -742,4 +749,3 @@ matrix, $D_{mn}(\hat{g})$.
 Subsequent lines of each block: 2 integers and 2 real numbers per line.
 These specify indeces of Wannier functions, $m$ and $n$, and real and
 imaginary parts of $D_{mn}(\hat{g})$.
-

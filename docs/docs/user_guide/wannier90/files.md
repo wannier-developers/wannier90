@@ -13,42 +13,42 @@ the `wannier90` Tutorial.
 The following are the dimensional quantities that are specified in the
 master input file:
 
--   Direct lattice vectors
+- Direct lattice vectors
 
--   Positions (of atomic or projection) centres in real space
+- Positions (of atomic or projection) centres in real space
 
--   Energy windows
+- Energy windows
 
--   Positions of k-points in reciprocal space
+- Positions of k-points in reciprocal space
 
--   Convergence thresholds for the minimisation of $\Omega$
+- Convergence thresholds for the minimisation of $\Omega$
 
--   `zona` (see Section [Projections](projections.md))
+- `zona` (see Section [Projections](projections.md))
 
--   `wannier_plot_cube`: cut-off radius for plotting WF in Gaussian cube
+- `wannier_plot_cube`: cut-off radius for plotting WF in Gaussian cube
     format
 
 Notes:
 
--   The units (either `ang` (default) or `bohr`) in which the lattice
+- The units (either `ang` (default) or `bohr`) in which the lattice
     vectors, atomic positions or projection centres are given can be set
     in the first line of the blocks `unit_cell_cart`, `atoms_cart` and
     `projections`, respectively, in `seedname.win`.
 
--   Energy is always in eV.
+- Energy is always in eV.
 
--   Convergence thresholds are always in Å$^{2}$
+- Convergence thresholds are always in Å$^{2}$
 
--   Positions of k-points are always in crystallographic coordinates
+- Positions of k-points are always in crystallographic coordinates
     relative to the reciprocal lattice vectors.
 
--   `zona` is always in reciprocal Angstrom (Å$^{-1}$)
+- `zona` is always in reciprocal Angstrom (Å$^{-1}$)
 
--   The keyword `length_unit` may be set to `ang` (default) or `bohr`,
+- The keyword `length_unit` may be set to `ang` (default) or `bohr`,
     in order to set the units in which the quantities in the output file
     `seedname.wout` are written.
 
--   `wannier_plot_radius` is in Angstrom
+- `wannier_plot_radius` is in Angstrom
 
 The reciprocal lattice vectors
 $\{\mathbf{B}_{1},\mathbf{B}_{2},\mathbf{B}_{3}\}$ are defined in terms
@@ -108,7 +108,6 @@ The header provides some basic information about `wannier90`, the
 authors, the code version and release, and the execution time of the
 current run. The header looks like the following different (the string
 might slightly change across different versions):
-
 
                  +---------------------------------------------------+
                  |                                                   |
@@ -259,7 +258,7 @@ minimisation procedure and expressions for $\Omega_{\mathrm{I}}^{(i)}$,
 see the original paper [@souza-prb01]. The procedure is considered to be
 converged when the fractional difference between
 $\Omega_{\mathrm{I}}^{(i)}$ and $\Omega_{\mathrm{I}}^{(i-1)}$ is less
-than `dis_conv_tol` over ` dis_conv_window` iterations. The final column
+than `dis_conv_tol` over `dis_conv_window` iterations. The final column
 gives a running account of the wall time (in seconds) so far. Note that
 at the end of each line of output, there are the characters "`<– DIS`".
 This enables fast searching of the output using, for example, the Unix
@@ -574,12 +573,12 @@ interpolated band structure.
 
 ## `seedname_band.gnu`
 
-OUTPUT. Written if `bands_plot=.TRUE.` and ` bands_plot_format=gnuplot`;
+OUTPUT. Written if `bands_plot=.TRUE.` and `bands_plot_format=gnuplot`;
 A `gnuplot` script to plot the interpolated band structure.
 
 ## `seedname_band.agr`
 
-OUTPUT. Written if `bands_plot=.TRUE.` and ` bands_plot_format=xmgrace`;
+OUTPUT. Written if `bands_plot=.TRUE.` and `bands_plot_format=xmgrace`;
 A `grace` file to plot the interpolated band structure.
 
 ## `seedname_band.kpt`
@@ -597,14 +596,14 @@ file suitable for plotting with XCrySDen.
 ## `seedname_w.xsf`
 
 OUTPUT. Written if `wannier_plot=.TRUE.` and
-` wannier_plot_format=xcrysden`. Contains the ` w`$^{\mathrm{th}}$ WF in
+`wannier_plot_format=xcrysden`. Contains the `w`$^{\mathrm{th}}$ WF in
 real space in a format suitable for plotting with XCrySDen or VMD, for
 example.
 
 ## `seedname_w.cube`
 
 OUTPUT. Written if `wannier_plot=.TRUE.` and
-` wannier_plot_format=cube`. Contains the ` w`$^{\mathrm{th}}$ WF in
+`wannier_plot_format=cube`. Contains the `w`$^{\mathrm{th}}$ WF in
 real space in Gaussian cube format, suitable for plotting in XCrySDen,
 VMD, gopenmol etc.
 
@@ -1053,7 +1052,7 @@ columns). There is an empty line between each block of data.
 
      written on 15Sep2016 at 16:33:46 
                64           8           8
-    	 
+      
        0.0000000000  +0.0000000000  +0.0000000000
        0.4468355787  +0.1394579978
       -0.0966033667  +0.4003934902
@@ -1088,7 +1087,7 @@ columns). There is an empty line between each block of data.
 
      written on 15Sep2016 at 16:33:46 
                64           8          16
-    	    
+         
        0.0000000000  +0.0000000000  +0.0000000000
        1.0000000000  +0.0000000000
       +0.0000000000  +0.0000000000

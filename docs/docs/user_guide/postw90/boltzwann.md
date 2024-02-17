@@ -10,7 +10,7 @@ $\mathrm{\bm{S}}$ and the coefficient $\mathrm{\bm{K}}$ (defined below;
 it is the main ingredient of the thermal conductivity).
 
 The list of parameters of the `BoltzWann` module are summarized in
-Table [ `BoltzWann` Parameters](postw90params.md#boltzwann-parameters). 
+Table [`BoltzWann` Parameters](postw90params.md#boltzwann-parameters).
 A [tutorial of a Boltzmann transport](../../tutorials/tutorial_16.md)
 calculation can be found in the `wannier90` Tutorial.
 
@@ -18,8 +18,8 @@ calculation can be found in the `wannier90` Tutorial.
     By default, the code assumes to be working with a 3D bulk
     material, with periodicity along all three spatial directions. If you
     are interested in studying 2D systems, set the correct value for the
-    `boltz_2d_dir` variable 
-    (see Sec. [boltz_2d_dir](postw90params.md/#sec:boltz2ddir) for the documentation). 
+    `boltz_2d_dir` variable
+    (see Sec. [boltz_2d_dir](postw90params.md#sec:boltz2ddir) for the documentation).
     This is important
     for the evaluation of the Seebeck coefficient.
 
@@ -49,7 +49,7 @@ $$
   \mathrm{\bm{J}}_Q &= T \mathrm{\bm{\sigma }}\mathrm{\bm{S}} \mathrm{\bm{E}} - \mathrm{\bm{K}} \mathrm{\bm{\nabla }}T,
 \end{aligned}
 \end{equation}
-$$ 
+$$
 
 where the electrical conductivity
 $\mathrm{\bm{\sigma}}$, the Seebeck coefficient $\mathrm{\bm{S}}$ and
@@ -79,7 +79,7 @@ $$
   [\mathrm{\bm{K}}]_{ij}(\mu,T)&=\frac 1 T \int_{-\infty}^{+\infty} d\varepsilon \left(-\frac {\partial f(\varepsilon,\mu,T)}{\partial \varepsilon}\right)(\varepsilon-\mu)^2 \Sigma_{ij}(\varepsilon),
 \end{aligned}
 \end{equation}
-$$ 
+$$
 
 where $[\mathrm{\bm{\sigma }}\mathrm{\bm{S}}]$ denotes
 the product of the two tensors $\mathrm{\bm{\sigma}}$ and
@@ -90,7 +90,7 @@ $$
 \begin{equation}
 f(\varepsilon,\mu,T) = \frac{1}{e^{(\varepsilon-\mu)/K_B T}+1}
 \end{equation}
-$$ 
+$$
 
 and
 $\Sigma_{ij}(\varepsilon)$ is the Transport Distribution Function (TDF)

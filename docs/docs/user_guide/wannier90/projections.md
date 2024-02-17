@@ -12,10 +12,10 @@ and the volume over which real-space overlaps $A_{mn}$ are calculated.
 
 The code is able to
 
-1.  project onto s,p,d and f angular momentum states, plus the hybrids
+1. project onto s,p,d and f angular momentum states, plus the hybrids
     sp, sp$^2$, sp$^3$, sp$^3$d, sp$^3$d$^2$.
 
-2.  control the radial part of the projection functions to allow higher
+2. control the radial part of the projection functions to allow higher
     angular momentum states, e.g., both 3s and 4s in silicon.
 
 The atomic orbitals of the hydrogen atom provide a good basis to use for
@@ -31,7 +31,7 @@ equation but rather the *real* (in the sense of non-imaginary) states
 $\Theta_{lm_{\mathrm{r}}}$, obtained by a unitary transformation. For
 example, the canonical eigenstates associated with $l=1$, $m=\{-1,0,1\}$
 are not the real p$_{x}$, p$_{y}$ and p$_{z}$ that we want. See
-Section [Orbital Definitions](#orbital-definitions) 
+Section [Orbital Definitions](#orbital-definitions)
 for our mathematical conventions regarding
 projection orbitals for different $n$, $l$ and $m_{\mathrm{r}}$.
 
@@ -66,15 +66,15 @@ appropriate character string. See
 Tables [Angular functions](#angular-functions)
 and [Hybrids](#hybrids).
 Examples:
-`l=2,mr=1 ` or ` dz2` -- a single projection with $l=2$,
+`l=2,mr=1` or `dz2` -- a single projection with $l=2$,
 $m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)
-`l=2,mr=1,4 ` or ` dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
+`l=2,mr=1,4` or `dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
 d$_{xz}$
-`l=-3 ` or ` sp3` -- four sp$^{3}$ hybrids
+`l=-3` or `sp3` -- four sp$^{3}$ hybrids
 Specific hybrid orbitals may be specified as follows:
-`l=-3,mr=1,3 ` or ` sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
+`l=-3,mr=1,3` or `sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
 Multiple states may be specified by separating with '`;`', e.g.,
-`sp3;l=0 ` or ` l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
+`sp3;l=0` or `l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
 
 `zaxis` (optional):
 `z=1,1,1` -- set the $z$-axis to be in the (1,1,1) direction. Default is
@@ -99,14 +99,14 @@ always in reciprocal Angstrom. Default is `zona=1.0`.
 
 1. CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
 
-    `Cu:l=0;l=1;l=2 `
+    `Cu:l=0;l=1;l=2`
 
-    `O:l=-3 ` or ` O:sp3`
+    `O:l=-3` or `O:sp3`
 
 2. A single projection onto a p$_z$ orbital orientated in the (1,1,1)
 direction:
 
-    `c=0,0,0:l=1,mr=1:z=1,1,1 ` or ` c=0,0,0:pz:z=1,1,1`
+    `c=0,0,0:l=1,mr=1:z=1,1,1` or `c=0,0,0:pz:z=1,1,1`
 
 3. Project onto s, p and d (with no radial nodes), and s and p (with
 one radial node) in silicon:
@@ -148,34 +148,34 @@ direction. Default is `0,0,1`
 
 ### Examples
 
--   18 projections on an iron site
+- 18 projections on an iron site
 
     `Fe:sp3d2;dxy;dxx;dyz`
 
--   same as above
+- same as above
 
     `Fe:sp3d2;dxy;dxx;dyz(u,d)`
 
--   same as above
+- same as above
 
     `Fe:sp3d2;dxy;dxz;dyz(u,d)[0,0,1]`
 
--   same as above but quantisation axis is now x
+- same as above but quantisation axis is now x
 
     `Fe:sp3d2;dxy;dxz;dyz(u,d)[1,0,0]`
 
--   now only 9 projections onto up states
+- now only 9 projections onto up states
 
     `Fe:sp3d2;dxy;dxz;dyz(u)`
 
--   9 projections onto up-states and 3 on down
+- 9 projections onto up-states and 3 on down
 
     ```
     Fe:sp3d2;dxy;dxz;dyz(u)
     Fe:dxy;dxz;dyz(d)
     ```
 
--   projections onto alternate spin states for two lattice sites (Cr1,
+- projections onto alternate spin states for two lattice sites (Cr1,
     Cr2)
 
     ```
@@ -289,7 +289,6 @@ associated with different values of $r$: the set of solutions to the
 radial part of the hydrogenic Schrödinger equation for $l=0$, i.e., the
 radial parts of the 1s, 2s, 3s… orbitals, where $\alpha=Z/a=$`zona`.
 
-
 ## Projections via the SCDM-**k** method in pw2wannier90
 
 For many systems, such as aperiodic systems, crystals with defects, or
@@ -311,7 +310,7 @@ in the `pw2wannier90` interface program. Moreover, the `pw2wannier90`
 interface program supports also the SCDM-**k** method for
 spin-noncollinear systems. The SCDM-**k** can operate in two modes:
 
-1.  In isolation, i.e., without performing a subsequent Wannier90
+1. In isolation, i.e., without performing a subsequent Wannier90
     optimisation (not recommended). This can be achieved by setting
     `num_iter=0` and `dis_num_iter=0` in the `<seedname>.win` input
     file. The rationale behind this is that in general the projection
@@ -319,7 +318,7 @@ spin-noncollinear systems. The SCDM-**k** can operate in two modes:
     with the correct spatial orientations. However, the spreads of the
     resulting functions are usually larger than the MLWFs ones.
 
-2.  In combination with the Marzari-Vanderbilt (recommended option). In
+2. In combination with the Marzari-Vanderbilt (recommended option). In
     this case, the SCDM-**k** is only used to generate the initial
     $A_{mn}^{(\mathbf{k})}$ matrices as a replacement scheme for the
     projection block.
@@ -403,7 +402,7 @@ species used in the calculation. For example, for a silicon calculation,
 the directory `ext_proj` should contain a file named `Si.dat`. The
 format of the file is:
 
-1.  The first line contains two integers: the number of radial grid
+1. The first line contains two integers: the number of radial grid
     points ($n_g$) and the number of projectors ($n_p$), e.g.,
 
         1141 2
@@ -411,7 +410,7 @@ format of the file is:
     which means the radial grid has $n_g = 1141$ points, and there are
     $n_p = 3$ projectors.
 
-2.  The second line contains $n_p$ integers specifying the angular
+2. The second line contains $n_p$ integers specifying the angular
     momentums of all the projectors, e.g.,
 
         0 1
@@ -419,7 +418,7 @@ format of the file is:
     standing for the two projectors having $s$ and $p$ characters,
     respectively.
 
-3.  The rest of the file contains $n_g$ rows of the radial wavefunctions
+3. The rest of the file contains $n_g$ rows of the radial wavefunctions
     of the projectors. There are $2+n_p$ columns: the first column is
     the $x$-grid, the second column is the $r$-grid in Bohr unit, and
     they are related by $r = \exp(x)$. The rest are $n_p$ columns of the

@@ -83,9 +83,9 @@ set of $\mathbf{U}^{(\mathbf{k})}$ to obtain MLWF.
 `wannier90` requires two ingredients from an initial electronic
 structure calculation.
 
-1.  The overlaps between the cell periodic part of the Bloch states
+1. The overlaps between the cell periodic part of the Bloch states
     $|u_{n{\bf k}}\rangle$
-    
+
     $$
     \begin{equation}
     \label{eq:overlap-matrix}
@@ -97,10 +97,10 @@ structure calculation.
     neighbours, are determined by `wannier90` according to the
     prescription outlined in Ref. [@marzari-prb97].
 
-2.  As a starting guess the projection of the Bloch states
+2. As a starting guess the projection of the Bloch states
     $|\psi_{n\bf{k}}\rangle$ onto trial localised orbitals
     $|g_{n}\rangle$
-    
+
     $$
     \begin{equation}
     A_{mn}^{(\bf{k})}=\langle \psi_{m{\bf k}}|g_{n}\rangle,
