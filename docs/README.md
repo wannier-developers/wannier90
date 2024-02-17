@@ -24,6 +24,51 @@ pip install -r requirements.txt
 * `mkdocs build` - Build the documentation site.
 * `mkdocs -h` - Print help message and exit.
 
+## Versioning
+
+[`mike`](https://github.com/jimporter/mike) is used to manage the versioning of
+the documentation.
+
+In general, one can manually deploy the docs when a new version is released, by
+
+```bash
+mike deploy --push --update-aliases v[MAJOR].[MINOR] latest
+```
+
+Then the docs will be committed and pushed to the `gh-pages` branch.
+
+For development, one can use
+
+```bash
+mike serve
+```
+
+To list the available versions, use
+
+```bash
+mike list
+```
+
+### `miki` initialization
+
+For future reference, these are the commands used for initializing the
+`gh-pages` branch
+
+```bash
+mike delete --all  # clean gh-pages branch
+mike deploy --push --update-aliases v3.1.0 latest  # build docs
+mike set-default latest  # set default redirect to latest
+```
+
+No need to run these commands again!
+For future releases, just use `mike deploy`.
+
+### References
+
+* <https://squidfunk.github.io/mkdocs-material/setup/setting-up-versioning>
+* <https://github.com/squidfunk/mkdocs-material-example-versioning>
+* <https://github.com/jimporter/mike>
+
 ## Notes on conversion
 
 The original wannier90 latex documentation was converted to markdown using

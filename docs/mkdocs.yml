@@ -125,6 +125,7 @@ theme:
     code: Roboto Mono
   logo: assets/wannier-logo-squared.svg
   favicon: assets/wannier-logo-squared.png
+  custom_dir: overrides
 
 extra:
   status:
@@ -136,6 +137,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/wannier-developers/wannier90
+  version:
+    provider: mike
 
 markdown_extensions:
   - abbr
