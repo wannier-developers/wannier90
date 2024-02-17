@@ -478,7 +478,7 @@ the keyword `[kubo_]adpt_smr`.
 Please cite Ref. [@ibanez-azpiroz_ab_2018] when publishing shift-current
 results using this method.
 
-## `berry_task=kdotp`: $k\cdot p$ coefficients {#sec:kdotp}
+## `berry_task=kdotp`: k ⋅ p coefficients
 
 Consider a Hamiltonian
 
@@ -612,8 +612,7 @@ $$
 \left(
 \dfrac{1}{E_{m}-E_{l}}+\dfrac{1}{E_{m'}-E_{l}}
 \right)
-=
-\left({T}_{ab}\right)_{m'm}^{*}.
+= \left({T}_{ab}\right)_{m'm}^{*}.
 \end{equation}
 $$
 
