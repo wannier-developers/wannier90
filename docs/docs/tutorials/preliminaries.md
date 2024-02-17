@@ -6,9 +6,9 @@ analysing and using maximally-localised Wannier functions (MLWFs). As a
 first step, install `wannier90` following the instructions in the
 `README` file of the `wannier90` distribution. For an introduction to
 the theory underlying MLWFs, you are encouraged to refer to the brief
-overview given in the `wannier90` User Guide [@UserGuide], to the two
-seminal papers of Refs. [@marzari-prb97; @souza-prb01], a recent review
-article [@marzari-rmp12] and to a paper [@mostofi-cpc08] describing
+overview given in the `wannier90` [User Guide](../user_guide/introduction.md),
+to the two seminal papers of Refs. [@marzari-prb97; @souza-prb01], a recent
+review article [@marzari-rmp12] and to a paper [@mostofi-cpc08] describing
 `wannier90`.
 
 The following additional programs may be installed in order to visualise
@@ -38,7 +38,7 @@ necessary)
     <http://www.numpy.org><br>
     <http://matplotlib.org>
 
-# Parallel execution
+## Parallel execution
 
 `postw90.x` and `wannier90.x` can
 be run in parallel to speed up the calculations, using the MPI
@@ -60,7 +60,7 @@ mpirun -np 8 postw90.x seedname
 libraries installed on your system: refer to your MPI manual and/or to
 your system administrator for further information).
 
-# About these tutorials
+## About these tutorials
 
 The first part of this collection of tutorials comprises four examples taken from
 Refs. [@marzari-prb97; @souza-prb01]: gallium arsenide, lead, silicon
@@ -90,7 +90,7 @@ including abinit (<http://www.abinit.org>), fleur
 (<https://wiki.fysik.dtu.dk/gpaw/>), VASP (<http://www.vasp.at>), and
 Wien2k (<http://www.wien2k.at>)
 
-# Contact us
+## Contact us
 
 If you have any suggestions regarding ways in which these tutorials may be
 improved, then send us an email.

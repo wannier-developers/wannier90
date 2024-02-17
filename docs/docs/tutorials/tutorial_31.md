@@ -20,8 +20,8 @@ post-processing code of `Quantum ESPRESSO` (v6.3 or above).
     [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial31)*
 
     The input files for this tutorials are similar to the ones in Tutorial
-    [29](tutorial_29.md), except that a coarser k-point grid is used and that the keywords
-    related to `postw90.x` are removed.
+    [29](tutorial_29.md), except that a coarser k-point grid is used and that
+    the keywords related to `postw90.x` are removed.
 
 - Input Files:
 

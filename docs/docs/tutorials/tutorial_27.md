@@ -31,7 +31,7 @@ post-processing code of `Quantum ESPRESSO` (v6.4 or above).
     `pw2wannier90` input files each corresponding to one of the
     scenarios listed in the outline.
 
-### Valence bands
+## Valence bands
 
 In this case we will compute 4 localized WFs
 corresponding to the 4 valence bands of Silicon. These 4 bands
@@ -100,7 +100,7 @@ MLWFs computed from user-defined initial $s$-like projections
 (see Tutorial [11](tutorial_11.md))? Plot these WFs using Vesta. Do they show the
 $\sigma$ character one would expect from chemical arguments?
 
-### Valence bands + conduction bands
+## Valence bands + conduction bands
 
 In this case we will compute 8
 localized WFs corresponding to the 4 valence bands and 4 low-lying
@@ -121,7 +121,8 @@ $f(\varepsilon_{n,\mathbf{k}})$ contains two free parameters $\mu$
 and $\sigma$ and is defined as a complementary error function:
 
 $$
-f(\varepsilon_{n,\mathbf{k}}) = \frac{1}{2}\mathrm{erfc}\left(\frac{\varepsilon_{n,\mathbf{k}} - \mu}{\sigma}\right).
+f(\varepsilon_{n,\mathbf{k}}) = \frac{1}{2}\mathrm{erfc}
+\left(\frac{\varepsilon_{n,\mathbf{k}} - \mu}{\sigma}\right).
 $$
 
 1. Copy the input files `si.scf` and `si_12bands.nscf` from the
@@ -185,7 +186,7 @@ Look at the WFs with Vesta. Can you explain what you
 see? Where do the major lobes of the $sp3$-like WFs point in
 this case?
 
-### Conduction bands only
+## Conduction bands only
 
 In this case we will compute 4 localized WFs
 corresponding to the 4 low-lying conduction bands only. As for the

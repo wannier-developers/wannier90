@@ -22,8 +22,8 @@ interface.
 
     - `Fe.win` *The `wannier90` and `postw90` input file*
 
-The sequence of steps below is the same of Tutorial [17](tutorial_17.md). If you have
-already run that example, you can reuse the output files from steps
+The sequence of steps below is the same of Tutorial [17](tutorial_17.md).
+If you have already run that example, you can reuse the output files from steps
 1 &#151; 5, and only step 6 must be carried out again using the new input file
 `Fe.win`.
 
@@ -74,7 +74,9 @@ already run that example, you can reuse the output files from steps
 ## Berry curvature plots
 
 The Berry curvature $\Omega_{\alpha\beta}({\bf k})$ of the occupied
-states is defined in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:ahc)  of the User Guide. The following lines
+states is defined in this
+[equation](../user_guide/postw90/berry.md#mjx-eqn:eq:ahc)
+of the User Guide. The following lines
 in `Fe.win` are used to calculate the energy bands and the Berry
 curvature (in bohr$^2$) along high-symmetry lines in $k$-space.
 
@@ -102,8 +104,8 @@ python Fe-bands+curv_z.py
 
 and compare with Fig. 2 of Ref. [@yao-prl04].
 
-In Tutorial [17](tutorial_17.md) we plotted the Fermi lines on the (010) plane $k_y=0$. To
-combine them with a heatmap plot of (minus) the Berry curvature set
+In Tutorial [17](tutorial_17.md) we plotted the Fermi lines on the (010) plane
+$k_y=0$. To combine them with a heatmap plot of (minus) the Berry curvature set
 `kpath = false`, uncomment the following lines in `Fe.win`, re-run
 `postw90`, and issue
 
@@ -224,11 +226,12 @@ Comapare the $\omega\rightarrow 0$ limit with the result obtained
 earlier by integrating the Berry curvature.
 
 !!! note
-
     The calculation of the AHC using `berry_task = kubo` involves a
     truncation of the sum over empty states in the Kubo-Greenwood
-    formula: see description of the keyword [`kubo_eigval_max`]() in the
-    User Guide. As discussed around [the formula for anomalous Hall conductivity](../user_guide/postw90/berry.md#mjx-eqn:eq:ahc) of the User Guide, no truncation is done with `berry_task = ahc`.
+    formula: see description of the keyword `kubo_eigval_max` in the
+    User Guide. As discussed around [the formula for anomalous Hall
+    conductivity](../user_guide/postw90/berry.md#mjx-eqn:eq:ahc) of the
+    User Guide, no truncation is done with `berry_task = ahc`.
 
 Next we plot the MCD spectrum. Following Ref. [@yao-prl04], we plot
 ${\rm Im}[\omega\sigma_{xy}(\hbar\omega)]$, in units of
@@ -250,7 +253,8 @@ plot 'Fe-kubo_A_xy.dat' u 1:(\$1)\*(\$3)\*0.0137 w l
 \-   A crude way to model the influence of heterovalent alloying on the
     AHC is to assume that its only effect is to donate or deplete
     electrons, i.e., to shift the Fermi level of the pure
-    crystal [@yao-prb07]. Recalculate the AHC of bcc Fe for a range of Fermi energies within
+    crystal [@yao-prb07]. Recalculate the AHC of bcc Fe for a range of Fermi
+    energies within
     $\pm 0.5$ eV of the true Fermi level. This calculation can be
     streamlined by replacing in `Fe.win`
 

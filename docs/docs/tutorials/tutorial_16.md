@@ -86,8 +86,9 @@ want to use it, you can start from step 5 using the files in the
 
     Inspect the output file `Si.wout` and check if the convergence was
     reached both in the disentanglement and in the wannierisation steps
-    (as discussed in further detail in Tutorial [11](tutorial_11.md)). You may also want to
-    plot the Wannier functions and the interpolated band structure.
+    (as discussed in further detail in Tutorial [11](tutorial_11.md)).
+    You may also want to plot the Wannier functions and the interpolated
+    band structure.
 
 6. Run `postw90` to calculate the transport coefficients.\
     `postw90.x Si` (serial execution)\

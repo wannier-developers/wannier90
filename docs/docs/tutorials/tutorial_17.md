@@ -207,7 +207,8 @@ may want to increase `kslice_2dkmesh`.)
     and without spin-orbit, and note the spin-orbit-induced avoided
     crossings.
 
-- In Tutorial [8](tutorial_8.md#iron-spin-polarized-wfs-dos-projeced-wfs-versus-mlwfs) we obtained MLWFs separately for the up- and down-spin
+- In Tutorial [8](tutorial_8.md#iron-spin-polarized-wfs-dos-projeced-wfs-versus-mlwfs)
+    we obtained MLWFs separately for the up- and down-spin
     channels of bcc Fe without spin-orbit. The Wannier-interpolated DOS
     was therefore automatically separated into minority and majority
     contributions. For a spinor calculation we can still spin-decompose

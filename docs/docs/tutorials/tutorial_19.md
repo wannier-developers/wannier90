@@ -20,7 +20,8 @@ interface.
 
     - `Fe.win` *The `wannier90` and `postw90` input file*
 
-The sequence of steps below is the same of Tutorials [17](tutorial_17.md) and [18](tutorial_18.md). If you
+The sequence of steps below is the same of Tutorials [17](tutorial_17.md) and
+[18](tutorial_18.md). If you
 have already run one of those tutorials, you can reuse the output files
 from steps 1 &#151; 3 and 5. Steps 4 and 6 should be carried out again using
 the new input files `Fe.pw2wan` and `Fe.win`.

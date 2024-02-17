@@ -3,8 +3,9 @@
 - Outline: *Obtain MLWFs for the valence bands of diamond and output
     them in Gaussian cube format*
 
-- Directory: `tutorials/tutorial28/` *The input files for this tutorials
-    are the same as the ones in Tutorial [5](tutorial_5.md) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial28)*
+- Directory: `tutorials/tutorial28/` *The input files for this tutorials are the
+    same as the ones in Tutorial [5](tutorial_5.md) and can be downloaded
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial28)*
 
 - Input Files
 

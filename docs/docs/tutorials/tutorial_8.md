@@ -31,7 +31,6 @@
     ```
 
     !!! note
-
         Please note the following counterintuitive feature in `pwscf`: in
         order to obtain a ground state with magnetization along the
         *positive* $z$-axis, one should use a *negative* value for the
@@ -68,7 +67,7 @@
     wannier90.x iron_dn
     ```
 
-### Density of states
+## Density of states
 
 To compute the DOS using a $25\times 25 \times 25$ $k$-point grid add to
 the two `.win` files
@@ -100,7 +99,7 @@ Energies are referred to the Fermi level (12.6256 eV, from `scf.out`).
 Note the exchange splitting between the up-spin and down-spin DOS. Check
 the convergence by repeating the DOS calculations with more $k$-points.
 
-### Projected versus maximally-localized Wannier functions
+## Projected versus maximally-localized Wannier functions
 
 In the calculations above we chose $s$, $p$, and $d$-type trial orbitals
 in the `.win` files,
@@ -162,7 +161,7 @@ the hybridized set of MLWFs. Visualize the projected WFs using
 `XCrySDen`, to see that they retain the pure orbital character of the
 individual trial orbitals.
 
-### Orbital-projected DOS and exchange splitting
+## Orbital-projected DOS and exchange splitting
 
 With projected WFs the total DOS can be separated into $s$, $p$ and $d$
 contributions, in a similar way to the orbital decomposition of the
@@ -197,7 +196,8 @@ the density of states at the Fermi level.
 
 <figure markdown="span" id="fig:Fe-sprd">
 ![Image title](./Fe-spread.webp){ width="500" }
-<figcaption markdown="span"> Evolution of the Wannier spread $\Omega$ of the minority (spin-up) bands of
-bcc Fe during the iterative minimization of $\widetilde{\Omega}$, starting from s, p and
-d-type trial orbitals.</figcaption>
+<figcaption markdown="span"> Evolution of the Wannier spread $\Omega$ of the
+minority (spin-up) bands of
+bcc Fe during the iterative minimization of $\widetilde{\Omega}$, starting from
+s, p and d-type trial orbitals.</figcaption>
 </figure>

@@ -3,11 +3,12 @@
 - Outline: *Calculate spin Hall conductivity (SHC) and plot Berry
     curvature-like term of fcc Pt considering spin-orbit coupling. To
     gain a better understanding of this tutorial, it is suggested to read
-    Ref. [@qiao-prb2018] for a detailed description of the theory and
-    the [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)
+    Ref. [@qiao-prb2018] for a detailed description of the theory and the
+    [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)
     chapter of the User Guide.*
 
-- Directory: `tutorials/tutorial29/` *Files can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial29)*
+- Directory: `tutorials/tutorial29/` *Files can be downloaded
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial29)*
 
 - Input files
 
@@ -60,12 +61,12 @@
 6. Run `postw90`
 
     ```bash title="Terminal"
-    postw90.x Pt # (1)! 
-    mpirun -np 8 postw90.x Pt # (2)! 
+    postw90.x Pt # (1)!
+    mpirun -np 8 postw90.x Pt # (2)!
     ```
 
-    1.     serial execution
-    2.     example of parallel execution with 8 MPI processes
+    1. serial execution
+    2. example of parallel execution with 8 MPI processes
 
 ## Spin Hall conductivity
 
@@ -77,9 +78,7 @@ $25\times
 
 ```vi title="Input file"
 berry = true
-
 berry_task = shc
-
 berry_kmesh = 25 25 25
 ```
 
@@ -88,7 +87,6 @@ following two lines,
 
 ```vi title="Input file"
 #kubo_adpt_smr = false
-
 #kubo_smr_fixed_en_width = 1
 ```
 
@@ -102,9 +100,7 @@ or invoke Fermi energy scan by setting
 
 ```vi title="Input file"
 fermi_energy_min = [insert here your lower range]
-
 fermi_energy_max = [insert here your upper range]
-
 fermi_energy_step = [insert here your step]
 ```
 
@@ -147,22 +143,30 @@ Note some rough estimations of computation progress and time are
 reported in `Pt.wpout` (see the SHC part of the Solution Booklet). These
 may be helpful if the computation time is very long.
 
-## Notes
+!!! note
+    - Since the Kubo formula of SHC involves unoccupied bands, we need to
+        include some unoccupied bands and construct more MLWF. Thus the
+        following parameters should be increased accordingly:
 
-- Since the Kubo formula of SHC involves unoccupied bands, we need to
-    include some unoccupied bands and construct more MLWF. Thus the
-    following parameters should be increased accordingly:
+        <!-- markdownlint-disable MD046 -->
+        ```vi title="Input file"
+        dis_froz_max
+        dis_win_max
+        projections
+        ```
+        <!-- markdownlint-enable MD046 -->
 
-- Normally we calculate the SHC $\sigma_{xy}^{\text{spin}z}$, i.e.
-    $\alpha = x, \beta = y, \gamma = z$. To calculate other components,
-    the following parameters can be set as `1, 2, 3` with `1, 2, 3`
-    standing for `x, y, z` respectively.
+    - Normally we calculate the SHC $\sigma_{xy}^{\text{spin}z}$, i.e.
+        $\alpha = x, \beta = y, \gamma = z$. To calculate other components,
+        the following parameters can be set as `1, 2, 3` with `1, 2, 3`
+        standing for `x, y, z` respectively.
 
 ## Berry curvature-like term plots
 
 The band-projected Berry curvature-like term
 $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ is defined in
-this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc_berry) of the User Guide.
+this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc_berry)
+of the User Guide.
 The following lines in `Pt.win` are used
 to calculate the energy bands colored by the band-projected Berry
 curvature-like term
@@ -174,19 +178,12 @@ lines in $k$-space, i.e. the `kpath` plot. First comment the line
 
 ```vi title="Input file"
 kpath = true
-
 kpath_task = bands+shc
-
 kpath_bands_colour = shc
-
 kpath_num_points = 400
-
 kubo_adpt_smr = false
-
 kubo_smr_fixed_en_width = 1
-
 fermi_energy = [insert your value here]
-
 berry_curv_unit = ang2
 ```
 
@@ -229,15 +226,20 @@ python Pt-kslice-shc+fermi_lines.py
 Compare the generated figure with Fig. 3 in Ref. [@qiao-prb2018], or the
 Solution Booklet.
 
-## Notes
-
-- Adaptive smearing depends on a uniform kmesh, so when running
+!!! note
+    Adaptive smearing depends on a uniform kmesh, so when running
     `kpath` and `kslice` plots adaptive smearing should not be used. A
-    fixed smearing is needed to avoid near zero number in the
-    denominator of the [Kubo formula](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc)
-    in the User Guide. To
-    add a fixed smearing of 0.05 eV, add the following keywords in the
-    `Pt.win`,
+    fixed smearing is needed to avoid near zero number in the denominator of the
+    [Kubo formula](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc)
+    in the User Guide. To add a fixed smearing of 0.05 eV, add the following
+    keywords in the`Pt.win`,
+
+    <!-- markdownlint-disable MD046 -->
+    ```vi title="Input file"
+    kubo_adpt_smr = .false.
+    kubo_smr_fixed_en_width = 0.05
+    ```
+    <!-- markdownlint-enable MD046 -->
 
 ## Input parameters for SHC
 
@@ -247,17 +249,83 @@ current (ac) SHC which will be introduced in the next tutorial.
 
 - general controls for SHC
 
+    ```vi title="Input file"
+    shc_freq_scan
+    shc_alpha
+    shc_beta
+    shc_gamma
+
+    kubo_eigval_max
+    exclude_bands
+    berry_curv_unit
+    ```
+
 - kmesh
+
+    ```vi title="Input file"
+    berry_task
+    berry_kmesh
+
+    berry_curv_adpt_kmesh
+    berry_curv_adpt_kmesh_thresh
+    ```
 
 - ac SHC
 
+    ```vi title="Input file"
+    kubo_freq_min
+    kubo_freq_max
+    kubo_freq_step
+
+    shc_bandshift
+    shc_bandshift_firstband
+    shc_bandshift_energyshift
+
+    scissors_shift
+    num_valence_bands
+    ```
+
 - smearing
+
+    ```vi title="Input file"
+    [kubo_]adpt_smr
+    [kubo_]adpt_smr_fac
+    [kubo_]adpt_smr_max
+
+    [kubo_]smr_fixed_en_width
+    ```
 
 - Fermi energy
 
+    ```vi title="Input file"
+    fermi_energy
+    fermi_energy_min
+    fermi_energy_max
+    fermi_energy_step
+    ```
+
 - kpath
 
+    ```vi title="Input file"
+    kpath
+    kpath_task
+    kpath_num_points
+    kpath_bands_colour
+    ```
+
 - kslice
+
+    ```vi title="Input file"
+    kslice
+    kslice_task
+    kslice_corner
+    kslice_b1
+    kslice_b2
+    kslice_2dkmesh
+
+    kslice_fermi_level
+    kslice_fermi_lines_colour
+    ```
 
 Their meanings and usages can be found in the
 [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)

@@ -64,13 +64,14 @@
     mpirun -np 8 postw90.x GaAs # (2)! 
     ```
 
-    1.     serial execution
-    2.     example of parallel execution with 8 MPI processes
+    1. serial execution
+    2. example of parallel execution with 8 MPI processes
 
 ## ac spin Hall conductivity
 
 The spin Hall conductivity is also dependent on the frequency $\omega$
-in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) of the User Guide.
+in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) of the
+User Guide.
 The direct current (dc) SHC calculated in the previous tutorial corresponds to
 $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ in the limit
 $\omega\rightarrow
@@ -82,11 +83,8 @@ add the lines
 
 ```vi title="Input file"
 shc_freq_scan = true
-
 kubo_freq_min = 0.0
-
 kubo_freq_max = 8.0
-
 kubo_freq_step = 0.01
 ```
 
@@ -112,12 +110,42 @@ Solution Booklet.
 - When calculating ac SHC, adaptive smearing can be used by add the
     following keywords in the `GaAs.win`,
 
+    ```vi title="Input file"
+    kubo_adpt_smr = true
+    kubo_adpt_smr_fac = [insert here your smearing factor]
+    kubo_adpt_smr_max = [insert here your maximum smearing]
+    ```
+
 - Adaptive kmesh refinement is not implemented for ac SHC calculation.
 
 - The first 10 semi-core states are excluded from the calculation by
-    using the following keywords and in the case of GaAs disentanglement
+    using the following keywords
+
+    ```vi title="Input file"
+    exclude_bands = 1-10
+    ```
+
+    and in the case of GaAs disentanglement
     is not adopted so
+
+    ```vi title="Input file"
+    num_bands         =   16
+    num_wann          =   16
+    ```
 
 - Since the band gap is often under estimated by LDA/GGA calculations,
     a scissors shift is applied to recover the experimental band gap by
-    using the following keywords or by
+    using the following keywords
+
+    ```vi title="Input file"
+    shc_bandshift = true
+    shc_bandshift_firstband = 9
+    shc_bandshift_energyshift = 1.117
+    ```
+
+    or by
+
+    ```vi title="Input file"
+    num_valence_bands = 8
+    scissors_shift = 1.117
+    ```

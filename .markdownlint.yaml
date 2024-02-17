@@ -8,4 +8,12 @@ MD007:
 
 # MD033/no-inline-html : Inline HTML : https://github.com/DavidAnson/markdownlint/blob/v0.33.0/doc/md033.md
 MD033:
-  allowed_elements: ["br", "figure", "table", "figcaption", "em", "sub"]
+  allowed_elements:
+    - br
+    - figure
+    - table
+    - figcaption
+    - em
+    - sub
+    - a
+    - sup
