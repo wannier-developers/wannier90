@@ -1,44 +1,44 @@
-# 6: Copper &#151; Fermi surface {#copper-fermi-surface .unnumbered}
+# 6: Copper &#151; Fermi surface
 
--   Outline: *Obtain MLWFs to describe the states around the Fermi-level
+- Outline: *Obtain MLWFs to describe the states around the Fermi-level
     in copper*
 
--   Directory: `tutorials/tutorial06/` *Files can be downloaded from 
+- Directory: `tutorials/tutorial06/` *Files can be downloaded from
     [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial06)*
 
--   Input Files
+- Input Files
 
-    -    `copper.scf` *The `pwscf` input file for ground
+    - `copper.scf` *The `pwscf` input file for ground
         state calculation*
 
-    -    `copper.nscf` *The `pwscf` input file to obtain
+    - `copper.nscf` *The `pwscf` input file to obtain
         Bloch states on a uniform grid*
 
-    -    `copper.pw2wan` *Input file for `pw2wannier90`*
+    - `copper.pw2wan` *Input file for `pw2wannier90`*
 
-    -    `copper.win` *The `wannier90` input file*
+    - `copper.win` *The `wannier90` input file*
 
-1.  Run `pwscf` to obtain the ground state of copper
+1. Run `pwscf` to obtain the ground state of copper
 
     ```bash title="Terminal"
     pw.x < copper.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the Bloch states on a uniform
+2. Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid
 
     ```bash title="Terminal"
     pw.x < copper.nscf > nscf.out
     ```
 
-3.  Run `wannier90` to generate a list of the required overlaps (written
+3. Run `wannier90` to generate a list of the required overlaps (written
     into the `copper.nnkp` file).
 
     ```bash title="Terminal"
     wannier90.x -pp copper
     ```
 
-4.  Run `pw2wannier90` to compute the overlap between Bloch states and
+4. Run `pw2wannier90` to compute the overlap between Bloch states and
     the projections for the starting guess (written in the `copper.mmn`
     and `copper.amn` files).
 
@@ -46,7 +46,7 @@
     pw2wannier90.x < copper.pw2wan > pw2wan.out
     ```
 
-5.  Run `wannier90` to compute the MLWFs.
+5. Run `wannier90` to compute the MLWFs.
 
     ```bash title="Terminal"
     wannier90.x copper
@@ -54,11 +54,11 @@
 
 Inspect the output file `copper.wout`.
 
-1.  Use Wannier interpolation to obtain the Fermi surface of copper.
+1. Use Wannier interpolation to obtain the Fermi surface of copper.
     Rather than re-running the whole calculation we can use the unitary
     transformations obtained in the first calculation and restart from
     the plotting routine. Add the following keywords to the
-    ` copper.win` file:
+    `copper.win` file:
 
     ```vi title="Input file"
     restart = plot
@@ -76,12 +76,12 @@ Inspect the output file `copper.wout`.
     `fermi_surface_num_points`. The default value is 50 (i.e., 50$^3$
     points). The Fermi surface file `copper.bxsf` can be viewed using
     `XCrySDen`, e.g.,
-    
+
     ```bash title="Terminal"
     xcrysden --bxsf copper.bxsf
     ```
 
-2.  Plot the interpolated bandstructure. A suitable path in k-space is
+2. Plot the interpolated bandstructure. A suitable path in k-space is
 
     ```vi title="Input file"
     begin kpoint_path
@@ -95,15 +95,15 @@ Inspect the output file `copper.wout`.
 
 ## Further ideas {#further-ideas .unnumbered}
 
--   Compare the Wannier interpolated bandstructure with the full
+- Compare the Wannier interpolated bandstructure with the full
     `pwscf` bandstructure. Obtain MLWFs using a denser
     k-point grid. To plot the bandstructure you can use the
     `pwscf` tool `bands.x` or the small FORTRAN program
     available at <http://www.tcm.phy.cam.ac.uk/~jry20/bands.html>.
 
--   Investigate the effects of the outer and inner energy windows on the
+- Investigate the effects of the outer and inner energy windows on the
     interpolated bands.
 
--   Instead of extracting a subspace of seven states, we could extract a
+- Instead of extracting a subspace of seven states, we could extract a
     nine dimensional space (i.e., with $s$, $p$ and $d$ character).
     Examine this case and compare the interpolated bandstructures.

@@ -1,32 +1,31 @@
-# 14: Linear Sodium Chain &#151; Transport properties {#linear-sodium-chain-transport-properties .unnumbered}
+# 14: Linear Sodium Chain &#151; Transport properties
 
--   Outline: *Compare the quantum conductance of a periodic linear chain
+- Outline: *Compare the quantum conductance of a periodic linear chain
     of Sodium atoms with that of a defected chain*
 
--   Directories: `tutorials/tutorial14/periodic`<br>
-    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  `tutorials/tutorial14/defected`<br> 
+- Directories: `tutorials/tutorial14/periodic`<br>
+    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  `tutorials/tutorial14/defected`<br>
     *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial14)*
 
--   Input Files
+- Input Files
 
-    -    `Na_chain.scf` *The `pwscf` input file for ground
+    - `Na_chain.scf` *The `pwscf` input file for ground
         state calculation*
 
-    -    `Na_chain.nscf` *The `pwscf` input file to obtain
+    - `Na_chain.nscf` *The `pwscf` input file to obtain
         Bloch states for the conduction states*
 
-    -    `Na_chain.pw2wan` *Input file for `pw2wannier90`*
+    - `Na_chain.pw2wan` *Input file for `pw2wannier90`*
 
-    -    `Na_chain.win` *The `wannier90` input file*
+    - `Na_chain.win` *The `wannier90` input file*
 
 The periodic system contains two unit cells evenly distributed along the
 supercell. Transport calculations are performed using
-` transport_mode = bulk` and so the resulting quantum conductance
+`transport_mode = bulk` and so the resulting quantum conductance
 represents that of an infinite periodic chain.
 
 The part of the `wannier90` input file that controls the transport part
 of the calculation looks like:
-
 
 ```vi title="Input file"
 transport = true
@@ -60,21 +59,18 @@ tran_num_cell_ll = 2
 Descriptions of these and other keywords related to the calculation of
 transport properties can be found in the User Guide.
 
-1.  Run `pwscf` and `wannier90` for the periodic system.
+1. Run `pwscf` and `wannier90` for the periodic system.
 
-2.  Run `pwscf` and `wannier90` for the defected system.
+2. Run `pwscf` and `wannier90` for the defected system.
 
-3.  The quantum conductance is written to the files
+3. The quantum conductance is written to the files
     `periodic/Na_chain_qc.dat` and , respectively. Compare the quantum
     conductance of the periodic (bulk) calculation with the defected
     (LCR) calculation. Your plot should look like
     [this](#fig:Na_qc){reference-type="ref" reference="fig:Na_qc"}.
-
 
 <figure markdown="span" id="fig:Na_qc">
 ![Image title](./Na_qc.webp){ width="500" }
 <figcaption> Quantum conductance of periodic Sodium chain (black)
 compared to that of the defected Sodium chain (red).</figcaption>
 </figure>
-
-

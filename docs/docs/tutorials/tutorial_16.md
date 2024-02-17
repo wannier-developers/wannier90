@@ -1,46 +1,46 @@
-# 16: Silicon &#151; Boltzmann transport {#silicon-boltzmann-transport .unnumbered}
+# 16: Silicon &#151; Boltzmann transport
 
--   Outline: *Obtain MLWFs for the valence and low-lying conduction
+- Outline: *Obtain MLWFs for the valence and low-lying conduction
     states of Si. Calculate the electrical conductivity, the Seebeck
     coefficient and the thermal conductivity in the constant relaxation
     time approximation using the `BoltzWann` module.*
 
 ## If you want to use Quantum ESPRESSO {#if-you-want-to-use-quantum-espresso .unnumbered}
 
--   Directory: `tutorials/tutorial16-withqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
+- Directory: `tutorials/tutorial16-withqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
 
--   Input Files
+- Input Files
 
-    -    `Si.scf` *The `pwscf` input file for ground state
+    - `Si.scf` *The `pwscf` input file for ground state
         calculation*
 
-    -    `Si.nscf` *The `pwscf` input file to obtain Bloch
+    - `Si.nscf` *The `pwscf` input file to obtain Bloch
         states on a uniform grid*
 
-    -    `Si.pw2wan` *Input file for `pw2wannier90`*
+    - `Si.pw2wan` *Input file for `pw2wannier90`*
 
-    -    `Si.win` *The `wannier90` and `postw90` input file* 
+    - `Si.win` *The `wannier90` and `postw90` input file*
 
 ## If you do not want to use Quantum ESPRESSO {#if-you-do-not-want-to-use-quantum-espresso .unnumbered}
 
--   Directory: `tutorials/tutorial16-noqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
+- Directory: `tutorials/tutorial16-noqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
 
--   Input Files
+- Input Files
 
-    -    `Si.win` *The `wannier90` and `postw90` input file*
+    - `Si.win` *The `wannier90` and `postw90` input file*
 
-    -    `Si.mmn` *The overlap matrices
+    - `Si.mmn` *The overlap matrices
         $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$*
 
-    -    `Si.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
+    - `Si.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the Bloch
         states onto a set of trial localised orbitals*
 
-    -    `Si.eig` *The Bloch eigenvalues at each k-point. For
+    - `Si.eig` *The Bloch eigenvalues at each k-point. For
         interpolation only*
 
-Note the first five steps in the following are the same of Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states),
+Note the first five steps in the following are the same of Tutorial [11](tutorial_11.md),
 and are needed only if you want to use the `PWscf` code of Quantum
-ESPRESSO. Otherwise, if you have already run Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states) with Quantum
+ESPRESSO. Otherwise, if you have already run Tutorial [11](tutorial_11.md) with Quantum
 ESPRESSSO (in particular, the section "*Valence + Conduction States*")
 you can start from those files and continue from point 6, after having
 added the `BoltzWann` flags to the input file.
@@ -49,28 +49,28 @@ If instead you do not have Quantum ESPRESSO installed, or you do not
 want to use it, you can start from step 5 using the files in the
 `tutorials/tutorial16-noqe/` folder.
 
-1.  Run `pwscf` to obtain the ground state of silicon
+1. Run `pwscf` to obtain the ground state of silicon
 
     ```bash title="Terminal"
     pw.x < Si.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the Bloch states on a uniform
+2. Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid. Details on the disentanglement procedure are discussed
-    in Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states).
+    in Tutorial [11](tutorial_11.md).
 
     ```bash title="Terminal"
     pw.x < Si.nscf > nscf.out
     ```
 
-3.  Run `wannier90` to generate a list of the required overlaps (written
+3. Run `wannier90` to generate a list of the required overlaps (written
     into the `Si.nnkp` file).
 
     ```bash title="Terminal"
     wannier90.x -pp Si
     ```
 
-4.  Run `pw2wannier90` to compute the overlap between Bloch states and
+4. Run `pw2wannier90` to compute the overlap between Bloch states and
     the projections for the starting guess (written in the `Si.mmn` and
     `Si.amn` files).
 
@@ -78,7 +78,7 @@ want to use it, you can start from step 5 using the files in the
     pw2wannier90.x < Si.pw2wan > pw2wan.out
     ```
 
-5.  Run `wannier90` to compute the MLWFs.\
+5. Run `wannier90` to compute the MLWFs.\
 
     ```bash title="Terminal"
     wannier90.x Si
@@ -86,10 +86,10 @@ want to use it, you can start from step 5 using the files in the
 
     Inspect the output file `Si.wout` and check if the convergence was
     reached both in the disentanglement and in the wannierisation steps
-    (as discussed in further detail in Tutorial [11](tutorial_11.md#silicon-valence-and-low-lying-conduction-states)). You may also want to
+    (as discussed in further detail in Tutorial [11](tutorial_11.md)). You may also want to
     plot the Wannier functions and the interpolated band structure.
 
-6.  Run `postw90` to calculate the transport coefficients.\
+6. Run `postw90` to calculate the transport coefficients.\
     `postw90.x Si` (serial execution)\
     `mpirun -np 8 postw90.x Si` (example of parallel execution with 8
     MPI processes)
@@ -115,11 +115,11 @@ coefficient as a function of the chemical potential $\mu$, at $T=300$ K.
 
 ## Further ideas {#further-ideas-4 .unnumbered}
 
--   Change the interpolation to a $60\times 60\times 60$ mesh and run
+- Change the interpolation to a $60\times 60\times 60$ mesh and run
     again `postw90` to check if the results for the transport properties
     are converged.
 
--   Change the `Si.win` input file so that it calculates the transport
+- Change the `Si.win` input file so that it calculates the transport
     coefficients for temperatures from 300 to 700 K, with steps of
     200 K. Rerun `postw90` and verify that the increase in execution
     time is neglibile (in fact, most of the time is spent to interpolate
@@ -139,7 +139,7 @@ coefficient as a function of the chemical potential $\mu$, at $T=300$ K.
     Then, you can plot columns 1 and 2 of the output file
     `Si_seebeck_xx_500K.dat`.
 
--   Try to calculate the Seebeck coefficient as a function of the
+- Try to calculate the Seebeck coefficient as a function of the
     temperature, for a $n-$doped sample with, e.g., $n=10^{18}$
     cm$^{-3}$. Note that to this aim, you need to calculate consistently
     the value $\mu(T)$ of the chemical potential as a function of the

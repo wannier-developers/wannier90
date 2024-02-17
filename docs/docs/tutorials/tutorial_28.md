@@ -1,44 +1,44 @@
-# 28: Diamond &#151; plotting of MLWFs using Gaussian cube format and VESTA {#diamond-plotting-of-mlwfs-using-gaussian-cube-format-and-vesta .unnumbered}
+# 28: Diamond &#151; plotting of MLWFs using Gaussian cube format and VESTA
 
--   Outline: *Obtain MLWFs for the valence bands of diamond and output
+- Outline: *Obtain MLWFs for the valence bands of diamond and output
     them in Gaussian cube format*
 
--   Directory: `tutorials/tutorial28/` *The input files for this tutorials
-    are the same as the ones in Tutorial [5](tutorial_5.md#diamond-mlwfs-for-the-valence-bands) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial28)*
+- Directory: `tutorials/tutorial28/` *The input files for this tutorials
+    are the same as the ones in Tutorial [5](tutorial_5.md) and can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial28)*
 
--   Input Files
+- Input Files
 
-    -    `diamond.scf` *The `pwscf` input file for ground
+    - `diamond.scf` *The `pwscf` input file for ground
         state calculation*
 
-    -    `diamond.nscf` *The `pwscf` input file to obtain
+    - `diamond.nscf` *The `pwscf` input file to obtain
         Bloch states on a uniform grid*
 
-    -    `diamond.pw2wan` *The input file for `pw2wannier90`*
+    - `diamond.pw2wan` *The input file for `pw2wannier90`*
 
-    -    `diamond.win` *The `wannier90` input file*
+    - `diamond.win` *The `wannier90` input file*
 
-1.  Run `pwscf` to obtain the ground state of diamond
+1. Run `pwscf` to obtain the ground state of diamond
 
     ```bash title="Terminal"
     pw.x < diamond.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the Bloch states on a uniform
+2. Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid
 
     ```bash title="Terminal"
     pw.x < diamond.nscf > nscf.out
     ```
 
-3.  Run `wannier90` to generate a list of the required overlaps (written
+3. Run `wannier90` to generate a list of the required overlaps (written
     into the `diamond.nnkp` file).
 
     ```bash title="Terminal"
     wannier90.x -pp diamond
     ```
 
-4.  Run `pw2wannier90` to compute the overlap between Bloch states and
+4. Run `pw2wannier90` to compute the overlap between Bloch states and
     the projections for the starting guess (written in the `diamond.mmn`
     and `diamond.amn` files).
 
@@ -46,7 +46,7 @@
     pw2wannier90.x < diamond.pw2wan > pw2wan.out
     ```
 
-5.  When the lattice vectors are non-orthogonal, not all the
+5. When the lattice vectors are non-orthogonal, not all the
     visualisation programs are capable to plot volumetric data in the
     Gaussian cube format. One program that can read volumetric data for
     these systems is VESTA. To instruct `wannier90` to output the MLWFs
@@ -69,7 +69,7 @@
     wannier90.x diamond
     ```
 
-6.  Plot the first MLWF with VESTA `vesta diamond_00001.cube`
+6. Plot the first MLWF with VESTA `vesta diamond_00001.cube`
 
 Extra: Instead of using `wannier_plot_mode = crystal` try to use the
 molecule mode as `wannier_plot_mode = molecule` (see the user guide for
