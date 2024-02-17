@@ -3,9 +3,12 @@
 - Outline: *Compare the quantum conductance of a periodic linear chain
     of Sodium atoms with that of a defected chain*
 
-- Directories: `tutorials/tutorial14/periodic`<br>
-    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  `tutorials/tutorial14/defected`<br>
-    *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial14)*
+- Directories:
+    - `tutorials/tutorial14/periodic`
+    - `tutorials/tutorial14/defected`
+
+    *Files can be downloaded from
+    [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial14)*
 
 - Input Files
 

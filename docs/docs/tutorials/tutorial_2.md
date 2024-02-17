@@ -24,9 +24,9 @@
         interpolation only*
 
 The four lowest valence bands in lead are separated in energy from the
-higher conduction states (see bandstructure [plot](#fig:pb-bnd)). The MLWFs of these states have partial
-occupancy. MLWFs describing only the occupied states would be poorly
-localised.
+higher conduction states (see bandstructure [plot](#fig:pb-bnd)). The MLWFs of
+these states have partial
+occupancy. MLWFs describing only the occupied states would be poorly localised.
 
 1. Run `wannier90` to minimise the MLWFs spread
 

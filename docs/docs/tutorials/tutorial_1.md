@@ -44,8 +44,9 @@
     ```
 
     and re-running `wannier90`. To visualise the MLWFs we must represent
-    them explicitly on a real space grid (see the [User guide page](../user_guide/wannier90/methodology.md#methodology)). As a
-    consequence, plotting the MLWFs is slower and uses more memory than
+    them explicitly on a real space grid (see the
+    [User guide page](../user_guide/wannier90/methodology.md#methodology)).
+    As a consequence, plotting the MLWFs is slower and uses more memory than
     the minimisation of the spread. The four files that are created
     (`gaas_00001.xsf`, etc.) can be viewed using `XCrySDen`,
     e.g.,
@@ -55,7 +56,6 @@
     ```
 
     !!! hint
-
         Once `XCrySDen` starts, click on `Tools` $\rightarrow$ `Data Grid`
         in order to specify an isosurface value to plot.
 
@@ -78,7 +78,6 @@
     the isosurface (say 0.5). Can you explain what you see?
 
     !!! hint
-
         For a finite k-point mesh, the MLWFs are in fact periodic
         and the period is related to the spacing of the k-point mesh. For
         mesh with $n$ divisions in the $i^{\mathrm{th}}$ direction in the
