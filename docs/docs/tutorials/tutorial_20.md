@@ -1,6 +1,6 @@
 # 20: Disentanglement restricted inside spherical regions of $k$ space
 
-## LaVO$_3$ {#lavo_3 .unnumbered}
+## LaVO$_3$
 
 - Outline: *Obtain disentangled MLWFs for strained LaVO$_3$.*
 
@@ -73,7 +73,7 @@ non-degenerate, while the $X$ point has degeneracy two, hence one must
 specify both $(1/2,0,0)$ and $(0,1/2,0)$ (see the SrMnO$_3$ example here
 below).
 
-## Further ideas {#further-ideas-7 .unnumbered}
+## Further ideas
 
 - Try to obtain the Wannier functions using the standard
 disentanglement procedure (without spheres, `dis_spheres_num = 0`).

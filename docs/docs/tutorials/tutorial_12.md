@@ -1,6 +1,6 @@
 # 12: Benzene &#151; Valence and low-lying conduction states
 
-## Valence States {#valence-states-1 .unnumbered}
+## Valence States
 
 - Outline: *Obtain MLWFs for the valence states of benzene*
 
@@ -57,7 +57,7 @@ wannier_plot_list = 2-4
 
 and re-running `wannier90`. Visualise them using, e.g., `XCrySDen`.
 
-## Valence + Conduction States {#valence-conduction-states-1 .unnumbered}
+## Valence + Conduction States
 
 - Outline: *Obtain MLWFs for the valence and low-lying conduction
     states of benzene.*

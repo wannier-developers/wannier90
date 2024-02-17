@@ -3,7 +3,7 @@
 *Note that these systems require reasonably large-scale electronic
 structure calculations.*
 
-## Bulk Transport properties {#bulk-transport-properties .unnumbered}
+## Bulk Transport properties
 
 - Outline: *Obtain the quantum conductance of a pristine single-walled
     carbon nanotube*
@@ -32,7 +32,7 @@ compare the quantum conductance of this system with a defected nanotube.
 2. The quantum conductance and density of states are written to the
     files `cnt_qc.dat` and `cnt_dos.dat`, respectively.
 
-## LCR transport properties &#151; Defected nanotube {#lcr-transport-properties-defected-nanotube .unnumbered}
+## LCR transport properties &#151; Defected nanotube
 
 - Outline: *Use the automated LCR routine to investigate the effect of
     a single silicon atom in a infinite (5,0) carbon nanotube.*
@@ -73,7 +73,7 @@ with principal layers set to be two unit cells long.
     silicon defect (red).</figcaption>
     </figure>
 
-## Further ideas {#further-ideas-3 .unnumbered}
+## Further ideas
 
 - Set `write_hr = true` in the bulk case. Consider the magnitude of
     Hamiltonian elements between Wannier functions in increasingly
