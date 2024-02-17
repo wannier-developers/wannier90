@@ -136,6 +136,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/wannier-developers/wannier90
+  version:
+    provider: mike
 
 markdown_extensions:
   - abbr
