@@ -1,49 +1,49 @@
-# 29: Platinum &#151; Spin Hall conductivity {#platinum-spin-hall-conductivity .unnumbered}
+# 29: Platinum &#151; Spin Hall conductivity
 
--   Outline: *Calculate spin Hall conductivity (SHC) and plot Berry
+- Outline: *Calculate spin Hall conductivity (SHC) and plot Berry
     curvature-like term of fcc Pt considering spin-orbit coupling. To
     gain a better understanding of this tutorial, it is suggested to read
     Ref. [@qiao-prb2018] for a detailed description of the theory and
-    the [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc) 
+    the [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)
     chapter of the User Guide.*
 
--   Directory: `tutorials/tutorial29/` *Files can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial29)*
+- Directory: `tutorials/tutorial29/` *Files can be downloaded [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial29)*
 
--   Input files
+- Input files
 
-    -    `Pt.scf` *The `pwscf` input file for ground state
+    - `Pt.scf` *The `pwscf` input file for ground state
         calculation*
 
-    -    `Pt.nscf` *The `pwscf` input file to obtain Bloch
+    - `Pt.nscf` *The `pwscf` input file to obtain Bloch
         states on a uniform grid*
 
-    -    `Pt.pw2wan` *The input file for `pw2wannier90`*
+    - `Pt.pw2wan` *The input file for `pw2wannier90`*
 
-    -    `Pt.win` *The `wannier90` and `postw90` input file*
+    - `Pt.win` *The `wannier90` and `postw90` input file*
 
 &nbsp;
 
-1.  Run `pwscf` to obtain the ground state of platinum
-    
+1. Run `pwscf` to obtain the ground state of platinum
+
     ```bash title="Terminal"
     pw.x < Pt.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the Bloch states on a uniform
+2. Run `pwscf` to obtain the Bloch states on a uniform
     $k$-point grid
- 
+
     ```bash title="Terminal"
     pw.x < Pt.nscf > nscf.out
     ```
 
-3.  Run `wannier90` to generate a list of the required overlaps (written
+3. Run `wannier90` to generate a list of the required overlaps (written
     into the `Pt.nnkp` file)
-    
+
     ```bash title="Terminal"
     wannier90.x -pp Pt
     ```
 
-4.  Run `pw2wannier90` to compute the overlaps between Bloch states and
+4. Run `pw2wannier90` to compute the overlaps between Bloch states and
     the projections for the starting guess (written in the `Pt.mmn` and
     `Pt.amn` files)
 
@@ -51,13 +51,13 @@
     pw2wannier90.x < Pt.pw2wan > pw2wan.out
     ```
 
-5.  Run `wannier90` to compute the MLWFs
+5. Run `wannier90` to compute the MLWFs
 
     ```bash title="Terminal"
     wannier90.x Pt
     ```
 
-6.  Run `postw90`
+6. Run `postw90`
 
     ```bash title="Terminal"
     postw90.x Pt # (1)! 
@@ -130,10 +130,10 @@ curvature-like term across the BZ, the SHC converges rather slowly with
 $k$-point sampling, and a $25\times 25\times 25$ kmesh does not yield a
 well-converged value.
 
--   Increase the kmesh density by changing ` berry_kmesh`.
+- Increase the kmesh density by changing `berry_kmesh`.
 
--   To accelerate the convergence, adaptively refine the kmesh around
-    spikes in the Berry curvature-like term, by adding to ` Pt.win` the
+- To accelerate the convergence, adaptively refine the kmesh around
+    spikes in the Berry curvature-like term, by adding to `Pt.win` the
     lines This adds a $5\times 5\times 5$ fine mesh around those points
     where
     $\vert{\Omega_{\alpha\beta}^{\text{spin}\gamma}}({\bm k})\vert$
@@ -149,11 +149,11 @@ may be helpful if the computation time is very long.
 
 ## Notes {#notes .unnumbered}
 
--   Since the Kubo formula of SHC involves unoccupied bands, we need to
+- Since the Kubo formula of SHC involves unoccupied bands, we need to
     include some unoccupied bands and construct more MLWF. Thus the
     following parameters should be increased accordingly:
 
--   Normally we calculate the SHC $\sigma_{xy}^{\text{spin}z}$, i.e.
+- Normally we calculate the SHC $\sigma_{xy}^{\text{spin}z}$, i.e.
     $\alpha = x, \beta = y, \gamma = z$. To calculate other components,
     the following parameters can be set as `1, 2, 3` with `1, 2, 3`
     standing for `x, y, z` respectively.
@@ -162,7 +162,7 @@ may be helpful if the computation time is very long.
 
 The band-projected Berry curvature-like term
 $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ is defined in
-this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc_berry) of the User Guide. 
+this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc_berry) of the User Guide.
 The following lines in `Pt.win` are used
 to calculate the energy bands colored by the band-projected Berry
 curvature-like term
@@ -231,10 +231,10 @@ Solution Booklet.
 
 ## Notes {#notes-1 .unnumbered}
 
--   Adaptive smearing depends on a uniform kmesh, so when running
+- Adaptive smearing depends on a uniform kmesh, so when running
     `kpath` and `kslice` plots adaptive smearing should not be used. A
     fixed smearing is needed to avoid near zero number in the
-    denominator of the [Kubo formula](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) 
+    denominator of the [Kubo formula](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc)
     in the User Guide. To
     add a fixed smearing of 0.05 eV, add the following keywords in the
     `Pt.win`,
@@ -245,20 +245,20 @@ Finally, we provide a complete list of input parameters that can be used
 to control the SHC calculation, including the calculation of alternating
 current (ac) SHC which will be introduced in the next tutorial.
 
--   general controls for SHC
+- general controls for SHC
 
--   kmesh
+- kmesh
 
--   ac SHC
+- ac SHC
 
--   smearing
+- smearing
 
--   Fermi energy
+- Fermi energy
 
--   kpath
+- kpath
 
--   kslice
+- kslice
 
-Their meanings and usages can be found in the 
+Their meanings and usages can be found in the
 [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)
  chapter of the User Guide.

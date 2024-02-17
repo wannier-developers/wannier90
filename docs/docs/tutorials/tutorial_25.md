@@ -1,62 +1,62 @@
-# 25: Gallium Arsenide &#151; Nonlinear shift current {#gallium-arsenide-nonlinear-shift-current .unnumbered}
+# 25: Gallium Arsenide &#151; Nonlinear shift current
 
--   Outline: *Calculate the nonlinear shift current of inversion
+- Outline: *Calculate the nonlinear shift current of inversion
     asymmetric fcc Gallium Arsenide. In preparation for this tutorial it
     may be useful to read Ref. [@ibanez-azpiroz_ab_2018]*
 
--   Directory: `tutorials/tutorial25/` *Files can be downlowaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial25)*
+- Directory: `tutorials/tutorial25/` *Files can be downlowaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial25)*
 
--   Input files:
+- Input files:
 
-    -   `GaAs.scf` *The `pwscf` input file for ground state calculation*
+    - `GaAs.scf` *The `pwscf` input file for ground state calculation*
 
-    -   `GaAs.nscf` *The `pwscf` input file to obtain Bloch states on a
+    - `GaAs.nscf` *The `pwscf` input file to obtain Bloch states on a
         uniform grid*
 
-    -   `GaAs.pw2wan` *The input file for* `pw2wannier90`
+    - `GaAs.pw2wan` *The input file for* `pw2wannier90`
 
-    -   `GaAs.win` *The* `wannier90` *and* `postw90` *input file*
+    - `GaAs.win` *The* `wannier90` *and* `postw90` *input file*
 
 &nbsp;
 
-1.  Run `pwscf` to obtain the ground state of Gallium Arsenide
+1. Run `pwscf` to obtain the ground state of Gallium Arsenide
 
     ```bash title="Terminal"
     pw.x < GaAs.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the ground state of Gallium Arsenide
+2. Run `pwscf` to obtain the ground state of Gallium Arsenide
 
     ```bash title="Terminal"
     pw.x < GaAs.nscf > nscf.out
     ```
 
-3.  Run `Wannier90` to generate a list of the required overlaps
+3. Run `Wannier90` to generate a list of the required overlaps
     (written into the `GaAs.nnkp` file)
 
     ```bash title="Terminal"
     wannier90.x -pp GaAs
     ```
 
-4.  Run `pw2wannier90` to compute:
+4. Run `pw2wannier90` to compute:
 
-    -   The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$
+    - The overlaps $\langle u_{n\bf{k}}|u_{n\bf{k+b}}\rangle$
         between spinor Bloch states (written in the `GaAs.mmn` file)
 
-    -   The projections for the starting guess (written in the
+    - The projections for the starting guess (written in the
         `GaAs.amn` file)
 
     ```bash title="Terminal"
     pw2wannier90.x < GaAs.pw2wan > pw2wan.out
     ```
 
-5.  Run `wannier90` to compute MLWFs
+5. Run `wannier90` to compute MLWFs
 
     ```bash title="Terminal"
     wannier90.x GaAs
     ```
 
-6.  Run `postw90` to compute nonlinear shift current
+6. Run `postw90` to compute nonlinear shift current
 
     ```bash title="Terminal"
     postw90.x GaAs` # (1)! 
@@ -64,14 +64,13 @@
     mpirun -np 8 postw90.x GaAs  # (2)! 
     ```
 
-    1.    serial execution
-    2.    example of parallel execution with 8 MPI processes
+    1. serial execution
+    2. example of parallel execution with 8 MPI processes
 
 ## Shift current $\sigma^{abc}$ {#shift-current-sigmaabc .unnumbered}
 
 The shift current tensor of GaAs has only one independent component that
 is finite, namely $\sigma^{xyz}$. For its computation, set
-
 
 ```vi title="Input file"
 berry = true
@@ -129,5 +128,3 @@ gnuplot
 ```gnuplot title="Gnuplot shell"
 plot 'GaAs-sc_xyz.dat' u 1:2 w l
 ```
-
-

@@ -1,44 +1,50 @@
-# 8: Iron &#151; Spin-polarized WFs, DOS, projected WFs versus MLWFs {#iron-spin-polarized-wfs-dos-projected-wfs-versus-mlwfs .unnumbered}
+# 8: Iron &#151; Spin-polarized WFs, DOS, projected WFs versus MLWFs
 
--   Outline: *Generate both maximally-localized and projected Wannier
+- Outline: *Generate both maximally-localized and projected Wannier
     functions for ferromagnetic bcc Fe. Calculate the total and
     orbital-projected density of states by Wannier interpolation.*
 
--   Directory: `tutorials/tutorial08/` *Files can be downloaded from 
+- Directory: `tutorials/tutorial08/` *Files can be downloaded from
     [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial08)*
 
--   Input Files
+- Input Files
 
-    -    `iron.scf` *The `pwscf` input file for the
+    - `iron.scf` *The `pwscf` input file for the
         spin-polarized ground state calculation*
 
-    -    `iron.nscf` *The `pwscf` input file to obtain Bloch
+    - `iron.nscf` *The `pwscf` input file to obtain Bloch
         states on a uniform grid*
 
-    -    `iron_{up,down}.pw2wan` *Input files for `pw2wannier90`*
+    - `iron_{up,down}.pw2wan` *Input files for `pw2wannier90`*
 
-    -    `iron_{up,down}.win` *Input files for `wannier90` and
-        ` postw90`*
+    - `iron_{up,down}.win` *Input files for `wannier90` and
+        `postw90`*
 
--   Note that in a spin-polarized calculation the spin-up and spin-down
+- Note that in a spin-polarized calculation the spin-up and spin-down
     MLWFs are computed separately. (The more general case of spinor WFs
-    will be treated in Tutorial [17](tutorial_17.md#iron-spin-orbit-coupled-bands-and-fermi-surface-contours).
+    will be treated in Tutorial [17](tutorial_17.md)).
 
-1.  Run `pwscf` to obtain the ferromagnetic ground state of
-    bcc Fe
+1. Run `pwscf` to obtain the ferromagnetic ground state of bcc Fe
 
     ```bash title="Terminal"
     pw.x < iron.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the Bloch states on a uniform
+    !!! note
+
+        Please note the following counterintuitive feature in `pwscf`: in
+        order to obtain a ground state with magnetization along the
+        *positive* $z$-axis, one should use a *negative* value for the
+        variable `starting_magnetization`.
+
+2. Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid
 
     ```bash title="Terminal"
     pw.x < iron.nscf > nscf.out
     ```
 
-3.  Run `wannier90` to generate a list of the required overlaps (written
+3. Run `wannier90` to generate a list of the required overlaps (written
     into the `.nnkp` files).
 
     ```bash title="Terminal"
@@ -46,7 +52,7 @@
     wannier90.x -pp iron_dn
     ```
 
-4.  Run `pw2wannier90` to compute the overlap between Bloch states and
+4. Run `pw2wannier90` to compute the overlap between Bloch states and
     the projections for the starting guess (written in the `.mmn` and
     `.amn` files).
 
@@ -55,7 +61,7 @@
     pw2wannier90.x < iron_dn.pw2wan > pw2wan_dn.out
     ```
 
-5.  Run `wannier90` to compute the MLWFs.
+5. Run `wannier90` to compute the MLWFs.
 
     ```bash title="Terminal"
     wannier90.x iron_up
@@ -90,7 +96,7 @@ plot 'iron_up_dos.dat' u (-\$2):(\$1-12.6256) w
 l,'iron_dn_dos.dat' u 2:(\$1-12.6256) w l
 ```
 
-Energies are referred to the Fermi level (12.6256 eV, from ` scf.out`).
+Energies are referred to the Fermi level (12.6256 eV, from `scf.out`).
 Note the exchange splitting between the up-spin and down-spin DOS. Check
 the convergence by repeating the DOS calculations with more $k$-points.
 
@@ -111,8 +117,8 @@ look at the final state towards the end of the file. The Wannier spreads
 have re-organized in two groups, 6+3; moreover, the six more diffuse WFs
 are off-centred: the initial atomic-like orbitals hybridized with one
 another, becoming more localized in the process. It is instructive to
-visualize the final-state MLWFs using `XCrySDen`, following Tutorial 
-[1](tutorial_1.md#gallium-arsenide-mlwfs-for-the-valence-bands).
+visualize the final-state MLWFs using `XCrySDen`, following Tutorial
+[1](tutorial_1.md).
 For more details, see Sec. IV.B of Ref. [@wang-prb06].
 
 Let us plot the evolution of the spread functional $\Omega$,
@@ -127,13 +133,11 @@ gnuplot
 plot 'sprd_up' u 6 w l
 ```
 
-
 The first plateau corresponds to atom-centred WFs of separate $s$, $p$,
 and $d$ character, and the sharp drop signals the onset of the
 hybridization. With hindsight, we can redo steps 4 and 5 more
 efficiently using trial orbitals with the same character as the final
 MLWFs,
-
 
 ```vi title="Input file"
 Fe:sp3d2;dxy;dxz,dyz
@@ -162,7 +166,7 @@ individual trial orbitals.
 
 With projected WFs the total DOS can be separated into $s$, $p$ and $d$
 contributions, in a similar way to the orbital decomposition of the
-energy bands in Tutorial [4](tutorial_4.md#copper-fermi-surface-orbital-character-of-energy-bands).
+energy bands in Tutorial [4](tutorial_4.md).
 
 In order to obtain the partial DOS projected onto the $p$-type WFs, add
 to the `.win` files

@@ -1,29 +1,29 @@
-# 4: Copper &#151; Fermi surface, orbital character of energy bands {#copper-fermi-surface-orbital-character-of-energy-bands .unnumbered}
+# 4: Copper &#151; Fermi surface, orbital character of energy bands
 
--   Outline: *Obtain MLWFs to describe the states around the Fermi-level
+- Outline: *Obtain MLWFs to describe the states around the Fermi-level
     in copper*
 
--   Generation Details: *From `pwscf`, using ultrasoft
+- Generation Details: *From `pwscf`, using ultrasoft
     pseudopotentials [@vanderbilt-prb90] and a<br>
     4$\times$4$\times$4 k-point grid.
     Starting guess: five atom-centred d orbitals, and two s orbitals
     centred on one of each of the two tetrahedral interstices.*
 
--   Directory: `tutorials/tutorial04/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial04)*
+- Directory: `tutorials/tutorial04/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial04)*
 
--   Input Files
+- Input Files
 
-    -    `copper.win` *The master input file*
+    - `copper.win` *The master input file*
 
-    -    `copper.mmn` *The overlap matrices
+    - `copper.mmn` *The overlap matrices
         $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$*
 
-    -    `copper.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the
+    - `copper.amn` *Projection $\mathbf{A}^{(\mathbf{k})}$ of the
         Bloch states onto a set of trial localised orbitals*
 
-    -    `copper.eig` *The Bloch eigenvalues at each k-point*
+    - `copper.eig` *The Bloch eigenvalues at each k-point*
 
-1.  Run `wannier90` to minimise the MLWFs spread
+1. Run `wannier90` to minimise the MLWFs spread
 
     ```bash title="Terminal"
     wannier90.x copper
@@ -31,10 +31,10 @@
 
     Inspect the output file `copper.wout`.
 
-2.  Plot the Fermi surface, it should look familiar! The Fermi energy is
+2. Plot the Fermi surface, it should look familiar! The Fermi energy is
     at 12.2103 eV.
 
-3.  Plot the interpolated bandstructure. A suitable path in k-space is
+3. Plot the interpolated bandstructure. A suitable path in k-space is
 
     ```vi title="Input file"
      begin kpoint_path
@@ -46,7 +46,7 @@
      end kpoint_path
     ```
 
-4.  Plot the contribution of the interstitial WF to the bandstructure.
+4. Plot the contribution of the interstitial WF to the bandstructure.
     Add the following keyword to `copper.win`
 
     ```vi title="Input file"

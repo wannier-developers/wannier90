@@ -1,48 +1,48 @@
-# 23: Silicon &#151; $G_0W_0$ bands structure interpolation {#silicon-g_0w_0-bands-structure-interpolation .unnumbered}
+# 23: Silicon &#151; $G_0W_0$ bands structure interpolation
 
 Note: This tutorial requires a recent version of the `ypp`
 post-processing code of `yambo`.
 
--   Outline: *Interpolate the bands structure of silicon obtained from
+- Outline: *Interpolate the bands structure of silicon obtained from
     many-body perturbation theory at the $G_0W_0$ level. Using the
     `yambo` code, the quasi-particle corrections (QP) are summed to
-    Kohn-Sham eigenvalues, while the wavefunctions remain the same. *
+    Kohn-Sham eigenvalues, while the wavefunctions remain the same.*
 
--   Directory: `tutorials/tutorial23/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial23)*
+- Directory: `tutorials/tutorial23/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial23)*
 
--   Input Files
+- Input Files
 
-    -    `silicon.scf` *The `pwscf` input file for the
+    - `silicon.scf` *The `pwscf` input file for the
         ground state calculation*
 
-    -    `silicon.nscf ` *The `pwscf` input file to obtain
+    - `silicon.nscf` *The `pwscf` input file to obtain
         Bloch states on a uniform grid*
 
-    -    `silicon.gw.nscf ` *The `pwscf` input file to
+    - `silicon.gw.nscf` *The `pwscf` input file to
         obtain Bloch states on a reduced grid with many empty bands*
 
-    -    `silicon.pw2wan` *The input file for `pw2wannier90`*
+    - `silicon.pw2wan` *The input file for `pw2wannier90`*
 
-    -    `silicon.win` *The `wannier90` input file*
+    - `silicon.win` *The `wannier90` input file*
 
-    -    `silicon.gw.win` *The `wannier90` input file* (for the $G_0W_0$
+    - `silicon.gw.win` *The `wannier90` input file* (for the $G_0W_0$
         step)
 
-    -    `yambo.in` *The `yambo` input file*
+    - `yambo.in` *The `yambo` input file*
 
-    -    `ypp.in` *The `ypp` input file*
+    - `ypp.in` *The `ypp` input file*
 
-1.  Copy the input files from the `INPUT directory` into a working
+1. Copy the input files from the `INPUT directory` into a working
     directory (e.g. `WORK`)
 
-2.  Run `pwscf` to obtain the ground state charge of
+2. Run `pwscf` to obtain the ground state charge of
     silicon
 
     ```bash title="Terminal"
     pw.x < silicon.scf > scf.out
     ```
 
-3.  Run `pwscf` to obtain the Bloch states reduced grid. We
+3. Run `pwscf` to obtain the Bloch states reduced grid. We
     use a 8x8x8 with many bands (many empty bands are needed to perform
     a $G_0W_0$ with `yambo`)
 
@@ -50,7 +50,7 @@ post-processing code of `yambo`.
     pw.x < silicon.gw.nscf > nscf.gw.out
     ```
 
-4.  Use the `k_mapper.py` utility to find the indexes of a 4x4x4 uniform
+4. Use the `k_mapper.py` utility to find the indexes of a 4x4x4 uniform
     grid into the 8x8x8 reduced grid
 
     ```bash title="Terminal"
@@ -70,10 +70,10 @@ post-processing code of `yambo`.
     ...
     ```
 
-5.  Enter the `si.save` directory and run `p2y`. A `SAVE` folder is
+5. Enter the `si.save` directory and run `p2y`. A `SAVE` folder is
     created, you can move it up in the `/WORK/` directory.
 
-6.  Run a $G_0W_0$ calculation from the `/WORK/` directory (remember, we
+6. Run a $G_0W_0$ calculation from the `/WORK/` directory (remember, we
     are using a 8x8x8 grid but computing QP corrections only on a 4x4x4
     grid)
 
@@ -81,21 +81,21 @@ post-processing code of `yambo`.
     yambo 
     ```
 
-7.  Run `pwscf` to obtain the Bloch states on a uniform
+7. Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid
 
     ```bash title="Terminal"
     pw.x < silicon.nscf > nscf.out
     ```
 
-8.  Run `wannier90` to generate a list of the required overlaps (written
+8. Run `wannier90` to generate a list of the required overlaps (written
     into the `silicon.nnkp` file).
 
     ```bash title="Terminal"
     wannier90.x -pp silicon
     ```
 
-9.  Run `pw2wannier90` to compute the overlap between Bloch states, the
+9. Run `pw2wannier90` to compute the overlap between Bloch states, the
     projections for the starting guess (written in the `silicon.mmn` and
     `silicon.amn` respectively).
 
@@ -141,5 +141,3 @@ After you completed the tutorial for the valence bands only, you can
 repeat the final steps to interpolate also some conduction bands using
 disentanglement (the code is already present as comments in the input
 files).
-
-
