@@ -3,8 +3,8 @@
 ## Introduction
 
 The `wannier90.x` code described in
-Part [wannier90.x](../wannier90/methodology.md) calculates the maximally-localized Wannier
-functions.
+Part [wannier90.x](../wannier90/methodology.md) calculates the
+maximally-localized Wannier functions.
 
 The `postw90.x` executable contains instead a series of modules that
 take the Wannier functions calculated by `wannier90.x` and use them to
@@ -100,16 +100,19 @@ The currently available modules in `postw90.x` are:
     and [30](../../tutorials/tutorial_30.md) of the
     tutorial). It also includes an option to compute $k\cdot p$
     expansion coefficients (see
-    Sec. [kdotp](berry.md#sec:kdotp) and tutorial [33](../../tutorials/tutorial_33.md) of the tutorial).
+    Sec. [kdotp](berry.md#berry_taskkdotp-k-p-coefficients) and tutorial
+    [33](../../tutorials/tutorial_33.md) of the tutorial).
 
 - `gyrotropic`: Calculation of gyrotropic properties, including
     natural and current0induced optical rotation, and the
     current-induced magnetization (see
-    Chap. [Gyrotropic](gyrotropic.md) and tutorial [24](../../tutorials/tutorial_24.md) of the tutorial).
+    Chap. [Gyrotropic](gyrotropic.md) and tutorial
+    [24](../../tutorials/tutorial_24.md) of the tutorial).
 
 - `BoltzWann`: Calculation of electronic transport properties for bulk
     materials using the semiclassical Boltzmann transport equation (see
-    Chap. [BoltzWann](boltzwann.md) and tutorial [16](../../tutorials/tutorial_16.md) of the tutorial).
+    Chap. [BoltzWann](boltzwann.md) and tutorial
+    [16](../../tutorials/tutorial_16.md) of the tutorial).
 
 - `geninterp` (Generic Band Interpolation): Calculation band energies
     (and band derivatives) on a generic list of $k$ points (see
@@ -119,17 +122,19 @@ The currently available modules in `postw90.x` are:
 
 On the next pages the list of available  input keywords is reported. In
 particular,
-Table [Global Parameters of `postw90`](#global-parameters-of-postw90) reports keywords that affect the
+Table [Global Parameters of `postw90`](#global-parameters-of-postw90) reports
+keywords that affect the
 generic behavior of all modules of . Often, these are "global" variables
 that can be overridden by module-specific keywords (as for instance the
 `kmesh` flag). The subsequent tables describe the input parameters for
 each specific module.
 A description of the behaviour of the global flags is described
-Sec. [Global variables](#sec:postw90-globalflags); the description of the flags
+Sec. [Global variables](#global-variables); the description of the flags
 specific to the modules can be found in the following sections.
 
 ### Global Parameters of `postw90`
 
+<!-- markdownlint-disable MD013 -->
 |              Keyword               | Type | Description                                                                        |
 | :---------------------------------:| :--: | :----------------------------------------------------------------------------------|
 |         kmesh         |  I   | Dimensions of the uniform interpolation \(k\)-mesh (one or three integers)         |
@@ -149,6 +154,7 @@ specific to the modules can be found in the following sections.
 |    uHu\_formatted     |  L   | Read a formatted `seedname.uHu` file                                  |
 |    spn\_formatted     |  L   | Read a formatted `seedname.spn` file                                  |
 |   berry\_curv\_unit   |  S   | Unit of Berry curvature                                                            |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the general behaviour of
   the modules in `postw90`. Argument types are represented by, I for a integer, R
@@ -160,6 +166,7 @@ specific to the modules can be found in the following sections.
 
 ### `berry` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |                    Keyword                    | Type | Description                                                                                                                                   |
 | :-------------------------------------------: | :--: | :-------------------------------------------------------------------------------------------------------------------------------------------- |
 |              berry               |  L   | Calculate Berry-type quantities                                                                                                               |
@@ -193,6 +200,7 @@ specific to the modules can be found in the following sections.
 |        kdotp\_num\_bands         |  I   | Number of bands for \(k\cdot p\) expansion                                                                                                    |
 |           kdotp\_bands           |  I   | Band indexes corresponding to the \(k\cdot p\) bands                                                                                          |
 |                                               |      |                                                                                                                                               |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `berry` module.
   Argument types are represented by, I for a integer, R for a real
@@ -201,6 +209,7 @@ specific to the modules can be found in the following sections.
 
 ### `dos` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |              Keyword               | Type | Description                                                                   |
 | :--------------------------------: | :--: | :---------------------------------------------------------------------------- |
 |          dos          |  L   | Calculate the density of states and related properties                        |
@@ -216,17 +225,22 @@ specific to the modules can be found in the following sections.
 |    \[dos\_\]adpt\_smr\_max     |  P   | Maximum allowed value for the adaptive energy smearing (eV)                   |
 | \[dos\_\]smr\_fixed\_en\_width |  P   | Energy smearing (if non-adaptive) for the DOS (eV)                            |
 |       \[dos\_\]smr\_type       |  S   | Analytical form used for the broadened delta function when computing the DOS. |
+<!-- markdownlint-enable MD013 -->
 
-`seedname.win` file keywords controlling the `dos` module. Argument types are represented by, I for a integer, R for a real number, P for a physical value, L for a logical value and S for a text string.
+`seedname.win` file keywords controlling the `dos` module.
+Argument types are represented by, I for a integer, R for a real number,
+P for a physical value, L for a logical value and S for a text string.
 
 ### `kpath` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |              Keyword              | Type | Description                                                  |
 | :-------------------------------: | :--: | :----------------------------------------------------------- |
 |        kpath         |  L   | Calculate properties along a piecewise linear path in the BZ |
 |     kpath\_task      |  L   | List of properties to evaluate                               |
 |  kpath\_num\_points  |  I   | Number of points in the first kpath segment                  |
 | kpath\_bands\_colour |  S   | Property used to colour the energy bands along the path      |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `kpath` module.
   Argument types are represented by, I for a integer, R for a real
@@ -235,6 +249,7 @@ specific to the modules can be found in the following sections.
 
 ### `kslice` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |                  Keyword                  | Type | Description                                                                           |
 | :---------------------------------------: | :--: | :------------------------------------------------------------------------------------ |
 |            kslice            |  L   | Calculate properties on a slice in the BZ                                             |
@@ -245,11 +260,15 @@ specific to the modules can be found in the following sections.
 |       kslice\_2dkmesh        |  I   | Dimensions of the uniform interpolation \(k\)-mesh on the slice (one or two integers) |
 | kslice\_fermi\_level         |  P   | This parameter is not used anymore. Use fermi_energy instead. |
 | kslice\_fermi\_lines\_colour |  S   | Property used to colour the Fermi lines                                               |
+<!-- markdownlint-enable MD013 -->
 
-`seedname.win` file keywords controlling the `kslice` module. Argument types are represented by, I for a integer, R for a real number, P for a physical value, L for a logical value and S for a text string.
+`seedname.win` file keywords controlling the `kslice` module. Argument types
+are represented by, I for a integer, R for a real number, P for a physical
+value, L for a logical value and S for a text string.
 
 ### `gyrotropic` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |                Keyword                 | Type | Description                                                                               |
 | :------------------------------------: | :--: | :---------------------------------------------------------------------------------------- |
 |        gyrotropic         |  L   | Calculate gyrotropic quantities                                                           |
@@ -264,7 +283,8 @@ specific to the modules can be found in the following sections.
 |         \[gyrotropic\_\]smr\_type         |  S   | Analytical form used for the broadened delta function                                     |
 |   \[gyrotropic\_\]smr\_fixed\_en\_width   |  P   | Energy smearing (eV)                                                                      |
 |        \[gyrotropic\_\]band\_list         |  I   | list of bands used in the calculation                                                     |
-  gyrotropic\_box\_center<br>gyrotropic\_box\_b1<br>gyrotropic\_box\_b2<br>gyrotropic\_box\_b3  |  R<br>R<br>R<br>R | The center and three basis vectors, defining the box for integration (in reduced coordinates, three real numbers for each vector) |
+| gyrotropic\_box\_center<br>gyrotropic\_box\_b1<br>gyrotropic\_box\_b2<br>gyrotropic\_box\_b3  |  R<br>R<br>R<br>R | The center and three basis vectors, defining the box for integration (in reduced coordinates, three real numbers for each vector) |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `gyrotropic` module.
   Argument types are represented by, I for a integer, R for a real
@@ -273,6 +293,7 @@ specific to the modules can be found in the following sections.
 
 ### `BoltzWann` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |                    Keyword                     | Type | Description                                                                |
 | :--------------------------------------------: | :--: | :------------------------------------------------------------------------- |
 |             boltzwann             |  L   | Calculate Boltzmann transport coefficients                                 |
@@ -301,6 +322,7 @@ specific to the modules can be found in the following sections.
 |         boltz\_bandshift          |  L   | Rigid bandshift of the conduction bands                                    |
 |    boltz\_bandshift\_firstband    |  I   | Index of the first band to shift                                           |
 |   boltz\_bandshift\_energyshift   |  P   | Energy shift of the conduction bands (eV)                                  |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `BoltzWann` module (calculation of
   the Boltzmann transport coefficients in the Wannier basis). Argument
@@ -309,15 +331,20 @@ specific to the modules can be found in the following sections.
 
 ### `geninterp` Parameters
 
+<!-- markdownlint-disable MD013 -->
 |               Keyword                | Type | Description                                   |
 | :----------------------------------: | :--: | :-------------------------------------------- |
 |        geninterp        |  L   | Calculate bands for given set of \(k\) points |
 | geninterp\_alsofirstder |  L   | Calculate also first derivatives              |
 | geninterp\_single\_file |  L   | Write a single file or one for each process   |
+<!-- markdownlint-enable MD013 -->
 
-`seedname.win` file keywords controlling the Generic Band Interpolation (`geninterp`) module. Argument types are represented by,   I for a integer, R for a real number, P for a physical value, L for a logical value and S for a text string.
+`seedname.win` file keywords controlling the Generic Band Interpolation
+(`geninterp`) module. Argument types are represented by,   I for a integer,
+R for a real number, P for a physical value, L for a logical value and S for
+a text string.
 
-## Global variables {#sec:postw90-globalflags}
+## Global variables
 
 ### `integer :: kmesh(:)`
 
@@ -506,67 +533,6 @@ Unit in which the Berry curvature is specified at input (in
 
 The default value is `ang2`.
 
-### `real(kind=dp) :: sc_eta`
-
-The width $\eta$ used to broaden energy differences in denominators of
-the form
-
-$$
-\begin{equation}
-\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}}\rightarrow
-\text{Re}\frac{1}{\varepsilon_{n\bf{k}}-\varepsilon_{m\bf{k}}+i\eta}.
-\end{equation}
-$$
-
-The above is needed in shift-current calculations in order to avoid
-numerical problems caused by near-degeneracies in the sum over virtual
-states.
-
-The units are eV. The default value is 0.4.
-
-### `integer :: sc_phase_conv`
-
-Convention for the expansion of the Bloch states in shift-current
-calculations. It can only take the values one or two. We follow the
-convention of Ref. [@pythtb]:
-
-- 1: Include Wannier centre
-    ${\bm \tau}_{n}=\langle w_{n{\bf 0}}|{\bf r}| w_{n{\bf 0}} \rangle$
-    in the phase factor (so-called tight-binding convention):
-
-    $$
-    \begin{equation}
-    |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}-{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
-    \end{equation}
-    $$
-
-- 2: Do not include Wannier centre in the phase factor (usual
-    `Wannier90` convention):
-
-    $$
-    \begin{equation}
-    |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}| w_{n\bf{R}} \rangle
-    \end{equation}
-    $$
-
-If `sc_use_eta_corr=true`, the convention does not affect the full
-shift-current matrix element, but it does affect the weights of the
-internal components that compose it (see Ref.
-[@ibanez-azpiroz_ab_2018]). If `sc_use_eta_corr=false`, the convention
-can affect the full shift-current matrix element (see Ref.
-[@Lihm_shift_eta_2021]).
-
-The default value is 1.
-
-### `real(kind=dp) :: sc_w_thr`
-
-Parameter $\alpha_{t}$ for speeding up the frequency integration in
-shift-current calculations. It settles the frequency threshold
-$\omega_{t}=\alpha_{t}\eta_{n{\bf k}}$ (a factor times the broadening)
-beyond which the delta functions are taken as zero.
-
-The default value is 5.0.
-
 ### `logical :: sc_use_eta_corr`
 
 If `sc_use_eta_corr=true`, apply the finite-eta correction of the shift
@@ -661,32 +627,32 @@ gauge* [@wang-prb06].
 ### `integer :: dos_kmesh(:)`
 
 Overrides the `kmesh` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: dos_kmesh_spacing`
 
 Overrides the `kmesh_spacing` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: dos_adpt_smr`
 
 Overrides the `adpt_smr` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: dos_adpt_smr_fac`
 
 Overrides the `adpt_smr_fac` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: dos_adpt_smr_max`
 
 Overrides the `adpt_smr_max` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: dos_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 Note that if the width is smaller than twice the energy step
 `dos_energy_step`, the DOS will be unsmeared (thus the default is to
@@ -695,7 +661,7 @@ have an unsmeared DOS).
 ### `character(len=20) :: dos_smr_type`
 
 Overrides the `smr_type` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ## kpath
 
@@ -1056,12 +1022,12 @@ There is no default value.
 ### `integer :: berry_kmesh(:)`
 
 Overrides the `kmesh` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: berry_kmesh_spacing`
 
 Overrides the `kmesh_spacing` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `integer :: berry_curv_adpt_kmesh`
 
@@ -1120,27 +1086,27 @@ maximum energy eigenvalue stored in `seedname.eig` plus 0.6667.
 ### `logical :: kubo_adpt_smr`
 
 Overrides the `adpt_smr` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: kubo_adpt_smr_fac`
 
 Overrides the `adpt_smr_fac` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: kubo_adpt_smr_max`
 
 Overrides the `adpt_smr_max` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: kubo_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `character(len=120) :: kubo_smr_type`
 
 Overrides the `smr_type` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: shc_freq_scan`
 
@@ -1252,7 +1218,8 @@ convention of Ref. [@pythtb]:
 
     $$
     \begin{equation}
-    |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}-{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
+    |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i{\bf k}({\bf r}-{\bf R}
+        -{\bm \tau}_{n})}| w_{n\bf{R}} \rangle
     \end{equation}
     $$
 
@@ -1261,13 +1228,17 @@ convention of Ref. [@pythtb]:
 
     $$
     \begin{equation}
-    |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}| w_{n\bf{R}} \rangle
+    |u_{n\bf{k}}\rangle = \sum_{\bf{R}} e^{-i\bf{k}(\bf{r}-\bf{R})}|
+        w_{n\bf{R}} \rangle
     \end{equation}
     $$
 
-The convention does not affect the full shift-current matrix element,
-but it does affect the weights of the internal components that compose
-it (see Ref. [@ibanez-azpiroz_ab_2018]).
+If `sc_use_eta_corr=true`, the convention does not affect the full
+shift-current matrix element, but it does affect the weights of the
+internal components that compose it (see Ref.
+[@ibanez-azpiroz_ab_2018]). If `sc_use_eta_corr=false`, the convention
+can affect the full shift-current matrix element (see Ref.
+[@Lihm_shift_eta_2021]).
 
 The default value is 1.
 
@@ -1379,12 +1350,12 @@ $(D_{yz}-D_{zy})/2$, $(D_{zx}-D_{xz})/2$, $(D_{xy}-D_{yx})/2$
 ### `integer :: gyrotropic_kmesh(:)`
 
 Overrides the `kmesh` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: gyrotropic_kmesh_spacing`
 
 Overrides the `kmesh_spacing` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: gyrotropic_freq_min`
 
@@ -1421,12 +1392,12 @@ maximum energy eigenvalue stored in `seedname.eig` plus 0.6667.
 ### `logical :: gyrotropic_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `character(len=120) :: gyrotropic_smr_type`
 
 Overrides the `smr_type` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `character(len=120) :: gyrotropic_degen_thresh`
 
@@ -1472,12 +1443,12 @@ It determines the interpolation $k$ mesh used to calculate the TDF (from
 which the transport coefficient are calculated). If
 `boltz_calc_also_dos` is `true`, the same $k$ mesh is used also for the
 DOS. Overrides the `kmesh` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: boltz_kmesh_spacing`
 
 Overrides the `kmesh_spacing` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `character(len=4) :: boltz_2d_dir` {#sec:boltz2ddir}
 
@@ -1602,27 +1573,27 @@ The units are eV. The default value is 0.001 eV.
 ### `character(len=120) :: boltz_dos_smr_type`
 
 Overrides the `smr_type` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: boltz_dos_adpt_smr`
 
 Overrides the `adpt_smr` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: boltz_dos_adpt_smr_fac`
 
 Overrides the `adpt_smr_fac` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `real(kind=dp) :: boltz_dos_adpt_smr_max`
 
 Overrides the `adpt_smr_max` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: boltz_dos_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
-Sec. [Global variables](#sec:postw90-globalflags)).
+Sec. [Global variables](#global-variables)).
 
 ### `logical :: boltz_bandshift`
 
