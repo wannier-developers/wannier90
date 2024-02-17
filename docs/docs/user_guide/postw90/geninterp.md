@@ -7,7 +7,7 @@ points provided by the user.
 
 The list of parameters of the Generic Band Interpolation module are
 summarized in
-Table [ `geninterp` Parameters](postw90params.md#geninterp-parameters). 
+Table [`geninterp` Parameters](postw90params.md#geninterp-parameters).
 The list of input $k$ points
 for which the band have to be calculated is read from the file named
 `seedname_geninterp.kpt`. The format of this file is described below.
@@ -47,7 +47,7 @@ where `kpointidx` is an integer identifying the given $k$ point, and
 `k1`, `k2` and `k3` are the three coordinates of the $k$ points in the
 chosen units.
 
-#### `seedname_geninterp.dat` or ` seedname_geninterp_NNNNN.dat` {#sec:seedname.geninterp.dat}
+#### `seedname_geninterp.dat` or `seedname_geninterp_NNNNN.dat` {#sec:seedname.geninterp.dat}
 
 OUTPUT. This file/these files contain the interpolated band energies
 (and also the band velocities if the input flag `geninterp_alsofirstder`
@@ -57,7 +57,7 @@ If the flag `geninterp_single_file` is `true`, then a single file
 `seedname_geninterp.dat` is written by the code at the end of the
 calculation. If instead one sets `geninterp_single_file` to `false`,
 each process writes its own output file, named
-`seedname_geninterp_00000.dat`, ` seedname_geninterp_00001.dat`, ...
+`seedname_geninterp_00000.dat`, `seedname_geninterp_00001.dat`, ...
 
 This flag is useful when one wants to parallelize the calculation on
 many nodes, and it should be used especially for systems with a small
@@ -73,8 +73,8 @@ significant bottleneck).
     number of processors, care is needed to avoid to mix the results of the
     older calculations with those of the new one. In case of doubt, either
     check the date stamp in the first line of the
-    ` seedname_geninterp_*.dat` files, or simply delete the
-    ` seedname_geninterp_*.dat` files before starting the new calculation.
+    `seedname_geninterp_*.dat` files, or simply delete the
+    `seedname_geninterp_*.dat` files before starting the new calculation.
 
 To join the files, on can simply use the following command:
 

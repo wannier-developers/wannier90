@@ -29,11 +29,11 @@ the method is described in Ref. [@nardelli-prb99].
 
 In `wannier90` two options exist for performing such calculations:
 
--   If `tran_read_ht = TRUE` the external Hamiltonian files
+- If `tran_read_ht = TRUE` the external Hamiltonian files
     `seedname_htL.dat, seedname_htLC.dat, seedname_htC.dat, seedname_htCR.dat, seedname_htR.dat`
     are read and used to compute the transport properties.
 
--   If `tran_read_ht = FALSE`, then the transport
+- If `tran_read_ht = FALSE`, then the transport
     calculation is performed automatically using the Wannier functions
     as a basis and the 2c2 geometry described in
     Section [Automated lcr Transport Calculations: The 2c2 Geometry](#sec:2c2).
@@ -49,16 +49,16 @@ rules apply to the system geometry, which is shown in
 Figure [below](#fig:lcr_2c2). These
 rules are as follows:
 
--   Left and right leads must be identical and periodic.
+- Left and right leads must be identical and periodic.
 
--   Supercell must contain two principal layers (PLs) of lead on the
+- Supercell must contain two principal layers (PLs) of lead on the
     left, a central conductor region and two principal layers of lead on
     the right.
 
--   The conductor region must contain enough lead such that the disorder
+- The conductor region must contain enough lead such that the disorder
     does not affect the principal layers of lead either side.
 
--   A single **k**-point (Gamma) must be used.
+- A single **k**-point (Gamma) must be used.
 
 <figure markdown="span" id="fig:lcr_2c2">
 ![lcr_2c2](lcr_2c2.webp){ width="100%" }
@@ -88,13 +88,13 @@ function and $g(\mathbf{r})$ are the set of functions:
 $$
 \begin{aligned}
 g(\mathbf{r})=&\left\lbrace1,\sin\left(\frac{2\pi (x-x_c)}{L_x}\right),
-											 \sin\left(\frac{2\pi (y-y_c)}{L_y}\right),
-											 \sin\left(\frac{2\pi (z-z_c)}{L_z}\right),
-											 \sin\left(\frac{2\pi (x-x_c)}{L_x}\right)
-											 \sin\left(\frac{2\pi (y-y_c)}{L_y}\right),\right.\nonumber \\
-										   &\left.\sin\left(\frac{2\pi (x-x_c)}{L_x}\right)
-											 \sin\left(\frac{2\pi (z-z_c)}{L_z}\right),
-											 ... \right\rbrace
+            \sin\left(\frac{2\pi (y-y_c)}{L_y}\right),
+            \sin\left(\frac{2\pi (z-z_c)}{L_z}\right),
+            \sin\left(\frac{2\pi (x-x_c)}{L_x}\right)
+            \sin\left(\frac{2\pi (y-y_c)}{L_y}\right),\right.\nonumber \\
+             &\left.\sin\left(\frac{2\pi (x-x_c)}{L_x}\right)
+            \sin\left(\frac{2\pi (z-z_c)}{L_z}\right),
+            ... \right\rbrace
 \label{eq:g(r)}
 \end{aligned}
 $$
@@ -126,10 +126,10 @@ Section [`seedname.unkg`](files.md#seednameunkg).
 Additionally, the following keywords are also required in the input
 file:
 
--   `tran_num_ll` : The number of Wannier functions in a principal
+- `tran_num_ll` : The number of Wannier functions in a principal
     layer.
 
--   `tran_num_cell_ll` : The number of unit cells in one principal layer
+- `tran_num_cell_ll` : The number of unit cells in one principal layer
     of lead
 
 A further parameter related to these calculations is

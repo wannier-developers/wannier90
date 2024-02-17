@@ -83,7 +83,6 @@ file.
 
 ### Job Control
 
-
 |       Keyword        | Type | Description                                                                                     |
 |:--------------------:|:----:|:------------------------------------------------------------------------------------------------|
 |    postproc_setup    |  L   | To output the `seedname.nnkp` file                                                              |
@@ -108,8 +107,8 @@ represented by, I for a integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
 translate_home_cell only relevant if `write_xyz` is `.true.`
 
-
 ### Disentanglement Parameters
+
 |          Keyword           | Type | Description                                                            |
 |:--------------------------:|:----:|:-----------------------------------------------------------------------|
 |        dis_win_min         |  P   | Bottom of the outer energy window                                      |
@@ -129,6 +128,7 @@ types are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 
 ### Wannierise Parameters
+
 |        Keyword        | Type | Description                                                                                                      |
 |:---------------------:|:----:|:-----------------------------------------------------------------------------------------------------------------|
 |       num_iter        |  I   | Number of iterations for the minimisation of $\Omega$                                                            |
@@ -163,6 +163,7 @@ file. \*\*Cannot be used in conjunction with disentanglement.
 window.
 
 ### Plot Parameters
+
 |          Keyword           | Type | Description                                                  |
 |:--------------------------:|:----:|:-------------------------------------------------------------|
 |        wannier_plot        |  L   | Plot the WF                                                  |
@@ -207,7 +208,8 @@ are represented by, I for a integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string. \* Only
 applies when `wannier_plot_format` is `cube`.
 
-### Transport Parameters 
+### Transport Parameters
+
 |         Keyword          | Type | Description                                               |
 |:------------------------:|:----:|:----------------------------------------------------------|
 |        transport         |  L   | Calculate quantum conductance and density of states       |
@@ -239,7 +241,6 @@ applies when `wannier_plot_format` is `cube`.
 represented by, I for a integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
 
-
 ## System
 
 ### `integer :: num_wann`
@@ -261,7 +262,7 @@ The cell lattice vectors should be specified in Cartesian coordinates.
 ```
 begin unit_cell_cart
 [units]
-``` 
+```
 
 \begin{array}{ccc}
 A_{1x} & A_{1y} & A_{1z} \\
@@ -294,14 +295,14 @@ the input file.
 ```
 begin atoms_cart
 [units]
-``` 
+```
 
 \begin{array}{cccc}
 P  & R^{P}_{x} & R^{P}_{y} & R^{P}_{z} \\
 Q  & R^{Q}_{x} & R^{Q}_{y} & R^{Q}_{z} \\
 \vdots
 \end{array}
- 
+
 ```
 end atoms_cart
 ```
@@ -402,7 +403,7 @@ nearest neighbours. $N_{\mathrm{sh}}$ shells of neighbours are included
 in the finite-difference formula, with $M_s$ vectors in the
 $s^{\mathrm{th}}$ shell. For $\nabla_{{\bf k}}$ to be correct to linear
 order, we require that the following equation is satisfied (Eq. B1 of
-Ref. [@marzari-prb97]): 
+Ref. [@marzari-prb97]):
 
 $$
 \begin{equation}
@@ -437,7 +438,7 @@ The default value is 36.
 
 If set to `.true.`, does not check the B1 condition
 Eq. $\eqref{eq:B1}$. This
-should *only* be used if one knows why the B1 condition should not be
+should _only_ be used if one knows why the B1 condition should not be
 verified. A typical use of this flag is in conjunction with the Z2PACK
 code: <https://z2pack.greschd.ch/en/latest/>.
 
@@ -532,9 +533,9 @@ The length unit to be used for writing quantities in the output file
 
 The valid options for this parameter are:
 
--   `Ang` (default)
+- `Ang` (default)
 
--   `Bohr`
+- `Bohr`
 
 ### `character(len=50) :: devel_flag`
 
@@ -583,19 +584,19 @@ The default value of this parameter is `false`.
 ### `character(len=20) :: restart`
 
 If `restart` is present the code will attempt to restart the calculation
-from the `seedname.chk ` file. The value of the parameter determines the
+from the `seedname.chk` file. The value of the parameter determines the
 position of the restart
 
 The valid options for this parameter are:
 
--   `default`. Restart from the point at which the check file
+- `default`. Restart from the point at which the check file
     `seedname.chk` was written
 
--   `wannierise`. Restart from the beginning of the wannierise routine
+- `wannierise`. Restart from the beginning of the wannierise routine
 
--   `plot`. Go directly to the plotting phase
+- `plot`. Go directly to the plotting phase
 
--   `transport`. Go directly to the transport routines
+- `transport`. Go directly to the transport routines
 
 ### `character(len=20) :: wvfn_formatted`
 
@@ -695,7 +696,7 @@ To activate projectability disentanglement procedure, which selectively
 discard/disentangle/freeze state $\vert n \mathbf{k}\rangle$ based on
 its projectability onto some localized atomic orbitals.
 
-!!! note 
+!!! note
     this requires the `amn` file is properly normalized, i.e.,
     projectability computed from $A A^\dagger$ must be smaller than or equal
     to 1. The pseudo-atomic projection satisfies such requirement, see
@@ -800,6 +801,7 @@ coordinate $\mathbf{K}^i$ must the followed by the respectice sphere
 radius $r_{i}$ in inverse angstrom (on the same line).
 
 The number of lines must be equal to `dis_spheres_num`.
+
 ```
 begin dis_spheres
 ```
@@ -839,8 +841,8 @@ The default value is 5
 ### `integer :: conv_window`
 
 If `conv_window`$\:>1$, then the minimisation is said to be converged if
-the change in $\Omega$ over ` conv_window` successive iterations is less
-than ` conv_tol`. Otherwise, the minimisation proceeds for num_iter
+the change in $\Omega$ over `conv_window` successive iterations is less
+than `conv_tol`. Otherwise, the minimisation proceeds for num_iter
 iterations (default).
 
 The default value is -1
@@ -872,10 +874,10 @@ the minimisation is continued until convergence is achieved once more.
 If the same value of $\Omega$ as before is arrived at, then the
 calculation is considered to be converged. If not, then random noise is
 added again and the procedure repeated up to a maximum of
-` conv_noise_num` times. `conv_noise_amp` is the amplitude of the random
+`conv_noise_num` times. `conv_noise_amp` is the amplitude of the random
 noise $f$ that is added to the search direction:
 $0 < |f| <\:$`conv_noise_amp`. This functionality requires
-` conv_window`$\:>1$. If `conv_window` is not specified, it is set to
+`conv_window`$\:>1$. If `conv_window` is not specified, it is set to
 the value 5 by default.
 
 If `conv_noise_amp`$\:\leq 0$, then no noise is added (default).
@@ -1045,15 +1047,15 @@ begin slwf_centres
 end slwf_centres
 ```
 
--   The first line sets the constraint for the centre of objective WF
+- The first line sets the constraint for the centre of objective WF
     number 2 (as defined by the order of WFs in the `projections` block)
     to (0.0, 0.0, 0.0) in fractional coordinates.
 
--   The second line sets the constraint for the centre of objective WF
+- The second line sets the constraint for the centre of objective WF
     number 4 (as defined by the order of WFs in the `projections` block)
     to (0.25, 0.0, 0.0) in fractional coordinates.
 
--   The target centres of all other objective Wannier functions remain
+- The target centres of all other objective Wannier functions remain
     as the centres given in the corresponding rows of the `projections`
     block.
 
@@ -1061,15 +1063,15 @@ end slwf_centres
 
 Capabilities:
 
--   Plot the WF
+- Plot the WF
 
--   Plot the interpolated band structure
+- Plot the interpolated band structure
 
--   Plot the Fermi surface
+- Plot the Fermi surface
 
--   Output the Hamiltonian in the WF basis
+- Output the Hamiltonian in the WF basis
 
--   Transport calculation (quantum conductance and density of states)
+- Transport calculation (quantum conductance and density of states)
 
 ### `logical :: wannier_plot`
 
@@ -1108,9 +1110,9 @@ The default value is 2.
 WF can be plotted in either XCrySDen (xsf) format or Gaussian cube
 format. The valid options for this parameter are:
 
--   `xcrysden` (default)
+- `xcrysden` (default)
 
--   `cube`
+- `cube`
 
 If `wannier_plot_format=xsf`: the code outputs the WF on the entire
 super-unit-cell specified by `wannier_plot_supercell`.
@@ -1142,13 +1144,13 @@ crystal.
 
 The valid options for this parameter are:
 
--   `crystal` (default)
+- `crystal` (default)
 
--   `molecule`
+- `molecule`
 
 If `wannier_plot_format=cube`:
 
--   if `wannier_plot_mode = molecule`, then wherever the WF centre sits
+- if `wannier_plot_mode = molecule`, then wherever the WF centre sits
     in the supercell, the origin of the cube is shifted (for the purpose
     of plotting only, ie, nothing is done to the U matrices etc) to
     coincide with the centre of mass of the atomic positions specified
@@ -1156,19 +1158,19 @@ If `wannier_plot_format=cube`:
     also written to the cube file, so when it is visualised, the WF
     appears superimposed on the molecular structure.
 
--   if `wannier_plot_mode = crystal`, then the WF is not shifted, but
+- if `wannier_plot_mode = crystal`, then the WF is not shifted, but
     instead the code searches for atoms that are within a radius of
     `wannier_plot_scale` $\times$ `wannier_plot_radius` of the WF centre
     and writes the coordinates of these atoms to the cube file. In this
     way, when the cube file is visualised, the WF appears superimposed
     on the nearest atoms to the WF centre.
 
--   `crystal` mode can be used for molecules, and `molecule` mode can be
+- `crystal` mode can be used for molecules, and `molecule` mode can be
     used for crystals.
 
 ### `real(kind=dp) :: wannier_plot_radius`
 
-If `wannier_plot_format=cube`, then ` wannier_plot_radius` is the radius
+If `wannier_plot_format=cube`, then `wannier_plot_radius` is the radius
 of the sphere that must fit inside the parallelepiped in which the WF is
 plotted. `wannier_plot_radius` must be greater than 0. Units are Å.
 
@@ -1192,15 +1194,15 @@ If `spinors = true` then this parameter controls the
 quantity to plot. For a spinor WF with components $[\phi,\psi]$ the
 quatity plotted is
 
--   `total` (default). $\sqrt{[|\phi|^2+|\psi|^2]}$
+- `total` (default). $\sqrt{[|\phi|^2+|\psi|^2]}$
 
--   `up`. $|\phi|\times sign(Re\{\phi\})$ if
+- `up`. $|\phi|\times sign(Re\{\phi\})$ if
     `wannier_plot_spinor_phase = true`, otherwise $|\phi|$
 
--   `down`. $|\psi|\times sign(Re\{\psi\})$ if
+- `down`. $|\psi|\times sign(Re\{\psi\})$ if
     `wannier_plot_spinor_phase = true`, otherwise $|\psi|$
 
-!!! note 
+!!! note
     making a visual representation of a spinor WF is not as
     straightforward as for a scalar WF. While a scalar WF is typically a
     real valued function, a spinor WF is a complex, two component spinor.
@@ -1231,7 +1233,7 @@ primitive reciprocal lattice vectors.
 
 ```
 begin kpoint_path
-``` 
+```
 
 \begin{array}{cccccccc}
 G & 0.0 & 0.0 & 0.0 & L & 0.0 & 0.0 & 1.0 \\
@@ -1258,9 +1260,9 @@ The default value for `bands_num_points` is 100.
 Format in which to plot the interpolated band structure. The valid
 options for this parameter are:
 
--   `gnuplot` (default)
+- `gnuplot` (default)
 
--   `xmgrace`
+- `xmgrace`
 
 !!! note
     it is possible to request output in both formats eg
@@ -1289,9 +1291,9 @@ the WF basis. Truncation criteria are provided by `hr_cutoff` and
 
 The valid options for this parameter are:
 
--   `s-k` (default)
+- `s-k` (default)
 
--   `cut`
+- `cut`
 
 ### `integer :: bands_plot_dim`
 
@@ -1304,11 +1306,11 @@ structure interpolation.
 
 The valid options for this parameter are:
 
--   3 (default)
+- 3 (default)
 
--   2
+- 2
 
--   1
+- 1
 
 ### `logical :: fermi_surface_plot`
 
@@ -1330,8 +1332,8 @@ The default value for `fermi_surface_num_points` is 50.
 ### `real(kind=dp) :: fermi_energy`
 
 The Fermi energy in eV. This parameter is written into the bxsf file. If
-`fermi_energy` is specified, ` fermi_energy_min`, `fermi_energy_max`,
-and ` fermi_energy_step` should not be specified, and vice-versa.
+`fermi_energy` is specified, `fermi_energy_min`, `fermi_energy_max`,
+and `fermi_energy_step` should not be specified, and vice-versa.
 
 The default value is 0.0
 
@@ -1360,7 +1362,7 @@ The default value is `fermi_energy_min + 1.0`.
 ### `real(kind=dp) :: fermi_energy_step`
 
 Difference between consecutive values of the Fermi energy when scanning
-from `fermi_energy_min` to ` fermi_energy_max`. Units are eV.
+from `fermi_energy_min` to `fermi_energy_max`. Units are eV.
 
 The default value is 0.01.
 
@@ -1369,7 +1371,7 @@ The default value is 0.01.
 Format in which to plot the Fermi surface. The valid options for this
 parameter are:
 
--   `xcrysden` (default)
+- `xcrysden` (default)
 
 ### `logical :: write_hr`
 
@@ -1436,9 +1438,9 @@ outlined in Section [Automated lcr Transport Calculations: The 2c2 Geometry](tr
 
 The valid options for this parameter are:
 
--   `bulk` (default)
+- `bulk` (default)
 
--   `lcr`
+- `lcr`
 
 ### `real(kind=dp) :: tran_win_min`
 
@@ -1649,7 +1651,7 @@ The default value is `false`.
 ### `real(kind=dp) :: hr_cutoff`
 
 The absolute value of the smallest matrix element of the Hamiltonian in
-the WF basis. If $h_{mn}(\mathbf{R})>\:$` hr_cutoff`, then the matrix
+the WF basis. If $h_{mn}(\mathbf{R})>\:$`hr_cutoff`, then the matrix
 element $h_{mn}(\mathbf{R})$ is retained and used in the band structure
 interpolation (when `bands_plot_mode = cut`) or in the
 transport calculation. Otherwise it is deemed to be insignificant and is
@@ -1676,11 +1678,11 @@ plane (`two_dim`). The size of the projected vector is calculated, and
 
 The valid options for this parameter are:
 
--   `three_dim` (default)
+- `three_dim` (default)
 
--   `two_dim`
+- `two_dim`
 
--   `one_dim`
+- `one_dim`
 
 ### `character(len=20) :: one_dim_axis`
 
@@ -1690,10 +1692,10 @@ the Cartesian axes.
 
 The valid options for this parameter are:
 
--   `x`
+- `x`
 
--   `y`
+- `y`
 
--   `z`
+- `z`
 
 No default.

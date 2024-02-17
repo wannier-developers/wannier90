@@ -30,21 +30,21 @@ General Public Licence. See the file `LICENSE` that comes with the
 ### Is there a Tutorial available for `wannier90`?
 
 Yes! The `tutorials` directory of the `wannier90` distribution contains
-input files for a number of tutorial calculations. The ` doc` directory
+input files for a number of tutorial calculations. The `doc` directory
 contains the accompanying tutorial handout.
 
 ### Where do I get support for `wannier90`?
 
 There are a number of options:
 
-1.  The `wannier90` User Guide, available in the `doc` directory of the
+1. The `wannier90` User Guide, available in the `doc` directory of the
     distribution, and from the webpage
     (<http://www.wannier.org/user_guide.html>)
 
-2.  The `wannier90` webpage for the most recent announcements
+2. The `wannier90` webpage for the most recent announcements
     (<http://www.wannier.org>)
 
-3.  The `wannier90` mailing list (see
+3. The `wannier90` mailing list (see
     <http://www.wannier.org/forum.html>)
 
 ### Is there a mailing list for `wannier90`?
@@ -56,14 +56,14 @@ follow the instructions.
 
 ### I think I found a bug. How do I report it?
 
--   Check and double-check. Make sure it's a bug.
+- Check and double-check. Make sure it's a bug.
 
--   Check that it is a bug in `wannier90` and not a bug in the software
+- Check that it is a bug in `wannier90` and not a bug in the software
     interfaced to `wannier90`.
 
--   Check that you're using the latest version of `wannier90`.
+- Check that you're using the latest version of `wannier90`.
 
--   Send us an email. Make sure to describe the problem and to attach
+- Send us an email. Make sure to describe the problem and to attach
     all input and output files relating to the problem that you have
     found.
 
