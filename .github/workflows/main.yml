@@ -4,8 +4,8 @@ on:
   pull_request:
   push:
     branches:
-    - develop
-    
+      - develop
+
 jobs:
   pre-commit:
     runs-on: ubuntu-20.04
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        w90-binary-parallel: [ 'false', 'true' ]
+        w90-binary-parallel: ["false", "true"]
     name: Build and test `parallel=${{ matrix.w90-binary-parallel }}`
     steps:
       - name: checkout
@@ -66,3 +66,19 @@ jobs:
           path: |
             test-suite/tests/test*/test.err*
             test-suite/tests/test*/test.out*
+
+  docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install -r docs/requirements.txt
+      - run: mkdocs build -s
+        working-directory: ./docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENABLE_MKDOCS_GIT_COMMITTERS: False
