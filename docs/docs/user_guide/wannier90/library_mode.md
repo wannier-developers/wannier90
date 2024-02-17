@@ -12,7 +12,6 @@ the overlaps and projection have been computed, calling `wannier_run`
 activates the minimisation and plotting routines in `wannier90`.
 
 !!! warning
-
     The library mode ONLY works in serial. Please call
     it from a serial code, or if compiled in parallel, make sure to run it
     from a single MPI process.
@@ -21,11 +20,11 @@ You can find a minimal example of how the library mode can be used among
 the tests, in the file `test-suite/library-mode-test/test_library.F90`
 in the Wannier90 git repository.
 
-### Subroutines
+## Subroutines
 
-#### `wannier_setup`
+### `wannier_setup`
 
-```fortran
+```fortran title="Fortran"
 wannier_setup(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,
               kpt_latt,num_bands_tot,num_atoms,atom_symbols,atoms_cart,
               gamma_only,spinors,nntot,nnlist,nncell,num_bands,num_wann,proj_site,
@@ -54,9 +53,9 @@ The list of nearest neighbours of a particular k-point `nkp` is given by
 Additionally, the parameter `shell_list` may be specified in the
 `wannier90` input file.
 
-#### `wannier_run`
+### `wannier_run`
 
-```fortran
+```fortran title="Fortran"
 wannier_run(seed_name,mp_grid,num_kpts,real_lattice,recip_lattice,
             kpt_latt,num_bands,num_wann,nntot,num_atoms,atom_symbols,
             atoms_cart,gamma_only,M_matrix_orig,A_matrix,eigenvalues,

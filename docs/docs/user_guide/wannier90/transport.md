@@ -8,7 +8,7 @@ system. The results will be written to files `seedname_qc.dat` and
 The system for which transport properties are calculated is determined
 by the keyword `transport_mode`.
 
-### `transport_mode = bulk`
+## `transport_mode = bulk`
 
 Quantum conductance and density of states are calculated for a perfectly
 periodic one-dimensional conductor. If
@@ -20,7 +20,7 @@ allows the user to provide an external Hamiltonian matrix file
 Section [Post-Processing](parameters.md#post-processing)
 for more details of the keywords required for such calculations.
 
-### `transport_mode = lcr`
+## `transport_mode = lcr`
 
 Quantum conductance and density of states are calculated for a system
 where semi-infinite, left and right leads are connected through a
@@ -35,10 +35,10 @@ In `wannier90` two options exist for performing such calculations:
 
 - If `tran_read_ht = FALSE`, then the transport
     calculation is performed automatically using the Wannier functions
-    as a basis and the 2c2 geometry described in
-    Section [Automated lcr Transport Calculations: The 2c2 Geometry](#sec:2c2).
+    as a basis and the 2c2 geometry described in Section
+    [Automated lcr Transport Calculations: The 2c2 Geometry](#automated-lcr-transport-calculations-the-2c2-geometry).
 
-### Automated lcr Transport Calculations: The 2c2 Geometry {#sec:2c2}
+## Automated lcr Transport Calculations: The 2c2 Geometry
 
 Calculations using the 2c2 geometry provide a method to calculate the
 transport properties of an lcr system from a single
@@ -135,5 +135,5 @@ file:
 A further parameter related to these calculations is
 `tran_group_threshold`.
 
-Tutorial of [how 2c2 calculations are preformed](../../tutorials/tutorial_14.md) can be found in the
-`wannier90` Tutorial.
+Tutorial of [how 2c2 calculations are preformed](../../tutorials/tutorial_14.md)
+can be found in the `wannier90` Tutorial.

@@ -44,35 +44,41 @@ The only logical keyword is `calc_only_A`, eg,
 
 ### `Real_lattice` block
 
-    begin real_lattice
-     2.250000   0.000000   0.000000
-     0.000000   2.250000   0.000000
-     0.000000   0.000000   2.250000
-    end real_lattice
+```vi title="Input file"
+begin real_lattice
+ 2.250000   0.000000   0.000000
+ 0.000000   2.250000   0.000000
+ 0.000000   0.000000   2.250000
+end real_lattice
+```
 
 The real lattice vectors in units of Angstrom.
 
 ### `Recip_lattice` block
 
-    begin recip_lattice
-     2.792527   0.000000   0.000000
-     0.000000   2.792527   0.000000
-     0.000000   0.000000   2.792527
-    end recip_lattice
+```vi title="Input file"
+begin recip_lattice
+ 2.792527   0.000000   0.000000
+ 0.000000   2.792527   0.000000
+ 0.000000   0.000000   2.792527
+end recip_lattice
+```
 
 The reciprocal lattice vectors in units of inverse Angstrom.
 
 ### `Kpoints` block
 
-    begin kpoints
-      8
-      0.00000   0.00000   0.00000
-      0.00000   0.50000   0.00000
-      .
-      .
-      .
-      0.50000   0.50000   0.50000
-    end kpoints
+```vi title="Input file"
+begin kpoints
+  8
+  0.00000   0.00000   0.00000
+  0.00000   0.50000   0.00000
+  .
+  .
+  .
+  0.50000   0.50000   0.50000
+end kpoints
+```
 
 The first line in the block is the total number of k-points `num_kpts`.
 The subsequent `num_kpts` lines specify the k-points in crystallographic
@@ -80,15 +86,17 @@ co-ordinates relative to the reciprocal lattice vectors.
 
 ### `Projections` block
 
-    begin projections
-       n_proj
-       centre   l  mr  r   
-         z-axis   x-axis   zona
-       centre   l  mr  r   
-         z-axis   x-axis   zona
-       .
-       .
-    end projections
+```vi title="Input file"
+begin projections
+   n_proj
+   centre   l  mr  r
+     z-axis   x-axis   zona
+   centre   l  mr  r
+     z-axis   x-axis   zona
+   .
+   .
+end projections
+```
 
 Notes:
 
@@ -101,7 +109,9 @@ crystallographic co-ordinates relative to the direct lattice vectors.
 `l  mr  r`: three integers; $l$ and $m_\mathrm{r}$ specify the angular
 part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and $\mathrm{r}$
 specifies the radial part $R_{\mathrm{r}}(r)$ of the projection function
-(see Tables [Angular functions](projections.md#angular-functions), [Hybrids](projections.md#hybrids) and [Radial functions](projections.md#radial-functions)).
+(see Tables [Angular functions](projections.md#angular-functions),
+[Hybrids](projections.md#hybrids) and
+[Radial functions](projections.md#radial-functions)).
 
 `z-axis`: three real numbers; default is `0.0 0.0 1.0`; defines the axis
 from which the polar angle $\theta$ in spherical polar coordinates is
@@ -117,17 +127,19 @@ radial part of the atomic orbital. Units are in reciprocal Angstrom.
 
 ### `spinor_projections` block
 
-    begin spinor_projections
-       n_proj
-       centre   l  mr  r   
-        z-axis   x-axis   zona
-         spin spn_quant
-       centre   l  mr  r   
-        z-axis   x-axis   zona
-         spin spn_quant
-       .
-       .
-    end spinor_projections
+```vi title="Input file"
+begin spinor_projections
+   n_proj
+   centre   l  mr  r
+    z-axis   x-axis   zona
+     spin spn_quant
+   centre   l  mr  r
+    z-axis   x-axis   zona
+     spin spn_quant
+   .
+   .
+end spinor_projections
+```
 
 Notes: Only one of projections and spinor_projections should be defined.
 Variables are the same as the projections block with the addition of
@@ -141,12 +153,14 @@ Cartesian coordinates.
 
 ### `nnkpts` block
 
-    begin nnkpts
-      10
-      1   2   0  0  0
-      .
-      .
-    end nnkpts
+```vi title="Input file"
+begin nnkpts
+  10
+  1   2   0  0  0
+  .
+  .
+end nnkpts
+```
 
 First line: `nntot`, the number of nearest neighbours belonging to each
 k-point of the Monkhorst-Pack mesh
@@ -164,13 +178,15 @@ the actual $\mathbf{k+b}$ that we need.
 
 ### `exclude_bands` block
 
-    begin exclude_bands 
-      8 
-      1 
-      2 
-      .
-      .
-    end exclude_bands
+```vi title="Input file"
+begin exclude_bands 
+  8 
+  1 
+  2 
+  .
+  .
+end exclude_bands
+```
 
 To exclude bands (independent of k-point) from the calculation of the
 overlap and projection matrices, for example to ignore shallow-core
@@ -179,10 +195,12 @@ lines give the states for be excluded.
 
 ### `auto_projections` block
 
-    begin auto_projections
-       8
-       0
-    end auto_projections
+```vi title="Input file"
+begin auto_projections
+   8
+   0
+end auto_projections
+```
 
 This block is only printed if `auto_projections=true` in the input. The
 choice of an additional block has been made in order to maintain
@@ -207,11 +225,13 @@ method [@LinLin-ArXiv2017] is one way of generating the initial
 $A_{mn}^{(\mathbf{k})}$ in an automatic way. This has been implemented
 in the `pw2wannier90` interface code (you need v6.3 with the files
 provided in the `pwscf` folder of Wannier90, or v6.4), see for instance
-Tutorial [27](../../tutorials/tutorial_27.md) in the `wannier90` tutorial that shows how to use it.
+Tutorial [27](../../tutorials/tutorial_27.md) in the `wannier90` tutorial
+that shows how to use it.
 
 Moreover, also the automatic generation of initial projections with
 spinor WFs is implemented in the `pw2wannier90` interface. See Tutorial
-[31](../../tutorials/tutorial_31.md) in the `wannier90` tutorial that shows how to use it.
+[31](../../tutorials/tutorial_31.md) in the `wannier90` tutorial that shows
+how to use it.
 
 Another automatic projection method is projectability-disentangled
 Wannier function (PDWF) [@Qiao2023-pdwf], which uses pseudo-atomic
@@ -226,29 +246,34 @@ projection orbitals on, say, a carbon atom at (0.5,0.5,0.5) in
 fractional co-ordinates relative to the direct lattice vectors. In this
 case `seedname.win` will contain the following lines:
 
-    begin projections
-     C:l=-1
-    end projections
+```vi title="Input file"
+begin projections
+ C:l=-1
+end projections
+```
 
 and `seedname.nnkp`, generated on the first pass of `wannier90` (with
 `postproc_setup=T`), will contain:
 
-    begin projections
-       4
-       0.50000    0.50000    0.50000    -1  1  1
-         0.000  0.000  1.000   1.000  0.000  0.000   2.00 
-       0.50000    0.50000    0.50000    -1  2  1
-         0.000  0.000  1.000   1.000  0.000  0.000   2.00 
-       0.50000    0.50000    0.50000    -1  3  1
-         0.000  0.000  1.000   1.000  0.000  0.000   2.00 
-       0.50000    0.50000    0.50000    -1  4  1
-         0.000  0.000  1.000   1.000  0.000  0.000   2.00 
-    end projections
+```vi title="Input file"
+begin projections
+   4
+   0.50000    0.50000    0.50000    -1  1  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
+   0.50000    0.50000    0.50000    -1  2  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
+   0.50000    0.50000    0.50000    -1  3  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
+   0.50000    0.50000    0.50000    -1  4  1
+     0.000  0.000  1.000   1.000  0.000  0.000   2.00
+end projections
+```
 
 where the first line tells us that in total four projections are
 specified, and the subsequent lines provide the projection centre, the
-angular and radial parts of the orbital (see
-Section [Orbital Definitions](projections.md#orbital-definitions) for definitions), the $z$ and $x$ axes,
+angular and radial parts of the orbital (see Section
+[Orbital Definitions](projections.md#orbital-definitions) for definitions),
+the $z$ and $x$ axes,
 and the diffusivity and cut-off radius for the projection orbital.
 
 `pwscf`, or any other *ab initio* electronic structure code,
@@ -388,7 +413,7 @@ number is the eigenvalue.
 
 E.g.,
 
-```
+```vi title="Input file"
             1           1  -6.43858831271328
             2           1   19.3977795287297
             3           1   19.3977795287297
@@ -456,9 +481,8 @@ A number of keywords may be specified in the `pw2wannier90` input file:
     relevant if `write_unk=.true.`)
 
     !!! note
-
         Note that there is a small bug with this feature in v3.2 (and
-        subsequent patches) of ` quantum-espresso`. Please use a later
+        subsequent patches) of `quantum-espresso`. Please use a later
         version (if available) or the CVS version of `pw2wannier90.f90`,
         which has been fixed.
 
@@ -556,10 +580,12 @@ Then: `nsymmetry` blocks of data. Each block (separated by a blank line)
 consists of four lines. The order of the data in each block is as
 follows:
 
+```vi title="Input file"
       R(1,1)   R(2,1)   R(3,1)
       R(1,2)   R(2,2)   R(3,2)
       R(1,3)   R(2,3)   R(3,3)
        t(1)     t(2)     t(3)   
+```
 
 Here, $R$ is the rotational part of symmetry operations ($3\times3$
 matrix), and $\bf t$ is the fractional translation in the unit of
@@ -580,9 +606,8 @@ the [website of symWannier](https://github.com/wannier-utils-dev/symWannier)
 and Ref. [@Koretsune2023].
 
 !!! note
-
     The `symWannier` package also has the ability to construct
-    symmetry-adapted Wannier functions only from the `.mmn, `.amn` and `.eig`
+    symmetry-adapted Wannier functions only from the `.mmn,`.amn` and `.eig`
     files in the IBZ and some symmetry information.
 
 The procedure is as follows.
@@ -633,10 +658,10 @@ The procedure is as follows.
 INPUT
 
 The format is the same as `seedname.mmn`, except that the number of
-kpoints is the number of k-points in the IBZ. See also [the section on the  `seedname.mmn` file](#seednamemmn-file).
+kpoints is the number of k-points in the IBZ. See also
+[the section on the `seedname.mmn` file](#seednamemmn-file).
 
-`seedname.iamn` file
---------------------
+## `seedname.iamn` file
 
 INPUT
 
@@ -644,8 +669,7 @@ The format is the same as `seedname.amn`, except that the number of
 kpoints is the number of k-points in the IBZ. See also
 See also [the section on the  `seedname.amn` file](#seednameamn-file).
 
-`seedname.ieig` file
---------------------
+## `seedname.ieig` file
 
 INPUT
 
@@ -653,8 +677,7 @@ The format is the same as `seedname.eig`, except that the number of
 kpoints is the number of k-points in the IBZ. See also
 See also [the section on the  `seedname.eig` file](#seednameeig-file).
 
-`seedname.isym` file
---------------------
+## `seedname.isym` file
 
 INPUT
 
@@ -674,30 +697,30 @@ case). The order of the data in each block is as follows:
 
 Non-spinor case:
 
-```
-       a comment
-       R(1,1)   R(2,1)   R(3,1)
-       R(1,2)   R(2,2)   R(3,2)
-       R(1,3)   R(2,3)   R(3,3)
-        t(1)     t(2)     t(3)
-        T
-        invs
+```vi title="Input file"
+a comment
+R(1,1)   R(2,1)   R(3,1)
+R(1,2)   R(2,2)   R(3,2)
+R(1,3)   R(2,3)   R(3,3)
+ t(1)     t(2)     t(3)
+ T
+ invs
 ```
 
 Spinor case:
 
-```
-       a comment
-       R(1,1)   R(2,1)   R(3,1)
-       R(1,2)   R(2,2)   R(3,2)
-       R(1,3)   R(2,3)   R(3,3)
-        t(1)     t(2)     t(3)
-        T
-       u(1,1).real  u(1,1).imag
-       u(2,1).real  u(2,1).imag
-       u(1,2).real  u(1,2).imag
-       u(2,2).real  u(2,2).imag
-        invs
+```vi title="Input file"
+a comment
+R(1,1)   R(2,1)   R(3,1)
+R(1,2)   R(2,2)   R(3,2)
+R(1,3)   R(2,3)   R(3,3)
+ t(1)     t(2)     t(3)
+ T
+u(1,1).real  u(1,1).imag
+u(2,1).real  u(2,1).imag
+u(1,2).real  u(1,2).imag
+u(2,2).real  u(2,2).imag
+ invs
 ```
 
 Here, $R$ is the rotational part of symmetry operations, ($3 \times 3$

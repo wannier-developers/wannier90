@@ -43,7 +43,7 @@ treated as comments. Most keywords have a default value that is used
 unless the keyword is given in `seedname.win`. Keywords can be set in
 any of the following ways
 
-```
+```vi title="Input file"
 num_wann 4
 num_wann = 4
 num_wann : 4
@@ -52,12 +52,15 @@ num_wann : 4
 A logical keyword can be set to `true` using any of the following
 strings: `T`, `true`, `.true.`.
 
-For further examples see Section [Master input file: `seedname.win`](sample_inputs.md#winfile) and the the `wannier90` Tutorial.
+For further examples see Section
+[Master input file: `seedname.win`](sample_inputs.md#winfile)
+and the the `wannier90` Tutorial.
 
 ## Keyword List
 
 ### System Parameters
 
+<!-- markdownlint-disable MD013 -->
 |      Keyword      | Type | Description                                                                      |
 |:-----------------:|:----:|:---------------------------------------------------------------------------------|
 |     num_wann      |  I   | Number of WF                                                                     |
@@ -74,6 +77,7 @@ For further examples see Section [Master input file: `seedname.win`](sample_inp
 |   skip_B1_tests   |  L   | Check the condition B1 of Ref [@marzari-prb97].                                                   |
 |      nnkpts       |  I   | Explicit list of nearest-neighbour k-points.                                     |
 |     kmesh_tol     |  R   | The tolerance to control if two kpoint belong to the same shell                  |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords defining the system. Argument types are
 represented by, I for a integer, R for a real number, P for a physical
@@ -81,8 +85,9 @@ value, L for a logical value and S for a text string.
 \* `atoms_cart` and `atoms_frac` may not both be defined in the same input
 file.
 
-### Job Control
+### Job Control Parameters
 
+<!-- markdownlint-disable MD013 -->
 |       Keyword        | Type | Description                                                                                     |
 |:--------------------:|:----:|:------------------------------------------------------------------------------------------------|
 |    postproc_setup    |  L   | To output the `seedname.nnkp` file                                                              |
@@ -101,6 +106,7 @@ file.
 |      write_xyz       |  L   | To write atomic positions and final centres in xyz file format                                  |
 |    write_vdw_data    |  L   | To write data for futher processing by w90vdw utility                                           |
 |    write_hr_diag     |  L   | To write the diagonal elements of the Hamiltonian in the Wannier basis to `seedname.wout` (in eV) |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords defining job control. Argument types are
 represented by, I for a integer, R for a real number, P for a physical
@@ -109,6 +115,7 @@ translate_home_cell only relevant if `write_xyz` is `.true.`
 
 ### Disentanglement Parameters
 
+<!-- markdownlint-disable MD013 -->
 |          Keyword           | Type | Description                                                            |
 |:--------------------------:|:----:|:-----------------------------------------------------------------------|
 |        dis_win_min         |  P   | Bottom of the outer energy window                                      |
@@ -122,6 +129,7 @@ translate_home_cell only relevant if `write_xyz` is `.true.`
 |      dis_spheres_num       |  I   | Number of spheres in k-space where disentaglement is performed         |
 |   dis_spheres_first_wann   |  I   | Index of the first band to be considered a Wannier function            |
 |        dis_spheres         |  R   | List of centres and radii, for disentanglement only in spheres         |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the disentanglement. Argument
 types are represented by, I for a integer, R for a real number, P for a
@@ -129,6 +137,7 @@ physical value, L for a logical value and S for a text string.
 
 ### Wannierise Parameters
 
+<!-- markdownlint-disable MD013 -->
 |        Keyword        | Type | Description                                                                                                      |
 |:---------------------:|:----:|:-----------------------------------------------------------------------------------------------------------------|
 |       num_iter        |  I   | Number of iterations for the minimisation of $\Omega$                                                            |
@@ -153,6 +162,7 @@ physical value, L for a logical value and S for a text string.
 |    slwf_constrain     |  L   | Whether to constrain the centres of the objective WFs                                                            |
 |      slwf_lambda      |  R   | Value of the Lagrange multiplier for constraining the objective WFs                                              |
 |     slwf_centres      |  P   | The centres to which the objective WFs are to be constrained                                                     |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the wannierisation. Argument
 types are represented by, I for a integer, R for a real number, P for a
@@ -164,6 +174,7 @@ window.
 
 ### Plot Parameters
 
+<!-- markdownlint-disable MD013 -->
 |          Keyword           | Type | Description                                                  |
 |:--------------------------:|:----:|:-------------------------------------------------------------|
 |        wannier_plot        |  L   | Plot the WF                                                  |
@@ -202,6 +213,7 @@ window.
 | ws_distance_tol                            |  R   | Absolute tolerance for the distance to equivalent positions. |
 | ws_search_size                           |  I   | Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell |
 | write_u_matrices                           |  L   | Write $U^{(\bm{k})}$ and $U^{dis(\bm{k})}$ matrices to files |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the plotting. Argument types
 are represented by, I for a integer, R for a real number, P for a
@@ -210,6 +222,7 @@ applies when `wannier_plot_format` is `cube`.
 
 ### Transport Parameters
 
+<!-- markdownlint-disable MD013 -->
 |         Keyword          | Type | Description                                               |
 |:------------------------:|:----:|:----------------------------------------------------------|
 |        transport         |  L   | Calculate quantum conductance and density of states       |
@@ -236,6 +249,7 @@ applies when `wannier_plot_format` is `cube`.
 |     dist_cutoff_mode     |  S   | Dimension in which the distance between WF is calculated  |
 |       one_dim_axis       |  S   | Extended direction for a one-dimensional system           |
 | translation_centre_frac  |  R   | Centre of the unit cell to which final WF are translated  |
+<!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling transport. Argument types are
 represented by, I for a integer, R for a real number, P for a physical
@@ -259,7 +273,7 @@ Default `num_bands`=`num_wann`
 
 The cell lattice vectors should be specified in Cartesian coordinates.
 
-```
+```vi title="Input file"
 begin unit_cell_cart
 [units]
 ```
@@ -270,7 +284,7 @@ A_{2x} & A_{2y} & A_{2z} \\
 A_{3x} & A_{3y} & A_{3z}
 \end{array}
 
-```
+```vi title="Input file"
 end unit_cell_cart
 ```
 
@@ -292,7 +306,7 @@ the input file.
 
 #### Cartesian coordinates
 
-```
+```vi title="Input file"
 begin atoms_cart
 [units]
 ```
@@ -303,7 +317,7 @@ Q  & R^{Q}_{x} & R^{Q}_{y} & R^{Q}_{z} \\
 \vdots
 \end{array}
 
-```
+```vi title="Input file"
 end atoms_cart
 ```
 
@@ -315,7 +329,7 @@ not present, the default is `ang`.
 
 #### Fractional coordinates
 
-```
+```vi title="Input file"
 begin atoms_frac
 ```
 
@@ -325,7 +339,7 @@ Q  & F^{Q}_{1} & F^{Q}_{2} & F^{Q}_{3} \\
 \vdots
 \end{array}
 
-```
+```vi title="Input file"
 end atoms_frac
 ```
 
@@ -339,7 +353,7 @@ the cell lattice vectors $\mathbf{A}_i$, $i\in [1,3]$.
 Dimensions of the regular (Monkhorst-Pack) k-point mesh. For example,
 for a $2\times2\times2$ grid:
 
-```
+```vi title="Input file"
 mp_grid : 2  2  2
 ```
 
@@ -354,7 +368,7 @@ primitive reciprocal lattice vectors $\mathbf{B}_{i}$, $i \in [1,3]$.
 The position of each k-point in this list assigns its numbering; the
 first k-point is k-point 1, the second is k-point 2, and so on.
 
-```
+```vi title="Input file"
 begin kpoints
 ```
 
@@ -364,7 +378,7 @@ begin kpoints
 \vdots
 \end{array}
 
-```
+```vi title="Input file"
 end kpoints
 ```
 
@@ -450,11 +464,13 @@ Specifies the nearest-neighbour k-points which are written to the
 `.nnkp` file. This can be used to explicitly specify which overlap
 matrices should be calculated.
 
-    begin nnkpts
-    1   2   0  0  0
-    .
-    .
-    end nnkpts
+```vi title="Input file"
+begin nnkpts
+1   2   0  0  0
+.
+.
+end nnkpts
+```
 
 Each nearest neighbour $\mathbf{k + b}$ is given by a line of 5
 integers. The first specifies the k-point number `nkp` of $\mathbf{k}$.
@@ -484,7 +500,7 @@ generate an initial guess for the unitary transformations. This data
 will be written in the `seedname.nnkp` file to be used by a
 first-principles code.
 
-```
+```vi title="Input file"
 begin projections
 .  
 .  
@@ -802,7 +818,7 @@ radius $r_{i}$ in inverse angstrom (on the same line).
 
 The number of lines must be equal to `dis_spheres_num`.
 
-```
+```vi title="Input file"
 begin dis_spheres
 ```
 
@@ -812,7 +828,7 @@ begin dis_spheres
 \vdots
 \end{array}
 
-```
+```vi title="Input file"
 end dis_spheres
 ```
 
@@ -1011,7 +1027,8 @@ If `slwf_constrain=true`, then the centres of the objective Wannier
 functions are constrained to either the centres of the first `slwf_num`
 orbitals in the `projections` block or to new positions specified in the
 `slwf_centres` block (see
-Sec. [Constraints on centres](#constraints-on-centres)). In this case, a modified spread
+Sec. [Constraints on centres](#constraints-on-centres)). In this case,
+a modified spread
 functional, $\Omega_c$, with the addition of a constraint term, as
 described in Ref. [@Marianetti].
 
@@ -1040,7 +1057,7 @@ functions.
 
 The block below shows an example of how to set the constraints:
 
-```
+```vi title="Input file"
 begin slwf_centres
    2  0.0   0.0  0.0
    4  0.25  0.0  0.0
@@ -1088,7 +1105,7 @@ after the minimisation of the spread.
 The default behaviour is to plot all WF. For example, to plot WF 4, 5, 6
 and 10:
 
-```
+```vi title="Input file"
 wannier_plot_list : 4-6, 10
 ```
 
@@ -1130,7 +1147,6 @@ of dealing with non-orthogonal lattice vectors is VESTA
 (<http://jp-minerals.org/vesta/en/>).
 
 !!! note
-
     It's worth noting that another visualisation program, VMD
     (<http://www.ks.uiuc.edu/Research/vmd>), is able to deal with
     certain special cases of non-orthogonal lattice vectors; see
@@ -1231,7 +1247,7 @@ Each line gives the start and end point (with labels) for a section of
 the path. Values are in fractional coordinates with respect to the
 primitive reciprocal lattice vectors.
 
-```
+```vi title="Input file"
 begin kpoint_path
 ```
 
@@ -1241,7 +1257,7 @@ L & 0.0 & 0.0 & 1.0 & N & 0.0 & 1.0 & 1.0 \\
 \vdots
 \end{array}
 
-```
+```vi title="Input file"
 end kpoint_path
 ```
 
@@ -1278,7 +1294,7 @@ in the `seedname_band.dat` file, and a corresponding gnuplot script to
 
 For example, to project on to WFs 2, 6, 7, 8 and 12:
 
-```
+```vi title="Input file"
 bands_plot_project : 2, 6-8, 12
 ```
 
@@ -1331,11 +1347,18 @@ The default value for `fermi_surface_num_points` is 50.
 
 ### `real(kind=dp) :: fermi_energy`
 
-The Fermi energy in eV. This parameter is written into the bxsf file. If
-`fermi_energy` is specified, `fermi_energy_min`, `fermi_energy_max`,
+The Fermi energy in eV.
+If `fermi_energy` is specified, `fermi_energy_min`, `fermi_energy_max`,
 and `fermi_energy_step` should not be specified, and vice-versa.
 
 The default value is 0.0
+
+- For Fermi surface:
+    This parameter is written into the bxsf file.
+
+- For transport:
+    The energy axis of the quantum conductance and
+    density of states data will be shifted rigidly by this amount.
 
 ### `real(kind=dp) :: fermi_energy_min`
 
@@ -1345,7 +1368,6 @@ each $\varepsilon_F$. This is the minimum value in the range (in
 eV).
 
 !!! note
-
     Scanning the Fermi level is currently supported only by the
     `postw90` module `berry`, for `berry_task=ahc,morb`. For all other
     functionalities that require a knowledge of $\varepsilon_F$, use
@@ -1434,7 +1456,8 @@ must be provided by the five external files:
 `seedname_htL.dat, seedname_htLC.dat, seedname_htC.dat, seedname_htCR.dat, seedname_htR.dat`.
 If `tran_read_ht = false` then the Hamiltonian matrices
 are found automatically provided the supercell adheres to conditions
-outlined in Section [Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#sec:2c2).
+outlined in Section
+[Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#automated-lcr-transport-calculations-the-2c2-geometry).
 
 The valid options for this parameter are:
 
@@ -1462,13 +1485,6 @@ Sampling interval of the energy values from `tran_win_min` to
 `tran_win_max`. Units are eV.
 
 The default value is 0.01.
-
-### `real(kind=dp) :: fermi_energy`
-
-The Fermi energy in eV. The energy axis of the quantum conductance and
-density of states data will be shifted rigidly by this amount.
-
-The default value is 0.0
 
 ### `integer :: tran_num_bb`
 
@@ -1562,7 +1578,8 @@ If `tran_write_ht = true`, then the Hamiltonian matrix
 formatted for the transport calculation will be read from a set of files
 described in the parameter `transport_mode`. Set
 `tran_write_ht = false` to perform automated lcr
-calculations (see Section [Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#sec:2c2)).
+calculations (see Section
+[Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#automated-lcr-transport-calculations-the-2c2-geometry)).
 
 The default value is `false`.
 
@@ -1614,7 +1631,8 @@ Tolerance when determining whether two values
 $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{nml} \|$ and
 $\|\mathbf{d}_{ij\mathbf{R}} + \tilde{\mathbf{R}}_{n'm'l'} \|$ (as
 defined in
-chapter [Some notes on the interpolation](notes_interpolations.md)) for the shortest distance between two
+chapter [Some notes on the interpolation](notes_interpolations.md))
+for the shortest distance between two
 Wannier functions are equivalent. If the difference in distance (in
 Angstrom) is less than `ws_distance_tol`, they are taken to be
 equivalent.
@@ -1625,7 +1643,8 @@ The default value is $10^{-5}$.
 
 Maximum absolute value for the integers $n,m,l$ that identify the
 super-lattice vectors $\tilde{\mathbf{R}}_{nml}$ (see
-chapter [Some notes on the interpolation](notes_interpolations.md)) when searching for points inside the
+chapter [Some notes on the interpolation](notes_interpolations.md)) when
+searching for points inside the
 Wigner-Seitz cell. If `ws_search_size` is provided as a single integer,
 then the number of repetitions of the Born-von Karman cell is the same
 along all three linear dimensions; otherwise, if three integers are
