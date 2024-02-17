@@ -47,7 +47,7 @@ w90spn2spn: ../../w90spn2spn.x
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) ../w90spn2spn.F90 $(LDOPTS) $(OBJS) $(LIBS) -o ../../w90spn2spn.x
 
 ../../wannier90.x: $(LIBRARYV2) ../wannier_prog.F90
-	$(COMPILER) $(POSTOPTS) $(FCOPTS)  ../wannier_prog.F90 $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) ../wannier_prog.F90 $(LDOPTS) $(LIBRARYV2) $(LIBS) -o ../../wannier90.x
 
 $(LIBRARYV2): $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBRARYV2) $(OBJS)
@@ -101,7 +101,7 @@ library_interface.o : ../library_interface.F90 \
 c_interface.o : ../c_interface.F90 \
 	library_interface.o comms.o constants.o error_base.o io.o kmesh.o overlap.o plot.o transport.o \
 	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
-	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../c_interface.F90
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) --std=f2018 -c ../c_interface.F90
 
 constants.o: ../constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../constants.F90

@@ -21,6 +21,7 @@ void cset_option_intx(void*, CFI_cdesc_t*, int*, int);
 void coverlaps(void*, int&);
 void cdisentangle(void*, int&);
 void cwannierise(void*, int&);
+void cproject(void*, int&);
 
 void* w90_create();
 void w90_delete(void*);

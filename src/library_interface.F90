@@ -395,6 +395,14 @@ contains
       return
     endif
 
+    ! if not already initialised, set disentanglement window to limits of spectrum
+    if (common_data%dis_manifold%win_min == -huge(0.0_dp)) common_data%dis_manifold%win_min = minval(common_data%eigval)
+    if (common_data%dis_manifold%win_max == huge(0.0_dp)) common_data%dis_manifold%win_max = maxval(common_data%eigval)
+    if (common_data%dis_manifold%frozen_states) then
+      if (common_data%dis_manifold%froz_min == -huge(0.0_dp)) &
+        common_data%dis_manifold%froz_min = common_data%dis_manifold%win_min
+    endif
+
     if (common_data%num_bands > common_data%num_wann) then
       call dis_main(common_data%dis_control, common_data%dis_spheres, common_data%dis_manifold, &
                     common_data%kmesh_info, common_data%kpt_latt, common_data%sitesym, &
@@ -421,10 +429,10 @@ contains
     endif
   end subroutine w90_disentangle
 
-  subroutine w90_project_overlap(common_data, istdout, istderr, ierr) !fixme(jj) rename more sensibly
+  subroutine w90_project_overlap(common_data, istdout, istderr, ierr)
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
-    use w90_overlap, only: overlap_project
+    use w90_overlap, only: overlap_project, overlap_project_gamma
 
     implicit none
 
@@ -439,23 +447,42 @@ contains
     ierr = 0
 
     if (.not. associated(common_data%m_matrix_local)) then
-      call set_error_fatal(error, 'm_matrix_local not set for projovlp call', common_data%comm)
+      call set_error_fatal(error, 'm_matrix_local not set for w90_project_overlap call', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    else if (.not. associated(common_data%u_opt)) then
+      call set_error_fatal(error, 'u_opt not set for w90_project_overlap call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     else if (.not. associated(common_data%u_matrix)) then
-      call set_error_fatal(error, 'u_matrix not set for projovlp call', common_data%comm)
+      call set_error_fatal(error, 'u_matrixt not set for w90_project_overlap call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
 
     if (.not. common_data%have_disentangled) then
-      ! fixme (jj) there is also a gamma only specialisation of this
-      call overlap_project(common_data%sitesym, common_data%m_matrix_local, common_data%u_matrix, &
-                           common_data%kmesh_info%nnlist, common_data%kmesh_info%nntot, &
-                           common_data%num_wann, common_data%num_kpts, common_data%num_wann, &
-                           common_data%print_output%timing_level, common_data%lsitesymmetry, &
-                           istdout, common_data%timer, common_data%dist_kpoints, error, &
-                           common_data%comm)
+      if (common_data%num_wann /= common_data%num_bands) then
+        call set_error_fatal(error, 'w90_project_overlap: num_bands \= num_wann but disentanglement() has not called', &
+                             common_data%comm)
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      endif
+
+      common_data%u_matrix(:, :, :) = common_data%u_opt(:, :, :) ! u_opt contains initial projections
+
+      if (common_data%gamma_only) then
+        call overlap_project_gamma(common_data%m_matrix_local, common_data%u_matrix, &
+                                   common_data%kmesh_info%nntot, common_data%num_wann, &
+                                   common_data%print_output%timing_level, istdout, &
+                                   common_data%timer, error, common_data%comm)
+      else
+        call overlap_project(common_data%sitesym, common_data%m_matrix_local, common_data%u_matrix, &
+                             common_data%kmesh_info%nnlist, common_data%kmesh_info%nntot, &
+                             common_data%num_wann, common_data%num_kpts, common_data%num_wann, &
+                             common_data%print_output%timing_level, common_data%lsitesymmetry, &
+                             istdout, common_data%timer, common_data%dist_kpoints, error, &
+                             common_data%comm)
+      endif
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
@@ -617,7 +644,6 @@ contains
     complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
 
     common_data%m_matrix_local => m_orig
-    !common_data%m_orig => m_orig
   end subroutine w90_set_m_local
 
   subroutine w90_set_u_matrix(common_data, u_matrix)
@@ -645,13 +671,6 @@ contains
     real(kind=dp), intent(in), target :: eigval(:, :)
 
     common_data%eigval => eigval
-    ! if not already initialised, set disentanglement window to limits of spectrum
-    if (common_data%dis_manifold%win_min == -huge(0.0_dp)) common_data%dis_manifold%win_min = minval(common_data%eigval)
-    if (common_data%dis_manifold%win_max == huge(0.0_dp)) common_data%dis_manifold%win_max = maxval(common_data%eigval)
-    if (common_data%dis_manifold%frozen_states) then
-      if (common_data%dis_manifold%froz_min == -huge(0.0_dp)) &
-        common_data%dis_manifold%froz_min = common_data%dis_manifold%win_min
-    endif
   end subroutine w90_set_eigval
 
   subroutine w90_set_constant_bohr_to_ang(common_data, bohr_to_angstrom)

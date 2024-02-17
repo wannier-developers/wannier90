@@ -257,7 +257,6 @@ program wannier
     if (ierr /= 0) stop
 
     if (.not. ldsnt) then
-      call w90_project_overlap(common_data, stdout, stderr, ierr)
       if (ierr /= 0) stop
     endif
   endif
@@ -270,6 +269,7 @@ program wannier
   endif
 
   if (lwann) then
+    call w90_project_overlap(common_data, stdout, stderr, ierr)
     call w90_wannierise(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
     call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
@@ -494,40 +494,19 @@ contains
     ierr = 0
 
     if (.not. common_data%setup_complete) then
-      !call w90_create_kmesh(common_data, istdout, istderr, ierr)
       call set_error_fatal(error, 'kmesh is not setup before calling overlaps read routine', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
       if (ierr > 0) return
     endif
 
-    if (common_data%num_bands > common_data%num_wann) then ! disentanglement case
-      call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%sitesym, common_data%u_opt, &
-                        common_data%m_matrix_local, common_data%num_bands, common_data%num_kpts, common_data%num_proj, &
-                        common_data%num_wann, common_data%print_output, common_data%print_output%timing_level, cp_pp, &
-                        common_data%gamma_only, common_data%lsitesymmetry, common_data%use_bloch_phases, &
-                        common_data%seedname, istdout, common_data%timer, common_data%dist_kpoints, error, &
-                        common_data%comm)
-    else
-      if (.not. associated(common_data%u_matrix)) then
-        call set_error_fatal(error, 'u_matrix not associated at overlaps read routine', common_data%comm)
-        call prterr(error, ierr, istdout, istderr, common_data%comm)
-        return
-      endif
-      if (.not. associated(common_data%m_matrix_local)) then
-        call set_error_fatal(error, 'm_matrix_local not associated at overlaps read routine', common_data%comm)
-        call prterr(error, ierr, istdout, istderr, common_data%comm)
-        return
-      endif
-
-      call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%sitesym, &
-                        common_data%u_matrix, common_data%m_matrix_local, common_data%num_bands, &
-                        common_data%num_kpts, common_data%num_proj, common_data%num_wann, &
-                        common_data%print_output, common_data%print_output%timing_level, cp_pp, &
-                        common_data%gamma_only, common_data%lsitesymmetry, &
-                        common_data%use_bloch_phases, common_data%seedname, istdout, &
-                        common_data%timer, common_data%dist_kpoints, error, common_data%comm)
-    endif
+    ! projections are stored in u_opt
+    call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%sitesym, common_data%u_opt, &
+                      common_data%m_matrix_local, common_data%num_bands, common_data%num_kpts, common_data%num_proj, &
+                      common_data%num_wann, common_data%print_output, common_data%print_output%timing_level, cp_pp, &
+                      common_data%gamma_only, common_data%lsitesymmetry, common_data%use_bloch_phases, &
+                      common_data%seedname, istdout, common_data%timer, common_data%dist_kpoints, error, &
+                      common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return

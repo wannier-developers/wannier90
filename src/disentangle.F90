@@ -60,7 +60,6 @@ contains
     real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    !complex(kind=dp), intent(inout) :: a_matrix(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix(:, :, :) ! (num_wann, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :) ! (num_bands, num_wann, num_kpts)
     complex(kind=dp), intent(inout) :: m_matrix_orig_local(:, :, :, :) ! this is the only "m matrix" here now
@@ -359,7 +358,6 @@ contains
         m_matrix_local(1:num_wann, 1:num_wann, nn, nkp) = cww(:, :)
       enddo
     enddo
-    ! at this point m_matrix_orig_local may be deassociated/deallocated
 
     deallocate (cwb)
     deallocate (cww)
