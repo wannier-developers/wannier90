@@ -1,4 +1,4 @@
-# Tutorials Using the pwscf Interface {#examples-using-the-pwscf-interface .unnumbered}
+# Tutorials Using the pwscf Interface
 
 The `pwscf` plane-wave, density-functional theory code,
 which is available as part of the

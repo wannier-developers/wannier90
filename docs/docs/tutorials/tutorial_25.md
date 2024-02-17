@@ -67,7 +67,7 @@
     1. serial execution
     2. example of parallel execution with 8 MPI processes
 
-## Shift current $\sigma^{abc}$ {#shift-current-sigmaabc .unnumbered}
+## Shift current $\sigma^
 
 The shift current tensor of GaAs has only one independent component that
 is finite, namely $\sigma^{xyz}$. For its computation, set

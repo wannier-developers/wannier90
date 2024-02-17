@@ -1,6 +1,6 @@
 # 11: Silicon &#151; Valence and low-lying conduction states
 
-## Valence States {#valence-states .unnumbered}
+## Valence States
 
 - Outline: *Obtain MLWFs for the valence bands of silicon.*
 
@@ -72,7 +72,7 @@ and re-running `wannier90`. Visualise them using `XCrySDen`, e.g.,
 xcrysden --xsf silicon_00001.xsf
 ```
 
-## Valence + Conduction States {#valence-conduction-states .unnumbered}
+## Valence + Conduction States
 
 - Outline: *Obtain MLWFs for the valence and low-lying conduction-band
     states of Si. Plot the interpolated bandstructure. Apply a scissors
@@ -129,7 +129,7 @@ position of the inner and outer energy windows are shown in
     The k-point path for the bandstructure interpolation is set in the
     `kpoint_path` block. Try plotting along different paths.
 
-## Further ideas {#further-ideas-2 .unnumbered}
+## Further ideas
 
 - Compare the Wannier-interpolated bandstructure with the full
     `pwscf` bandstructure. Recompute the MLWFs using a finer

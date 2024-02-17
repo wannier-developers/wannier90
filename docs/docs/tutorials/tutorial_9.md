@@ -86,7 +86,7 @@ and regenerate the MLWFs (i.e., compute the ground-state charge density
 and Bloch states using `pwscf`, etc.) and look at the change
 in the second MLWF.
 
-## Further ideas {#further-ideas-1 .unnumbered}
+## Further ideas
 
 - Look at MLWFs for other groups of bands. What happens if you form
     MLWFs for the whole valence manifold?

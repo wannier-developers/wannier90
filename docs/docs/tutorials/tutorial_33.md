@@ -61,7 +61,7 @@
     postw90.x bc2n
     ```
 
-## Expansion coefficients {#expansion-coefficients .unnumbered}
+## Expansion coefficients
 
 For computing $k\cdot p$ expansion coefficients as given by
 quasi-degenerate (Löwdin) perturbation theory, set
@@ -102,7 +102,10 @@ fermi_energy = [insert your value here]
 
 On output, the program generates three files, namely
 `SEED-kdotp_0.dat`, `SEED-kdotp_1.dat` and `SEED-kdotp_2.dat`, which
-correspond to the zeroth, first and second order expansion coefficients, respectively. The dimension of the matrix contained in each file is $3^{l}\times N^{2}$, where $N$ is the number of bands set by `kdotp_num_bands`, and $l$ is the order of the expansion term (currently $l=0,1$ or $2$).
+correspond to the zeroth, first and second order expansion coefficients,
+respectively. The dimension of the matrix contained in each file is
+$3^{l}\times N^{2}$, where $N$ is the number of bands set by `kdotp_num_bands`,
+and $l$ is the order of the expansion term (currently $l=0,1$ or $2$).
 
 These coefficients can be used, among other things, to compute the
 energy dispersion of the bands of interest around the chosen

@@ -5,7 +5,7 @@
     coefficient and the thermal conductivity in the constant relaxation
     time approximation using the `BoltzWann` module.*
 
-## If you want to use Quantum ESPRESSO {#if-you-want-to-use-quantum-espresso .unnumbered}
+## If you want to use Quantum ESPRESSO
 
 - Directory: `tutorials/tutorial16-withqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
 
@@ -21,7 +21,7 @@
 
     - `Si.win` *The `wannier90` and `postw90` input file*
 
-## If you do not want to use Quantum ESPRESSO {#if-you-do-not-want-to-use-quantum-espresso .unnumbered}
+## If you do not want to use Quantum ESPRESSO
 
 - Directory: `tutorials/tutorial16-noqe/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial16)*
 
@@ -113,7 +113,7 @@ Using your favourite plotting program, plot columns 1 and 3 of the
 `Si_seebeck.dat` file to inspect the $S_{xx}$ component of the Seebeck
 coefficient as a function of the chemical potential $\mu$, at $T=300$ K.
 
-## Further ideas {#further-ideas-4 .unnumbered}
+## Further ideas
 
 - Change the interpolation to a $60\times 60\times 60$ mesh and run
     again `postw90` to check if the results for the transport properties

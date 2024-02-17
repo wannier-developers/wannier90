@@ -67,7 +67,7 @@
     1.     serial execution
     2.     example of parallel execution with 8 MPI processes
 
-## ac spin Hall conductivity {#ac-spin-hall-conductivity .unnumbered}
+## ac spin Hall conductivity
 
 The spin Hall conductivity is also dependent on the frequency $\omega$
 in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:kubo_shc) of the User Guide.
@@ -107,7 +107,7 @@ plot 'GaAs-shc-freqscan.dat' u 2:3 w l title 'Re',
 and then compare the result with Fig. 4 in Ref. [@qiao-prb2018] or the
 Solution Booklet.
 
-## Notes {#notes-2 .unnumbered}
+## Notes
 
 - When calculating ac SHC, adaptive smearing can be used by add the
     following keywords in the `GaAs.win`,

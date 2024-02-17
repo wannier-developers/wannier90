@@ -71,7 +71,7 @@ already run that example, you can reuse the output files from steps
     1. serial execution
     2. example of parallel execution with 8 MPI processes
 
-## Berry curvature plots {#berry-curvature-plots .unnumbered}
+## Berry curvature plots
 
 The Berry curvature $\Omega_{\alpha\beta}({\bf k})$ of the occupied
 states is defined in this [equation](../user_guide/postw90/berry.md#mjx-eqn:eq:ahc)  of the User Guide. The following lines
@@ -115,7 +115,7 @@ Compare with Fig. 3 in Ref. [@yao-prl04]. Note how the Berry curvature
 "hot-spots" tend to occur near spin-orbit-induced avoided crossings (the
 Fermi lines with and without spin-orbit were generated in Tutorial [17](tutorial_17.md)).
 
-## Anomalous Hall conductivity {#anomalous-hall-conductivity .unnumbered}
+## Anomalous Hall conductivity
 
 The intrinsic anomalous Hall conductivity (AHC) is proportional to the
 BZ integral of the Berry curvature. In bcc Fe with the magnetization
@@ -159,7 +159,7 @@ Ref. [@lopez-prb12]. To report in `Fe.wpout` the decomposition of the
 total AHC into these three terms, set `iprint` (verbosity level) to a
 value larger than one in `Fe.win`.
 
-## Optical conductivity {#optical-conductivity .unnumbered}
+## Optical conductivity
 
 The optical conductivity tensor of bcc Fe with magnetization along
 $\hat{\bf z}$ has the form
@@ -240,7 +240,7 @@ set yrange[-5:15]
 plot 'Fe-kubo_A_xy.dat' u 1:(\$1)\*(\$3)\*0.0137 w l
 ```
 
-## Further ideas {#further-ideas-6 .unnumbered}
+## Further ideas
 
 \-   Recompute the AHC and optical spectra of bcc Fe using projected $s$,
     $p$, and $d$-type Wannier functions instead of the hybridrized MLWFs

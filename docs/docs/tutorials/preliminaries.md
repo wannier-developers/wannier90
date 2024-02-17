@@ -1,12 +1,4 @@
----
-author:
-- Version 3.1
-bibliography:
-- ../wannier90.bib
-title: ": Tutorials"
----
-
-# Preliminaries {#preliminaries .unnumbered}
+# Preliminaries
 
 Welcome to `wannier90`! The examples contained in these tutorials are
 designed to help you become familiar with the procedure of generating,
@@ -46,7 +38,7 @@ necessary)
     <http://www.numpy.org><br>
     <http://matplotlib.org>
 
-# Parallel execution {#parallel-execution .unnumbered}
+# Parallel execution
 
 `postw90.x` and `wannier90.x` can
 be run in parallel to speed up the calculations, using the MPI
@@ -68,7 +60,7 @@ mpirun -np 8 postw90.x seedname
 libraries installed on your system: refer to your MPI manual and/or to
 your system administrator for further information).
 
-# About these tutorials {#about-this-tutorials .unnumbered}
+# About these tutorials
 
 The first part of this collection of tutorials comprises four examples taken from
 Refs. [@marzari-prb97; @souza-prb01]: gallium arsenide, lead, silicon
@@ -98,7 +90,7 @@ including abinit (<http://www.abinit.org>), fleur
 (<https://wiki.fysik.dtu.dk/gpaw/>), VASP (<http://www.vasp.at>), and
 Wien2k (<http://www.wien2k.at>)
 
-# Contact us {#contact-us .unnumbered}
+# Contact us
 
 If you have any suggestions regarding ways in which these tutorials may be
 improved, then send us an email.

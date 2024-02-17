@@ -67,7 +67,7 @@
     1.     serial execution
     2.     example of parallel execution with 8 MPI processes
 
-## Spin Hall conductivity {#spin-hall-conductivity .unnumbered}
+## Spin Hall conductivity
 
 The intrinsic spin Hall conductivity
 $\sigma_{\alpha\beta}^{\text{spin}\gamma}$ is proportional to the BZ
@@ -147,7 +147,7 @@ Note some rough estimations of computation progress and time are
 reported in `Pt.wpout` (see the SHC part of the Solution Booklet). These
 may be helpful if the computation time is very long.
 
-## Notes {#notes .unnumbered}
+## Notes
 
 - Since the Kubo formula of SHC involves unoccupied bands, we need to
     include some unoccupied bands and construct more MLWF. Thus the
@@ -158,7 +158,7 @@ may be helpful if the computation time is very long.
     the following parameters can be set as `1, 2, 3` with `1, 2, 3`
     standing for `x, y, z` respectively.
 
-## Berry curvature-like term plots {#berry-curvature-like-term-plots .unnumbered}
+## Berry curvature-like term plots
 
 The band-projected Berry curvature-like term
 $\Omega_{n,\alpha\beta}^{\text{spin} \gamma}({\bm k})$ is defined in
@@ -229,7 +229,7 @@ python Pt-kslice-shc+fermi_lines.py
 Compare the generated figure with Fig. 3 in Ref. [@qiao-prb2018], or the
 Solution Booklet.
 
-## Notes {#notes-1 .unnumbered}
+## Notes
 
 - Adaptive smearing depends on a uniform kmesh, so when running
     `kpath` and `kslice` plots adaptive smearing should not be used. A
@@ -239,7 +239,7 @@ Solution Booklet.
     add a fixed smearing of 0.05 eV, add the following keywords in the
     `Pt.win`,
 
-## Input parameters for SHC {#input-parameters-for-shc .unnumbered}
+## Input parameters for SHC
 
 Finally, we provide a complete list of input parameters that can be used
 to control the SHC calculation, including the calculation of alternating

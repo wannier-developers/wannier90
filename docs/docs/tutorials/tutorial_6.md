@@ -93,7 +93,7 @@ Inspect the output file `copper.wout`.
     end kpoint_path
     ```
 
-## Further ideas {#further-ideas .unnumbered}
+## Further ideas
 
 - Compare the Wannier interpolated bandstructure with the full
     `pwscf` bandstructure. Obtain MLWFs using a denser

@@ -170,7 +170,7 @@ generated at runtime are unchanged. (However, the plotting algorithm is
 different in this case, and the lines are not as smooth as before. You
 may want to increase `kslice_2dkmesh`.)
 
-## Further ideas {#further-ideas-5 .unnumbered}
+## Further ideas
 
 - Redraw the Fermi surface contours on the (010) plane starting from a
     calculation without spin-orbit coupling, by adding to the input
