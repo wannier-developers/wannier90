@@ -443,6 +443,7 @@ contains
 
     ! local variables
     type(w90_error_type), allocatable :: error
+    integer :: ik, iw
 
     ierr = 0
 
@@ -469,6 +470,12 @@ contains
       endif
 
       common_data%u_matrix(:, :, :) = common_data%u_opt(:, :, :) ! u_opt contains initial projections
+      common_data%u_opt(:, :, :) = 0.d0
+      do ik = 1, common_data%num_kpts
+      do iw = 1, common_data%num_wann
+        common_data%u_opt(iw, iw, ik) = 1.d0
+      enddo
+      enddo
 
       if (common_data%gamma_only) then
         call overlap_project_gamma(common_data%m_matrix_local, common_data%u_matrix, &
@@ -510,8 +517,6 @@ contains
 
     if (.not. associated(common_data%m_matrix_local)) then
       call set_error_fatal(error, 'm_matrix_local not set for wannierise', common_data%comm)
-    else if (.not. associated(common_data%u_opt)) then
-      call set_error_fatal(error, 'u_opt not set for wannierise', common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'u_matrix not set for wannierise', common_data%comm)
     endif
