@@ -1527,7 +1527,7 @@ contains
     ! projections selection
     integer :: num_select_projections
     integer, allocatable :: select_projections(:)
-    integer :: imap
+    integer :: imap, ip
 
     ! Projections
     call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm, &
@@ -1536,7 +1536,6 @@ contains
 
     call w90_readwrite_get_block_length(settings, 'projections', found, i_temp, error, comm)
     if (allocated(error)) return
-    ! check to see that there are no unrecognised keywords !jj? fixme
 
     if (found) then
       if (select_proj%auto_projections) then
@@ -1556,6 +1555,24 @@ contains
       lhasproj = .false.
       num_proj = num_wann
     end if
+
+    ! attempt to read projections from library interface
+    if (allocated(settings%entries)) then
+      if (found) then
+        call set_error_input(error, 'w90_wannier90_readwrite_read: attempting to read .win file with unspent lib options', comm)
+        return
+      endif
+
+      call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
+                                         recip_lattice, .true., spinors, bohr, stdout, error, comm)
+      ! count number of projections first
+      !write(*,*)"Projections found: ",num_proj
+      call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
+                                         recip_lattice, .false., spinors, bohr, stdout, error, comm)
+      !do ip = 1, num_proj
+      !  write(*,*)"site,l,m: ",proj_input(ip)%site,proj_input(ip)%l,proj_input(ip)%m
+      !enddo
+    endif
 
     num_select_projections = num_proj !num proj is the size of proj_input
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, num_select_projections, &

@@ -925,7 +925,7 @@ contains
     spreads = common_data%wannier_data%spreads
   endsubroutine w90_get_spreads
 
-  subroutine w90_get_proj(common_data, n, site, l, m, s, istdout, istderr, ierr, sqa, z, x, rad, zona)
+  subroutine w90_get_proj(common_data, n, site, l, m, s, rad, x, z, sqa, istdout, istderr, ierr)
     use w90_error, only: w90_error_type, set_error_fatal
     implicit none
 
@@ -941,7 +941,7 @@ contains
 
     ! probably the remaining variables find limited use, allow them to be absent
     integer, intent(inout), optional :: rad(:)
-    real(kind=dp), intent(inout), optional :: sqa(:, :), z(:, :), x(:, :), zona(:)
+    real(kind=dp), intent(inout) :: sqa(:, :), z(:, :), x(:, :) !, zona(:)
 
     ! local variables
     integer :: ip
@@ -979,36 +979,36 @@ contains
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    if (present(sqa) .and. size(sqa, 2) < n) then
+    if (size(sqa, 2) < n) then
       call set_error_fatal(error, 'Optional array argument sqa in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    if (present(sqa) .and. size(sqa, 2) < n) then
+    if (size(sqa, 2) < n) then
       call set_error_fatal(error, 'Optional array argument sqa in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    if (present(z) .and. size(z, 2) < n) then
+    if (size(z, 2) < n) then
       call set_error_fatal(error, 'Optional array argument z in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    if (present(x) .and. size(x, 2) < n) then
+    if (size(x, 2) < n) then
       call set_error_fatal(error, 'Optional array argument x in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    if (present(rad) .and. size(rad) < n) then
+    if (size(rad) < n) then
       call set_error_fatal(error, 'Optional array argument rad in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
     endif
-    if (present(zona) .and. size(zona) < n) then
-      call set_error_fatal(error, 'Optional array argument zona in get_proj() call is insufficiently sized', common_data%comm)
-      call prterr(error, ierr, istdout, istderr, common_data%comm)
-      return
-    endif
+    !if (present(zona) .and. size(zona) < n) then
+    !  call set_error_fatal(error, 'Optional array argument zona in get_proj() call is insufficiently sized', common_data%comm)
+    !  call prterr(error, ierr, istdout, istderr, common_data%comm)
+    !  return
+    !endif
 
     do ip = 1, n
       proj => common_data%proj_input(ip)
@@ -1016,11 +1016,11 @@ contains
       m(ip) = proj%m
       s(ip) = proj%s
       site(:, ip) = proj%site(:)
-      if (present(sqa)) sqa(:, ip) = proj%s_qaxis(:)
-      if (present(z)) z(:, ip) = proj%z(:)
-      if (present(x)) x(:, ip) = proj%x(:)
-      if (present(rad)) rad(ip) = proj%radial
-      if (present(zona)) zona(ip) = proj%zona
+      sqa(:, ip) = proj%s_qaxis(:)
+      z(:, ip) = proj%z(:)
+      x(:, ip) = proj%x(:)
+      rad(ip) = proj%radial
+      !if (present(zona)) zona(ip) = proj%zona
     enddo
   end subroutine w90_get_proj
 

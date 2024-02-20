@@ -2753,7 +2753,7 @@ contains
     !endif
 
     found = .false.
-    if (allocated(settings%entries)) return ! don't try to do this in library mode
+    if (allocated(settings%entries)) return ! don't try to do this in library mode (i.e. when not reading win file)
 
     rows = 0
     found_s = .false.
@@ -3468,6 +3468,7 @@ contains
       endif
     endif
 
+    if (allocated(settings%in_data)) then ! we are reading from the input file
     do loop = 1, settings%num_lines
       ins = index(settings%in_data(loop), trim(keyword))
       if (ins == 0) cycle
@@ -3537,6 +3538,21 @@ contains
       endif
     endif
 
+    elseif (allocated(settings%entries)) then ! reading from setopt
+    lconvert = .false.
+    lrandom = .false.
+    lpartrandom = .false.
+    do loop = 1, settings%num_entries  ! this means the first occurance of the variable in settings is used
+      if (settings%entries(loop)%keyword == 'projections') then
+        counter = counter + 1
+        if (settings%entries(loop)%txtdata == 'bohr') lconvert = .true.
+        if (settings%entries(loop)%txtdata == 'random') lrandom = .true.
+      endif
+    enddo
+    line_s = 0
+    line_e = settings%num_entries + 1
+    endif ! reading from input file or entries
+
     counter = 0
     if (.not. lrandom) then
       do line = line_s + 1, line_e - 1
@@ -3555,7 +3571,12 @@ contains
           spn_counter = 1
         endif
         ! Strip input line of all spaces
-        dummy = utility_strip(settings%in_data(line))
+        if (allocated(settings%entries)) then
+          if (settings%entries(line)%keyword /= 'projections') cycle
+          dummy = utility_strip(settings%entries(line)%txtdata)
+        else
+          dummy = utility_strip(settings%in_data(line))
+        endif
         dummy = adjustl(dummy)
         pos1 = index(dummy, ':')
         if (pos1 == 0) then
@@ -3997,7 +4018,7 @@ contains
     endif
 
     ! I shouldn't get here, but just in case
-    if (.not. lcount) settings%in_data(line_s:line_e) (1:maxlen) = ' '
+    if (.not. lcount .and. allocated(settings%in_data)) settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
 !~     ! Check
 !~     do loop=1,num_wann
