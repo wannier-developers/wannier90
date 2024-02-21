@@ -8,7 +8,19 @@ w90spn2spn.x
 wannier90.x
 *~
 *.x.dSYM
-.vscode
 *.mod
 *.gcno
 *.gcda
+
+### Build system
+cmake-build-*/
+build/
+_deps
+
+### IDE files
+.vscode
+/.idea
+
+### Project files
+/CMakeUserPresets.json
+
