@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+
+## Define basic variables
+set(Wannier90_MPI @WANNIER90_MPI@)
+
+## Parse find_package request
+include(${CMAKE_CURRENT_LIST_DIR}/Wannier90Targets.cmake)

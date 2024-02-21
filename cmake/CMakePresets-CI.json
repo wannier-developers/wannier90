@@ -1,0 +1,197 @@
+{
+  "version": 6,
+  "include": [
+    "CMakePresets-defaults.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "ci-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "inherits": [
+        "default"
+      ],
+      "cacheVariables": {
+        "WANNIER90_TEST": {
+          "type": "BOOL",
+          "value": true
+        },
+        "WANNIER90_MPI": {
+          "type": "BOOL",
+          "value": "$env{WITH_MPI}"
+        }
+      },
+      "errors": {
+        "deprecated": true
+      }
+    },
+    {
+      "name": "gcc-ci",
+      "displayName": "CI - GCC toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "binaryDir": "cmake-build-ci-gcc",
+      "cacheVariables": {
+        "CMAKE_Fortran_COMPILER": {
+          "type": "FILEPATH",
+          "value": "gfortran"
+        }
+      }
+    },
+    {
+      "name": "llvm-ci",
+      "displayName": "CI - LLVM toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "binaryDir": "cmake-build-ci-llvm",
+      "cacheVariables": {
+        "CMAKE_Fortran_COMPILER": {
+          "type": "FILEPATH",
+          "value": "flang-new"
+        }
+      }
+    },
+    {
+      "name": "intel-ci",
+      "displayName": "CI - Intel toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "binaryDir": "cmake-build-ci-intel",
+      "cacheVariables": {
+        "CMAKE_Fortran_COMPILER": {
+          "type": "FILEPATH",
+          "value": "ifx"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ci-base",
+      "hidden": true,
+      "inherits": [
+        "default"
+      ],
+      "cleanFirst": true
+    },
+    {
+      "name": "gcc-ci",
+      "displayName": "CI - GCC toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "gcc-ci"
+    },
+    {
+      "name": "llvm-ci",
+      "displayName": "CI - LLVM toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "llvm-ci"
+    },
+    {
+      "name": "intel-ci",
+      "displayName": "CI - Intel toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "intel-ci"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ci-base",
+      "hidden": true,
+      "inherits": [
+        "default"
+      ],
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "gcc-ci",
+      "displayName": "CI - GCC toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "gcc-ci"
+    },
+    {
+      "name": "llvm-ci",
+      "displayName": "CI - LLVM toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "llvm-ci"
+    },
+    {
+      "name": "intel-ci",
+      "displayName": "CI - Intel toolchain",
+      "inherits": [
+        "ci-base"
+      ],
+      "configurePreset": "intel-ci"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "gcc-ci",
+      "displayName": "CI - GCC toolchain",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "gcc-ci"
+        },
+        {
+          "type": "build",
+          "name": "gcc-ci"
+        },
+        {
+          "type": "test",
+          "name": "gcc-ci"
+        }
+      ]
+    },
+    {
+      "name": "llvm-ci",
+      "displayName": "CI - LLVM toolchain",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "llvm-ci"
+        },
+        {
+          "type": "build",
+          "name": "llvm-ci"
+        },
+        {
+          "type": "test",
+          "name": "llvm-ci"
+        }
+      ]
+    },
+    {
+      "name": "intel-ci",
+      "displayName": "CI - Intel toolchain",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "intel-ci"
+        },
+        {
+          "type": "build",
+          "name": "intel-ci"
+        },
+        {
+          "type": "test",
+          "name": "intel-ci"
+        }
+      ]
+    }
+  ]
+}
