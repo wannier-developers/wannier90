@@ -88,7 +88,7 @@ Authors and contributors
 The Wannier90 Developer Group includes:
 
 * Giovanni Pizzi    (EPFL, CH)
-* Valerio Vitale    (Cambridge, GB)
+* Valerio Vitale    (University of Trieste, IT)
 * David Vanderbilt  (Rutgers University, US)
 * Nicola Marzari    (EPFL, CH)
 * Ivo Souza         (Universidad del Pais Vasco, ES)
