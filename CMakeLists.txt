@@ -43,10 +43,11 @@ if (WANNIER90_INSTALL)
 	include(CMakePackageConfigHelpers)
 
 	# CMake does not properly support fortran module installation paths.
-	# Adapting the standard from fortran-stdlib
 	# https://gitlab.kitware.com/cmake/cmake/-/issues/19608
 	# https://discourse.cmake.org/t/api-design-c-modules-source-listings-and-interface-properties/5389/14
-	cmake_path(APPEND CMAKE_INSTALL_INCLUDEDIR ${PROJECT_NAME} "${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}"
+	# Note: This does not follow fortran-stdlib format, instead it follows Fedora guidelines
+	# https://pagure.io/packaging-committee/issue/1334
+	cmake_path(APPEND CMAKE_INSTALL_LIBDIR "${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}" modules
 			OUTPUT_VARIABLE _DEFAULT_CMAKE_INSTALL_MODULEDIR
 	)
 	set(CMAKE_INSTALL_MODULEDIR ${_DEFAULT_CMAKE_INSTALL_MODULEDIR}
