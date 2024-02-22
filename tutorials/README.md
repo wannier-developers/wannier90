@@ -1,27 +1,23 @@
-                      ===================
-                      WANNIER90 Tutorials
-                      ===================
+# WANNIER90 Tutorials
 
-This folder contains all the files needed to run 
+This folder contains all the files needed to run
 the Wannier90 Tutorials. The instructions for how
 to run these may be found at.
 
 The tutorials are as follows:
 
-Tutorials with A and M matrices provided
----------------------------------------
+## Tutorials with A and M matrices provided
 
 tutorial01: Gallium Arsenide, valence bands
 
 tutorial02: Lead, 4 lowest states; Fermi surface
 
 tutorial03: Silicon, 4 valence bands + 4 conduction bands;
-          interpolated bandstructure
+            interpolated band structure
 
 tutorial04: Copper, states around the Fermi level; Fermi surface
 
-Tutorials that use the pw2wannier90 interface with PWSCF
--------------------------------------------------------
+## Tutorials that use the pw2wannier90 interface with PWSCF
 
 tutorial05: Diamond, valence states
 
@@ -77,6 +73,6 @@ tutorial30: Gallium Arsenide - ac spin Hall conductivity
 
 tutorial31: Platinum - Selected columns of density matrix algorithm for spinor wavefunctions
 
-tutorial32: Tungsten - SCDM parameters from projectability 
+tutorial32: Tungsten - SCDM parameters from projectability
 
-tutorial33: BC2N - Expansion coefficients for kdotp bands 
+tutorial33: BC2N - Expansion coefficients for kdotp bands

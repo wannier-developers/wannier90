@@ -1,0 +1,20 @@
+# config file markdownlint-cli2
+
+# MD007/ul-indent : Unordered list indentation : https://github.com/DavidAnson/markdownlint/blob/main/doc/md007.md
+# this is to make sure mkdocs can correctly render nested lists
+MD007:
+  # Spaces for indent
+  indent: 4
+
+# MD033/no-inline-html : Inline HTML : https://github.com/DavidAnson/markdownlint/blob/v0.33.0/doc/md033.md
+MD033:
+  allowed_elements:
+    - br
+    - figure
+    - table
+    - figcaption
+    - em
+    - sub
+    - a
+    - sup
+    - code

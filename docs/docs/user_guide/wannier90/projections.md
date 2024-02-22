@@ -12,10 +12,10 @@ and the volume over which real-space overlaps $A_{mn}$ are calculated.
 
 The code is able to
 
-1.  project onto s,p,d and f angular momentum states, plus the hybrids
+1. project onto s,p,d and f angular momentum states, plus the hybrids
     sp, sp$^2$, sp$^3$, sp$^3$d, sp$^3$d$^2$.
 
-2.  control the radial part of the projection functions to allow higher
+2. control the radial part of the projection functions to allow higher
     angular momentum states, e.g., both 3s and 4s in silicon.
 
 The atomic orbitals of the hydrogen atom provide a good basis to use for
@@ -31,13 +31,13 @@ equation but rather the *real* (in the sense of non-imaginary) states
 $\Theta_{lm_{\mathrm{r}}}$, obtained by a unitary transformation. For
 example, the canonical eigenstates associated with $l=1$, $m=\{-1,0,1\}$
 are not the real p$_{x}$, p$_{y}$ and p$_{z}$ that we want. See
-Section [Orbital Definitions](#orbital-definitions) 
+Section [Orbital Definitions](#orbital-definitions)
 for our mathematical conventions regarding
 projection orbitals for different $n$, $l$ and $m_{\mathrm{r}}$.
 
 We use the following format to specify projections in `<seedname>.win`:
 
-```
+```vi title="Input file"
 Begin Projections
 [units]
 site:ang_mtm:zaxis:xaxis:radial:zona
@@ -45,7 +45,7 @@ site:ang_mtm:zaxis:xaxis:radial:zona
 End Projections
 ```
 
-Notes:
+### Notes
 
 `units`:
 Optional. Either `Ang` or `Bohr` to specify whether the projection
@@ -66,15 +66,15 @@ appropriate character string. See
 Tables [Angular functions](#angular-functions)
 and [Hybrids](#hybrids).
 Examples:
-`l=2,mr=1 ` or ` dz2` -- a single projection with $l=2$,
+`l=2,mr=1` or `dz2` -- a single projection with $l=2$,
 $m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)
-`l=2,mr=1,4 ` or ` dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
+`l=2,mr=1,4` or `dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
 d$_{xz}$
-`l=-3 ` or ` sp3` -- four sp$^{3}$ hybrids
+`l=-3` or `sp3` -- four sp$^{3}$ hybrids
 Specific hybrid orbitals may be specified as follows:
-`l=-3,mr=1,3 ` or ` sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
+`l=-3,mr=1,3` or `sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
 Multiple states may be specified by separating with '`;`', e.g.,
-`sp3;l=0 ` or ` l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
+`sp3;l=0` or `l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
 
 `zaxis` (optional):
 `z=1,1,1` -- set the $z$-axis to be in the (1,1,1) direction. Default is
@@ -97,21 +97,21 @@ always in reciprocal Angstrom. Default is `zona=1.0`.
 
 ### Examples
 
-1. CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
+- CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
 
-    `Cu:l=0;l=1;l=2 `
+    `Cu:l=0;l=1;l=2`
 
-    `O:l=-3 ` or ` O:sp3`
+    `O:l=-3` or `O:sp3`
 
-2. A single projection onto a p$_z$ orbital orientated in the (1,1,1)
+- A single projection onto a p$_z$ orbital orientated in the (1,1,1)
 direction:
 
-    `c=0,0,0:l=1,mr=1:z=1,1,1 ` or ` c=0,0,0:pz:z=1,1,1`
+    `c=0,0,0:l=1,mr=1:z=1,1,1` or `c=0,0,0:pz:z=1,1,1`
 
-3. Project onto s, p and d (with no radial nodes), and s and p (with
+- Project onto s, p and d (with no radial nodes), and s and p (with
 one radial node) in silicon:
 
-    ```
+    ```vi title="Input file"
     Si:l=0;l=1;l=2
     Si:l=0;l=1:r=2
     ```
@@ -128,7 +128,7 @@ interface between the ab-initio code and Wannier90 (i.e., written after
 the release of the 2.0 version, in October 2013) supporting spinor
 projections.
 
-```
+```vi title="Input file"
 Begin Projections
 [units]
 site:ang_mtm:zaxis:xaxis:radial:zona(spin)[quant_dir]
@@ -146,39 +146,39 @@ Default is `u,d`
 `1,0,0` -- set the spin quantisation axis to be in the (1,0,0)
 direction. Default is `0,0,1`
 
-### Examples
+### Spinor Examples
 
--   18 projections on an iron site
+- 18 projections on an iron site
 
     `Fe:sp3d2;dxy;dxx;dyz`
 
--   same as above
+- same as above
 
     `Fe:sp3d2;dxy;dxx;dyz(u,d)`
 
--   same as above
+- same as above
 
     `Fe:sp3d2;dxy;dxz;dyz(u,d)[0,0,1]`
 
--   same as above but quantisation axis is now x
+- same as above but quantisation axis is now x
 
     `Fe:sp3d2;dxy;dxz;dyz(u,d)[1,0,0]`
 
--   now only 9 projections onto up states
+- now only 9 projections onto up states
 
     `Fe:sp3d2;dxy;dxz;dyz(u)`
 
--   9 projections onto up-states and 3 on down
+- 9 projections onto up-states and 3 on down
 
-    ```
+    ```vi title="Input file"
     Fe:sp3d2;dxy;dxz;dyz(u)
     Fe:dxy;dxz;dyz(d)
     ```
 
--   projections onto alternate spin states for two lattice sites (Cr1,
+- projections onto alternate spin states for two lattice sites (Cr1,
     Cr2)
 
-    ```
+    ```vi title="Input file"
     Cr1:d(u)
     Cr2:d(d)
     ```
@@ -189,7 +189,7 @@ direction. Default is `0,0,1`
 
 It is possible to specify the projections, for example, as follows:
 
-```
+```vi title="Input file"
 Begin Projections
 random
 C:sp3
@@ -224,6 +224,7 @@ are given in Table [Radial functions](#radial-functions).
 
 ### Angular functions
 
+<!-- markdownlint-disable MD013 -->
 | $l$ | $m_{\mathrm{r}}$ |     Name     |                         $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$                          |
 |:---:|:----------------:|:------------:|:-------------------------------------------------------------------------------------------:|
 |  0  |        1         |     `s`      |                                   $\frac{1}{\sqrt{4\pi}}$                                   |
@@ -242,34 +243,37 @@ are given in Table [Radial functions](#radial-functions).
 |  3  |        5         |    `fxyz`    |            $\frac{\sqrt{105}}{4\sqrt{\pi}}\sin^{2}\theta\cos\theta\sin2\varphi$             |
 |  3  |        6         | `fx(x2-3y2)` | $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(\cos^{2}\varphi-3\sin^{2}\varphi)\cos\varphi$ |
 |  3  |        7         | `fy(3x2-y2)` | $\frac{\sqrt{35}}{4\sqrt{2\pi}}\sin^{3}\theta(3\cos^{2}\varphi-\sin^{2}\varphi)\sin\varphi$ |
+<!-- markdownlint-enable MD013 -->
 
 Angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ associated
 with particular values of $l$ and $m_{\mathrm{r}}$ for $l\ge0$.
 
 ### Hybrids
 
-|     $l$      | $m_{\mathrm{r}}$ |   Name    |                 $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$                  |
-|:------------:|:----------------:|:---------:|:---------------------------------------------------------------------------:|
-|           -1 |        1         |  `sp-1`   |              $\frac{1}{\sqrt{2}}$`s` $+\frac{1}{\sqrt{2}}$`px`              |
-|           -1 |        2         |  `sp-2`   |              $\frac{1}{\sqrt{2}}$`s` $-\frac{1}{\sqrt{2}}$`px`              |
-|           -2 |        1         |  `sp2-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py` |
-|           -2 |        2         |  `sp2-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py` |
-|           -2 |        3         |  `sp2-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`              |
-|           -3 |        1         |  `sp3-1`  |                $\frac{1}{2}$(`s` $+$ `px` $+$ `py`           |                  |           |                                                                             |
-|           -3 |        2         |  `sp3-2`  |                $\frac{1}{2}$(`s` $+$ `px` $-$ `py` $-$ `pz`)                |
-|           -3 |        3         |  `sp3-3`  |                $\frac{1}{2}$(`s` $-$ `px` $+$ `py` $-$ `pz`)                |
-|           -3 |        4         |  `sp3-4`  |                $\frac{1}{2}$(`s` $-$ `px` $-$ `py` $+$ `pz`)                |
-|           -4 |        1         | `sp3d-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py` |
-|           -4 |        2         | `sp3d-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py` |
-|           -4 |        3         | `sp3d-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`              |
-|           -4 |        4         | `sp3d-4`  |             $\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`             |
-|           -4 |        5         | `sp3d-5`  |            $-\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`             |
-|           -5 |        1         | `sp3d2-1` |           $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`px`-$\frac{1}{\sqrt{12}}$`dz2`+$\frac{1}{2}$`dx2-y2`           |
-|           -5 |        2         | `sp3d2-2` |           $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`px`-$\frac{1}{\sqrt{12}}$`dz2`+$\frac{1}{2}$`dx2-y2`           |
-|           -5 |        3         | `sp3d2-3` |           $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`py`-$\frac{1}{\sqrt{12}}$`dz2`-$\frac{1}{2}$`dx2-y2`           |
-|           -5 |        4         | `sp3d2-4` |           $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`py`-$\frac{1}{\sqrt{12}}$`dz2`-$\frac{1}{2}$`dx2-y2`           |
-|           -5 |        5         | `sp3d2-5` |           $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`pz`+$\frac{1}{\sqrt{3}}$`dz2`                        |
-|           -5 |        6         | `sp3d2-6` |           $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`pz`+$\frac{1}{\sqrt{3}}$`dz2`                        |
+<!-- markdownlint-disable MD013 -->
+|     $l$      | $m_{\mathrm{r}}$ |   Name    |                 $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$                                        |
+|:------------:|:----------------:|:---------:|:-------------------------------------------------------------------------------------------------:|
+|           -1 |        1         |  `sp-1`   |              $\frac{1}{\sqrt{2}}$`s` $+\frac{1}{\sqrt{2}}$`px`                                    |
+|           -1 |        2         |  `sp-2`   |              $\frac{1}{\sqrt{2}}$`s` $-\frac{1}{\sqrt{2}}$`px`                                    |
+|           -2 |        1         |  `sp2-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py`                       |
+|           -2 |        2         |  `sp2-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py`                       |
+|           -2 |        3         |  `sp2-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`                                    |
+|           -3 |        1         |  `sp3-1`  |                $\frac{1}{2}$(`s` $+$ `px` $+$ `py`                                                |
+|           -3 |        2         |  `sp3-2`  |                $\frac{1}{2}$(`s` $+$ `px` $-$ `py` $-$ `pz`)                                      |
+|           -3 |        3         |  `sp3-3`  |                $\frac{1}{2}$(`s` $-$ `px` $+$ `py` $-$ `pz`)                                      |
+|           -3 |        4         |  `sp3-4`  |                $\frac{1}{2}$(`s` $-$ `px` $-$ `py` $+$ `pz`)                                      |
+|           -4 |        1         | `sp3d-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py`                       |
+|           -4 |        2         | `sp3d-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py`                       |
+|           -4 |        3         | `sp3d-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`                                    |
+|           -4 |        4         | `sp3d-4`  |             $\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`                                   |
+|           -4 |        5         | `sp3d-5`  |            $-\frac{1}{\sqrt{2}}$`pz` $+\frac{1}{\sqrt{2}}$`dz2`                                   |
+|           -5 |        1         | `sp3d2-1` | $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`px`-$\frac{1}{\sqrt{12}}$`dz2`+$\frac{1}{2}$`dx2-y2` |
+|           -5 |        2         | `sp3d2-2` | $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`px`-$\frac{1}{\sqrt{12}}$`dz2`+$\frac{1}{2}$`dx2-y2` |
+|           -5 |        3         | `sp3d2-3` | $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`py`-$\frac{1}{\sqrt{12}}$`dz2`-$\frac{1}{2}$`dx2-y2` |
+|           -5 |        4         | `sp3d2-4` | $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`py`-$\frac{1}{\sqrt{12}}$`dz2`-$\frac{1}{2}$`dx2-y2` |
+|           -5 |        5         | `sp3d2-5` | $\frac{1}{\sqrt{6}}$`s`-$\frac{1}{\sqrt{2}}$`pz`+$\frac{1}{\sqrt{3}}$`dz2`                        |
+|           -5 |        6         | `sp3d2-6` | $\frac{1}{\sqrt{6}}$`s`+$\frac{1}{\sqrt{2}}$`pz`+$\frac{1}{\sqrt{3}}$`dz2`                        |
+<!-- markdownlint-enable MD013 -->
 
 Angular functions $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$ associated
 with particular values of $l$ and $m_{\mathrm{r}}$ for $l<0$, in terms
@@ -278,17 +282,18 @@ Table [Angular functions](#angular-functions).
 
 ### Radial functions
 
-|   $r$    |            $R_{\mathrm{r}}(r)$             |
-|:--------:|:------------------------------------------:|
-|    1     |      $2 \alpha^{3/2}\exp(-\alpha r)$       |
-|    2     |  $\frac{1}{2\sqrt{2}}\alpha^{3/2}(2-\alpha r)\exp(-\alpha r/2)$             |
+<!-- markdownlint-disable MD013 -->
+|   $r$    |            $R_{\mathrm{r}}(r)$                                                         |
+|:--------:|:--------------------------------------------------------------------------------------:|
+|    1     |      $2 \alpha^{3/2}\exp(-\alpha r)$                                                   |
+|    2     |  $\frac{1}{2\sqrt{2}}\alpha^{3/2}(2-\alpha r)\exp(-\alpha r/2)$                        |
 |    3     | $\sqrt{\frac{4}{27}}\alpha^{3/2}(1-2\alpha r/3+2\alpha^{2}r^{2}/27)\exp(-\alpha r/3)$  |
+<!-- markdownlint-enable MD013 -->
 
 One possible choice for the radial functions $R_{\mathrm{r}}(r)$
 associated with different values of $r$: the set of solutions to the
 radial part of the hydrogenic Schrödinger equation for $l=0$, i.e., the
 radial parts of the 1s, 2s, 3s… orbitals, where $\alpha=Z/a=$`zona`.
-
 
 ## Projections via the SCDM-**k** method in pw2wannier90
 
@@ -311,7 +316,7 @@ in the `pw2wannier90` interface program. Moreover, the `pw2wannier90`
 interface program supports also the SCDM-**k** method for
 spin-noncollinear systems. The SCDM-**k** can operate in two modes:
 
-1.  In isolation, i.e., without performing a subsequent Wannier90
+1. In isolation, i.e., without performing a subsequent Wannier90
     optimisation (not recommended). This can be achieved by setting
     `num_iter=0` and `dis_num_iter=0` in the `<seedname>.win` input
     file. The rationale behind this is that in general the projection
@@ -319,7 +324,7 @@ spin-noncollinear systems. The SCDM-**k** can operate in two modes:
     with the correct spatial orientations. However, the spreads of the
     resulting functions are usually larger than the MLWFs ones.
 
-2.  In combination with the Marzari-Vanderbilt (recommended option). In
+2. In combination with the Marzari-Vanderbilt (recommended option). In
     this case, the SCDM-**k** is only used to generate the initial
     $A_{mn}^{(\mathbf{k})}$ matrices as a replacement scheme for the
     projection block.
@@ -327,7 +332,7 @@ spin-noncollinear systems. The SCDM-**k** can operate in two modes:
 The following keywords need to be specified in the `pw2wannier90.x`
 input file `<seedname>.pw2wan`:
 
-```
+```vi title="Input file"
 scdm_proj
 scdm_entanglement
 scdm_mu
@@ -364,7 +369,7 @@ Wannierisation, for such cases, one can inspect the stdout of
 `pw2wannier90`, which will print the orbitals used for computing `amn`,
 e.g.,
 
-```
+```vi title="Output file"
 -------------------------------------
 *** Compute A with atomic projectors
 -------------------------------------
@@ -386,46 +391,54 @@ three $p$ orbitals. If one wants to exclude specific orbital(s), there
 is an additional input `atom_proj_exclude`, which accept a list of
 integers, e.g.,
 
-`atom_proj_exclude = 1 5`
+```vi title="Input file"
+atom_proj_exclude = 1 5
+```
 
 which will exclude the two $s$ orbitals from computing `amn`.
 
-#### Advanced usage
+### Advanced usage
 
 If the pseudopotential orbitals are not enough, one could also generate
 a custom set of orbitals, and ask `pw2wannier90` to use them for
 computing `amn`. This can be done by setting
 
-`atom_proj_dir = ’./ext_proj’`
+```vi title="Input file"
+atom_proj_dir = './ext_proj'`
+```
 
 where the directory `ext_proj` contains the orbitals for all the atomic
 species used in the calculation. For example, for a silicon calculation,
 the directory `ext_proj` should contain a file named `Si.dat`. The
 format of the file is:
 
-1.  The first line contains two integers: the number of radial grid
+1. The first line contains two integers: the number of radial grid
     points ($n_g$) and the number of projectors ($n_p$), e.g.,
 
-        1141 2
+    ```vi title="Input file"
+    1141 2
+    ```
 
     which means the radial grid has $n_g = 1141$ points, and there are
     $n_p = 3$ projectors.
 
-2.  The second line contains $n_p$ integers specifying the angular
+2. The second line contains $n_p$ integers specifying the angular
     momentums of all the projectors, e.g.,
 
-        0 1
+    ```vi title="Input file"
+    0 1
+    ```
 
     standing for the two projectors having $s$ and $p$ characters,
     respectively.
 
-3.  The rest of the file contains $n_g$ rows of the radial wavefunctions
+3. The rest of the file contains $n_g$ rows of the radial wavefunctions
     of the projectors. There are $2+n_p$ columns: the first column is
     the $x$-grid, the second column is the $r$-grid in Bohr unit, and
     they are related by $r = \exp(x)$. The rest are $n_p$ columns of the
     radial wavefunctions of the projectors,
 
-    ```
+    ```vi title="Input file"
     -9.639057329615259 0.000065134426111 3.32211124436945e-05 1.86840239681223e-09
     -9.626557329615258 0.000065953716334 3.363898259696903e-05 1.915701228607072e-09
     -9.614057329615258 0.000066783311958 3.406210890972733e-05 1.964197436025957e-09

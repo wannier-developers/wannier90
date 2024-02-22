@@ -2,12 +2,12 @@
 
 `wannier90` can operate in two modes:
 
-1.  *Post-processing mode:* read in the overlaps and projections from
+1. *Post-processing mode:* read in the overlaps and projections from
     file as computed inside a first-principles code. We expect this to
     be the most common route to using `wannier90`, and is described in
     Chapter [Post-processing](postproc.md);
 
-2.  *Library mode:* as a set of library routines to be called from
+2. *Library mode:* as a set of library routines to be called from
     within a first-principles code that passes the overlaps and
     projections to the `wannier90` library routines and in return gets
     the unitary transformation corresponding to MLWF. This route should

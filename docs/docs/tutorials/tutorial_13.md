@@ -1,21 +1,21 @@
-# 13: (5,5) Carbon Nanotube &#151; Transport properties {#carbon-nanotube-transport-properties .unnumbered}
+# 13: (5,5) Carbon Nanotube &#151; Transport properties
 
--   Outline: *Obtain the bandstructure, quantum conductance and density
+- Outline: *Obtain the bandstructure, quantum conductance and density
     of states of a metallic (5,5) carbon nanotube*
 
--   Directory: `tutorials/tutorial13/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial13)*
+- Directory: `tutorials/tutorial13/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial13)*
 
--   Input Files
+- Input Files
 
-    -    `cnt55.scf` *The `pwscf` input file for ground
+    - `cnt55.scf` *The `pwscf` input file for ground
         state calculation*
 
-    -    `cnt55.nscf` *The `pwscf` input file to obtain
+    - `cnt55.nscf` *The `pwscf` input file to obtain
         Bloch states for the conduction states*
 
-    -    `cnt55.pw2wan` *Input file for `pw2wannier90`*
+    - `cnt55.pw2wan` *Input file for `pw2wannier90`*
 
-    -    `cnt55.win` *The `wannier90` input file*
+    - `cnt55.win` *The `wannier90` input file*
 
 In order to form localised WF that describe both the occupied and
 unoccupied $\pi$ and $\pi^{\ast}$ manifolds, we use the disentanglement
@@ -49,25 +49,24 @@ translation_centre_frac = 0.0 0.0 0.0
 Descriptions of these and other keywords related to the calculation of
 transport properties can be found in the User Guide.
 
-1.  Run `pwscf` and `wannier90`.\
+1. Run `pwscf` and `wannier90`.\
     Inspect the output file `cnt55.wout`. The minimisation of the spread
     occurs in a two-step procedure. First, we minimise $\Omega_{\rm
       I}$. Then, we minimise $\Omega_{\rm O}+\Omega_{{\rm OD}}$.
 
-2.  Note that the initial $p_{z}$ projections on the carbon atoms are
+2. Note that the initial $p_{z}$ projections on the carbon atoms are
     oriented in the radial direction with respect to the nanotube axis.
 
-3.  The interpolated bandstructure is written to ` cnt55_band.agr`
+3. The interpolated bandstructure is written to `cnt55_band.agr`
     (since `bands_plot_format = xmgr` in the input file).
 
-4.  The quantum conductance and density of states are written to the
+4. The quantum conductance and density of states are written to the
     files `cnt55_qc.dat` and `cnt55_dos.dat`, respectively. Note that
     this part of the calculation may take some time. You can follow its
     progress by monitoring the output to these files. Use a package such
     as `gnuplot` or `xmgrace` in order to visualise the data. You should
     get something that looks like
     [this](#fig:cnt.tran){reference-type="ref" reference="fig:cnt.tran"}.
-
 
     <figure markdown="span" id="fig:cnt.tran">
     ![Image title](./cnt_tran.webp){ width="500" }
@@ -77,4 +76,3 @@ transport properties can be found in the User Guide.
     data-reference-type="ref"
     data-reference="fig:cnt.win">plot</a>.</figcaption>
     </figure>
-

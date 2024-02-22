@@ -1,4 +1,4 @@
-# Tutorials Using the pwscf Interface {#examples-using-the-pwscf-interface .unnumbered}
+# Tutorials Using the pwscf Interface
 
 The `pwscf` plane-wave, density-functional theory code,
 which is available as part of the
@@ -10,7 +10,7 @@ of `pw2wannier90` is included as part of the `wannier90` distribution.
 Please see the `pwscf` directory for instructions on how to incorporate
 it into `pwscf`.
 
-Note that both the `pwscf` executable `pw.x` *and* ` pw2wannier90.x` can
+Note that both the `pwscf` executable `pw.x` *and* `pw2wannier90.x` can
 be run in parallel, which for large calculations can reduce the
 computation time very significantly. This requires compiling the code in
 its parallel version, using the MPI libraries. Refer to the
@@ -22,5 +22,4 @@ processors as `pw.x`.
 Moreover we remind here that both the `wannier90` executable and
 `postw90.x` can be run in parallel. In this case any number of
 processors can be used, independently of the number used for `pw.x` and
-` pw2wannier90.x`.
-
+`pw2wannier90.x`.
