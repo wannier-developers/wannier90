@@ -5,5 +5,5 @@ XLIBS=$(ROOT)/libwan2.a
 a.out: demo.o 
 	$(MPIF90) demo.o $(LIBS) $(XLIBS)
 demo.o: demo.f90
-	$(MPIF90) $(FCOPTS) $(XINCS) -c $<
+	$(MPIF90) $(FCOPTS) -DWannier90_MPI $(XINCS) -c $<
 

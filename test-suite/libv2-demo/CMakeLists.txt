@@ -3,7 +3,7 @@ set_property(DIRECTORY APPEND
 )
 
 set(test_names
-		lib-gas-opt-pllel
+		lib-gas-opt
 		libc-gas-mix-serial
 		libc-gas-mix-serial-clash
 )
