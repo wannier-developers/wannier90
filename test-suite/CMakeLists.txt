@@ -130,3 +130,5 @@ endforeach ()
 add_subdirectory(tests)
 ## Add functional tests
 add_subdirectory(libv2-demo)
+## Add packaging tests
+add_subdirectory(package)
