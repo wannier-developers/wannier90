@@ -123,6 +123,7 @@ In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3
 * Lorenzo Paulatto (Sorbonne Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
 * Samuel Poncé (Oxford University, GB): Test suite for Wannier90
 * Thomas Ponweiser (RISC Software GmbH, AT): performance optimizations for postw90
+* Junfeng Qiao (EPFL, CH): spin Hall conductivity
 * Florian Thöle (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
 * Stepan Tsirkin (Universidad del Pais Vasco, ES): GW bands interpolation, gyrotropic module, shift-current calculation, bug fixes in the berry module
 * Małgorzata Wierzbowska (Polish Academy of Science, PL): performance optimizations for postw90

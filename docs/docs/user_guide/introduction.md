@@ -77,9 +77,9 @@ Daniel Marchand (EPFL, CH), Antimo Marrazzo (EPFL, CH), Yuriy Mokrousov
 (FZ Jülich, DE), Jamal I. Mustafa (UC Berkeley, USA), Yoshiro Nohara
 (Tokyo, JP), Yusuke Nomura (U. Tokyo, JP), Lorenzo Paulatto (Sorbonne
 Paris, FR), Samuel Poncé (Oxford University, GB), Thomas Ponweiser (RISC
-Software GmbH, AT), Florian Thöle (ETHZ, CH), Stepan Tsirkin
-(Universidad del Pais Vasco, ES), Małgorzata Wierzbowska (Polish Academy
-of Science, PL).
+Software GmbH, AT), Junfeng Qiao (EPFL, CH), Florian Thöle (ETHZ, CH),
+Stepan Tsirkin (Universidad del Pais Vasco, ES), Małgorzata Wierzbowska
+(Polish Academy of Science, PL).
 
 Contributors to the code include: Daniel Aberg (w90pov code), Lampros
 Andrinopoulos (w90vdw code), Pablo Aguado Puente (gyrotropic routines),
