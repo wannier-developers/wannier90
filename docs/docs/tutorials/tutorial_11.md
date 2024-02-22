@@ -1,44 +1,44 @@
-# 11: Silicon &#151; Valence and low-lying conduction states {#silicon-valence-and-low-lying-conduction-states .unnumbered}
+# 11: Silicon &#151; Valence and low-lying conduction states
 
-## Valence States {#valence-states .unnumbered}
+## Valence States
 
--   Outline: *Obtain MLWFs for the valence bands of silicon.*
+- Outline: *Obtain MLWFs for the valence bands of silicon.*
 
--   Directory: `tutorials/tutorial11/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial11)*
+- Directory: `tutorials/tutorial11/` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial11)*
 
--   Input Files
+- Input Files
 
-    -    `silicon.scf` *The `pwscf` input file for ground
+    - `silicon.scf` *The `pwscf` input file for ground
         state calculation*
 
-    -    `silicon.nscf` *The `pwscf` input file to obtain
+    - `silicon.nscf` *The `pwscf` input file to obtain
         Bloch states on a uniform grid*
 
-    -    `silicon.pw2wan` *Input file for `pw2wannier90`*
+    - `silicon.pw2wan` *Input file for `pw2wannier90`*
 
-    -    `silicon.win` *The `wannier90` input file*
+    - `silicon.win` *The `wannier90` input file*
 
-1.  Run `pwscf` to obtain the ground state of silicon
+1. Run `pwscf` to obtain the ground state of silicon
 
     ```bash title="Terminal"
     pw.x < silicon.scf > scf.out
     ```
 
-2.  Run `pwscf` to obtain the Bloch states on a uniform
+2. Run `pwscf` to obtain the Bloch states on a uniform
     k-point grid. Note that we request the lower 4 (valence) bands
 
     ```bash title="Terminal"
     pw.x < silicon.nscf > nscf.out
     ```
 
-3.  Run `wannier90` to generate a list of the required overlaps (written
+3. Run `wannier90` to generate a list of the required overlaps (written
     into the `silicon.nnkp` file).
 
     ```bash title="Terminal"
     wannier90.x -pp silicon
     ```
 
-4.  Run `pw2wannier90` to compute the overlap between Bloch states and
+4. Run `pw2wannier90` to compute the overlap between Bloch states and
     the projections for the starting guess (written in the `silicon.mmn`
     and `silicon.amn` files).
 
@@ -46,7 +46,7 @@
     pw2wannier90.x < silicon.pw2wan > pw2wan.out
     ```
 
-5.  Run `wannier90` to compute the MLWFs.
+5. Run `wannier90` to compute the MLWFs.
 
     ```bash title="Terminal"
     wannier90.x silicon
@@ -60,7 +60,7 @@ the MLWFs are defined by just the 4$\times$4 unitary
 matrices $\mathbf{U}^{(\mathbf{k})}$.
 
 Plot the MLWFs by adding the following keywords to the input file
-` silicon.win`
+`silicon.win`
 
 ```vi title="Input file"
 wannier_plot = true
@@ -72,23 +72,23 @@ and re-running `wannier90`. Visualise them using `XCrySDen`, e.g.,
 xcrysden --xsf silicon_00001.xsf
 ```
 
-## Valence + Conduction States {#valence-conduction-states .unnumbered}
+## Valence + Conduction States
 
--   Outline: *Obtain MLWFs for the valence and low-lying conduction-band
+- Outline: *Obtain MLWFs for the valence and low-lying conduction-band
     states of Si. Plot the interpolated bandstructure. Apply a scissors
     correction to the conduction bands.*
 
--   Input Files
+- Input Files
 
-    -    `silicon.scf` *The `pwscf` input file for ground
+    - `silicon.scf` *The `pwscf` input file for ground
         state calculation*
 
-    -    `silicon.nscf` *The `pwscf` input file to obtain
+    - `silicon.nscf` *The `pwscf` input file to obtain
         Bloch states on a uniform grid*
 
-    -    `silicon.pw2wan` *Input file for `pw2wannier90`*
+    - `silicon.pw2wan` *Input file for `pw2wannier90`*
 
-    -    `silicon.win` *The `wannier90` input file*
+    - `silicon.win` *The `wannier90` input file*
 
 The valence and lower conduction states can be represented by MLWFs with
 $sp^3$-like symmetry. The lower conduction states are not separated by
@@ -97,7 +97,7 @@ use the disentanglement procedure introduced in Ref. [@souza-prb01]. The
 position of the inner and outer energy windows are shown in
 [this plot](tutorial_3.md#fig:si.bnd){reference-type="ref" reference="fig:si.bnd"}.
 
-1.  Modify the input file and run `pwscf` and `wannier90`.\
+1. Modify the input file and run `pwscf` and `wannier90`.\
     Inspect the output file `silicon.wout`. The minimisation of the
     spread occurs in a two-step procedure. First, we minimise
     $\Omega_{\rm
@@ -105,7 +105,7 @@ position of the inner and outer energy windows are shown in
     disentanglement procedure. Then, we minimise $\Omega_{\rm
       O}+\Omega_{{\rm OD}}$.
 
-2.  Plot the bandstructure by adding the following commands to the input
+2. Plot the bandstructure by adding the following commands to the input
     file `silicon.win`
 
     ```vi title="Input file"
@@ -115,7 +115,7 @@ position of the inner and outer energy windows are shown in
     ```
 
     and re-running `wannier90`. The files `silicon_band.dat` and
-    ` silicon_band.gnu` are created. To plot the bandstructure using
+    `silicon_band.gnu` are created. To plot the bandstructure using
     gnuplot
 
     ```bash title="Terminal"
@@ -127,16 +127,16 @@ position of the inner and outer energy windows are shown in
     ```
 
     The k-point path for the bandstructure interpolation is set in the
-    ` kpoint_path` block. Try plotting along different paths.
+    `kpoint_path` block. Try plotting along different paths.
 
-## Further ideas {#further-ideas-2 .unnumbered}
+## Further ideas
 
--   Compare the Wannier-interpolated bandstructure with the full
+- Compare the Wannier-interpolated bandstructure with the full
     `pwscf` bandstructure. Recompute the MLWFs using a finer
     $k$-point grid (e.g.,
     6$\times$6$\times$6 or
     8$\times$8$\times$8) and note how
     the accuracy of the interpolation increases [@yates-prb07].
 
--   Compute four MLWFs spanning the low-lying conduction states (see
+- Compute four MLWFs spanning the low-lying conduction states (see
     Ref. [@souza-prb01]).

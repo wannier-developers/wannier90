@@ -83,9 +83,9 @@ set of $\mathbf{U}^{(\mathbf{k})}$ to obtain MLWF.
 `wannier90` requires two ingredients from an initial electronic
 structure calculation.
 
-1.  The overlaps between the cell periodic part of the Bloch states
+1. The overlaps between the cell periodic part of the Bloch states
     $|u_{n{\bf k}}\rangle$
-    
+
     $$
     \begin{equation}
     \label{eq:overlap-matrix}
@@ -97,10 +97,10 @@ structure calculation.
     neighbours, are determined by `wannier90` according to the
     prescription outlined in Ref. [@marzari-prb97].
 
-2.  As a starting guess the projection of the Bloch states
+2. As a starting guess the projection of the Bloch states
     $|\psi_{n\bf{k}}\rangle$ onto trial localised orbitals
     $|g_{n}\rangle$
-    
+
     $$
     \begin{equation}
     A_{mn}^{(\bf{k})}=\langle \psi_{m{\bf k}}|g_{n}\rangle,
@@ -108,12 +108,11 @@ structure calculation.
     $$
 
 Note that $\mathbf{M}^{(\mathbf{k},\mathbf{b})}$,
-$\mathbf{A}^{(\mathbf{k})}$ and $\mathbf{U}^{(\mathbf{k})}$ are all
-small, $N \times N$ matrices (see the following note) that are independent of the basis set
-used to obtain the original Bloch states.
+$\mathbf{A}^{(\mathbf{k})}$ and $\mathbf{U}^{(\mathbf{k})}$ are all small,
+$N \times N$ matrices (see the following note) that are independent of the basis
+set used to obtain the original Bloch states.
 
 !!! note
-
     Technically, this is true for the case of an isolated group of $N$
     bands from which we obtain $N$ MLWF. When using the disentanglement
     procedure of Ref. [@souza-prb01], $\mathbf{A}^{(\mathbf{k})}$, for
