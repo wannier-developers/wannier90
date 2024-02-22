@@ -12,26 +12,28 @@
         <meta name="author" content="Wannier90 Developers">
       
       
-        <link rel="canonical" href="https://wannier-developers.github.io/wannier90/">
+        <link rel="canonical" href="https://wannier-developers.github.io/wannier90/user_guide/wannier90/library_mode/">
       
       
+        <link rel="prev" href="../postproc/">
       
-        <link rel="next" href="user_guide/introduction/">
+      
+        <link rel="next" href="../transport/">
       
       
-      <link rel="icon" href="assets/wannier-logo-squared.png">
+      <link rel="icon" href="../../../assets/wannier-logo-squared.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.9">
     
     
       
-        <title>Wannier90 Documentation</title>
+        <title>Library mode - Wannier90 Documentation</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.f2e4d321.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.f2e4d321.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,20 +52,20 @@
       
     
     
-      <link rel="stylesheet" href="css/timeago.css">
+      <link rel="stylesheet" href="../../../css/timeago.css">
     
-      <link rel="stylesheet" href="stylesheets/custom.css">
+      <link rel="stylesheet" href="../../../stylesheets/custom.css">
     
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
     
     
     
-   <link href="assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+   <link href="../../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
     html.glightbox-open { overflow: initial; height: 100%; }
     .gslide-title { margin-top: 0px; user-select: text; }
     .gslide-desc { color: #666; user-select: text; }
@@ -72,7 +74,7 @@
     .gdesc-inner { font-size: 0.75rem; }
     body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
     body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
-    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="assets/javascripts/glightbox.min.js"></script></head>
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../../../assets/javascripts/glightbox.min.js"></script></head>
   
   
     
@@ -91,7 +93,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#welcome-to-wannier90-documentation" class="md-skip">
+        <a href="#wannier90-as-a-library" class="md-skip">
           Skip to content
         </a>
       
@@ -105,9 +107,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Wannier90 Documentation" class="md-header__button md-logo" aria-label="Wannier90 Documentation" data-md-component="logo">
+    <a href="../../.." title="Wannier90 Documentation" class="md-header__button md-logo" aria-label="Wannier90 Documentation" data-md-component="logo">
       
-  <img src="assets/wannier-logo-squared.svg" alt="logo">
+  <img src="../../../assets/wannier-logo-squared.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -124,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Library mode
             
           </span>
         </div>
@@ -246,11 +248,9 @@
         
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="." class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
         
   
     
@@ -265,11 +265,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="user_guide/introduction/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../introduction/" class="md-tabs__link">
           
   
     
@@ -289,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="tutorials/preliminaries/" class="md-tabs__link">
+        <a href="../../../tutorials/preliminaries/" class="md-tabs__link">
           
   
     
@@ -324,9 +326,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Wannier90 Documentation" class="md-nav__button md-logo" aria-label="Wannier90 Documentation" data-md-component="logo">
+    <a href="../../.." title="Wannier90 Documentation" class="md-nav__button md-logo" aria-label="Wannier90 Documentation" data-md-component="logo">
       
-  <img src="assets/wannier-logo-squared.svg" alt="logo">
+  <img src="../../../assets/wannier-logo-squared.svg" alt="logo">
 
     </a>
     Wannier90 Documentation
@@ -350,19 +352,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -371,7 +364,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -380,8 +372,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -396,19 +390,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -419,7 +416,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             User guide
@@ -433,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/introduction/" class="md-nav__link">
+      <a href="../../introduction/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -451,8 +448,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -480,18 +479,21 @@
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -502,7 +504,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             wannier90.x
@@ -516,7 +518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/methodology/" class="md-nav__link">
+      <a href="../methodology/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -537,7 +539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/parameters/" class="md-nav__link">
+      <a href="../parameters/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -558,7 +560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/projections/" class="md-nav__link">
+      <a href="../projections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -579,7 +581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/code_overview/" class="md-nav__link">
+      <a href="../code_overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -600,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/postproc/" class="md-nav__link">
+      <a href="../postproc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -618,10 +620,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="user_guide/wannier90/library_mode/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Library mode
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -630,6 +652,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#subroutines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subroutines
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subroutines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wannier_setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      wannier_setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wannier_run" class="md-nav__link">
+    <span class="md-ellipsis">
+      wannier_run
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -642,7 +717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/transport/" class="md-nav__link">
+      <a href="../transport/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -663,7 +738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/files/" class="md-nav__link">
+      <a href="../files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -684,7 +759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/notes_interpolations/" class="md-nav__link">
+      <a href="../notes_interpolations/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -705,7 +780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/wannier90/sample_inputs/" class="md-nav__link">
+      <a href="../sample_inputs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -751,17 +826,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -786,7 +864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/postw90/postw90params/" class="md-nav__link">
+      <a href="../../postw90/postw90params/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -807,7 +885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/postw90/berry/" class="md-nav__link">
+      <a href="../../postw90/berry/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -828,7 +906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/postw90/gyrotropic/" class="md-nav__link">
+      <a href="../../postw90/gyrotropic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -849,7 +927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/postw90/boltzwann/" class="md-nav__link">
+      <a href="../../postw90/boltzwann/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -870,7 +948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/postw90/geninterp/" class="md-nav__link">
+      <a href="../../postw90/geninterp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -910,17 +988,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
         
           
-          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -945,7 +1026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/appendices/utilities/" class="md-nav__link">
+      <a href="../../appendices/utilities/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -966,7 +1047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="user_guide/appendices/faq/" class="md-nav__link">
+      <a href="../../appendices/faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1114,7 +1195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/preliminaries/" class="md-nav__link">
+      <a href="../../../tutorials/preliminaries/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1135,7 +1216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_1/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_1/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1156,7 +1237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_2/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1177,7 +1258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_3/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1198,7 +1279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_4/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_4/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1219,7 +1300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/with_pwscf/" class="md-nav__link">
+      <a href="../../../tutorials/with_pwscf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1240,7 +1321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_5/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_5/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1261,7 +1342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_6/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_6/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1282,7 +1363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_7/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_7/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1303,7 +1384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_8/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_8/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1324,7 +1405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_9/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_9/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1345,7 +1426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_10/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_10/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1366,7 +1447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_11/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_11/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1387,7 +1468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_12/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_12/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1408,7 +1489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_13/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_13/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1429,7 +1510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_14/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_14/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1450,7 +1531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_15/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_15/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1471,7 +1552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_16/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1492,7 +1573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_17/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_17/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1513,7 +1594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_18/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_18/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1534,7 +1615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_19/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_19/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1555,7 +1636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_20/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_20/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1576,7 +1657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_21/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_21/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1597,7 +1678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_22/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_22/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1618,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_23/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_23/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1639,7 +1720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_24/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_24/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1660,7 +1741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_25/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_25/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1681,7 +1762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_26/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_26/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1702,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_27/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_27/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1723,7 +1804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_28/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_28/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1744,7 +1825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_29/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_29/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1765,7 +1846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_30/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_30/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1786,7 +1867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_31/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_31/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1807,7 +1888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_32/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1828,7 +1909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="tutorials/tutorial_33/" class="md-nav__link">
+      <a href="../../../tutorials/tutorial_33/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1869,6 +1950,47 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#subroutines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Subroutines
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subroutines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wannier_setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      wannier_setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wannier_run" class="md-nav__link">
+    <span class="md-ellipsis">
+      wannier_run
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1882,7 +2004,7 @@
                   
 
   
-    <a href="https://github.com/wannier-developers/wannier90/edit/master/docs/index.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/wannier-developers/wannier90/edit/master/docs/user_guide/wannier90/library_mode.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -1891,21 +2013,225 @@
     
       
     
-    <a href="https://github.com/wannier-developers/wannier90/raw/master/docs/index.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/wannier-developers/wannier90/raw/master/docs/user_guide/wannier90/library_mode.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
   
 
 
-<h1 id="welcome-to-wannier90-documentation">Welcome to Wannier90 documentation<a class="headerlink" href="#welcome-to-wannier90-documentation" title="Permanent link">&para;</a></h1>
-<p><a class="glightbox" href="assets/wannier-logo.svg" data-type="image" data-width="auto" data-height="auto" data-desc-position="bottom"><img alt="Wannier90 logo" src="assets/wannier-logo.svg" width="400" /></a></p>
-<p>This is the home of the documenation of <a href="https://wannier.org">Wannier90</a>,
-which a computer program for maximally-localised Wannier functions (MLWFs).</p>
+<h1 id="wannier90-as-a-library"><code>wannier90</code> as a library<a class="headerlink" href="#wannier90-as-a-library" title="Permanent link">&para;</a></h1>
+<p>This is a description of the interface between any external program and
+the wannier code. There are two subroutines: <code>wannier_setup</code> and
+<code>wannier_run</code>. Calling <code>wannier_setup</code> will return information required
+to construct the <span class="arithmatex">\(M_{mn}^{(\mathbf{k,b})}\)</span> overlaps
+(Ref. <sup id="fnref:ref1"><a class="footnote-ref" href="#fn:ref1">1</a></sup>, Eq. (25)) and
+<span class="arithmatex">\(A_{mn}^{(\mathbf{k})}=\left\langle
+  \psi_{m\mathbf{k}}|g_{n}\right\rangle\)</span> projections
+(Ref. <sup id="fnref2:ref1"><a class="footnote-ref" href="#fn:ref1">1</a></sup>, Eq. (62); Ref. <sup id="fnref:ref2"><a class="footnote-ref" href="#fn:ref2">2</a></sup>, Eq. (22)). Once
+the overlaps and projection have been computed, calling <code>wannier_run</code>
+activates the minimisation and plotting routines in <code>wannier90</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The library mode ONLY works in serial. Please call
+it from a serial code, or if compiled in parallel, make sure to run it
+from a single MPI process.</p>
+</div>
+<p>You can find a minimal example of how the library mode can be used among
+the tests, in the file <code>test-suite/library-mode-test/test_library.F90</code>
+in the Wannier90 git repository.</p>
+<h2 id="subroutines">Subroutines<a class="headerlink" href="#subroutines" title="Permanent link">&para;</a></h2>
+<h3 id="wannier_setup"><code>wannier_setup</code><a class="headerlink" href="#wannier_setup" title="Permanent link">&para;</a></h3>
+<div class="language-fortran highlight"><span class="filename">Fortran</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">wannier_setup</span><span class="p">(</span><span class="n">seed_name</span><span class="p">,</span><span class="n">mp_grid</span><span class="p">,</span><span class="n">num_kpts</span><span class="p">,</span><span class="n">real_lattice</span><span class="p">,</span><span class="n">recip_lattice</span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">              </span><span class="n">kpt_latt</span><span class="p">,</span><span class="n">num_bands_tot</span><span class="p">,</span><span class="n">num_atoms</span><span class="p">,</span><span class="n">atom_symbols</span><span class="p">,</span><span class="n">atoms_cart</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">              </span><span class="n">gamma_only</span><span class="p">,</span><span class="n">spinors</span><span class="p">,</span><span class="n">nntot</span><span class="p">,</span><span class="n">nnlist</span><span class="p">,</span><span class="n">nncell</span><span class="p">,</span><span class="n">num_bands</span><span class="p">,</span><span class="n">num_wann</span><span class="p">,</span><span class="n">proj_site</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">              </span><span class="n">proj_l</span><span class="p">,</span><span class="n">proj_m</span><span class="p">,</span><span class="n">proj_radial</span><span class="p">,</span><span class="n">proj_z</span><span class="p">,</span><span class="n">proj_x</span><span class="p">,</span><span class="n">proj_zona</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">              </span><span class="n">exclude_bands</span><span class="p">,</span><span class="n">proj_s</span><span class="p">,</span><span class="n">proj_s_qaxis</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Conditions:</p>
 <ul>
-<li><a href="user_guide/introduction/">User guide</a></li>
-<li><a href="tutorials/preliminaries/">Tutorials</a></li>
+<li>
+<p><span class="arithmatex">\(\texttt{num_kpts} = \texttt{mp_grid(1)} \times \texttt{mp_grid(2)}
+    \times \texttt{mp_grid(3)}\)</span>.</p>
+</li>
+<li>
+<p><span class="arithmatex">\(\texttt{num_nnmax} = 12\)</span></p>
+</li>
 </ul>
+<p>This subroutine returns the information required to determine the
+required overlap elements <span class="arithmatex">\(M_{mn}^{(\mathbf{k,b})}\)</span> and projections
+<span class="arithmatex">\(A_{mn}^{(\mathbf{k})}\)</span>, i.e., <code>M_matrix</code> and <code>A_matrix</code>, described in
+Section <a href="#wannier_run"><code>wannier_run</code></a>.</p>
+<p>For the avoidance of doubt, <code>real_lattice(1,2)</code> is the <span class="arithmatex">\(y-\)</span>component of
+the first lattice vector <span class="arithmatex">\(\mathbf{A}_{1}\)</span>, etc.</p>
+<p>The list of nearest neighbours of a particular k-point <code>nkp</code> is given by
+<code>nnlist(nkp,1:nntot)</code>.</p>
+<p>Additionally, the parameter <code>shell_list</code> may be specified in the
+<code>wannier90</code> input file.</p>
+<h3 id="wannier_run"><code>wannier_run</code><a class="headerlink" href="#wannier_run" title="Permanent link">&para;</a></h3>
+<div class="language-fortran highlight"><span class="filename">Fortran</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">wannier_run</span><span class="p">(</span><span class="n">seed_name</span><span class="p">,</span><span class="n">mp_grid</span><span class="p">,</span><span class="n">num_kpts</span><span class="p">,</span><span class="n">real_lattice</span><span class="p">,</span><span class="n">recip_lattice</span><span class="p">,</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">            </span><span class="n">kpt_latt</span><span class="p">,</span><span class="n">num_bands</span><span class="p">,</span><span class="n">num_wann</span><span class="p">,</span><span class="n">nntot</span><span class="p">,</span><span class="n">num_atoms</span><span class="p">,</span><span class="n">atom_symbols</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">            </span><span class="n">atoms_cart</span><span class="p">,</span><span class="n">gamma_only</span><span class="p">,</span><span class="n">M_matrix_orig</span><span class="p">,</span><span class="n">A_matrix</span><span class="p">,</span><span class="n">eigenvalues</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">            </span><span class="n">U_matrix</span><span class="p">,</span><span class="n">U_matrix_opt</span><span class="p">,</span><span class="n">lwindow</span><span class="p">,</span><span class="n">wann_centres</span><span class="p">,</span><span class="n">wann_spreads</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">            </span><span class="nb">spread</span><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li>
+<p><code>character(len=*), intent(in) :: seed_name</code>
+    The seedname of the current calculation.</p>
+</li>
+<li>
+<p><code>integer, dimension(3), intent(in) :: mp_grid</code>
+    The dimensions of the Monkhorst-Pack k-point grid.</p>
+</li>
+<li>
+<p><code>integer, intent(in) :: num_kpts</code>
+    The number of k-points on the Monkhorst-Pack grid.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(3,3),</code> <code>intent(in) :: real_lattice</code>
+    The lattice vectors in Cartesian co-ordinates in units of Angstrom.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(3,3), intent(in) :: recip_lattice</code>
+    The reciprical lattice vectors in Cartesian co-ordinates in units of
+    inverse Angstrom.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(3,num_kpts),</code> <code>intent(in) :: kpt_latt</code>
+    The positions of the k-points in fractional co-ordinates relative to
+    the reciprocal lattice vectors.</p>
+</li>
+<li>
+<p><code>integer, intent(in) :: num_bands</code>
+    The total number of bands to be processed.</p>
+</li>
+<li>
+<p><code>integer, intent(in) :: num_wann</code>
+    The number of MLWF to be extracted.</p>
+</li>
+<li>
+<p><code>integer, intent(in) :: nntot</code>
+    The number of nearest neighbours for each k-point.</p>
+</li>
+<li>
+<p><code>integer, intent(in) :: num_atoms</code>
+    The total number of atoms in the system.</p>
+</li>
+<li>
+<p><code>character(len=20), dimension(num_atoms),</code>
+    <code>intent(in) :: atom_symbols</code>
+    The elemental symbols of the atoms.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(3,num_atoms),</code> <code>intent(in) :: atoms_cart</code>
+    The positions of the atoms in Cartesian co-ordinates in Angstrom.</p>
+</li>
+<li>
+<p><code>logical, intent(in) :: gamma_only</code>
+    Set to <code>.true.</code> if the underlying electronic structure calculation
+    has been performed with only <span class="arithmatex">\(\Gamma\)</span>-point sampling and, hence, if
+    the Bloch eigenstates that are used to construct
+    <span class="arithmatex">\(A_{mn}^{(\mathbf{k})}\)</span> and <span class="arithmatex">\(M_{mn}^{\mathbf{(k,b)}}\)</span> are real.</p>
+</li>
+<li>
+<p><code>complex(kind=dp),</code>
+    <code>dimension(num_bands,num_bands,nntot,num_kpts),</code>
+    <code>intent(in) :: M_matrix</code>
+    The matrices of overlaps between neighbouring periodic parts of the
+    Bloch eigenstates at each k-point, <span class="arithmatex">\(M_{mn}^{(\mathbf{(k,b)})}\)</span>
+    (Ref. <sup id="fnref6:ref1"><a class="footnote-ref" href="#fn:ref1">1</a></sup>, Eq. (25)).</p>
+</li>
+<li>
+<p><code>complex(kind=dp), dimension(num_bands,num_wann,num_kpts),</code>
+    <code>intent(in) :: A_matrix</code>
+    The matrices describing the projection of <code>num_wann</code> trial orbitals
+    on <code>num_bands</code> Bloch states at each k-point, <span class="arithmatex">\(A_{mn}^{(\mathbf{k})}\)</span>
+    (Ref. <sup id="fnref5:ref1"><a class="footnote-ref" href="#fn:ref1">1</a></sup>, Eq. (62); Ref. <sup id="fnref3:ref2"><a class="footnote-ref" href="#fn:ref2">2</a></sup>, Eq. (22)).</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(num_bands,num_kpts),</code>
+    <code>intent(in) :: eigenvalues</code>
+    The eigenvalues <span class="arithmatex">\(\varepsilon_{n\mathbf{k}}\)</span> corresponding to the
+    eigenstates, in eV.</p>
+</li>
+<li>
+<p><code>complex(kind=dp), dimension(num_wann,num_wann,num_kpts),</code>
+    <code>intent(out) :: U_matrix</code>
+    The unitary matrices at each k-point (Ref. <sup id="fnref4:ref1"><a class="footnote-ref" href="#fn:ref1">1</a></sup>,
+    Eq. (59))</p>
+</li>
+<li>
+<p><code>complex(kind=dp), dimension(num_bands,num_wann,num_kpts),</code>
+    <code>optional, intent(out) :: U_matrix_opt</code>
+    The unitary matrices that describe the optimal sub-space at each
+    k-point (see Ref. <sup id="fnref2:ref2"><a class="footnote-ref" href="#fn:ref2">2</a></sup>, Section IIIa). The array is packed
+    (see below)</p>
+</li>
+<li>
+<p><code>logical, dimension(num_bands,num_kpts), optional, intent(out) :: lwindow</code>
+    The element <code>lwindow(nband,nkpt)</code> is <code>.true.</code> if the band <code>nband</code>
+    lies within the outer energy window at kpoint <code>nkpt</code>.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(3,num_wann), optional, intent(out) :: wann_centres</code>
+    The centres of the MLWF in Cartesian co-ordinates in Angstrom.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(num_wann), optional, intent(out) :: wann_spreads</code>
+    The spread of each MLWF in Å<span class="arithmatex">\(^{2}\)</span>.</p>
+</li>
+<li>
+<p><code>real(kind=dp), dimension(3), optional, intent(out) ::</code> <code>spread</code>
+    The values of <span class="arithmatex">\(\Omega\)</span>, <span class="arithmatex">\(\Omega_{\mathrm{I}}\)</span> and <span class="arithmatex">\(\tilde{\Omega}\)</span>
+    (Ref. <sup id="fnref3:ref1"><a class="footnote-ref" href="#fn:ref1">1</a></sup>, Eq. (13)).</p>
+</li>
+</ul>
+<p>Conditions:</p>
+<ul>
+<li>
+<p><span class="arithmatex">\(\texttt{num_wann} \le \texttt{num_bands}\)</span></p>
+</li>
+<li>
+<p><span class="arithmatex">\(\texttt{num_kpts} = \texttt{mp_grid(1)} \times \texttt{mp_grid(2)}
+    \times \texttt{mp_grid(3)}\)</span>.</p>
+</li>
+</ul>
+<p>If <span class="arithmatex">\(\texttt{num_bands} = \texttt{num_wann}\)</span> then <code>U_matrix_opt</code> is the
+identity matrix and <code>lwindow=.true.</code></p>
+<p>For the avoidance of doubt, <code>real_lattice(1,2)</code> is the <span class="arithmatex">\(y-\)</span>component of
+the first lattice vector <span class="arithmatex">\(\mathbf{A}_{1}\)</span>, etc.</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\texttt{M_matrix(m,n,nn,nkp)} &amp; = \left\langle u_{m\mathbf{k}} |
+u_{n\mathbf{k+b}}\right\rangle\\
+\texttt{A_matrix(m,n,nkp)} &amp; = \left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle\\
+\texttt{eigenvalues(n,nkp)} &amp;= \varepsilon_{n\mathbf{k}}
+\end{aligned}
+\]</div>
+<p>where</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\mathbf{k} &amp;=\texttt{kpt_latt(1:3,nkp)}\\
+\mathbf{k+b}&amp;= \texttt{kpt_latt(1:3,nnlist(nkp,nn))} +
+\texttt{nncell(1:3,nkp,nn)}
+\end{aligned}
+\]</div>
+<p>and <span class="arithmatex">\(\left\{|g_{n}\rangle\right\}\)</span> are a set of initial
+trial orbitals. These are typically atom or bond-centred Gaussians that
+are modulated by appropriate spherical harmonics.</p>
+<p>Additional parameters should be specified in the <code>wannier90</code> input file.</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:ref1">
+<p>N. Marzari and D. Vanderbilt. Maximally localized generalized wannier functions for composite energy bands. <em>Phys. Rev. B</em>, 56:12847, 1997.&#160;<a class="footnote-backref" href="#fnref:ref1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:ref1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref3:ref1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref4:ref1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref5:ref1" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref6:ref1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:ref2">
+<p>I. Souza, N. Marzari, and D. Vanderbilt. Maximally localized wannier functions for entangled energy bands. <em>Phys. Rev. B</em>, 65:035109, 2001.&#160;<a class="footnote-backref" href="#fnref:ref2" title="Jump back to footnote 2 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:ref2" title="Jump back to footnote 2 in the text">&#8617;</a><a class="footnote-backref" href="#fnref3:ref2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 
@@ -1972,15 +2298,31 @@ which a computer program for maximally-localised Wannier functions (MLWFs).</p>
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
+          
+          <a href="../postproc/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Post-processing">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Post-processing
+              </div>
+            </div>
+          </a>
+        
         
           
-          <a href="user_guide/introduction/" class="md-footer__link md-footer__link--next" aria-label="Next: Introduction">
+          <a href="../transport/" class="md-footer__link md-footer__link--next" aria-label="Next: Transport">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Introduction
+                Transport
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2033,16 +2375,16 @@ which a computer program for maximally-localised Wannier functions (MLWFs).</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
-        <script src="js/timeago.min.js"></script>
+        <script src="../../../js/timeago.min.js"></script>
       
-        <script src="js/timeago_mkdocs_material.js"></script>
+        <script src="../../../js/timeago_mkdocs_material.js"></script>
       
-        <script src="javascripts/mathjax.js"></script>
+        <script src="../../../javascripts/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
