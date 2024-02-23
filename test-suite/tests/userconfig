@@ -226,6 +226,12 @@ exe = ../../wannier90.x
 extract_fn = tools parsers.parse_wout.parse
 tolerance = ( (1.0e-6, 1.0e-6, 'omegaI'))
 
+[WANNIER90_BANDS_PLOT]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_w90_bands_dat.parse
+tolerance = ( (1.0e-6, 1.0e-6, 'kpath'),
+              (1.0e-5, 1.0e-5, 'eigval'))
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

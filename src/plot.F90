@@ -754,10 +754,9 @@ contains
       !
     end do
 
-    if (num_nodes > 1) then
-      call comms_reduce(eig_int(1, 1), num_wann*total_pts, 'SUM', error, comm)
-      call comms_reduce(bands_proj(1, 1), num_wann*total_pts, 'SUM', error, comm)
-    endif
+    call comms_reduce(eig_int(1, 1), num_wann*total_pts, 'SUM', error, comm)
+    call comms_reduce(bands_proj(1, 1), num_wann*total_pts, 'SUM', error, comm)
+
     if (on_root .and. print_output%timing_level > 2) then
       call io_stopwatch_stop('plot: interpolate_bands: loop_kpoints', timer)
     endif
