@@ -1,5 +1,7 @@
 program ok
+#ifdef Wannier90_MPI
   use mpi_f08
+#endif
   use w90_library
 
   implicit none
@@ -17,6 +19,11 @@ program ok
   real(8), allocatable :: eval(:, :), kpt(:, :)
   real(8) :: uccart(3, 3) ! cartesian unit cell
   type(lib_common_type), target :: w90main
+
+#ifndef Wannier90_MPI
+  ! MPI dummy
+  integer :: mpi_comm_world = 0
+#endif
 
   ! collect data
   nb = 12
@@ -58,10 +65,12 @@ program ok
     enddo
   enddo
 
+#ifdef Wannier90_MPI
   ! setup MPI
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world, mpisize, ierr)
   call mpi_comm_rank(mpi_comm_world, mpirank, ierr)
+#endif
 
   ! crude k distribution
   allocate (distk(nk))
@@ -73,57 +82,60 @@ program ok
 
   ! wannier interface starts
   ! stdout/err
-  call get_fortran_stdout(stdout)
-  call get_fortran_stderr(stderr)
+  call w90_get_fortran_stdout(stdout)
+  call w90_get_fortran_stderr(stderr)
 
   ! required settings
-  call set_option(w90main, 'kpoints', kpt)
-  call set_option(w90main, 'mp_grid', nkabc)
-  call set_option(w90main, 'num_bands', nb)
-  call set_option(w90main, 'num_kpts', nk)
-  call set_option(w90main, 'num_wann', nw)
-  call set_option(w90main, 'unit_cell_cart', uccart)
+  call w90_set_option(w90main, 'kpoints', kpt)
+  call w90_set_option(w90main, 'mp_grid', nkabc)
+  call w90_set_option(w90main, 'num_bands', nb)
+  call w90_set_option(w90main, 'num_kpts', nk)
+  call w90_set_option(w90main, 'num_wann', nw)
+  call w90_set_option(w90main, 'unit_cell_cart', uccart)
 
   ! optional settings
-  call set_option(w90main, 'conv_tol', 1.d-13)
-  call set_option(w90main, 'conv_window', 3)
-  call set_option(w90main, 'dis_froz_max', 14.0d0)
-  call set_option(w90main, 'dis_mix_ratio', 1.d0)
-  call set_option(w90main, 'dis_num_iter', 1200)
-  call set_option(w90main, 'distk', distk)
-  call set_option(w90main, 'dis_win_max', 24.d0)
-  call set_option(w90main, 'exclude_bands', exclude)
-  call set_option(w90main, 'fixed_step', 50.d0)
-  call set_option(w90main, 'iprint', 0)
-  call set_option(w90main, 'num_iter', 1000)
+  call w90_set_option(w90main, 'conv_tol', 1.d-13)
+  call w90_set_option(w90main, 'conv_window', 3)
+  call w90_set_option(w90main, 'dis_froz_max', 14.0d0)
+  call w90_set_option(w90main, 'dis_mix_ratio', 1.d0)
+  call w90_set_option(w90main, 'dis_num_iter', 1200)
+  call w90_set_option(w90main, 'distk', distk)
+  call w90_set_option(w90main, 'dis_win_max', 24.d0)
+  call w90_set_option(w90main, 'exclude_bands', exclude)
+  call w90_set_option(w90main, 'fixed_step', 50.d0)
+  call w90_set_option(w90main, 'iprint', 0)
+  call w90_set_option(w90main, 'num_iter', 1000)
 
-  call input_setopt(w90main, 'gaas', mpi_comm_world, stdout, stderr, ierr) ! apply settings
+  call w90_input_setopt(w90main, 'gaas', mpi_comm_world, stdout, stderr, ierr) ! apply settings
 
-  call get_nn(w90main, nn, stdout, stderr, ierr); 
+  call w90_get_nn(w90main, nn, stdout, stderr, ierr); 
   allocate (nnkp(nk, nn))
-  call get_nnkp(w90main, nnkp, stdout, stderr, ierr); 
+  call w90_get_nnkp(w90main, nnkp, stdout, stderr, ierr); 
   allocate (m_matrix(nb, nb, nn, nk))
   allocate (u_matrix_opt(nb, nw, nk))
-  call set_m_local(w90main, m_matrix) ! m_matrix_local_orig
-  call set_u_opt(w90main, u_matrix_opt)
+  call w90_set_m_local(w90main, m_matrix) ! m_matrix_local_orig
+  call w90_set_u_opt(w90main, u_matrix_opt)
 
   ! read from ".mmn" and ".amn"
   ! and assign to m and a (now called u)
   ! a dft code would calculate the overlaps here instead
-  call overlaps(w90main, stdout, stderr, ierr)
+  ! TODO: Correct this reference
+!  call overlaps(w90main, stdout, stderr, ierr)
 
   ! final u matrix
   allocate (u_matrix(nw, nw, nk))
-  call set_u_matrix(w90main, u_matrix)
+  call w90_set_u_matrix(w90main, u_matrix)
 
-  call set_eigval(w90main, eval)
-  call disentangle(w90main, stdout, stderr, ierr)
-  call wannierise(w90main, stdout, stderr, ierr)
+  call w90_set_eigval(w90main, eval)
+  call w90_disentangle(w90main, stdout, stderr, ierr)
+  call w90_wannierise(w90main, stdout, stderr, ierr)
 
   if (mpirank == 0) then
     do ib = 1, nw
       write (stdout, '(4f20.10)') (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
     enddo
   endif
+#ifdef Wannier90_MPI
   call mpi_finalize()
+#endif
 end program
