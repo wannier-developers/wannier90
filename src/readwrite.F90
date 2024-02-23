@@ -2103,7 +2103,7 @@ contains
     ikl = 1
     do ikg = 1, num_kpts
       if (distk(ikg) == rank) then
-        m_matrix_local(:, :, :, ikl) = m_matrix(:, :, :, ikg)
+        m_matrix_local(:num_wann, :num_wann, :, ikl) = m_matrix(:, :, :, ikg)
         ikl = ikl + 1
       endif
     enddo
