@@ -1,0 +1,51 @@
+name: CI
+run-name: >
+  CI (${{ github.event_name }})
+  ${{ github.event_name == 'pull_request' && format('PR#{0}', github.event.number) || '' }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ develop ]
+  push:
+    branches: [ develop ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    name: pre-commit
+    uses: ./.github/workflows/step_pre-commit.yaml
+
+  tests:
+    name: test
+    needs: [ pre-commit ]
+    uses: ./.github/workflows/step_test.yaml
+    with:
+      mask-experimental: ${{ github.event_name == 'push' }}
+
+  tests-makefile:
+    name: test Makefile
+    needs: [ pre-commit ]
+    uses: ./.github/workflows/step_test-makefile.yaml
+
+  docs:
+    name: 📘 docs
+    needs: [ pre-commit ]
+    uses: ./.github/workflows/step_docs.yaml
+
+  pass:
+    name: ✅ Pass
+    needs: [ pre-commit, tests, tests-makefile, docs ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all CI jobs
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+    if: always()

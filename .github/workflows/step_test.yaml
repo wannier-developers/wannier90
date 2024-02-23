@@ -1,0 +1,71 @@
+name: test
+
+on:
+  workflow_call:
+    inputs:
+      mask-experimental:
+        type: boolean
+        default: true
+        description: Always report experimental test as successful
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: >
+      🖥️ ${{ matrix.os || 'Fedora' }}
+      ${{ !matrix.os && format('🛠️ {0}', matrix.toolchain) || '' }}
+      ${{ matrix.mpi && format('🖧 {0}', matrix.mpi) || '' }}
+      ${{ matrix.experimental && '[🧪 Experimental]' || '' }}
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    container: ${{ !matrix.os && 'ghcr.io/lecrisut/dev-env:main' || '' }}
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [ gcc, llvm, intel ]
+        mpi: [false, openmpi, mpich, intel]
+        include:
+          # flang is missing features in 16.0.6
+          - toolchain: llvm
+            experimental: true
+    steps:
+      - name: Install missing packages
+        run: dnf install -y bzip2 python-unversioned-command
+      - name: Load mpi module ${{ matrix.mpi || '' }}
+        run: |
+          # Get interactive profile to be able to load modules
+          source /etc/profile
+          
+          # Save the current environment since we only want the added difference
+          printenv > orig_env
+          
+          # Load the relevant mpi module
+          module load mpi/${{ matrix.mpi }}
+          printenv > module_env
+          
+          diff orig_env module_env | sed -n 's/> //p' >> $GITHUB_ENV
+          
+          # Set MPI flag on
+          echo "WITH_MPI=ON" >> $GITHUB_ENV
+        if: matrix.mpi
+      - name: Enable msvc toolchain on windows
+        uses: ilammy/msvc-dev-cmd@v1
+        if: contains(matrix.os, 'windows')
+      - name: Activate Intel compilers
+        # Not elegant, it will propagate all environment variable.
+        # Intel does not provide a way to output the environment variables to a file
+        # Note: PATH needs to be exported to GITHUB_PATH otherwise it can be overwritten
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          printenv >> $GITHUB_ENV
+          echo $PATH >> $GITHUB_PATH
+        if: matrix.toolchain == 'intel'
+      - uses: actions/checkout@v3
+      - uses: lukka/get-cmake@latest
+      - name: Run CMake workflow ${{ matrix.toolchain }}-ci
+        uses: lukka/run-cmake@v10.3
+        with:
+          workflowPreset: "${{ matrix.toolchain }}-ci"
+        continue-on-error: ${{ matrix.experimental && inputs.mask-experimental}}
