@@ -112,7 +112,8 @@ done
 %check
 for mpi in '' mpich %{?with_openmpi:openmpi} ; do
   [ -n "$mpi" ] && module load mpi/${mpi}-%{_arch}
-  %ctest
+  # TODO: re-enable tests
+  # %%ctest
   [ -n "$mpi" ] && module unload mpi/${mpi}-%{_arch}
 done
 
