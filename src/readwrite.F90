@@ -1436,7 +1436,7 @@ contains
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  Wannier90 Developer Group:                       |'
-    write (stdout, *) '            |    Giovanni Pizzi    (EPFL)                       |'
+    write (stdout, *) '            |    Giovanni Pizzi    (Paul Scherrer Institute)    |'
     write (stdout, *) '            |    Valerio Vitale    (University of Trieste)      |'
     write (stdout, *) '            |    David Vanderbilt  (Rutgers University)         |'
     write (stdout, *) '            |    Nicola Marzari    (EPFL)                       |'
