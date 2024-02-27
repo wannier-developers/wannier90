@@ -1437,7 +1437,7 @@ contains
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |  Wannier90 Developer Group:                       |'
     write (stdout, *) '            |    Giovanni Pizzi    (EPFL)                       |'
-    write (stdout, *) '            |    Valerio Vitale    (Cambridge)                  |'
+    write (stdout, *) '            |    Valerio Vitale    (University of Trieste)      |'
     write (stdout, *) '            |    David Vanderbilt  (Rutgers University)         |'
     write (stdout, *) '            |    Nicola Marzari    (EPFL)                       |'
     write (stdout, *) '            |    Ivo Souza         (Universidad del Pais Vasco) |'
@@ -2103,7 +2103,7 @@ contains
     ikl = 1
     do ikg = 1, num_kpts
       if (distk(ikg) == rank) then
-        m_matrix_local(:, :, :, ikl) = m_matrix(:, :, :, ikg)
+        m_matrix_local(:num_wann, :num_wann, :, ikl) = m_matrix(:, :, :, ikg)
         ikl = ikl + 1
       endif
     enddo
