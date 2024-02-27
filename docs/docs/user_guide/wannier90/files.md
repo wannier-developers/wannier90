@@ -121,7 +121,7 @@ might slightly change across different versions):
              |            http://www.wannier.org                 |
              |                                                   |
              |  Wannier90 Developer Group:                       |
-             |    Giovanni Pizzi    (EPFL)                       |
+             |    Giovanni Pizzi    (Paul Scherrer Institute)    |
              |    Valerio Vitale    (Cambridge)                  |
              |    David Vanderbilt  (Rutgers University)         |
              |    Nicola Marzari    (EPFL)                       |

@@ -59,10 +59,10 @@ and
 
 ## Credits
 
-The Wannier90 Developer Group includes Giovanni Pizzi (EPFL, CH),
-Valerio Vitale (University of Trieste, IT), David Vanderbilt (Rutgers University,
-US), Nicola Marzari (EPFL, CH), Ivo Souza (Universidad del Pais Vasco,
-ES), Arash A. Mostofi (Imperial College London, GB), and Jonathan R.
+The Wannier90 Developer Group includes Giovanni Pizzi (Paul Scherrer Institute,
+CH), Valerio Vitale (University of Trieste, IT), David Vanderbilt (Rutgers
+University, US), Nicola Marzari (EPFL, CH), Ivo Souza (Universidad del Pais
+Vasco, ES), Arash A. Mostofi (Imperial College London, GB), and Jonathan R.
 Yates (University of Oxford, GB).
 
 The present release of `wannier90` was written by the Wannier90
