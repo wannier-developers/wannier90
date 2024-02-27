@@ -10,7 +10,12 @@ The homepage of the Wannier90 code is http://www.wannier.org
 The code is hosted on 
 GitHub_.
 
+The documentation of the code can be found
+here_.
+
 .. _GitHub: https://github.com/wannier-developers/wannier90
+
+.. _here: https://wannier-developers.github.io/wannier90
 
 How to contribute
 +++++++++++++++++
@@ -87,7 +92,7 @@ Authors and contributors
 
 The Wannier90 Developer Group includes:
 
-* Giovanni Pizzi    (EPFL, CH)
+* Giovanni Pizzi    (Paul Scherrer Institute, CH)
 * Valerio Vitale    (University of Trieste, IT)
 * David Vanderbilt  (Rutgers University, US)
 * Nicola Marzari    (EPFL, CH)
