@@ -285,8 +285,8 @@ contains
     if (w90_calculation%wannier_plot) then
       call plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                         dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
-                        num_bands, num_wann, have_disentangled, w90_system%spinors, bohr, stdout, seedname, &
-                        timer, error, comm)
+                        num_bands, num_wann, have_disentangled, w90_system%spinors, bohr, stdout, &
+                        seedname, dist_k, timer, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1350,7 +1350,7 @@ contains
   subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                           dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
-                          timer, error, comm)
+                          dist_k, timer, error, comm)
     !================================================!
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
@@ -1390,6 +1390,7 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: dist_k(:)
 
     logical, intent(in) :: have_disentangled
     logical, intent(in) :: spinors
@@ -1436,7 +1437,7 @@ contains
     if (print_output%timing_level > 1) call io_stopwatch_start('plot: wannier', timer)
     !
     associate (ngs=>wannier_plot%supercell)
-      !
+
       if (.not. spinors) then
         write (wfnname, 200) 1, wvfn_read%spin_channel
       else
@@ -1514,6 +1515,7 @@ contains
 
       call io_date(cdate, ctime)
       do loop_kpt = 1, num_kpts
+        if (dist_k(loop_kpt) /= my_node_id) cycle
 
         inc_band = .true.
         num_inc = num_wann
