@@ -77,7 +77,10 @@ jobs:
           # use the latest stable version
           python-version: "3.x"
           cache: "pip"
-      - run: pip install -r docs/requirements.txt
+      # `pybtex` uses `pkg_resources` which is deprecated. Use workaround until upstream `mkdocs_bibtext`decides on a solution
+      # https://github.com/shyamd/mkdocs-bibtex/issues/228
+      # https://bitbucket.org/pybtex-devs/pybtex/issues/169/replace-pkg_resources-with
+      - run: pip install -r docs/requirements.txt setuptools
       - run: mkdocs build --strict
         working-directory: ./docs
         env:
