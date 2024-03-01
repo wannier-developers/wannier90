@@ -5,7 +5,7 @@ Wannier90
 The Maximally-Localised Generalised Wannier Functions Code 
 ----------------------------------------------------------
 
-The homepage of the Wannier90 code is http://www.wannier.org
+The homepage of the Wannier90 code is https://www.wannier.org
 
 The code is hosted on 
 GitHub_.
@@ -15,7 +15,7 @@ here_.
 
 .. _GitHub: https://github.com/wannier-developers/wannier90
 
-.. _here: https://wannier-developers.github.io/wannier90
+.. _here: https://wannier90.readthedocs.io/
 
 How to contribute
 +++++++++++++++++

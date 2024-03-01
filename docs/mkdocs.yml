@@ -1,5 +1,5 @@
 site_name: Wannier90 Documentation
-site_url: https://wannier-developers.github.io/wannier90/
+site_url: https://wannier90.readthedocs.io/
 # site_url: https://wannier.org/
 site_author: Wannier90 Developers
 site_description: >-
@@ -199,8 +199,18 @@ plugins:
   - search
   - glightbox
   - bibtex:
-      bib_file: "refs.bib"
-      footnote_format: "ref{number}" # default "{number}", to avoid conflict with user-defined footnotes
+      # `bib_file` takes precedence over `bib_dir`, if `bib_file` is defined,
+      # the bibtex plugin will use an absolute path to the file, meaning that
+      # we can only execute `mkdocs build` in the folder `REPO_root/docs`.
+      # With `bib_dir` the bibtex plugin will use a relative path to the
+      # `mkdocs.yml` file, and search recursively for all the bib files.
+      # Therefore, it is possible to execute `mkdocs build` in both the
+      # `REPO_root` and the `REPO_root/docs` folder, then readthedocs can build
+      # the docs (since readthedocs always builds the docs in the `REPO_root`).
+      # bib_file: refs.bib
+      bib_dir: .
+      # default "{number}", to avoid conflict with user-defined footnotes
+      footnote_format: "ref{number}"
 
 extra_javascript:
   - javascripts/mathjax.js
@@ -212,4 +222,4 @@ extra_javascript:
 
 extra_css:
   - stylesheets/custom.css
-  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.css
+  # - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.7/katex.min.css

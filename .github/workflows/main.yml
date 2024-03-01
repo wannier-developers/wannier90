@@ -4,8 +4,8 @@ on:
   pull_request:
   push:
     branches:
-    - develop
-    
+      - develop
+
 jobs:
   pre-commit:
     runs-on: ubuntu-20.04
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        w90-binary-parallel: [ 'false', 'true' ]
+        w90-binary-parallel: ["false", "true"]
     name: Build and test `parallel=${{ matrix.w90-binary-parallel }}`
     steps:
       - name: checkout
@@ -66,3 +66,23 @@ jobs:
           path: |
             test-suite/tests/test*/test.err*
             test-suite/tests/test*/test.out*
+
+  docs:
+    name: Validate mkdocs links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # use the latest stable version
+          python-version: "3.x"
+          cache: "pip"
+      # `pybtex` uses `pkg_resources` which is deprecated. Use workaround until upstream `mkdocs_bibtext`decides on a solution
+      # https://github.com/shyamd/mkdocs-bibtex/issues/228
+      # https://bitbucket.org/pybtex-devs/pybtex/issues/169/replace-pkg_resources-with
+      - run: pip install -r docs/requirements.txt setuptools
+      - run: mkdocs build --strict
+        working-directory: ./docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENABLE_MKDOCS_GIT_COMMITTERS: False
