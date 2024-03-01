@@ -83,14 +83,12 @@ clean:
 		$(MAKE) -f $(REALMAKEFILE) clean && \
 		cd ../ && rm -rf obj ; \
 	fi )
-	cd $(ROOTDIR)/docs && rm -r site
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
 	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 veryclean: clean
 	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a libwan2.a w90chk2chk.x w90spn2spn.x
-	cd $(ROOTDIR)/docs && rm -r site
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
