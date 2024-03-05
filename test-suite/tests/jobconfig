@@ -28,6 +28,12 @@ program = WANNIER90_LABELINFO
 inputs_args = ('silicon.win', '')
 output = silicon_band.labelinfo.dat
 
+# Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure only, checking the band.dat file
+[testw90_example03_bands_plot]
+program = WANNIER90_BANDS_PLOT
+inputs_args = ('silicon.win', '')
+output = silicon_band.dat
+
 # Copper, states around the Fermi level; Fermi surface
 [testw90_example04]
 program = WANNIER90_WOUT_OK
