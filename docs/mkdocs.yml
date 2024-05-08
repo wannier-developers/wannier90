@@ -201,6 +201,7 @@ plugins:
       branch: develop
       token: !ENV ["GITHUB_TOKEN"]
   - search
+  - table-reader
   - glightbox
   - bibtex:
       # `bib_file` takes precedence over `bib_dir`, if `bib_file` is defined,

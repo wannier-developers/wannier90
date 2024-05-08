@@ -135,31 +135,13 @@ specific to the modules can be found in the following sections.
 ### Global Parameters of `postw90`
 
 <!-- markdownlint-disable MD013 -->
-|              Keyword               | Type | Description                                                                        |
-| :---------------------------------:| :--: | :----------------------------------------------------------------------------------|
-|         kmesh         |  I   | Dimensions of the uniform interpolation \(k\)-mesh (one or three integers)         |
-|    kmesh\_spacing     |  R   | Minimum spacing between \(k\) points in Å\(^{-1}\)                                 |
-|       adpt\_smr       |  L   | Use adaptive smearing                                                              |
-|    adpt\_smr\_fac     |  R   | Adaptive smearing prefactor                                                        |
-|    adpt\_smr\_max     |  P   | Maximum allowed value for the adaptive energy smearing (eV)                        |
-|       smr\_type       |  S   | Analytical form used for the broadened delta function                              |
-| smr\_fixed\_en\_width |  P   | Energy smearing (if non-adaptive)                                                  |
-| num\_elec\_per\_state |  I   | Number of electrons per state                                                      |
-|    scissors\_shift    |  P   | Scissors shift applied to the conduction bands (eV) (deprecated)                   |
-|  num\_valence\_bands  |  I   | Number of valence bands                                                            |
-|     spin\_decomp      |  L   | Decompose various properties into up-spin, down-spin, and possibly spin-flip parts |
-|   spin\_axis\_polar   |  P   | Polar angle of the spin quantization axis (deg)                                    |
-|  spin\_axis\_azimuth  |  P   | Azimuthal angle of the spin quantization axis (deg)                                |
-|  spin\_moment\(^*\)   |  L   | Determines whether to evaluate the spin magnetic moment per cell                   |
-|    uHu\_formatted     |  L   | Read a formatted `seedname.uHu` file                                  |
-|    spn\_formatted     |  L   | Read a formatted `seedname.spn` file                                  |
-|   berry\_curv\_unit   |  S   | Unit of Berry curvature                                                            |
+{{ read_csv('docs/parameters/postw90-global-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the general behaviour of
   the modules in `postw90`. Argument types are represented by, I for a integer, R
   for a real number, P for a physical value, L for a logical value and S
-  for a text string.  
+  for a text string.
  \* The keyword `spin_moment` does not affect the behavior of the modules
   in , and does not really belong to any of them. It is listed here for
   lack of a better place.
@@ -167,39 +149,7 @@ specific to the modules can be found in the following sections.
 ### `berry` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|                    Keyword                    | Type | Description                                                                                                                                   |
-| :-------------------------------------------: | :--: | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-|              berry               |  L   | Calculate Berry-type quantities                                                                                                               |
-|           berry\_task            |  S   | List of properties to compute                                                                                                                 |
-|              \[berry\_\]kmesh               |  I   | Dimensions of the uniform interpolation \(k\)-mesh (one or three integers)                                                                    |
-|          \[berry\_\]kmesh\_spacing          |  R   | Minimum spacing between \(k\) points in Å\(^{-1}\)                                                                                            |
-|     berry\_curv\_adpt\_kmesh     |  I   | Linear dimension of the adaptively refined \(k\)-mesh used to compute the anomalous/spin Hall conductivity                                    |
-| berry\_curv\_adpt\_kmesh\_thresh |  P   | Threshold magnitude of the Berry curvature for adaptive refinement                                                                            |
-|         kubo\_freq\_min          |  P   | Lower limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)                                   |
-|         kubo\_freq\_max          |  P   | Upper limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)                                   |
-|         kubo\_freq\_step         |  R   | Step for increasing the optical frequency in the specified range                                                                              |
-|        kubo\_eigval\_max         |  P   | Maximum energy eigenvalue included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity            |
-|            \[kubo\_\]adpt\_smr             |  L   | Use adaptive energy smearing for the optical conductivity, JDOS, shift current and spin Hall conductivity                                     |
-|           \[kubo\_\]adpt\_smr\_fac          |  R   | Adaptive smearing prefactor                                                                                                                   |
-|           \[kubo\_\]adpt\_smr\_max          |  P   | Maximum allowed value for the adaptive energy smearing (eV)                                                                                   |
-|             \[kubo\_\]smr\_type             |  S   | Analytical form used for the broadened delta function when computing the optical conductivity, JDOS, shift current and spin Hall conductivity |
-|       \[kubo\_\]smr\_fixed\_en\_width       |  P   | Energy smearing (if non-adaptive) for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV)                           |
-|             sc\_eta              |  R   | Energy broadening of energy differences in the sum over virtual states when computing shift current                                           |
-|         sc\_phase\_conv          |  I   | Convention for phase factor of Bloch states when computing shift current                                                                      |
-|            sc\_w\_thr            |  R   | Frequency threshold for speeding up delta function integration when computing shift current                                                   |
-|        sc\_use\_eta\_corr        |  L   | Use finite-eta correction for computing shift current                                                                                         |
-|         shc\_freq\_scan          |  L   | Calculate Fermi energy scan or frequency scan of spin Hall conductivity                                                                       |
-|           shc\_method            |  S   | How to obtain the spin current matrix elements for SHC                                                                                        |
-|            shc\_alpha            |  I   | The spin current direction of spin Hall conductivity                                                                                          |
-|            shc\_beta             |  I   | The direction of applied electrical field of spin Hall conductivity                                                                           |
-|            shc\_gamma            |  I   | The spin direction of the spin current of spin Hall conductivity                                                                              |
-|          shc\_bandshift          |  L   | Rigid bandshift of the conduction bands                                                                                                       |
-|    shc\_bandshift\_firstband     |  I   | Index of the first band to shift                                                                                                              |
-|   shc\_bandshift\_energyshift    |  P   | Energy shift of the conduction bands (eV)                                                                                                     |
-|          kdotp\_kpoint           |  R   | \(k\) point for \(k\cdot p\) expansion (\(2\pi/a\), with \(a\) lattice constant in Å)                                                         |
-|        kdotp\_num\_bands         |  I   | Number of bands for \(k\cdot p\) expansion                                                                                                    |
-|           kdotp\_bands           |  I   | Band indexes corresponding to the \(k\cdot p\) bands                                                                                          |
-|                                               |      |                                                                                                                                               |
+{{ read_csv('docs/parameters/postw90-berry-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `berry` module.
@@ -210,21 +160,7 @@ specific to the modules can be found in the following sections.
 ### `dos` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|              Keyword               | Type | Description                                                                   |
-| :--------------------------------: | :--: | :---------------------------------------------------------------------------- |
-|          dos          |  L   | Calculate the density of states and related properties                        |
-|       dos\_task       |  S   | List of properties to compute                                                 |
-|   dos\_energy\_min    |  P   | Lower limit of the energy range for computing the DOS (eV)                    |
-|   dos\_energy\_max    |  P   | Upper limit of the energy range for computing the DOS (eV)                    |
-|   dos\_energy\_step   |  R   | Step for increasing the energy in the specified range (eV)                    |
-|     dos\_project      |  I   | List of WFs onto which the DOS is projected                                   |
-|         \[dos\_\]kmesh         |  I   | Dimensions of the uniform interpolation \(k\)-mesh (one or three integers)    |
-|    \[dos\_\]kmesh\_spacing     |  R   | Minimum spacing between \(k\) points in Å\(^{-1}\)                            |
-|       \[dos\_\]adpt\_smr       |  L   | Use adaptive smearing for the DOS                                             |
-|    \[dos\_\]adpt\_smr\_fac     |  R   | Adaptive smearing prefactor                                                   |
-|    \[dos\_\]adpt\_smr\_max     |  P   | Maximum allowed value for the adaptive energy smearing (eV)                   |
-| \[dos\_\]smr\_fixed\_en\_width |  P   | Energy smearing (if non-adaptive) for the DOS (eV)                            |
-|       \[dos\_\]smr\_type       |  S   | Analytical form used for the broadened delta function when computing the DOS. |
+{{ read_csv('docs/parameters/postw90-dos-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `dos` module.
@@ -234,12 +170,7 @@ P for a physical value, L for a logical value and S for a text string.
 ### `kpath` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|              Keyword              | Type | Description                                                  |
-| :-------------------------------: | :--: | :----------------------------------------------------------- |
-|        kpath         |  L   | Calculate properties along a piecewise linear path in the BZ |
-|     kpath\_task      |  L   | List of properties to evaluate                               |
-|  kpath\_num\_points  |  I   | Number of points in the first kpath segment                  |
-| kpath\_bands\_colour |  S   | Property used to colour the energy bands along the path      |
+{{ read_csv('docs/parameters/postw90-kpath-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `kpath` module.
@@ -250,16 +181,7 @@ P for a physical value, L for a logical value and S for a text string.
 ### `kslice` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|                  Keyword                  | Type | Description                                                                           |
-| :---------------------------------------: | :--: | :------------------------------------------------------------------------------------ |
-|            kslice            |  L   | Calculate properties on a slice in the BZ                                             |
-|         kslice\_task         |  S   | List of properties to evaluate                                                        |
-|        kslice\_corner        |  R   | Position of the corner of the slice                                                   |
-|          kslice\_b1          |  R   | First vector defining the slice                                                       |
-|          kslice\_b2          |  R   | Second vector defining the slice                                                      |
-|       kslice\_2dkmesh        |  I   | Dimensions of the uniform interpolation \(k\)-mesh on the slice (one or two integers) |
-| kslice\_fermi\_level         |  P   | This parameter is not used anymore. Use fermi_energy instead. |
-| kslice\_fermi\_lines\_colour |  S   | Property used to colour the Fermi lines                                               |
+{{ read_csv('docs/parameters/postw90-kslice-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `kslice` module. Argument types
@@ -269,21 +191,7 @@ value, L for a logical value and S for a text string.
 ### `gyrotropic` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|                Keyword                 | Type | Description                                                                               |
-| :------------------------------------: | :--: | :---------------------------------------------------------------------------------------- |
-|        gyrotropic         |  L   | Calculate gyrotropic quantities                                                           |
-|     gyrotropic\_task      |  L   | List of properties to compute                                                             |
-|           \[gyrotropic\_\]kmesh           |  I   | Dimensions of the uniform interpolation \(k\)-mesh (one or three integers)                |
-|      \[gyrotropic\_\]kmesh\_spacing       |  R   | Minimum spacing between \(k\) points in Å\(^{-1}\)                                        |
-|   gyrotropic\_freq\_min   |  P   | Lower limit of the frequency range for optical rotation (eV)                              |
-|   gyrotropic\_freq\_max   |  P   | Upper limit of the frequency range for optical rotation (eV)                              |
-|  gyrotropic\_freq\_step   |  P   | Step for increasing the optical frequency in the specified range                          |
-|  gyrotropic\_eigval\_max  |  P   | Maximum energy eigenvalue included when evaluating the interband natural optical activity |
-| gyrotropic\_degen\_thresh |  P   | threshold to exclude degenerate bands from the calculation                                |
-|         \[gyrotropic\_\]smr\_type         |  S   | Analytical form used for the broadened delta function                                     |
-|   \[gyrotropic\_\]smr\_fixed\_en\_width   |  P   | Energy smearing (eV)                                                                      |
-|        \[gyrotropic\_\]band\_list         |  I   | list of bands used in the calculation                                                     |
-| gyrotropic\_box\_center<br>gyrotropic\_box\_b1<br>gyrotropic\_box\_b2<br>gyrotropic\_box\_b3  |  R<br>R<br>R<br>R | The center and three basis vectors, defining the box for integration (in reduced coordinates, three real numbers for each vector) |
+{{ read_csv('docs/parameters/postw90-gyrotropic-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `gyrotropic` module.
@@ -294,34 +202,7 @@ value, L for a logical value and S for a text string.
 ### `BoltzWann` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|                    Keyword                     | Type | Description                                                                |
-| :--------------------------------------------: | :--: | :------------------------------------------------------------------------- |
-|             boltzwann             |  L   | Calculate Boltzmann transport coefficients                                 |
-|               \[boltz\_\]kmesh               |  I   | Dimensions of the uniform interpolation \(k\)-mesh (one or three integers) |
-|          \[boltz\_\]kmesh\_spacing           |  R   | Minimum spacing between \(k\) points in Å\(^{-1}\)                         |
-|          boltz\_2d\_dir           |  S   | Non-periodic direction (for 2D systems only)                               |
-|        boltz\_relax\_time         |  P   | Relaxation time in fs                                                      |
-|          boltz\_mu\_min           |  P   | Minimum value of the chemical potential \(\mu\) in eV                      |
-|          boltz\_mu\_max           |  P   | Maximum value of the chemical potential \(\mu\) in eV                      |
-|          boltz\_mu\_step          |  R   | Step for \(\mu\) in eV                                                     |
-|         boltz\_temp\_min          |  P   | Minimum value of the temperature \(T\) in Kelvin                           |
-|         boltz\_temp\_max          |  P   | Maximum value of the temperature \(T\) in Kelvin                           |
-|         boltz\_temp\_step         |  R   | Step for \(T\) in Kelvin                                                   |
-|     boltz\_tdf\_energy\_step      |  R   | Energy step for the TDF (eV)                                               |
-| boltz\_tdf\_smr\_fixed\_en\_width |  P   | Energy smearing for the TDF (eV)                                           |
-|       boltz\_tdf\_smr\_type       |  S   | Smearing type for the TDF                                                  |
-|      boltz\_calc\_also\_dos       |  L   | Calculate also DOS while calculating the TDF                               |
-|      boltz\_dos\_energy\_min      |  P   | Minimum value of the energy for the DOS in eV                              |
-|      boltz\_dos\_energy\_max      |  P   | Maximum value of the energy for the DOS in eV                              |
-|     boltz\_dos\_energy\_step      |  R   | Step for the DOS in eV                                                     |
-|             \[boltz\_\]smr\_type             |  S   | Smearing type for the DOS                                                  |
-|             \[boltz\_\]adpt\_smr             |  L   | Use adaptive smearing for the DOS                                          |
-|          \[boltz\_\]adpt\_smr\_fac           |  R   | Adaptive smearing prefactor                                                |
-|          \[boltz\_\]adpt\_smr\_max           |  P   | Maximum allowed value for the adaptive energy smearing (eV)                |
-|         \[boltz\_\]fixed\_en\_width          |  P   | Energy smearing (if non-adaptive) for the DOS (eV)                         |
-|         boltz\_bandshift          |  L   | Rigid bandshift of the conduction bands                                    |
-|    boltz\_bandshift\_firstband    |  I   | Index of the first band to shift                                           |
-|   boltz\_bandshift\_energyshift   |  P   | Energy shift of the conduction bands (eV)                                  |
+{{ read_csv('docs/parameters/postw90-boltzwann-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the `BoltzWann` module (calculation of
@@ -332,11 +213,7 @@ value, L for a logical value and S for a text string.
 ### `geninterp` Parameters
 
 <!-- markdownlint-disable MD013 -->
-|               Keyword                | Type | Description                                   |
-| :----------------------------------: | :--: | :-------------------------------------------- |
-|        geninterp        |  L   | Calculate bands for given set of \(k\) points |
-| geninterp\_alsofirstder |  L   | Calculate also first derivatives              |
-| geninterp\_single\_file |  L   | Write a single file or one for each process   |
+{{ read_csv('docs/parameters/postw90-geninterp-parameters.csv', colalign=('left', 'center', 'left')) }}
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the Generic Band Interpolation

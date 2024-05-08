@@ -1,0 +1,9 @@
+Keyword,Type,Description
+kslice,L,"Calculate properties on a slice in the BZ"
+kslice_task,S,"List of properties to evaluate"
+kslice_corner,R,"Position of the corner of the slice"
+kslice_b1,R,"First vector defining the slice"
+kslice_b2,R,"Second vector defining the slice"
+kslice_2dkmesh,I,"Dimensions of the uniform interpolation \\(k\\)-mesh on the slice (one or two integers)"
+kslice_fermi_level,P,"This parameter is not used anymore. Use fermi_energy instead"
+kslice_fermi_lines_colour,S,"Property used to colour the Fermi lines"
