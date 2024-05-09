@@ -1,0 +1,1202 @@
+<root>
+  <parameter tool="w90" group="system">
+    <name>num_wann</name>
+    <type>I</type>
+    <description>Number of WF</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>num_bands</name>
+    <type>I</type>
+    <description>Number of bands passed to the code</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>unit_cell_cart</name>
+    <type>P</type>
+    <description>Unit cell vectors in Cartesian coordinates</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>atoms_cart \*</name>
+    <type>P</type>
+    <description>Positions of atoms in Cartesian coordinates</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>atoms_frac \*</name>
+    <type>R</type>
+    <description>Positions of atoms in fractional coordinates with respect to the lattice vectors</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>mp_grid</name>
+    <type>I</type>
+    <description>Dimensions of the Monkhorst-Pack grid of k-points</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>kpoints</name>
+    <type>R</type>
+    <description>List of k-points in the Monkhorst-Pack grid</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>gamma_only</name>
+    <type>L</type>
+    <description>Wavefunctions from underlying ab initio calculation are manifestly real</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>spinors</name>
+    <type>L</type>
+    <description>WF are spinors</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>shell_list</name>
+    <type>I</type>
+    <description>Which shells to use in finite difference formula</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>search_shells</name>
+    <type>I</type>
+    <description>The number of shells to search when determining finite difference formula</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>skip_B1_tests</name>
+    <type>L</type>
+    <description>Check the condition B1 of Ref [@marzari-prb97]</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>nnkpts</name>
+    <type>I</type>
+    <description>Explicit list of nearest-neighbour k-points</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>kmesh_tol</name>
+    <type>R</type>
+    <description>The tolerance to control if two kpoint belong to the same shell</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>postproc_setup</name>
+    <type>L</type>
+    <description>To output the `seedname.nnkp` file</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>exclude_bands</name>
+    <type>I</type>
+    <description>List of bands to exclude from the calculation</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>select_projections</name>
+    <type>I</type>
+    <description>List of projections to use in Wannierisation</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>auto_projections</name>
+    <type>L</type>
+    <description>To automatically generate initial projections</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>restart</name>
+    <type>S</type>
+    <description>Restart from checkpoint file</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>iprint</name>
+    <type>I</type>
+    <description>Output verbosity level</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>length_unit</name>
+    <type>S</type>
+    <description>System of units to output lengths</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>wvfn_formatted</name>
+    <type>L</type>
+    <description>Read the wavefunctions from a (un)formatted file</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>spin</name>
+    <type>S</type>
+    <description>Which spin channel to read</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>devel_flag</name>
+    <type>S</type>
+    <description>Flag for development use</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>timing_level</name>
+    <type>I</type>
+    <description>Determines amount of timing information written to output</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>optimisation</name>
+    <type>I</type>
+    <description>Optimisation level</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>translate_home_cell</name>
+    <type>L</type>
+    <description>To translate final Wannier centres to home unit cell when writing xyz file</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>write_xyz</name>
+    <type>L</type>
+    <description>To write atomic positions and final centres in xyz file format</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>write_vdw_data</name>
+    <type>L</type>
+    <description>To write data for futher processing by w90vdw utility</description>
+  </parameter>
+  <parameter tool="w90" group="job">
+    <name>write_hr_diag</name>
+    <type>L</type>
+    <description>To write the diagonal elements of the Hamiltonian in the Wannier basis to `seedname.wout` (in eV)</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_win_min</name>
+    <type>P</type>
+    <description>Bottom of the outer energy window</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_win_max</name>
+    <type>P</type>
+    <description>Top of the outer energy window</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_froz_min</name>
+    <type>P</type>
+    <description>Bottom of the inner (frozen) energy window</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_froz_max</name>
+    <type>P</type>
+    <description>Top of the inner (frozen) energy window</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_num_iter</name>
+    <type>I</type>
+    <description>Number of iterations for the minimisation of $\\Omega_{\\mathrm{I}}$</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_mix_ratio</name>
+    <type>R</type>
+    <description>Mixing ratio during the minimisation of $\\Omega_{\\mathrm{I}}$</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_conv_tol</name>
+    <type>R</type>
+    <description>The convergence tolerance for finding $\\Omega_{\\mathrm{I}}$</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_conv_window</name>
+    <type>I</type>
+    <description>The number of iterations over which convergence of $\\Omega_{\\mathrm{I}}$ is assessed.</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_spheres_num</name>
+    <type>I</type>
+    <description>Number of spheres in k-space where disentaglement is performed</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_spheres_first_wann</name>
+    <type>I</type>
+    <description>Index of the first band to be considered a Wannier function</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_spheres</name>
+    <type>R</type>
+    <description>List of centres and radii, for disentanglement only in spheres</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>num_iter</name>
+    <type>I</type>
+    <description>Number of iterations for the minimisation of $\\Omega$</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>num_cg_steps</name>
+    <type>I</type>
+    <description>During the minimisation of $\\Omega$ the number of Conjugate Gradient steps before resetting to Steepest Descents</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>conv_window</name>
+    <type>I</type>
+    <description>The number of iterations over which convergence of $\\Omega$ is assessed</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>conv_tol</name>
+    <type>P</type>
+    <description>The convergence tolerance for finding $\\Omega$</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>precond</name>
+    <type>L</type>
+    <description>Use preconditioning</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>conv_noise_amp</name>
+    <type>R</type>
+    <description>The amplitude of random noise applied towards end of minimisation procedure</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>conv_noise_num</name>
+    <type>I</type>
+    <description>The number of times random noise is applied</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>num_dump_cycles</name>
+    <type>I</type>
+    <description>Control frequency of check-pointing</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>num_print_cycles</name>
+    <type>I</type>
+    <description>Control frequency of printing</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>write_r2mn</name>
+    <type>L</type>
+    <description>Write matrix elements of $r^2$ between WF to file</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>guiding_centres</name>
+    <type>L</type>
+    <description>Use guiding centres</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>num_guide_cycles</name>
+    <type>I</type>
+    <description>Frequency of guiding centres</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>num_no_guide_iter</name>
+    <type>I</type>
+    <description>The number of iterations after which guiding centres are used</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>trial_step \*</name>
+    <type>R</type>
+    <description>The trial step length for the parabolic line search during the minimisation of $\\Omega$</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>fixed_step \*</name>
+    <type>R</type>
+    <description>The fixed step length to take during the minimisation of $\\Omega$, instead of doing a parabolic line search</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>use_bloch_phases \*\*</name>
+    <type>L</type>
+    <description>To use phases for initial projections</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>site_symmetry\*\*\*</name>
+    <type>L</type>
+    <description>To construct symmetry-adapted Wannier functions</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>symmetrize_eps\*\*\*</name>
+    <type>R</type>
+    <description>The convergence tolerance used in the symmetry-adapted mode</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>slwf_num</name>
+    <type>I</type>
+    <description>The number of objective WFs for selective localization</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>slwf_constrain</name>
+    <type>L</type>
+    <description>Whether to constrain the centres of the objective WFs</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>slwf_lambda</name>
+    <type>R</type>
+    <description>Value of the Lagrange multiplier for constraining the objective WFs</description>
+  </parameter>
+  <parameter tool="w90" group="wannierise">
+    <name>slwf_centres</name>
+    <type>P</type>
+    <description>The centres to which the objective WFs are to be constrained</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot</name>
+    <type>L</type>
+    <description>Plot the WF</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_list</name>
+    <type>I</type>
+    <description>List of WF to plot</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_supercell</name>
+    <type>I</type>
+    <description>Size of the supercell for plotting the WF</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_format</name>
+    <type>S</type>
+    <description>File format in which to plot the WF</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_mode</name>
+    <type>S</type>
+    <description>Mode in which to plot the WF, molecule or crystal</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_radius</name>
+    <type>R</type>
+    <description>Cut-off radius of WF\*</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_scale</name>
+    <type>R</type>
+    <description>Scaling parameter for cube files</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_spinor_mode</name>
+    <type>S</type>
+    <description>Quantity to plot for spinor WF</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>wannier_plot_spinor_phase</name>
+    <type>L</type>
+    <description>Include the &#8220;phase&#8221; when plotting spinor WF</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>bands_plot</name>
+    <type>L</type>
+    <description>Plot interpolated band structure</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>kpoint_path</name>
+    <type>P</type>
+    <description>K-point path for the interpolated band structure</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>bands_num_points</name>
+    <type>I</type>
+    <description>Number of points along the first section of the k-point path</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>bands_plot_format</name>
+    <type>S</type>
+    <description>File format in which to plot the interpolated bands</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>bands_plot_project</name>
+    <type>I</type>
+    <description>WF to project the band structure onto</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>bands_plot_mode</name>
+    <type>S</type>
+    <description>Slater-Koster type interpolation or Hamiltonian cut-off</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>bands_plot_dim</name>
+    <type>I</type>
+    <description>Dimension of the system</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_surface_plot</name>
+    <type>L</type>
+    <description>Plot the Fermi surface</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_surface_num_points</name>
+    <type>I</type>
+    <description>Number of points in the Fermi surface plot</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_energy</name>
+    <type>P</type>
+    <description>The Fermi energy</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_energy_min</name>
+    <type>P</type>
+    <description>Lower limit of the Fermi energy range</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_energy_max</name>
+    <type>P</type>
+    <description>Upper limit of the Fermi energy range</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_energy_step</name>
+    <type>R</type>
+    <description>Step for increasing the Fermi energy in the specified range</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>fermi_surface_plot_format</name>
+    <type>S</type>
+    <description>File format for the Fermi surface plot</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>hr_plot</name>
+    <type>L</type>
+    <description>This parameter is not used anymore. Use write_hr instead.</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>write_hr</name>
+    <type>L</type>
+    <description>Write the Hamiltonian in the WF basis</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>write_rmn</name>
+    <type>L</type>
+    <description>Write the position operator in the WF basis</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>write_bvec</name>
+    <type>L</type>
+    <description>Write to file the matrix elements of the bvectors and their weights</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>write_tb</name>
+    <type>L</type>
+    <description>Write lattice vectors, Hamiltonian, and position operator in WF basis</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>hr_cutoff</name>
+    <type>P</type>
+    <description>Cut-off for the absolute value of the Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>dist_cutoff</name>
+    <type>P</type>
+    <description>Cut-off for the distance between WF</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>dist_cutoff_mode</name>
+    <type>S</type>
+    <description>Dimension in which the distance between WF is calculated</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>translation_centre_frac</name>
+    <type>R</type>
+    <description>Centre of the unit cell to which final WF are translated</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>use_ws_distance</name>
+    <type>L</type>
+    <description>Improve interpolation using minimum distance between WFs, see Chap. [Some notes on the interpolation](notes_interpolations.md)</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>ws_distance_tol</name>
+    <type>R</type>
+    <description>Absolute tolerance for the distance to equivalent positions.</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>ws_search_size</name>
+    <type>I</type>
+    <description>Maximum extension in each direction of the super-cell of the Born-von Karmann cell to search for points inside the Wigner-Seitz cell</description>
+  </parameter>
+  <parameter tool="w90" group="plot">
+    <name>write_u_matrices</name>
+    <type>L</type>
+    <description>Write $U^{(\\bm{k})}$ and $U^{dis(\\bm{k})}$ matrices to files</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>transport</name>
+    <type>L</type>
+    <description>Calculate quantum conductance and density of states</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>transport_mode</name>
+    <type>S</type>
+    <description>Bulk or left-lead_conductor_right-lead calculation</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_win_min</name>
+    <type>P</type>
+    <description>Bottom of the energy window for transport calculation</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_win_max</name>
+    <type>P</type>
+    <description>Top of the energy window for transport calculation</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_energy_step</name>
+    <type>R</type>
+    <description>Sampling interval of the energy values</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>fermi_energy</name>
+    <type>R</type>
+    <description>The Fermi energy</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_bb</name>
+    <type>I</type>
+    <description>Size of a bulk Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_ll</name>
+    <type>I</type>
+    <description>Size of a left-lead Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_rr</name>
+    <type>I</type>
+    <description>Size of a right-lead Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_cc</name>
+    <type>I</type>
+    <description>Size of a conductor Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_lc</name>
+    <type>I</type>
+    <description>Number of columns in a left-lead_conductor Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_cr</name>
+    <type>I</type>
+    <description>Number of rows in a conductor_right-lead Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_cell_ll</name>
+    <type>I</type>
+    <description>Number of unit cells in PL of left lead</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_cell_rr</name>
+    <type>I</type>
+    <description>Number of unit cells in PL of right lead</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_num_bandc</name>
+    <type>I</type>
+    <description>Half-bandwidth+1 of a band-diagonal conductor Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_write_ht</name>
+    <type>L</type>
+    <description>Write the Hamiltonian for transport calculation</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_read_ht</name>
+    <type>L</type>
+    <description>Read the Hamiltonian for transport calculation</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_use_same_lead</name>
+    <type>L</type>
+    <description>Left and right leads are the same</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>tran_group_threshold</name>
+    <type>R</type>
+    <description>Distance that determines the grouping of WFs</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>hr_cutoff</name>
+    <type>P</type>
+    <description>Cut-off for the absolute value of the Hamiltonian</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>dist_cutoff</name>
+    <type>P</type>
+    <description>Cut-off for the distance between WF</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>dist_cutoff_mode</name>
+    <type>S</type>
+    <description>Dimension in which the distance between WF is calculated</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>one_dim_axis</name>
+    <type>S</type>
+    <description>Extended direction for a one-dimensional system</description>
+  </parameter>
+  <parameter tool="w90" group="transport">
+    <name>translation_centre_frac</name>
+    <type>R</type>
+    <description>Centre of the unit cell to which final WF are translated</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>kmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>kmesh_spacing</name>
+    <type>R</type>
+    <description>Minimum spacing between \\(k\\) points in &#197;\\(^{-1}\\)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>adpt_smr</name>
+    <type>L</type>
+    <description>Use adaptive smearing</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>adpt_smr_fac</name>
+    <type>R</type>
+    <description>Adaptive smearing prefactor</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>adpt_smr_max</name>
+    <type>P</type>
+    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>smr_type</name>
+    <type>S</type>
+    <description>Analytical form used for the broadened delta function</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>smr_fixed_en_width</name>
+    <type>P</type>
+    <description>Energy smearing (if non-adaptive)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>num_elec_per_state</name>
+    <type>I</type>
+    <description>Number of electrons per state</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>scissors_shift</name>
+    <type>P</type>
+    <description>Scissors shift applied to the conduction bands (eV) (deprecated)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>num_valence_bands</name>
+    <type>I</type>
+    <description>Number of valence bands</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>spin_decomp</name>
+    <type>L</type>
+    <description>Decompose various properties into up-spin, down-spin, and possibly spin-flip parts</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>spin_axis_polar</name>
+    <type>P</type>
+    <description>Polar angle of the spin quantization axis (deg)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>spin_axis_azimuth</name>
+    <type>P</type>
+    <description>Azimuthal angle of the spin quantization axis (deg)</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>spin_moment\\(^*\\)</name>
+    <type>L</type>
+    <description>Determines whether to evaluate the spin magnetic moment per cell</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>uHu_formatted</name>
+    <type>L</type>
+    <description>Read a formatted `seedname.uHu` file</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>spn_formatted</name>
+    <type>L</type>
+    <description>Read a formatted `seedname.spn` file</description>
+  </parameter>
+  <parameter tool="postw90" group="global">
+    <name>berry_curv_unit</name>
+    <type>S</type>
+    <description>Unit of Berry curvature</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>berry</name>
+    <type>L</type>
+    <description>Calculate Berry-type quantities</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>berry_task</name>
+    <type>S</type>
+    <description>List of properties to compute</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="berry_">kmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="berry_">kmesh_spacing</name>
+    <type>R</type>
+    <description>Minimum spacing between \\(k\\) points in &#197;\\(^{-1}\\)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>berry_curv_adpt_kmesh</name>
+    <type>I</type>
+    <description>Linear dimension of the adaptively refined \\(k\\)-mesh used to compute the anomalous/spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>berry_curv_adpt_kmesh_thresh</name>
+    <type>P</type>
+    <description>Threshold magnitude of the Berry curvature for adaptive refinement</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kubo_freq_min</name>
+    <type>P</type>
+    <description>Lower limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kubo_freq_max</name>
+    <type>P</type>
+    <description>Upper limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kubo_freq_step</name>
+    <type>R</type>
+    <description>Step for increasing the optical frequency in the specified range</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kubo_eigval_max</name>
+    <type>P</type>
+    <description>Maximum energy eigenvalue included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="kubo_">adpt_smr</name>
+    <type>L</type>
+    <description>Use adaptive energy smearing for the optical conductivity, JDOS, shift current and spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="kubo_">adpt_smr_fac</name>
+    <type>R</type>
+    <description>Adaptive smearing prefactor</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="kubo_">adpt_smr_max</name>
+    <type>P</type>
+    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="kubo_">smr_type</name>
+    <type>S</type>
+    <description>Analytical form used for the broadened delta function when computing the optical conductivity, JDOS, shift current and spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name optional_prefix="kubo_">smr_fixed_en_width</name>
+    <type>P</type>
+    <description>Energy smearing (if non-adaptive) for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>sc_eta</name>
+    <type>R</type>
+    <description>Energy broadening of energy differences in the sum over virtual states when computing shift current</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>sc_phase_conv</name>
+    <type>I</type>
+    <description>Convention for phase factor of Bloch states when computing shift current</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>sc_w_thr</name>
+    <type>R</type>
+    <description>Frequency threshold for speeding up delta function integration when computing shift current</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>sc_use_eta_corr</name>
+    <type>L</type>
+    <description>Use finite-eta correction for computing shift current</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_freq_scan</name>
+    <type>L</type>
+    <description>Calculate Fermi energy scan or frequency scan of spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_method</name>
+    <type>S</type>
+    <description>How to obtain the spin current matrix elements for SHC</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_alpha</name>
+    <type>I</type>
+    <description>The spin current direction of spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_beta</name>
+    <type>I</type>
+    <description>The direction of applied electrical field of spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_gamma</name>
+    <type>I</type>
+    <description>The spin direction of the spin current of spin Hall conductivity</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_bandshift</name>
+    <type>L</type>
+    <description>Rigid bandshift of the conduction bands</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_bandshift_firstband</name>
+    <type>I</type>
+    <description>Index of the first band to shift</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>shc_bandshift_energyshift</name>
+    <type>P</type>
+    <description>Energy shift of the conduction bands (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kdotp_kpoint</name>
+    <type>R</type>
+    <description>\\(k\\) point for \\(k\\cdot p\\) expansion (\\(2\\pi/a\\), with \\(a\\) lattice constant in &#197;)</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kdotp_num_bands</name>
+    <type>I</type>
+    <description>Number of bands for \\(k\\cdot p\\) expansion</description>
+  </parameter>
+  <parameter tool="postw90" group="berry">
+    <name>kdotp_bands</name>
+    <type>I</type>
+    <description>Band indexes corresponding to the \\(k\\cdot p\\) bands</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name>dos</name>
+    <type>L</type>
+    <description>Calculate the density of states and related properties</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name>dos_task</name>
+    <type>S</type>
+    <description>List of properties to compute</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name>dos_energy_min</name>
+    <type>P</type>
+    <description>Lower limit of the energy range for computing the DOS (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name>dos_energy_max</name>
+    <type>P</type>
+    <description>Upper limit of the energy range for computing the DOS (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name>dos_energy_step</name>
+    <type>R</type>
+    <description>Step for increasing the energy in the specified range (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name>dos_project</name>
+    <type>I</type>
+    <description>List of WFs onto which the DOS is projected</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">kmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">kmesh_spacing</name>
+    <type>R</type>
+    <description>Minimum spacing between \\(k\\) points in &#197;\\(^{-1}\\)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">adpt_smr</name>
+    <type>L</type>
+    <description>Use adaptive smearing for the DOS</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">adpt_smr_fac</name>
+    <type>R</type>
+    <description>Adaptive smearing prefactor</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">adpt_smr_max</name>
+    <type>P</type>
+    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">smr_fixed_en_width</name>
+    <type>P</type>
+    <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="dos">
+    <name optional_prefix="dos_">smr_type</name>
+    <type>S</type>
+    <description>Analytical form used for the broadened delta function when computing the DOS</description>
+  </parameter>
+  <parameter tool="postw90" group="kpath">
+    <name>kpath</name>
+    <type>L</type>
+    <description>Calculate properties along a piecewise linear path in the BZ</description>
+  </parameter>
+  <parameter tool="postw90" group="kpath">
+    <name>kpath_task</name>
+    <type>L</type>
+    <description>List of properties to evaluate</description>
+  </parameter>
+  <parameter tool="postw90" group="kpath">
+    <name>kpath_num_points</name>
+    <type>I</type>
+    <description>Number of points in the first kpath segment</description>
+  </parameter>
+  <parameter tool="postw90" group="kpath">
+    <name>kpath_bands_colour</name>
+    <type>S</type>
+    <description>Property used to colour the energy bands along the path</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice</name>
+    <type>L</type>
+    <description>Calculate properties on a slice in the BZ</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_task</name>
+    <type>S</type>
+    <description>List of properties to evaluate</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_corner</name>
+    <type>R</type>
+    <description>Position of the corner of the slice</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_b1</name>
+    <type>R</type>
+    <description>First vector defining the slice</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_b2</name>
+    <type>R</type>
+    <description>Second vector defining the slice</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_2dkmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh on the slice (one or two integers)</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_fermi_level</name>
+    <type>P</type>
+    <description>This parameter is not used anymore. Use fermi_energy instead</description>
+  </parameter>
+  <parameter tool="postw90" group="kslice">
+    <name>kslice_fermi_lines_colour</name>
+    <type>S</type>
+    <description>Property used to colour the Fermi lines</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic</name>
+    <type>L</type>
+    <description>Calculate gyrotropic quantities</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_task</name>
+    <type>L</type>
+    <description>List of properties to compute</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name optional_prefix="gyrotropic_">kmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name optional_prefix="gyrotropic_">kmesh_spacing</name>
+    <type>R</type>
+    <description>Minimum spacing between \\(k\\) points in &#197;\\(^{-1}\\)</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_freq_min</name>
+    <type>P</type>
+    <description>Lower limit of the frequency range for optical rotation (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_freq_max</name>
+    <type>P</type>
+    <description>Upper limit of the frequency range for optical rotation (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_freq_step</name>
+    <type>P</type>
+    <description>Step for increasing the optical frequency in the specified range</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_eigval_max</name>
+    <type>P</type>
+    <description>Maximum energy eigenvalue included when evaluating the interband natural optical activity</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_degen_thresh</name>
+    <type>P</type>
+    <description>threshold to exclude degenerate bands from the calculation</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name optional_prefix="gyrotropic_">smr_type</name>
+    <type>S</type>
+    <description>Analytical form used for the broadened delta function</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name optional_prefix="gyrotropic_">smr_fixed_en_width</name>
+    <type>P</type>
+    <description>Energy smearing (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name optional_prefix="gyrotropic_">band_list</name>
+    <type>I</type>
+    <description>list of bands used in the calculation</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_box_center</name>
+    <type>R</type>
+    <description>Center of the integration box, defined (in reduced coordinates) by three real numbers</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_box_b1</name>
+    <type>R</type>
+    <description>First basis vector, defined (in reduced coordinates) by three real numbers</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_box_b2</name>
+    <type>R</type>
+    <description>Second basis vector, defined (in reduced coordinates) by three real numbers</description>
+  </parameter>
+  <parameter tool="postw90" group="gyrotropic">
+    <name>gyrotropic_box_b3</name>
+    <type>R</type>
+    <description>Third basis vector, defined (in reduced coordinates) by three real numbers</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltzwann</name>
+    <type>L</type>
+    <description>Calculate Boltzmann transport coefficients</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">kmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">kmesh_spacing</name>
+    <type>R</type>
+    <description>Minimum spacing between \\(k\\) points in &#197;\\(^{-1}\\)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_2d_dir</name>
+    <type>S</type>
+    <description>Non-periodic direction (for 2D systems only)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_relax_time</name>
+    <type>P</type>
+    <description>Relaxation time in fs</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_mu_min</name>
+    <type>P</type>
+    <description>Minimum value of the chemical potential \\(\\mu\\) in eV</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_mu_max</name>
+    <type>P</type>
+    <description>Maximum value of the chemical potential \\(\\mu\\) in eV</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_mu_step</name>
+    <type>R</type>
+    <description>Step for \\(\\mu\\) in eV</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_temp_min</name>
+    <type>P</type>
+    <description>Minimum value of the temperature \\(T\\) in Kelvin</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_temp_max</name>
+    <type>P</type>
+    <description>Maximum value of the temperature \\(T\\) in Kelvin</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_temp_step</name>
+    <type>R</type>
+    <description>Step for \\(T\\) in Kelvin</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_tdf_energy_step</name>
+    <type>R</type>
+    <description>Energy step for the TDF (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_tdf_smr_fixed_en_width</name>
+    <type>P</type>
+    <description>Energy smearing for the TDF (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_tdf_smr_type</name>
+    <type>S</type>
+    <description>Smearing type for the TDF</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_calc_also_dos</name>
+    <type>L</type>
+    <description>Calculate also DOS while calculating the TDF</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_dos_energy_min</name>
+    <type>P</type>
+    <description>Minimum value of the energy for the DOS in eV</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_dos_energy_max</name>
+    <type>P</type>
+    <description>Maximum value of the energy for the DOS in eV</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_dos_energy_step</name>
+    <type>R</type>
+    <description>Step for the DOS in eV</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">smr_type</name>
+    <type>S</type>
+    <description>Smearing type for the DOS</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">adpt_smr</name>
+    <type>L</type>
+    <description>Use adaptive smearing for the DOS</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">adpt_smr_fac</name>
+    <type>R</type>
+    <description>Adaptive smearing prefactor</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">adpt_smr_max</name>
+    <type>P</type>
+    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name optional_prefix="boltz_">fixed_en_width</name>
+    <type>P</type>
+    <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_bandshift</name>
+    <type>L</type>
+    <description>Rigid bandshift of the conduction bands</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_bandshift_firstband</name>
+    <type>I</type>
+    <description>Index of the first band to shift</description>
+  </parameter>
+  <parameter tool="postw90" group="boltzwann">
+    <name>boltz_bandshift_energyshift</name>
+    <type>P</type>
+    <description>Energy shift of the conduction bands (eV)</description>
+  </parameter>
+  <parameter tool="postw90" group="geninterp">
+    <name>geninterp</name>
+    <type>L</type>
+    <description>Calculate bands for given set of \\(k\\) points</description>
+  </parameter>
+  <parameter tool="postw90" group="geninterp">
+    <name>geninterp_alsofirstder</name>
+    <type>L</type>
+    <description>Calculate also first derivatives</description>
+  </parameter>
+  <parameter tool="postw90" group="geninterp">
+    <name>geninterp_single_file</name>
+    <type>L</type>
+    <description>Write a single file or one for each process</description>
+  </parameter>
+</root>
