@@ -15,14 +15,16 @@
     <description>Unit cell vectors in Cartesian coordinates</description>
   </parameter>
   <parameter tool="w90" group="system">
-    <name>atoms_cart \*</name>
+    <name>atoms_cart</name>
     <type>P</type>
     <description>Positions of atoms in Cartesian coordinates</description>
+    <note>*</note>
   </parameter>
   <parameter tool="w90" group="system">
-    <name>atoms_frac \*</name>
+    <name>atoms_frac</name>
     <type>R</type>
     <description>Positions of atoms in fractional coordinates with respect to the lattice vectors</description>
+    <note>*</note>
   </parameter>
   <parameter tool="w90" group="system">
     <name>mp_grid</name>
@@ -270,29 +272,34 @@
     <description>The number of iterations after which guiding centres are used</description>
   </parameter>
   <parameter tool="w90" group="wannierise">
-    <name>trial_step \*</name>
+    <name>trial_step</name>
     <type>R</type>
     <description>The trial step length for the parabolic line search during the minimisation of $\\Omega$</description>
+    <note>*</note>
   </parameter>
   <parameter tool="w90" group="wannierise">
-    <name>fixed_step \*</name>
+    <name>fixed_step</name>
     <type>R</type>
     <description>The fixed step length to take during the minimisation of $\\Omega$, instead of doing a parabolic line search</description>
+    <note>*</note>
   </parameter>
   <parameter tool="w90" group="wannierise">
-    <name>use_bloch_phases \*\*</name>
+    <name>use_bloch_phases</name>
     <type>L</type>
     <description>To use phases for initial projections</description>
+    <note>**</note>
   </parameter>
   <parameter tool="w90" group="wannierise">
-    <name>site_symmetry\*\*\*</name>
+    <name>site_symmetry</name>
     <type>L</type>
     <description>To construct symmetry-adapted Wannier functions</description>
+    <note>***</note>
   </parameter>
   <parameter tool="w90" group="wannierise">
-    <name>symmetrize_eps\*\*\*</name>
+    <name>symmetrize_eps</name>
     <type>R</type>
     <description>The convergence tolerance used in the symmetry-adapted mode</description>
+    <note>***</note>
   </parameter>
   <parameter tool="w90" group="wannierise">
     <name>slwf_num</name>
@@ -342,7 +349,8 @@
   <parameter tool="w90" group="plot">
     <name>wannier_plot_radius</name>
     <type>R</type>
-    <description>Cut-off radius of WF\*</description>
+    <description>Cut-off radius of WF</description>
+    <note>*</note>
   </parameter>
   <parameter tool="w90" group="plot">
     <name>wannier_plot_scale</name>
@@ -680,9 +688,10 @@
     <description>Azimuthal angle of the spin quantization axis (deg)</description>
   </parameter>
   <parameter tool="postw90" group="global">
-    <name>spin_moment\\(^*\\)</name>
+    <name>spin_moment</name>
     <type>L</type>
     <description>Determines whether to evaluate the spin magnetic moment per cell</description>
+    <note>*</note>
   </parameter>
   <parameter tool="postw90" group="global">
     <name>uHu_formatted</name>
