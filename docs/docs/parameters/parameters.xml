@@ -95,6 +95,12 @@
     <name>restart</name>
     <type>S</type>
     <description>Restart from checkpoint file</description>
+    <choices>
+      <choice>default</choice>
+      <choice>wannierise</choice>
+      <choice>plot</choice>
+      <choice>transport</choice>
+    </choices>
   </parameter>
   <parameter tool="w90" group="job">
     <name>iprint</name>
@@ -104,6 +110,11 @@
   <parameter tool="w90" group="job">
     <name>length_unit</name>
     <type>S</type>
+    <choices>
+      <choice>Ang</choice>
+      <choice>Bohr</choice>
+    </choices>
+    <default>Ang</default>
     <description>System of units to output lengths</description>
   </parameter>
   <parameter tool="w90" group="job">
@@ -114,6 +125,11 @@
   <parameter tool="w90" group="job">
     <name>spin</name>
     <type>S</type>
+    <choices>
+      <choice>up</choice>
+      <choice>down</choice>
+    </choices>
+    <default>up</default>
     <description>Which spin channel to read</description>
   </parameter>
   <parameter tool="w90" group="job">
@@ -339,11 +355,21 @@
   <parameter tool="w90" group="plot">
     <name>wannier_plot_format</name>
     <type>S</type>
+    <choices>
+      <choice>xcrysden</choice>
+      <choice>cube</choice>
+    </choices>
+    <default>xcrysden</default>
     <description>File format in which to plot the WF</description>
   </parameter>
   <parameter tool="w90" group="plot">
     <name>wannier_plot_mode</name>
     <type>S</type>
+    <choices>
+      <choice>crystal</choice>
+      <choice>molecule</choice>
+    </choices>
+    <default>crystal</default>
     <description>Mode in which to plot the WF, molecule or crystal</description>
   </parameter>
   <parameter tool="w90" group="plot">
@@ -360,6 +386,12 @@
   <parameter tool="w90" group="plot">
     <name>wannier_plot_spinor_mode</name>
     <type>S</type>
+    <choices>
+      <choice>total</choice>
+      <choice>up</choice>
+      <choice>down</choice>
+    </choices>
+    <default>total</default>
     <description>Quantity to plot for spinor WF</description>
   </parameter>
   <parameter tool="w90" group="plot">
@@ -385,6 +417,11 @@
   <parameter tool="w90" group="plot">
     <name>bands_plot_format</name>
     <type>S</type>
+    <choices>
+      <choice>gnuplot</choice>
+      <choice>xmgrace</choice>
+    </choices>
+    <default>gnuplot</default>
     <description>File format in which to plot the interpolated bands</description>
   </parameter>
   <parameter tool="w90" group="plot">
@@ -395,6 +432,11 @@
   <parameter tool="w90" group="plot">
     <name>bands_plot_mode</name>
     <type>S</type>
+    <choices>
+      <choice>s-k</choice>
+      <choice>cut</choice>
+    </choices>
+    <default>s-k</default>
     <description>Slater-Koster type interpolation or Hamiltonian cut-off</description>
   </parameter>
   <parameter tool="w90" group="plot">
@@ -435,6 +477,10 @@
   <parameter tool="w90" group="plot">
     <name>fermi_surface_plot_format</name>
     <type>S</type>
+    <choices>
+      <choice>xcrysden</choice>
+    </choices>
+    <default>xcrysden</default>
     <description>File format for the Fermi surface plot</description>
   </parameter>
   <parameter tool="w90" group="plot">
@@ -475,6 +521,12 @@
   <parameter tool="w90" group="plot">
     <name>dist_cutoff_mode</name>
     <type>S</type>
+    <choices>
+      <choice>three_dim</choice>
+      <choice>two_dim</choice>
+      <choice>one_dim</choice>
+    </choices>
+    <default>three_dim</default>
     <description>Dimension in which the distance between WF is calculated</description>
   </parameter>
   <parameter tool="w90" group="plot">
@@ -510,6 +562,11 @@
   <parameter tool="w90" group="transport">
     <name>transport_mode</name>
     <type>S</type>
+    <choices>
+      <choice>bulk</choice>
+      <choice>lcr</choice>
+    </choices>
+    <default>bulk</default>
     <description>Bulk or left-lead_conductor_right-lead calculation</description>
   </parameter>
   <parameter tool="w90" group="transport">
@@ -610,11 +667,22 @@
   <parameter tool="w90" group="transport">
     <name>dist_cutoff_mode</name>
     <type>S</type>
+    <choices>
+      <choice>three_dim</choice>
+      <choice>two_dim</choice>
+      <choice>one_dim</choice>
+    </choices>
+    <default>three_dim</default>
     <description>Dimension in which the distance between WF is calculated</description>
   </parameter>
   <parameter tool="w90" group="transport">
     <name>one_dim_axis</name>
     <type>S</type>
+    <choices>
+      <choice>x</choice>
+      <choice>y</choice>
+      <choice>z</choice>
+    </choices>
     <description>Extended direction for a one-dimensional system</description>
   </parameter>
   <parameter tool="w90" group="transport">
@@ -706,6 +774,11 @@
   <parameter tool="postw90" group="global">
     <name>berry_curv_unit</name>
     <type>S</type>
+    <choices>
+      <choice>ang2</choice>
+      <choice>bohr2</choice>
+    </choices>
+    <default>ang2</default>
     <description>Unit of Berry curvature</description>
   </parameter>
   <parameter tool="postw90" group="berry">
@@ -716,6 +789,14 @@
   <parameter tool="postw90" group="berry">
     <name>berry_task</name>
     <type>S</type>
+    <choices>
+      <choice>kubo</choice>
+      <choice>ahc</choice>
+      <choice>morb</choice>
+      <choice>sc</choice>
+      <choice>shc</choice>
+      <choice>kdotp</choice>
+    </choices>
     <description>List of properties to compute</description>
   </parameter>
   <parameter tool="postw90" group="berry">
@@ -866,6 +947,10 @@
   <parameter tool="postw90" group="dos">
     <name>dos_task</name>
     <type>S</type>
+    <choices>
+      <choice>dos_plot</choice>
+    </choices>
+    <default>dos_plot</default>
     <description>List of properties to compute</description>
   </parameter>
   <parameter tool="postw90" group="dos">
@@ -941,6 +1026,12 @@
   <parameter tool="postw90" group="kpath">
     <name>kpath_bands_colour</name>
     <type>S</type>
+    <choices>
+      <choice>spin</choice>
+      <choice>shc</choice>
+      <choice>none</choice>
+    </choices>
+    <default>none</default>
     <description>Property used to colour the energy bands along the path</description>
   </parameter>
   <parameter tool="postw90" group="kslice">
@@ -981,6 +1072,11 @@
   <parameter tool="postw90" group="kslice">
     <name>kslice_fermi_lines_colour</name>
     <type>S</type>
+    <choices>
+      <choice>spin</choice>
+      <choice>none</choice>
+    </choices>
+    <default>none</default>
     <description>Property used to colour the Fermi lines</description>
   </parameter>
   <parameter tool="postw90" group="gyrotropic">
@@ -1081,6 +1177,13 @@
   <parameter tool="postw90" group="boltzwann">
     <name>boltz_2d_dir</name>
     <type>S</type>
+    <choices>
+      <choice>x</choice>
+      <choice>y</choice>
+      <choice>z</choice>
+      <choice>no</choice>
+    </choices>
+    <default>no</default>
     <description>Non-periodic direction (for 2D systems only)</description>
   </parameter>
   <parameter tool="postw90" group="boltzwann">
