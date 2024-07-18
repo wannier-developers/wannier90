@@ -174,70 +174,61 @@ contains
       ! Print the header only if there is something to plot
       if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
           output_file%write_hr .or. w90_calculation%wannier_plot .or. output_file%write_u_matrices &
-          .or. output_file%write_tb) then
+          .or. output_file%write_tb .or. output_file%write_rmn) then
         write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
         write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
         write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
         write (stdout, *)
       end if
 
-      if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
-          output_file%write_hr .or. output_file%write_tb) then
+      ! if (w90_calculation%bands_plot) then
+      !   call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, &
+      !                               real_space_ham, ws_region, print_output, recip_lattice, &
+      !                               num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
+      !                               wannier_centres_translated, ws_distance, &
+      !                               bands_num_spec_points, stdout, seedname, timer, error, &
+      !                               comm)
+      !   if (allocated(error)) return
+      ! endif
 
-        ! if (w90_calculation%bands_plot) then
-        !   call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, &
-        !                               real_space_ham, ws_region, print_output, recip_lattice, &
-        !                               num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
-        !                               wannier_centres_translated, ws_distance, &
-        !                               bands_num_spec_points, stdout, seedname, timer, error, &
-        !                               comm)
-        !   if (allocated(error)) return
-        ! endif
-
-        if (w90_calculation%fermi_surface_plot) then
-          call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
-                                  ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
-                                  seedname, timer, error, comm)
-          if (allocated(error)) return
-        endif
-
-        if (output_file%write_hr) then
-          call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
-                                    print_output%timing_level, seedname, timer, error, comm)
-          if (allocated(error)) return
-        endif
-
-        if (output_file%write_rmn) then
-          call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
-                                     num_wann, seedname, error, comm)
-          if (allocated(error)) return
-        endif
-
-        if (output_file%write_tb) then
-          call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
-                                    real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
-                                    print_output%timing_level, seedname, timer, error, comm)
-          if (allocated(error)) return
-        endif
-
-        if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
-          if (.not. ws_distance%done) then
-            call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                                   wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, &
-                                   error, comm, force_recompute=.false.)
-            if (allocated(error)) return
-          endif
-
-          call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
-                            seedname, error, comm)
-          if (allocated(error)) return
-        end if
-      end if
       ! write matrix elements <m|r^2|n> to file
       if (output_file%write_r2mn) then
         call plot_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, error, comm, seedname)
         if (allocated(error)) return
       endif
+
+      if (w90_calculation%fermi_surface_plot) then
+        call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
+                                ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
+                                seedname, timer, error, comm)
+        if (allocated(error)) return
+      endif
+
+      if (output_file%write_hr) then
+        call hamiltonian_write_hr(ham_logical, ham_r, irvec, ndegen, nrpts, num_wann, &
+                                  print_output%timing_level, seedname, timer, error, comm)
+        if (allocated(error)) return
+      endif
+
+      if (output_file%write_tb) then
+        call hamiltonian_write_tb(ham_logical, kmesh_info, ham_r, m_matrix, kpt_latt, &
+                                  real_lattice, irvec, ndegen, nrpts, num_kpts, num_wann, &
+                                  print_output%timing_level, seedname, timer, error, comm)
+        if (allocated(error)) return
+      endif
+
+      if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
+        if (.not. ws_distance%done) then
+          call ws_translate_dist(ws_distance, ws_region, num_wann, &
+                                 wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, &
+                                 error, comm, force_recompute=.false.)
+          if (allocated(error)) return
+        endif
+
+        call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
+                          seedname, error, comm)
+        if (allocated(error)) return
+      end if
 
       ! calculate and write projection of WFs on original bands in outer window
       if (have_disentangled .and. output_file%write_proj) then
@@ -259,6 +250,7 @@ contains
                             real_lattice, atom_data, print_output, error, comm, stdout, seedname)
         if (allocated(error)) return
       endif
+
       if (output_file%write_hr_diag) then
         call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                                real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
@@ -285,6 +277,13 @@ contains
         endif
       endif
     end if !on_root
+
+    if (output_file%write_rmn) then
+      ! serial only for write_rmn
+      call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
+                                 num_wann, seedname, dist_k, error, comm)
+      if (allocated(error)) return
+    endif
 
     if (w90_calculation%bands_plot) then
       call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, &

@@ -854,13 +854,14 @@ contains
 
   !================================================!
   subroutine hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
-                                   num_wann, seedname, error, comm)
+                                   num_wann, seedname, dist_k, error, comm)
     !================================================!
     !
     !! Write out the matrix elements of r
     !
     !================================================!
 
+    use w90_comms, only: comms_reduce, w90_comm_type, mpisize, mpirank
     use w90_constants, only: twopi, cmplx_i
     use w90_io, only: io_date
     use w90_types, only: kmesh_info_type
@@ -876,37 +877,51 @@ contains
     integer, intent(inout) :: irvec(:, :)
     integer, intent(in)    :: num_wann
     integer, intent(in)    :: num_kpts
-    real(kind=dp), intent(in)      :: kpt_latt(:, :)
-    complex(kind=dp), intent(in)   :: m_matrix(:, :, :, :)
-    character(len=50), intent(in)  :: seedname
+    integer, intent(in)    :: dist_k(:) ! MPI k-point distribution
+    real(kind=dp), intent(in)     :: kpt_latt(:, :)
+    complex(kind=dp), intent(in)  :: m_matrix(:, :, :, :)
+    character(len=50), intent(in) :: seedname
 
     ! local variables
     integer :: loop_rpt, m, n, nkp, ind, nn, file_unit, ierr
+    integer :: num_nodes, my_node_id, nkp_rank
+    ! nkp_rank is the rank-local kpoint index for m_matrix decomposition
     real(kind=dp) :: rdotk
     complex(kind=dp) :: fac
     complex(kind=dp) :: position(3)
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
+    logical :: on_root = .false.
 
-    open (newunit=file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', &
-          iostat=ierr)
-    if (ierr /= 0) then
-      call set_error_file(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r', comm)
-      return
+    num_nodes = mpisize(comm)
+    my_node_id = mpirank(comm)
+
+    if (my_node_id == 0) on_root = .true.
+
+    if (on_root) then
+      open (newunit=file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', &
+            iostat=ierr)
+      if (ierr /= 0) then
+        call set_error_file(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r', comm)
+        return
+      endif
+
+      call io_date(cdate, ctime)
+      header = 'written on '//cdate//' at '//ctime
+      write (file_unit, *) header ! Date and time
+      write (file_unit, *) num_wann
+      write (file_unit, *) nrpts
     endif
-
-    call io_date(cdate, ctime)
-
-    header = 'written on '//cdate//' at '//ctime
-    write (file_unit, *) header ! Date and time
-    write (file_unit, *) num_wann
-    write (file_unit, *) nrpts
 
     do loop_rpt = 1, nrpts
       do m = 1, num_wann
         do n = 1, num_wann
+
           position(:) = 0._dp
+          nkp_rank = 1
           do nkp = 1, num_kpts
+            if (dist_k(nkp) /= my_node_id) cycle
+
             rdotk = twopi*dot_product(kpt_latt(:, nkp), real(irvec(:, loop_rpt), dp))
             fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
             do ind = 1, 3
@@ -919,21 +934,23 @@ contains
                   ! 195118 (2006), modified according to
                   ! Eqs.(27,29) of Marzari and Vanderbilt
                   position(ind) = position(ind) - kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
-                                  *aimag(log(m_matrix(n, m, nn, nkp)))*fac
+                                  *aimag(log(m_matrix(n, m, nn, nkp_rank)))*fac
                 else
                   ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
                   position(ind) = position(ind) + cmplx_i*kmesh_info%wb(nn) &
-                                  *kmesh_info%bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp)*fac
+                                  *kmesh_info%bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp_rank)*fac
                 endif
               end do
             end do
-          end do
-          write (file_unit, '(5I5,6F12.6)') irvec(:, loop_rpt), n, m, position(:)
+            nkp_rank = nkp_rank + 1
+          end do ! global k list
+          call comms_reduce(position(1), 3, 'SUM', error, comm)
+          if (on_root) write (file_unit, '(5I5,6F12.6)') irvec(:, loop_rpt), n, m, position(:)
         end do
       end do
     end do
 
-    close (file_unit)
+    if (on_root) close (file_unit)
   end subroutine hamiltonian_write_rmn
 
   !================================================!
