@@ -80,7 +80,7 @@ contains
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_wann
     integer, intent(in) :: nrpts
-    integer, intent(in) :: irvec(3, nrpts)
+    integer, intent(in) :: irvec(:, :)
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     real(kind=dp), intent(in) :: wannier_centres(:, :)

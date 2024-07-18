@@ -465,6 +465,12 @@ program = WANNIER90_DISENTANGLEMENT_SAWFS
 inputs_args = ('H3S.win', '')
 output = H3S.wout
 
+# Diamond, valence states - test of the R_mn printout
+[testw90_rmn]
+program = WANNIER90_RMN_OK
+inputs_args = ('diamond.win', '')
+output = diamond_r.dat
+
 # Test of k.p coefficients for GaAs
 [testpostw90_gaas_kdotp/]
 program = POSTW90_KDOTP_OK

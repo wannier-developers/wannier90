@@ -55,6 +55,23 @@ exe = ../../wannier90.x
 extract_fn = tools parsers.parse_bvec.parse
 tolerance = ( (1.0e-10, 1.0e-10, 'size'))
 
+[WANNIER90_RMN_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_rmn.parse
+# integer entries should be exact
+# fp comparisons limited by 6dp printout: ignore relative error
+tolerance = ( (1.0e-10, 1.0e-10, 'irvec_a'),
+              (1.0e-10, 1.0e-10, 'irvec_b'),
+              (1.0e-10, 1.0e-10, 'irvec_c'),
+              (1.0e-10, 1.0e-10, 'index_i'),
+              (1.0e-10, 1.0e-10, 'index_j'),
+              (2.0e-6, 1.0, 'real_x'),
+              (2.0e-6, 1.0, 'imag_x'),
+              (2.0e-6, 1.0, 'real_y'),
+              (2.0e-6, 1.0, 'imag_y'),
+              (2.0e-6, 1.0, 'real_z'),
+              (2.0e-6, 1.0, 'imag_z'))
+
 [WANNIER90_CUBE]
 exe = ../../wannier90.x
 extract_fn = tools parsers.parse_cube.parse

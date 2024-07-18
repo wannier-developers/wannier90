@@ -129,7 +129,6 @@ contains
 
     if (my_node_id == 0) on_root = .true.
 
-!    ! write extra info regarding omega_invariant
     if (output_file%svd_omega) then
       call plot_svd_omega_i(num_wann, num_kpts, kmesh_info, m_matrix, print_output, timer, &
                             dist_k, error, comm, stdout)
@@ -138,24 +137,38 @@ contains
 
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
 
-    if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
-        output_file%write_hr .or. output_file%write_tb) then
-      ! Check if the kmesh includes the gamma point
-      have_gamma = .false.
-      do nkp = 1, num_kpts
-        if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
-      end do
-      if (.not. have_gamma) &
-            write (stdout, '(1x,a)') '!!!! Kpoint grid does not include Gamma. '// &
-            & ' Interpolation may be incorrect. !!!!'
-      ! Transform Hamiltonian to WF basis
+    ! setup RS cluster for calculations that need it
+    if (output_file%write_hr .or. &
+        output_file%write_r2mn .or. &
+        output_file%write_rmn .or. &
+        output_file%write_tb .or. &
+        w90_calculation%bands_plot .or. &
+        w90_calculation%fermi_surface_plot) then
 
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
                              real_lattice, wannier_centres_translated, irvec, mp_grid, ndegen, &
                              num_kpts, num_wann, nrpts, rpt_origin, band_plot%mode, stdout, &
                              timer, error, transport_mode, comm)
       if (allocated(error)) return
+    endif
 
+    ! setup RS Hamilton eqn for calculations that need it
+    if (output_file%write_hr .or. &
+        output_file%write_tb .or. &
+        w90_calculation%bands_plot .or. &
+        w90_calculation%fermi_surface_plot) then
+
+      ! Check if the kmesh includes the gamma point
+      have_gamma = .false.
+      do nkp = 1, num_kpts
+        if (all(abs(kpt_latt(:, nkp)) < eps6)) have_gamma = .true.
+      end do
+      if (.not. have_gamma) then
+        write (stdout, '(1x,a)') '!!!! Kpoint grid does not include Gamma. '// &
+          ' Interpolation may be incorrect. !!!!'
+      endif
+
+      ! Transform Hamiltonian to WF basis
       call hamiltonian_get_hr(atom_data, dis_manifold, ham_logical, real_space_ham, print_output, &
                               ham_k, ham_r, u_matrix, u_matrix_opt, eigval, kpt_latt, &
                               real_lattice, wannier_data%centres, wannier_centres_translated, &
@@ -163,33 +176,25 @@ contains
                               have_disentangled, stdout, timer, error, lsitesymmetry, comm)
       if (allocated(error)) return
 
-      bands_num_spec_points = 0
-
-      if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
     endif
 
     if (on_root) then
       if (print_output%timing_level > 0) call io_stopwatch_start('plot: main', timer)
 
       ! Print the header only if there is something to plot
-      if (w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot .or. &
-          output_file%write_hr .or. w90_calculation%wannier_plot .or. output_file%write_u_matrices &
-          .or. output_file%write_tb .or. output_file%write_rmn .or. output_file%write_r2mn) then
+      if (output_file%write_hr .or. &
+          output_file%write_r2mn .or. &
+          output_file%write_rmn .or. &
+          output_file%write_tb .or. &
+          output_file%write_u_matrices .or. &
+          w90_calculation%bands_plot .or. &
+          w90_calculation%fermi_surface_plot .or. &
+          w90_calculation%wannier_plot) then
         write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
         write (stdout, '(1x,a)') '|                               PLOTTING                                    |'
         write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
         write (stdout, *)
       end if
-
-      ! if (w90_calculation%bands_plot) then
-      !   call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, &
-      !                               real_space_ham, ws_region, print_output, recip_lattice, &
-      !                               num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
-      !                               wannier_centres_translated, ws_distance, &
-      !                               bands_num_spec_points, stdout, seedname, timer, error, &
-      !                               comm)
-      !   if (allocated(error)) return
-      ! endif
 
       if (w90_calculation%fermi_surface_plot) then
         call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
@@ -211,7 +216,7 @@ contains
         if (allocated(error)) return
       endif
 
-      if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
+      if (output_file%write_hr .or. output_file%write_tb) then
         if (.not. ws_distance%done) then
           call ws_translate_dist(ws_distance, ws_region, num_wann, &
                                  wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, &
@@ -286,6 +291,9 @@ contains
     endif
 
     if (w90_calculation%bands_plot) then
+      bands_num_spec_points = 0
+      if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
+
       call plot_interpolate_bands(mp_grid, real_lattice, band_plot, kpoint_path, &
                                   real_space_ham, ws_region, print_output, recip_lattice, &
                                   num_wann, wannier_data, ham_r, irvec, ndegen, nrpts, &
@@ -2403,11 +2411,11 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
-    integer, intent(inout) :: nrpts
-    integer, intent(inout) :: irvec(:, :)
-    integer, intent(in)    :: num_wann
-    integer, intent(in)    :: num_kpts
-    integer, intent(in)    :: dist_k(:) ! MPI k-point distribution
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: irvec(:, :)
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: dist_k(:) ! MPI k-point distribution
     real(kind=dp), intent(in)     :: kpt_latt(:, :)
     complex(kind=dp), intent(in)  :: m_matrix(:, :, :, :)
     character(len=50), intent(in) :: seedname
