@@ -279,7 +279,7 @@ contains
     end if !on_root
 
     if (output_file%write_rmn) then
-      ! serial only for write_rmn
+      ! parallel write_rmn
       call hamiltonian_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
                                  num_wann, seedname, dist_k, error, comm)
       if (allocated(error)) return
