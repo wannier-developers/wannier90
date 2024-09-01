@@ -13,3 +13,5 @@ search_shells,I,"The number of shells to search when determining finite differen
 skip_B1_tests,L,"Check the condition B1 of Ref [@marzari-prb97]"
 nnkpts,I,"Explicit list of nearest-neighbour k-points"
 kmesh_tol,R,"The tolerance to control if two kpoint belong to the same shell"
+higher_order_n,I,"The order of higher-order finite difference to get b-vectors and weights"
+higher_order_nearest_shells,L,"Use the b-vectors on the nearest shells"

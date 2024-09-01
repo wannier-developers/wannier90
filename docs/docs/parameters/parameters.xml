@@ -71,6 +71,16 @@
     <type>R</type>
     <description>The tolerance to control if two kpoint belong to the same shell</description>
   </parameter>
+  <parameter tool="w90" group="system">
+    <name>higher_order_n</name>
+    <type>I</type>
+    <description>The order of higher-order finite difference to get b-vectors and weights</description>
+  </parameter>
+  <parameter tool="w90" group="system">
+    <name>higher_order_nearest_shells</name>
+    <type>L</type>
+    <description>Use the b-vectors on the nearest shells</description>
+  </parameter>
   <parameter tool="w90" group="job">
     <name>postproc_setup</name>
     <type>L</type>
@@ -186,6 +196,21 @@
     <name>dis_froz_max</name>
     <type>P</type>
     <description>Top of the inner (frozen) energy window</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_froz_proj</name>
+    <type>L</type>
+    <description>To activate projectability disentanglement</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_proj_min</name>
+    <type>P</type>
+    <description>Lower threshold for projectability disentanglement</description>
+  </parameter>
+  <parameter tool="w90" group="disentanglement">
+    <name>dis_proj_max</name>
+    <type>P</type>
+    <description>Upper threshold for projectability disentanglement</description>
   </parameter>
   <parameter tool="w90" group="disentanglement">
     <name>dis_num_iter</name>
