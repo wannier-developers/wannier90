@@ -26,7 +26,7 @@ repos:
         tutorials/tutorial\d\d[-]?\w*/.+win|
         src/.+
       )$
-- repo: https://github.com/pseewald/fprettify
+- repo: https://github.com/fortran-lang/fprettify
   rev: v0.3.3
   hooks:
   - id: fprettify
