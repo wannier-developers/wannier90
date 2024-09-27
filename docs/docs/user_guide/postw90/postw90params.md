@@ -142,8 +142,9 @@ specific to the modules can be found in the following sections.
   the modules in `postw90`. Argument types are represented by, I for a integer, R
   for a real number, P for a physical value, L for a logical value and S
   for a text string.
- \* The keyword `spin_moment` does not affect the behavior of the modules
-  in , and does not really belong to any of them. It is listed here for
+
+- The keyword `spin_moment` does not affect the behavior of the modules
+  in `postw90`, and does not really belong to any of them. It is listed here for
   lack of a better place.
 
 ### `berry` Parameters

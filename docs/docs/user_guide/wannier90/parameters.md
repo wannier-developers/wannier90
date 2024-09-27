@@ -67,8 +67,8 @@ and the the `wannier90` Tutorial.
 `seedname.win` file keywords defining the system. Argument types are
 represented by, I for a integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
-\* `atoms_cart` and `atoms_frac` may not both be defined in the same input
-file.
+
+- `atoms_cart` and `atoms_frac` may not both be defined in the same input file.
 
 ### Job Control Parameters
 
@@ -99,11 +99,13 @@ physical value, L for a logical value and S for a text string.
 
 `seedname.win` file keywords controlling the wannierisation. Argument
 types are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string. \*
-`fixed_step` and `trial_step` may not both be defined in the same input
-file. \*\*Cannot be used in conjunction with disentanglement.
-\*\*\*Cannot be used in conjunction with the inner (frozen) energy
-window.
+physical value, L for a logical value and S for a text string.
+
+- `fixed_step` and `trial_step` may not both be defined in the same input
+file.
+- `use_bloch_phases` cannot be used in conjunction with disentanglement.
+- `site_symmetry` and `symmetrize_eps` cannot be used in conjunction with the
+    inner (frozen) energy window.
 
 ### Plot Parameters
 
@@ -113,8 +115,9 @@ window.
 
 `seedname.win` file keywords controlling the plotting. Argument types
 are represented by, I for a integer, R for a real number, P for a
-physical value, L for a logical value and S for a text string. \* Only
-applies when `wannier_plot_format` is `cube`.
+physical value, L for a logical value and S for a text string.
+
+- `wannier_plot_radius` only applies when `wannier_plot_format` is `cube`.
 
 ### Transport Parameters
 
