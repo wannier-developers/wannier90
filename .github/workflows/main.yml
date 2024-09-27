@@ -60,7 +60,7 @@ jobs:
         uses: codecov/codecov-action@v1
       - name: archive test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: test-results_parallel=${{ matrix.w90-binary-parallel }}
           path: |
