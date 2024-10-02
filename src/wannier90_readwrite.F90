@@ -1130,8 +1130,9 @@ contains
       endif
     endif
 
-    if ((.not. has_kpath) .and. (.not. has_explicit_kpath) .and.  bands_plot) then
-      call set_error_input(error, 'A bandstructure plot has been requested but there is no kpoint_path or explicit_kpath block', comm)
+    if ((.not. has_kpath) .and. (.not. has_explicit_kpath) .and. bands_plot) then
+      call set_error_input(error, &
+                           'A bandstructure plot has been requested but there is no kpoint_path or explicit_kpath block', comm)
       return
     endif
 

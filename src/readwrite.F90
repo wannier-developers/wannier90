@@ -488,7 +488,7 @@ contains
       call w90_readwrite_get_keyword_explicit_kpath(settings, kpoint_path, error, comm)
       if (allocated(error)) return
       call w90_readwrite_read_explicit_kpath_points(settings, kpoint_path%bands_kpt_frac, bohr, &
-      error, comm)
+                                                    error, comm)
       if (allocated(error)) return
     else
       ok = .false.
@@ -926,8 +926,8 @@ contains
     endif
   end subroutine w90_readwrite_read_kpoints
 
-subroutine w90_readwrite_read_explicit_kpath_points(settings, kpt_latt, bohr, &
-    error, comm)
+  subroutine w90_readwrite_read_explicit_kpath_points(settings, kpt_latt, bohr, &
+                                                      error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
@@ -956,7 +956,6 @@ subroutine w90_readwrite_read_explicit_kpath_points(settings, kpt_latt, bohr, &
       return
     endif
 
-
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
@@ -964,20 +963,20 @@ subroutine w90_readwrite_read_explicit_kpath_points(settings, kpt_latt, bohr, &
     endif
 
     call w90_readwrite_get_keyword_block(settings, 'explicit_kpath', found, num_kpts, 3, bohr, error, &
-      comm, r_value=kpt_cart)
+                                         comm, r_value=kpt_cart)
     if (allocated(error)) return
-      if (.not. found) then
-        call set_error_input(error, 'Error: Found explicit_kpath_labels but there is no explicit_kpath block', comm)
-        return
-      endif
-      kpt_latt = kpt_cart
+    if (.not. found) then
+      call set_error_input(error, 'Error: Found explicit_kpath_labels but there is no explicit_kpath block', comm)
+      return
+    endif
+    kpt_latt = kpt_cart
 
-      deallocate (kpt_cart, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
-        return
-      endif
-end subroutine w90_readwrite_read_explicit_kpath_points
+    deallocate (kpt_cart, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
+      return
+    endif
+  end subroutine w90_readwrite_read_explicit_kpath_points
 
   subroutine w90_readwrite_read_lattice(settings, real_lattice, bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input

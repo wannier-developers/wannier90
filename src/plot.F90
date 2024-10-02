@@ -534,7 +534,7 @@ contains
         if ((SUM((kpoint_path%points(:, (i - 1)*2) - &
                   kpoint_path%points(:, (i - 1)*2 + 1))**2) > 1.e-6) .or. &
             (TRIM(kpoint_path%labels((i - 1)*2)) .ne. &
-            TRIM(kpoint_path%labels((i - 1)*2 + 1)))) then
+             TRIM(kpoint_path%labels((i - 1)*2 + 1)))) then
           kpath_print_first_point(i) = .true.
         end if
       enddo
@@ -634,10 +634,12 @@ contains
             idx_special_points(counter) = i
             label_idx_special_points(counter) = j
             xval_special_points(counter) = xval(i)
-            if (counter > 1 .and. idx_special_points(counter) == idx_special_points(counter - 1)+1) then
-              ! If the two points are consecutive, it means that the x coordinate should be the same
-              xval(i) = xval(i - 1)
-              xval_special_points(counter) = xval(i)
+            if (counter > 1) then
+              if (idx_special_points(counter) == idx_special_points(counter - 1) + 1) then
+                ! If the two points are consecutive, it means that the x coordinate should be the same
+                xval(i) = xval(i - 1)
+                xval_special_points(counter) = xval(i)
+              end if
             end if
             exit
           end if
@@ -677,7 +679,7 @@ contains
           endif
           plot_kpoint(:, counter) = kpoint_path%points(:, 2*loop_spts - 1) + &
                                     (kpoint_path%points(:, 2*loop_spts) &
-                                    - kpoint_path%points(:, 2*loop_spts - 1))* &
+                                     - kpoint_path%points(:, 2*loop_spts - 1))* &
                                     (real(loop_i, dp)/real(kpath_pts(loop_spts), dp))
         end do
         idx_special_points(2*loop_spts) = counter
@@ -1154,11 +1156,13 @@ contains
       ! Axis labels
       if (kpoint_path%bands_kpt_explicit) then
         do i = 1, num_spts
-          if (i > 1 .and. idx_special_points(i) .eq. idx_special_points(i - 1)+1 .and. &
-            kpoint_path%labels(label_idx_special_points(i)) .ne. kpoint_path%labels(label_idx_special_points(i-1))) then
-            ! If two different point indeces are consecutive, the label should be combined
-            glabel(i) = TRIM(kpoint_path%labels(label_idx_special_points(i - 1)))//'|'// &
-                        TRIM(kpoint_path%labels(label_idx_special_points(i)))
+          if (i > 1) then
+            if (idx_special_points(i) .eq. idx_special_points(i - 1) + 1 .and. &
+                kpoint_path%labels(label_idx_special_points(i)) .ne. kpoint_path%labels(label_idx_special_points(i - 1))) then
+              ! If two different point indeces are consecutive, the label should be combined
+              glabel(i) = TRIM(kpoint_path%labels(label_idx_special_points(i - 1)))//'|'// &
+                          TRIM(kpoint_path%labels(label_idx_special_points(i)))
+            end if
           else
             glabel(i) = TRIM(kpoint_path%labels(label_idx_special_points(i)))
           end if
