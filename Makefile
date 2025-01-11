@@ -6,6 +6,7 @@ REALMAKEFILE=../Makefile.2
 
 TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else echo tar; fi )
 
+.NOTPARALLEL:
 default: wannier post
 
 PREFIX ?= /usr
