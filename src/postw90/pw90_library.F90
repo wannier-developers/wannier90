@@ -273,8 +273,9 @@ contains
 
     ierr = 0
     call pw90common_wanint_setup(wann90%num_wann, wann90%print_output, wann90%real_lattice, &
-                                 wann90%mp_grid, pw90%effective_model, pw90%ws_vec, istdout, &
-                                 wann90%seedname, wann90%timer, error, wann90%comm)
+                                 wann90%mp_grid, pw90%effective_model, wann90%ws_region, &
+                                 pw90%ws_vec, istdout, wann90%seedname, wann90%timer, error, &
+                                 wann90%comm)
     if (allocated(error)) then
       write (istderr, *) 'Error in post setup', error%code, error%message
       ierr = sign(1, error%code)

@@ -56,8 +56,8 @@ contains
   !================================================!
 
   subroutine pw90common_wanint_setup(num_wann, print_output, real_lattice, mp_grid, &
-                                     effective_model, wigner_seitz, stdout, seedname, timer, &
-                                     error, comm)
+                                     effective_model, ws_region, wigner_seitz, stdout, &
+                                     seedname, timer, error, comm)
     !================================================!
     !
     !! Setup data ready for interpolation
@@ -66,15 +66,16 @@ contains
 
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_types, only: print_output_type, timer_list_type
+    use w90_types, only: print_output_type, timer_list_type, ws_region_type
     use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
 
     type(print_output_type), intent(in) :: print_output
-    type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(timer_list_type), intent(inout) :: timer
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
+    type(wigner_seitz_type), intent(inout) :: wigner_seitz
+    type(ws_region_type), intent(inout) :: ws_region
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: num_wann
@@ -107,8 +108,8 @@ contains
       call comms_bcast(wigner_seitz%nrpts, 1, error, comm)
       if (allocated(error)) return
     else
-      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .true., timer, &
-                       error, comm)
+      call wignerseitz(print_output, real_lattice, mp_grid, ws_region, wigner_seitz, stdout, &
+                       .true., timer, error, comm)
       if (allocated(error)) return
     endif
 
@@ -141,8 +142,8 @@ contains
       ! Set up the lattice vectors on the Wigner-Seitz supercell
       ! where the Wannier functions live
 
-      call wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, .false., timer, &
-                       error, comm)
+      call wignerseitz(print_output, real_lattice, mp_grid, ws_region, wigner_seitz, stdout, &
+                       .false., timer, error, comm)
       if (allocated(error)) return
 
       ! Convert from reduced to Cartesian coordinates
@@ -868,27 +869,11 @@ contains
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
     endif
 
-!    if (.not.on_root .and. .not.allocated(m_matrix)) then
-!       allocate(m_matrix(num_wann,num_wann,nntot,num_kpts),stat=ierr)
-!       if (ierr/=0)&
-!            call io_error('Error allocating m_matrix in pw90common_wanint_data_dist')
-!    endif
-!    call comms_bcast(m_matrix(1,1,1,1),num_wann*num_wann*nntot*num_kpts)
-
     call comms_bcast(have_disentangled, 1, error, comm)
     if (allocated(error)) return
 
     if (have_disentangled) then
       if (.not. on_root) then
-
-        ! Do we really need these 'if not allocated'? Didn't use them for
-        ! eigval and kpt_latt above!
-
-!          if (.not.allocated(u_matrix_opt)) then
-!             allocate(u_matrix_opt(num_bands,num_wann,num_kpts),stat=ierr)
-!             if (ierr/=0)&
-!              call io_error('Error allocating u_matrix_opt in pw90common_wanint_data_dist')
-!          endif
 
         if (.not. allocated(dis_manifold%lwindow)) then
           allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
@@ -1890,8 +1875,8 @@ contains
   !================================================!
 
   !================================================!
-  subroutine wignerseitz(print_output, real_lattice, mp_grid, wigner_seitz, stdout, count_pts, &
-                         timer, error, comm)
+  subroutine wignerseitz(print_output, real_lattice, mp_grid, ws_region, wigner_seitz, stdout, &
+                         count_pts, timer, error, comm)
     !================================================!
     !! Calculates a grid of lattice vectors r that fall inside (and eventually
     !! on the surface of) the Wigner-Seitz supercell centered on the
@@ -1899,9 +1884,9 @@ contains
     !! mp_grid(1)*a_1, mp_grid(2)*a_2, and mp_grid(3)*a_3
     !================================================!
 
-    use w90_constants, only: dp
+    use w90_constants, only: eps8, dp
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-    use w90_types, only: print_output_type, timer_list_type
+    use w90_types, only: print_output_type, timer_list_type, ws_region_type
     use w90_utility, only: utility_metric
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_types, only: wigner_seitz_type
@@ -1911,7 +1896,9 @@ contains
     ! ndegen(irpt)      Weight of the irpt-th point is 1/ndegen(irpt)
     ! nrpts             number of Wigner-Seitz grid points
 
+    implicit none
     ! arguments
+    type(ws_region_type), intent(in)    :: ws_region
     type(print_output_type), intent(in) :: print_output
     type(timer_list_type), intent(inout) :: timer
     type(w90_comm_type), intent(in) :: comm
@@ -1924,41 +1911,61 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     ! local variables
-    integer       :: ndiff(3)
-    real(kind=dp) :: dist(125), tot, dist_min
+    integer       :: ierr, dist_dim
     integer       :: n1, n2, n3, i1, i2, i3, icnt, i, j, ir
-    real(kind=dp) :: real_metric(3, 3)
+    integer       :: ndiff(3)
     logical :: on_root = .false.
+    real(kind=dp), allocatable :: dist(:)
+    real(kind=dp) :: real_metric(3, 3)
+    real(kind=dp) :: tot, dist_min
+
     if (mpirank(comm) == 0) on_root = .true.
 
     if (print_output%timing_level > 1 .and. on_root) &
       call io_stopwatch_start('postw90_common: wigner_seitz', timer)
 
     call utility_metric(real_lattice, real_metric)
+
+    dist_dim = 1
+    do i = 1, 3
+      dist_dim = dist_dim*((ws_region%ws_search_size(i) + 1)*2 + 1)
+    end do
+    allocate (dist(dist_dim), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating dist in wigner_seitz', comm)
+      return
+    endif
+
     ! The Wannier functions live in a periodic supercell of the real space unit
     ! cell. This supercell is mp_grid(i) unit cells long along each primitive
     ! translation vector a_i of the unit cell
     !
-    ! We loop over grid points r on a cell that is approx. 8 times
-    ! larger than this "primitive supercell."
+    ! We loop over grid points r on a unit cell that is (2*ws_search_size+1)**3 times
+    ! larger than this primitive supercell.
     !
     ! One of these points is in the W-S supercell if it is closer to R=0 than any
     ! of the other points R (where R are the translation vectors of the
-    ! supercell). In practice it is sufficient to inspect only 125 R-points.
+    ! supercell).
 
     ! In the end, nrpts contains the total number of grid points that have been
     ! found in the Wigner-Seitz cell
 
     wigner_seitz%nrpts = 0
-    do n1 = -mp_grid(1), mp_grid(1)
-      do n2 = -mp_grid(2), mp_grid(2)
-        do n3 = -mp_grid(3), mp_grid(3)
-          ! Loop over the 125 points R. R=0 corresponds to i1=i2=i3=0,
-          ! or icnt=63
+    ! Loop over the lattice vectors of the primitive cell
+    ! that live in a supercell which is (2*ws_search_size+1)**2
+    ! larger than the Born-von Karman supercell.
+    ! We need to find which among these live in the Wigner-Seitz cell
+    do n1 = -ws_region%ws_search_size(1)*mp_grid(1), ws_region%ws_search_size(1)*mp_grid(1)
+      do n2 = -ws_region%ws_search_size(2)*mp_grid(2), ws_region%ws_search_size(2)*mp_grid(2)
+        do n3 = -ws_region%ws_search_size(3)*mp_grid(3), ws_region%ws_search_size(3)*mp_grid(3)
+          ! Loop over the lattice vectors R of the Born-von Karman supercell
+          ! that contains all the points of the previous loop.
+          ! There are (2*(ws_search_size+1)+1)**3 points R. R=0 corresponds to
+          ! i1=i2=i3=0, or icnt=((2*(ws_search_size+1)+1)**3 + 1)/2
           icnt = 0
-          do i1 = -2, 2
-            do i2 = -2, 2
-              do i3 = -2, 2
+          do i1 = -ws_region%ws_search_size(1) - 1, ws_region%ws_search_size(1) + 1
+            do i2 = -ws_region%ws_search_size(2) - 1, ws_region%ws_search_size(2) + 1
+              do i3 = -ws_region%ws_search_size(3) - 1, ws_region%ws_search_size(3) + 1
                 icnt = icnt + 1
                 ! Calculate distance squared |r-R|^2
                 ndiff(1) = n1 - i1*mp_grid(1)
@@ -1975,12 +1982,12 @@ contains
             enddo
           enddo
           dist_min = minval(dist)
-          if (abs(dist(63) - dist_min) .lt. 1.e-7_dp) then
+          if (abs(dist((dist_dim + 1)/2) - dist_min) .lt. ws_region%ws_distance_tol**2) then
             wigner_seitz%nrpts = wigner_seitz%nrpts + 1
             if (.not. count_pts) then
               wigner_seitz%ndegen(wigner_seitz%nrpts) = 0
-              do i = 1, 125
-                if (abs(dist(i) - dist_min) .lt. 1.e-7_dp) &
+              do i = 1, dist_dim
+                if (abs(dist(i) - dist_min) .lt. ws_region%ws_distance_tol**2) &
                   wigner_seitz%ndegen(wigner_seitz%nrpts) = &
                   wigner_seitz%ndegen(wigner_seitz%nrpts) + 1
               end do
@@ -2000,6 +2007,12 @@ contains
       enddo
       !n1
     enddo
+    !
+    deallocate (dist, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating dist wigner_seitz', comm)
+      return
+    end if
 
     if (count_pts) then
       if (print_output%timing_level > 1 .and. on_root) &
@@ -2015,6 +2028,8 @@ contains
           wigner_seitz%irvec(2, ir), wigner_seitz%irvec(3, ir), '  degeneracy: ', &
           wigner_seitz%ndegen(ir)
       enddo
+      write (stdout, '(1x,a,f12.3)') ' tot = ', tot
+      write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     endif
     ! Check the "sum rule"
     tot = 0.0_dp
@@ -2025,13 +2040,12 @@ contains
       !
       tot = tot + 1.0_dp/real(wigner_seitz%ndegen(ir), dp)
     enddo
-    if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > 1.e-8_dp) then
+    if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > eps8) then
       call set_error_fatal(error, 'ERROR in wigner_seitz: error in finding Wigner-Seitz points', comm)
       return
     endif
     if (print_output%timing_level > 1 .and. on_root) &
       call io_stopwatch_stop('postw90_common: wigner_seitz', timer)
-
     return
   end subroutine wignerseitz
 

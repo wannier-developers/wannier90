@@ -1,4 +1,4 @@
-!-*- mode: F90 -*-!
+!
 !------------------------------------------------------------!
 ! This file is distributed as part of the Wannier90 code and !
 ! under the terms of the GNU General Public License. See the !
@@ -307,7 +307,7 @@ contains
       call plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                         dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                         num_bands, num_wann, have_disentangled, w90_system%spinors, bohr, stdout, seedname, &
-                        timer, error, comm)
+                        timer, dist_k, error, comm)
       if (allocated(error)) return
     endif
 
@@ -1404,7 +1404,7 @@ contains
   subroutine plot_wannier(wannier_plot, wvfn_read, wannier_data, print_output, u_matrix_opt, &
                           dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                           num_bands, num_wann, have_disentangled, spinors, bohr, stdout, seedname, &
-                          timer, error, comm)
+                          timer, dist_k, error, comm)
     !================================================!
     !! Plot the WF in Xcrysden format
     !! based on code written by Michel Posternak
@@ -1440,6 +1440,7 @@ contains
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
+    integer, intent(in) :: dist_k(:)
     integer, intent(in) :: num_bands
     integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
@@ -1469,8 +1470,6 @@ contains
     integer :: i, j, nsp, nat, nbnd, counter, ierr
     integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
-    integer, allocatable :: counts(:)
-    integer, allocatable :: displs(:)
     integer :: wann_plot_num
 
     character(len=11) :: wfnname
@@ -1483,8 +1482,6 @@ contains
 
     on_root = .false.
     if (my_node_id == 0) on_root = .true.
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
 
     !
     if (print_output%timing_level > 1) call io_stopwatch_start('plot: wannier', timer)
@@ -1568,6 +1565,7 @@ contains
 
       call io_date(cdate, ctime)
       do loop_kpt = 1, num_kpts
+        if (dist_k(loop_kpt) /= my_node_id) cycle
 
         inc_band = .true.
         num_inc = num_wann
