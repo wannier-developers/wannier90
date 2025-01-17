@@ -265,6 +265,7 @@ program wannier
   need_eigvals = common_data%w90_calculation%bands_plot
   need_eigvals = (need_eigvals .or. common_data%w90_calculation%fermi_surface_plot)
   need_eigvals = (need_eigvals .or. common_data%output_file%write_hr)
+  need_eigvals = (need_eigvals .or. common_data%output_file%write_tb)
   need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
 
   if (need_eigvals) then
