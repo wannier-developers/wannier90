@@ -37,6 +37,7 @@ module w90_io
   public :: io_time
   public :: io_wallclocktime
   public :: prterr
+  public :: print_error_halt
 
 contains
 
@@ -454,4 +455,16 @@ contains
     deallocate (error) ! else allocated error trips uncaught error mechanism (ifdef W90DEV, see io.F90)
   end subroutine prterr
 
+  subroutine print_error_halt(error, ie, istdout, istderr, comm)
+    use w90_comms, only: w90_comm_type
+    use w90_error_base, only: w90_error_type
+    ! arguments
+    integer, intent(inout) :: ie ! global error value to be returned
+    integer, intent(in) :: istderr, istdout
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(inout) :: error
+
+    call prterr(error, ie, istdout, istderr, comm)
+    stop
+  end subroutine print_error_halt
 end module w90_io
