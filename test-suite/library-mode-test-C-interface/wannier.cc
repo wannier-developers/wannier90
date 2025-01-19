@@ -26,7 +26,8 @@ void reade(string, int, int, double*);
 
 int main(int argc, char* argv[]) {
 
-        if (!filesystem::exists(argv[1])){ // check if win file exists
+        // check if win file exists
+        if (!((argc == 2) && (filesystem::exists(argv[1])))){
                 cerr << "usage: " << argv[0] << " xxx.win" << endl;
                 exit(1);
         }
@@ -83,11 +84,11 @@ int main(int argc, char* argv[]) {
         int ierr;
         w90_input_setopt(w90glob, (char*)root.c_str(), ierr); // process necessary library options
 
-        w90_input_reader_c(w90glob, ierr); // process any other options
+        w90_input_reader(w90glob, ierr); // process any other options
         assert(ierr == 0);
 
         int nnfd;
-        w90_get_nn_c(w90glob, &nnfd); // return number of NN in FD scheme
+        w90_get_nn(w90glob, &nnfd); // return number of NN in FD scheme
         cout << nnfd <<endl;
 
         // prepare nnkp and gkpb arrans
@@ -109,8 +110,8 @@ int main(int argc, char* argv[]) {
                 }
         }
 
-        w90_get_nnkp_c(w90glob, &nnkp[0][0]); // return indexes of NN k-points in FD scheme
-        w90_get_gkpb_c(w90glob, &gkpb[0][0][0]);
+        w90_get_nnkp(w90glob, &nnkp[0][0]); // return indexes of NN k-points in FD scheme
+        w90_get_gkpb(w90glob, &gkpb[0][0][0]);
 
         // printout nnkp data for testing
         for (int i = 0; i < nk; ++i) {
@@ -128,10 +129,10 @@ int main(int argc, char* argv[]) {
         complex<double>* umat = new complex<double>[nw * nw * nk];
         double* edata = new double[nb * nk];
 
-        w90_set_m_local_c(w90glob, mdata); // m matrix
-        w90_set_u_matrix_c(w90glob, umat); // results returned here
-        w90_set_u_opt_c(w90glob, adata);   // initial projections
-        w90_set_eigval_c(w90glob, edata);  // contains eigenvalues
+        w90_set_m_local(w90glob, mdata); // m matrix
+        w90_set_u_matrix(w90glob, umat); // results returned here
+        w90_set_u_opt(w90glob, adata);   // initial projections
+        w90_set_eigval(w90glob, edata);  // contains eigenvalues
 
         fn = root + ".mmn";
         readm(fn, nnkp, gkpb, nk, nb, nnfd, mdata);
@@ -142,17 +143,17 @@ int main(int argc, char* argv[]) {
         fn = root + ".eig";
         if (filesystem::exists(fn)) reade(fn, nk, nb, edata);
 
-        w90_disentangle_c(w90glob, ierr);
-        w90_project_overlap_c(w90glob, ierr);
+        w90_disentangle(w90glob, ierr);
+        w90_project_overlap(w90glob, ierr);
         assert(ierr == 0);
 
-        w90_wannierise_c(w90glob, ierr);
+        w90_wannierise(w90glob, ierr);
         assert(ierr == 0);
 
         double wannier_ctr[nw][3];
         double wannier_spr[nw];
-        w90_get_centres_c(w90glob, wannier_ctr);
-        w90_get_spreads_c(w90glob, wannier_spr);
+        w90_get_centres(w90glob, wannier_ctr);
+        w90_get_spreads(w90glob, wannier_spr);
         w90_delete(w90glob);
 
         return 0;
