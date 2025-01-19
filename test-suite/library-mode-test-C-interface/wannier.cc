@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
         ///////////// LIBRARY
 
         w90_data w90glob;
-        w90_create(w90glob); 
+        w90_create(&w90glob);
 
         w90_set_option_double2d(w90glob, "kpoints", &kpt[0][0], nk, 3);
         w90_set_option_int1d(w90glob, "mp_grid", nkabc, 3);
@@ -82,9 +82,9 @@ int main(int argc, char* argv[]) {
         w90_set_option_double2d(w90glob, "unit_cell_cart", &uc[0][0], 3, 3);
 
         int ierr;
-        w90_input_setopt(w90glob, (char*)root.c_str(), ierr); // process necessary library options
+        w90_input_setopt(w90glob, (char*)root.c_str(), &ierr); // process necessary library options
 
-        w90_input_reader(w90glob, ierr); // process any other options
+        w90_input_reader(w90glob, &ierr); // process any other options
         assert(ierr == 0);
 
         int nnfd;
@@ -143,18 +143,18 @@ int main(int argc, char* argv[]) {
         fn = root + ".eig";
         if (filesystem::exists(fn)) reade(fn, nk, nb, edata);
 
-        w90_disentangle(w90glob, ierr);
-        w90_project_overlap(w90glob, ierr);
+        w90_disentangle(w90glob, &ierr);
+        w90_project_overlap(w90glob, &ierr);
         assert(ierr == 0);
 
-        w90_wannierise(w90glob, ierr);
+        w90_wannierise(w90glob, &ierr);
         assert(ierr == 0);
 
         double wannier_ctr[nw][3];
         double wannier_spr[nw];
         w90_get_centres(w90glob, wannier_ctr);
         w90_get_spreads(w90glob, wannier_spr);
-        w90_delete(w90glob);
+        w90_delete(&w90glob);
 
         return 0;
 }
