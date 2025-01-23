@@ -488,10 +488,10 @@ contains
 
     ! check
     if ((.not. common_data%kmesh_input%order_b_vectors) .and. &
-            common_data%wann_control%use_ss_functional) then
-            call set_error_input(error, 'Error: If use_ss_functional is true, &
-                   order_b_vector must be true. ', common_data%comm)
-      return 
+        common_data%wann_control%use_ss_functional) then
+      call set_error_input(error, 'Error: If use_ss_functional is true, &
+                           order_b_vector must be true. ', common_data%comm)
+      return
     endif
 
     if (allocated(error)) then

@@ -262,7 +262,7 @@ contains
     ! check
     if (pw90_berry%transl_inv_full .and. (.not. kmesh_input%order_b_vectors)) then
       call set_error_input(error, 'Error: If transl_inv_full is true, &
-                   order_b_vector must be true. ', comm)
+                           order_b_vector must be true. ', comm)
       return
     endif
 
