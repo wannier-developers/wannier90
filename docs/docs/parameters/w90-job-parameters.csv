@@ -15,3 +15,4 @@ translate_home_cell,L,"To translate final Wannier centres to home unit cell when
 write_xyz,L,"To write atomic positions and final centres in xyz file format"
 write_vdw_data,L,"To write data for futher processing by w90vdw utility"
 write_hr_diag,L,"To write the diagonal elements of the Hamiltonian in the Wannier basis to `seedname.wout` (in eV)"
+order_b_vectors,L,"Determines whether to sort b vectors or not. Must be true for Stengel-Spaldin functional"
