@@ -127,7 +127,7 @@ module w90_types
     integer :: num_nnmax_h ! 2*n(4n*2 + 15n + 17)/6
     integer :: higher_order_n = 1
     logical :: higher_order_nearest_shells = .false. ! experimental feature
-    logical :: order_b_vectors = .false. ! Determines wheter to order the b-vectors
+    logical :: order_b_vectors = .false. ! Determines whether to order the b-vectors
     !! A simpler algorithm of determining bvectors
     logical :: skip_B1_tests = .false.
     !! do not check the B1 condition
