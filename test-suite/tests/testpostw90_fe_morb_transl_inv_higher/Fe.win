@@ -36,6 +36,7 @@ fermi_energy = 12.6631
 
 transl_inv = F
 transl_inv_full=T
+order_b_vectors = .true.
 higher_order_n=2 
 
 begin kpoints

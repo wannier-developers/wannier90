@@ -1,5 +1,6 @@
 num_wann          =   18
 higher_order_n    =   3
+order_b_vectors = .true.
 
 begin unit_cell_cart
 bohr

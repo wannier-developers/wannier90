@@ -485,6 +485,15 @@ contains
                                       common_data%gamma_only, common_data%lsitesymmetry, &
                                       common_data%use_bloch_phases, common_data%seedname, &
                                       istdout, error, common_data%comm)
+
+    ! check
+    if ((.not. common_data%kmesh_input%order_b_vectors) .and. &
+            common_data%wann_control%use_ss_functional) then
+            call set_error_input(error, 'Error: If use_ss_functional is true, &
+                   order_b_vector must be true. ', common_data%comm)
+      return 
+    endif
+
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
@@ -870,7 +879,9 @@ contains
     endif
 
     if (.not. common_data%gamma_only) then
-      call kmesh_sort(common_data%kmesh_info, common_data%num_kpts, error, common_data%comm)
+      if (common_data%kmesh_input%order_b_vectors) then
+        call kmesh_sort(common_data%kmesh_info, common_data%num_kpts, error, common_data%comm)
+      endif
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return

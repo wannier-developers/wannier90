@@ -12,6 +12,7 @@ num_print_cycles =   10
 length_unit      =  bohr
 
 use_ss_functional = .true.
+order_b_vectors = .true.
 
 begin projections
 !! !! Bond-centred s-orbitals

@@ -1,7 +1,5 @@
 num_bands         =   28        
 num_wann          =   18 
-use_ws_distance = .true.
-search_shells=12
 
 dis_win_min       = -8.0d0       
 dis_win_max       = 70.0d0
@@ -19,14 +17,9 @@ end projections
 
 fermi_energy = 12.6279 
 
-uHu_formatted = .true.
-
 berry = true
-berry_task = morb
+berry_task = ahc+morb
 berry_kmesh = 10 10 10 
-
-transl_inv_full = .true. 
-order_b_vectors = .true.
 
 !kpath = true
 !kpath_task = bands+morb

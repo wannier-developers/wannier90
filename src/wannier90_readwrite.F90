@@ -678,7 +678,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'use_ss_functional', found, error, comm, &
                                    l_value=wann_control%use_ss_functional)
     if (allocated(error)) return
-
+    
     call w90_readwrite_get_keyword(settings, 'num_guide_cycles', found, error, comm, &
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return

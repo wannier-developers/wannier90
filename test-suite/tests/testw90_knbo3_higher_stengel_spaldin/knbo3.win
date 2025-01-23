@@ -3,6 +3,7 @@ num_bands = 15
 exclude_bands = 1-5, 21-36
 higher_order_n = 2
 use_ss_functional = .true.
+order_b_vectors = .true.
 guiding_centres = .true.
 
 conv_window = 5

@@ -21,6 +21,7 @@ kubo_freq_max = 7.00
 kubo_freq_step = 0.1
 
 transl_inv_full = .true.
+order_b_vectors = .true.
 
 use_ws_distance=.true.
 shc_gamma=1

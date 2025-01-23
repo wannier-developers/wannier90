@@ -258,6 +258,14 @@ contains
     if (allocated(error)) return
     call w90_readwrite_read_atoms(settings, atom_data, real_lattice, bohr, error, comm)
     if (allocated(error)) return
+
+    ! check
+    if (pw90_berry%transl_inv_full .and. (.not. kmesh_input%order_b_vectors)) then
+      call set_error_input(error, 'Error: If transl_inv_full is true, &
+                   order_b_vector must be true. ', comm)
+      return
+    endif
+
   end subroutine w90_postw90_readwrite_read
 
   subroutine w90_postw90_readwrite_readall(settings, w90_system, dis_manifold, fermi_energy_list, &
@@ -386,6 +394,7 @@ contains
                                                   pw90_extra_io%global_kmesh_set, &
                                                   pw90_extra_io%global_kmesh, error, comm)
     if (allocated(error)) return
+
   end subroutine w90_postw90_readwrite_readall
 
   !================================================!

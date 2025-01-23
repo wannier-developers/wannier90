@@ -1,6 +1,7 @@
 num_wann          =   18
 higher_order_n  = 3
 higher_order_nearest_shells = .true.
+order_b_vectors = .true.
 !kmesh_tol = 0.00001
 
 begin unit_cell_cart

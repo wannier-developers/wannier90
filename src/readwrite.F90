@@ -865,6 +865,10 @@ contains
       kmesh_input%max_shells_aux = 6
     endif
 
+    call w90_readwrite_get_keyword(settings, 'order_b_vectors', found, error, comm, &
+                                   l_value=kmesh_input%order_b_vectors)
+    if (allocated(error)) return
+
     call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm, &
                                    r_value=kmesh_input%tol)
     if (allocated(error)) return
@@ -1255,6 +1259,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'guiding_centres', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'higher_order_n', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'higher_order_nearest_shells', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'order_b_vectors', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'hr_cutoff', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'hr_plot', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm)

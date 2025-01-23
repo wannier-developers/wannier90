@@ -311,7 +311,9 @@ program postw90
                  num_kpts, gamma_only, stdout, timer, error, comm)
   if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
 
-  call kmesh_sort(kmesh_info, num_kpts, error, comm)
+  if (kmesh_data%order_b_vectors) then
+    call kmesh_sort(kmesh_info, num_kpts, error, comm)
+  endif
   if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
