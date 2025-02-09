@@ -77,9 +77,10 @@ find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 if (WANNIER90_MPI)
 	find_package(MPI REQUIRED COMPONENTS Fortran)
-	if (NOT MPI_Fortran_HAVE_F08_MODULE)
-		message(SEND_ERROR "mpi_f08 module is required for building Wannier90 with MPI")
-	endif ()
+	# TODO: Use mpi_f08 instead. Tests are not adapted yet
+#	if (NOT MPI_Fortran_HAVE_F08_MODULE)
+#		message(SEND_ERROR "mpi_f08 module is required for building Wannier90 with MPI")
+#	endif ()
 endif ()
 
 #[=============================================================================[

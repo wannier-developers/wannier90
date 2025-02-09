@@ -21,7 +21,8 @@ target_link_libraries(Wannier90_post PRIVATE
 		Wannier90_lib BLAS::BLAS LAPACK::LAPACK)
 if (WANNIER90_MPI)
 	target_compile_definitions(Wannier90_post PRIVATE
-			MPI08 MPI
+			# TODO: Use mpi_f08 instead. Tests are not adapted yet
+			MPI90 MPI
 	)
 endif ()
 

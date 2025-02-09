@@ -48,10 +48,12 @@ target_sources(Wannier90_lib
 if (WANNIER90_MPI)
 	target_link_libraries(Wannier90_lib PUBLIC MPI::MPI_Fortran)
 	target_compile_definitions(Wannier90_lib PRIVATE
-			MPI08 MPI
+			# TODO: Use mpi_f08 instead. Tests are not adapted yet
+			MPI90 MPI
 	)
 	target_compile_definitions(Wannier90_exe PRIVATE
-			MPI08 MPI
+			# TODO: Use mpi_f08 instead. Tests are not adapted yet
+			MPI90 MPI
 	)
 endif ()
 
