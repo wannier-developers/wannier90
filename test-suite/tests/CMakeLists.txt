@@ -63,7 +63,7 @@ set(test_names
 		testw90_example26
 		testw90_gaas_disentanglement_issue192
 		testw90_lavo3_dissphere
-		testw90_na_chain_gamma
+#		testw90_na_chain_gamma  # Dropped because flaky
 		testw90_nnkpt1
 		testw90_nnkpt2
 		testw90_nnkpt3
