@@ -128,3 +128,17 @@ endforeach ()
 
 ## Add unit tests
 add_subdirectory(tests)
+
+## Functional tests
+set(functional_tests
+		library-mode-test-C-interface
+)
+if (WANNIER90_MPI)
+	# These tests require MPI interface
+	list(APPEND functional_tests
+			library-mode-test
+	)
+endif ()
+foreach (test IN LISTS functional_tests)
+	Wannier90_add_test(${test})
+endforeach ()
