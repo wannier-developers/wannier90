@@ -920,13 +920,13 @@ contains
     if (allocated(error)) return
   end subroutine w90_readwrite_read_kmesh_data
 
-  subroutine w90_readwrite_read_kpoints(settings, pw90_effective_model, kpt_latt, num_kpts, bohr, &
-                                        error, comm)
+  subroutine w90_readwrite_read_kpoints(settings, pw90_effective_model, kpt_latt, num_kpts, mp_grid, &
+                                        bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
     ! arguments
-    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_kpts, mp_grid(3)
     logical, intent(in) :: pw90_effective_model
     real(kind=dp), allocatable, intent(out) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
@@ -936,7 +936,7 @@ contains
 
     ! local variables
     real(kind=dp), allocatable :: kpt_cart(:, :)
-    integer :: ierr
+    integer :: ierr, ia, ib, ic, ik
     logical :: found
 
     ! pw90_effective_model ignores kpt_cart
@@ -960,9 +960,22 @@ contains
       call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
                                            comm, r_value=kpt_cart)
       if (allocated(error)) return
+      !if (.not. found) then
+      !  call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
+      !  return
+      !endif
       if (.not. found) then
-        call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
-        return
+        ik = 1
+        do ia = 1, mp_grid(1)
+          do ib = 1, mp_grid(2)
+            do ic = 1, mp_grid(3)
+              kpt_cart(1, ik) = real(ia - 1, kind=dp)/mp_grid(1)
+              kpt_cart(2, ik) = real(ib - 1, kind=dp)/mp_grid(2)
+              kpt_cart(3, ik) = real(ic - 1, kind=dp)/mp_grid(3)
+              ik = ik + 1
+            enddo
+          enddo
+        enddo
       endif
       kpt_latt = kpt_cart
 

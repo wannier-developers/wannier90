@@ -132,7 +132,8 @@ contains
     call w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_kpoints(settings, .false., kpt_latt, num_kpts, bohr, error, comm)
+    call w90_readwrite_read_kpoints(settings, .false., kpt_latt, num_kpts, mp_grid, bohr, error, &
+                                    comm)
     if (allocated(error)) return
 
     call w90_wannier90_readwrite_read_explicit_kpts(settings, w90_calculation, kmesh_info, &
