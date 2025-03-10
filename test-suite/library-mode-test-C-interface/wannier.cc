@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
         w90_set_option_double2d(w90glob, "unit_cell_cart", &uc[0][0], 3, 3);
 
         int ierr;
-        w90_input_setopt(w90glob, root.c_str(), ierr); // process necessary library options
+        w90_input_setopt(w90glob, (char*)root.c_str(), ierr); // process necessary library options
 
         w90_input_reader_c(w90glob, ierr); // process any other options
         assert(ierr == 0);
