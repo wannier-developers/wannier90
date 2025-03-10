@@ -1811,7 +1811,7 @@ contains
       write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
 #endif
     else
-      write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', mpi_size, ' CPUs'
+      write (stdout, '(/,1x,a,i3,a)') 'Running in parallel on ', mpi_size, ' CPUs'
     endif
   end subroutine w90_readwrite_write_header
 

@@ -106,7 +106,7 @@ library_interface.o : ../library_interface.F90 \
 	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../library_interface.F90
 
-library_extra.o : ../library_extra.F90
+library_extra.o : io.o library_interface.o ../library_extra.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../library_extra.F90
 
 c_interface.o : ../c_interface.F90 \
