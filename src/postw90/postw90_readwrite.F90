@@ -243,7 +243,7 @@ contains
     if (allocated(error)) return
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
     if (allocated(error)) return
-    call w90_readwrite_read_kpoints(settings, effective_model, kpt_latt, num_kpts, bohr, &
+    call w90_readwrite_read_kpoints(settings, effective_model, kpt_latt, num_kpts, mp_grid, bohr, &
                                     error, comm)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_global_kmesh(settings, pw90_extra_io%global_kmesh_set, &
