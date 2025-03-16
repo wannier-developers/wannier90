@@ -548,6 +548,26 @@ program = WANNIER90_WOUT_OK
 inputs_args = ('copper.win', '')
 output = copper.wout
 
+# Test for parsing the projection string
+[testw90_proj1/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for parsing the projection string
+[testw90_proj2/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+# Test for parsing the projection string
+[testw90_proj3/]
+program = WANNIER90_NNKP_OK
+inputs_args = ('wannier.win', '-pp')
+output = wannier.nnkp
+
+
+
 [categories]
 wannier_only = testw90_*
 postw90_only = testpostw90_*

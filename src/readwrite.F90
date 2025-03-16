@@ -3781,7 +3781,7 @@ contains
     real(kind=dp) :: proj_s_qaxis_tmp(3)
     real(kind=dp) :: proj_zona_tmp
     integer       :: proj_radial_tmp
-    logical       :: lconvert, lrandom, proj_u_tmp, proj_d_tmp
+    logical       :: lconvert, lrandom, proj_u_tmp, proj_d_tmp, found_f
     logical       :: lpartrandom
 
     real(kind=dp) :: xnorm, znorm, cosphi, sinphi, xnorm_new, cosphi_new
@@ -3979,8 +3979,22 @@ contains
           endif
         endif
 
-        ! scan for up or down
-        pos1 = index(dummy, '(')
+        ! scan for up or down staring from the end of the string.
+        pos1 = index(dummy, '(', BACK=.true.)
+        ! We need to exclude the case in which we have no spinor specification (u) (d) etc
+        ! But we have an f-orbital specified.
+        if (pos1 > 0) then
+          found_f = .false.
+          ctemp = (dummy(pos1:))
+          pos2 = index(ctemp, '(x2-y2)')
+          if (pos2 > 0) found_f = .true.
+          pos2 = index(ctemp, '(x2-3y2)')
+          if (pos2 > 0) found_f = .true.
+          pos2 = index(ctemp, '(3x2-y2)')
+          if (pos2 > 0) found_f = .true.
+          if (found_f) pos1 = 0
+        endif
+
         if (spinors) then
           if (pos1 > 0) then
             proj_u_tmp = .false.; proj_d_tmp = .false.
