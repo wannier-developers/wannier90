@@ -279,11 +279,15 @@ contains
                                     error, comm)
       if (allocated(error)) return
 
-      if (.not. has_kpath) then
-        call w90_readwrite_read_explicit_kpath(settings, kpoint_path, has_explicit_kpath, w90_calculation%bands_plot, &
-                                               bohr, error, comm)
-        if (allocated(error)) return
+      call w90_readwrite_read_explicit_kpath(settings, kpoint_path, has_explicit_kpath, w90_calculation%bands_plot, &
+                                             bohr, error, comm)
+      if (allocated(error)) return
+
+      if (has_kpath .and. has_explicit_kpath) then
+        call set_error_input(error, 'Error: cannot specify both kpath and explicit_kpath', comm)
       endif
+      if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_plot_info(settings, wvfn_read, error, comm)
       if (allocated(error)) return
 
