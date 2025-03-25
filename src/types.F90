@@ -238,7 +238,7 @@ module w90_types
     integer :: num_points_first_segment = 100
     character(len=20), allocatable :: labels(:)
     real(kind=dp), allocatable :: points(:, :)
-    logical :: bands_kpt_explicit ! use user provided list of kpoints for bands kpath
+    logical :: bands_kpt_explicit = .false. ! use user provided list of kpoints for bands kpath
     real(kind=dp), allocatable ::bands_kpt_frac(:, :) ! explicit bands kpoints in fractional coordinate
   end type kpoint_path_type
 
