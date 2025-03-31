@@ -1,5 +1,29 @@
 # CHANGELOG of Wannier90
 
+## v4.0.0 (2nd April 2025)
+
+### New Wannier90 features
+
+- Library redesign enabling all wannier90.x functionality via fortran and c interfaces in serial and parallel
+
+- Implements translationally-invariant formulation for position related matrix elements [[#553]](https://github.com/wannier-developers/wannier90/pull/533)
+
+- Allows explicit specification of k-point lists, simplifying band structure comparisons [[#519]](https://github.com/wannier-developers/wannier90/pull/519)
+
+- Implements higher-order finite difference methods [[#504]](https://github.com/wannier-developers/wannier90/pull/504)
+
+- Implementation of Stengel-Spaldin Functional in Wannierization [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
+
+- Introduction of Cmake build system [[#497]](https://github.com/wannier-developers/wannier90/pull/487)
+
+- Adopts readthedocs for documentation [[#493]](https://github.com/wannier-developers/wannier90/pull/493)
+
+- Add projectability-disentangled Wannier functions [[#338](https://github.com/wannier-developers/wannier90/pull/448)
+
+### New postw90 features
+
+### Various improvements and bugfixes
+
 ## v3.1.0 (5th March 2020)
 
 ### New features
