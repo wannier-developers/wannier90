@@ -163,8 +163,8 @@ For more details on the methodology, see Ref.[@Qiao2023-pdwf].
     pw.x < graphene.nscf > nscf.out
     ```
 
-7. Run `pw.x` to generate a list of the required overlaps (written into the
-    `graphene.nnkp` file).
+7. Run `wannier90.x -pp` to generate a list of the required overlaps (written
+    into the `graphene.nnkp` file).
 
     !!! note
 
