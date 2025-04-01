@@ -93,6 +93,7 @@ set(test_names
                 testw90_rmn
                 testw90_write_u_matrices
                 testw90_write_u_matrices_disent
+                testw90_readin_b_vec
 )
 if (Wannier90_MPI)
 	list(APPEND test_names

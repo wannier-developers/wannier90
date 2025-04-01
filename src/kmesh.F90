@@ -59,7 +59,7 @@ contains
 
   !================================================
   subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, num_kpts, &
-                       gamma_only, stdout, timer, error, comm)
+                       gamma_only, seedname, stdout, timer, error, comm)
     !================================================
     !
     !! Main routine to calculate the b-vectors
@@ -82,6 +82,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
+    character(len=*), intent(in)  :: seedname
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -89,14 +90,15 @@ contains
     logical, intent(in) :: gamma_only
 
     ! local variables
-    real(kind=dp), allocatable :: bvec_tmp(:, :)
+    real(kind=dp), allocatable :: bvec_tmp(:, :), bvec_inp(:, :, :) ! bvec_inp is allocated in kmesh_shell_from_file()
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp), allocatable :: bk_local(:, :, :)
     real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
     real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
     real(kind=dp) :: dnn(max(kmesh_input%search_shells, 6*kmesh_input%higher_order_n))
     real(kind=dp) :: recip_lattice(3, 3), volume
-    real(kind=dp) :: vkpp(3), vkpp2(3)
+    real(kind=dp) :: vkpp(3), vkpp2(3), kpbvec(3)
+    integer :: bnum, nbvec ! context of kmesh_input%kmesh_shell_from_file
 
     ! higher-order finite-difference
     integer, allocatable :: lmn(:, :) ! Order in which to search the cells (ordered in dist from origin)
@@ -239,11 +241,13 @@ contains
     end if
 
     ! Get the shell weights to satisfy the B1 condition
-    !if (index(print_output%devel_flag, 'kmesh_degen') > 0) then
-    !  call kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
-    !                             recip_lattice, lmn, multi, num_kpts, seedname, stdout)
-    !else
-    if (kmesh_input%num_shells == 0) then
+    if (kmesh_input%kmesh_shell_from_file) then
+      call kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
+                                 recip_lattice, lmn, multi, num_kpts, seedname, stdout, timer, &
+                                 error, comm)
+      if (allocated(error)) return
+
+    elseif (kmesh_input%num_shells == 0) then
       call kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
                                  lmn, multi, num_kpts, stdout, timer, error, comm)
       if (allocated(error)) return
@@ -338,6 +342,7 @@ contains
     end if
 
     ! higher-order algorithm: include 2b, 3b, ..., Nb shells, and modify bweights
+    ! jj fixmeare these branches really separate?
     if (kmesh_input%higher_order_nearest_shells) then
       write (stdout, '(a)') ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
         ' | not been extensively tested.                                               |'
@@ -361,7 +366,6 @@ contains
       call set_error_alloc(error, 'Error in allocating nncell in kmesh_get', comm)
       return
     end if
-
     allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating wb in kmesh_get', comm)
@@ -506,43 +510,39 @@ contains
       end do
     end do
 
-    !else
-    !
-    ! incase we set the bvectors explicitly
-    !
-    !nnshell = 0
-    !do nkp = 1, num_kpts
-    !  nnx = 0
-    !  ok2: do loop = 1, (2*kmesh_input%search_supcell_size + 1)**3
-    !    l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
-    !    vkpp2 = matmul(lmn(:, loop), recip_lattice)
-    !    do nkp2 = 1, num_kpts
-    !      vkpp = vkpp2 + kpt_cart(:, nkp2)
-    !      bnum = 0
-    !      do ndnnx = 1, kmesh_input%num_shells
-    !        do nbvec = 1, multi(ndnnx)
-    !          bnum = bnum + 1
-    !          kpbvec = kpt_cart(:, nkp) + bvec_inp(:, nbvec, ndnnx)
-    !          dist = sqrt((kpbvec(1) - vkpp(1))**2 &
-    !                      + (kpbvec(2) - vkpp(2))**2 + (kpbvec(3) - vkpp(3))**2)
-    !          if (abs(dist) < kmesh_input%tol) then
-    !            nnx = nnx + 1
-    !            nnshell(nkp, ndnnx) = nnshell(nkp, ndnnx) + 1
-    !            kmesh_info%nnlist(nkp, bnum) = nkp2
-    !            kmesh_info%nncell(1, nkp, bnum) = l
-    !            kmesh_info%nncell(2, nkp, bnum) = m
-    !            kmesh_info%nncell(3, nkp, bnum) = n
-    !            bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
-    !          endif
-    !        enddo
-    !      end do
-    !      if (nnx == sum(multi)) exit ok2
-    !    end do
-    !  enddo ok2
-    ! check to see if too few neighbours here
-    !end do
-
-    !end if
+    if (kmesh_input%kmesh_shell_from_file) then
+      ! JJ fixme, this set of actions should be moved to the kmesh_shell_from_file function and clean up
+      nnshell = 0
+      do nkp = 1, num_kpts
+        nnx = 0
+        ok2: do loop = 1, (2*kmesh_input%search_supcell_size + 1)**3
+          l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
+          vkpp2 = matmul(lmn(:, loop), recip_lattice)
+          do nkp2 = 1, num_kpts
+            vkpp = vkpp2 + kpt_cart(:, nkp2)
+            bnum = 0
+            do ndnnx = 1, kmesh_input%num_shells
+              do nbvec = 1, multi(ndnnx)
+                bnum = bnum + 1
+                kpbvec = kpt_cart(:, nkp) + bvec_inp(:, nbvec, ndnnx)
+                dist = sqrt((kpbvec(1) - vkpp(1))**2 &
+                            + (kpbvec(2) - vkpp(2))**2 + (kpbvec(3) - vkpp(3))**2)
+                if (abs(dist) < kmesh_input%tol) then
+                  nnx = nnx + 1
+                  nnshell(nkp, ndnnx) = nnshell(nkp, ndnnx) + 1
+                  kmesh_info%nnlist(nkp, bnum) = nkp2
+                  kmesh_info%nncell(1, nkp, bnum) = l
+                  kmesh_info%nncell(2, nkp, bnum) = m
+                  kmesh_info%nncell(3, nkp, bnum) = n
+                  bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
+                endif
+              enddo
+            end do
+            if (nnx == sum(multi)) exit ok2
+          end do
+        enddo ok2
+      end do
+    end if ! kmesh_shell_from_file
 
     if (kmesh_input%higher_order_n .eq. 1 .or. kmesh_input%higher_order_nearest_shells) then
       do ndnnx = 1, kmesh_input%num_shells
@@ -1975,8 +1975,8 @@ contains
                                    error, comm)
     !================================================
     !!  Find the B1 weights for a set of b-vectors given in a file.
-    !!  This routine is only activated via a devel_flag and is not
-    !!  intended for regular use.
+    !!  This routine is activated via kmesh_shell_from_file = T
+    !!  It is not intended for regular use.
     !
     !================================================
 
@@ -1999,14 +1999,14 @@ contains
 
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) ::kpt_cart(:, :)
-    real(kind=dp), intent(inout) :: bvec_inp(:, :, :)
+    real(kind=dp), allocatable, intent(inout) :: bvec_inp(:, :, :)
     real(kind=dp), intent(in) :: dnn(kmesh_input%search_shells)  ! the bvectors
     real(kind=dp), intent(out) :: bweight(max_shells)
 
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    real(kind=dp), allocatable     :: bvector(:, :)
+    real(kind=dp), allocatable :: bvector(:, :)
 
     real(kind=dp), dimension(:), allocatable :: singv
     real(kind=dp), dimension(:, :), allocatable :: amat, umat, vmat, smat
@@ -2099,6 +2099,8 @@ contains
       multi(counter) = length
       read (dummy2, *, err=230, end=230) (bvec_list(i, loop), i=1, length)
     end do
+
+    allocate (bvec_inp(3, maxval(multi), kmesh_input%num_shells))
 
     bvec_inp = 0.0_dp
     do loop = 1, kmesh_input%num_shells
@@ -2210,7 +2212,7 @@ contains
     end if
 
     if (.not. b1sat) then
-      call set_error_fatal(error, 'kmesh_shell_fixed: B1 condition not satisfied', comm)
+      call set_error_fatal(error, 'kmesh_shell_from_file: B1 condition not satisfied', comm)
       return
     end if
 

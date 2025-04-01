@@ -508,7 +508,6 @@ contains
     logical :: found
 
     bands_num_spec_points = 0
-    kpoint_path%bands_kpt_explicit = .false.
     call w90_readwrite_get_block_length(settings, 'explicit_kpath_labels', found, bands_num_spec_points, error, comm)
     if (allocated(error)) return
     if (found) then
@@ -864,6 +863,11 @@ contains
     if (.not. kmesh_input%higher_order_nearest_shells) then
       kmesh_input%max_shells_aux = 6
     end if
+
+    ! override mechanism for cases where automatic determination of b-vector shells fails
+    call w90_readwrite_get_keyword(settings, 'kmesh_shell_from_file', found, error, comm, &
+                                   l_value=kmesh_input%kmesh_shell_from_file)
+    if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm, &
                                    r_value=kmesh_input%tol)
