@@ -7,9 +7,9 @@ Other variables in the .win file are also read and used (via the call to cinput_
 
 This executable can be invoked in the test directories, taking the name of the .win as the only argument, eg:
 
-( cd ../tests/testw90_example01; ../../libv2-demo2/wannier_c.x gaas.win )
-( cd ../tests/testw90_example02; ../../libv2-demo2/wannier_c.x lead.win )
-( cd ../tests/testw90_example03; ../../libv2-demo2/wannier_c.x silicon.win )
-( cd ../tests/testw90_example04; ../../libv2-demo2/wannier_c.x copper.win )
-( cd ../tests/testw90_example05; ../../libv2-demo2/wannier_c.x diamond.win )
-( cd ../tests/testw90_example07; ../../libv2-demo2/wannier_c.x silane.win )
+(export EXE=`pwd`/wannier_c.x;  cd ../tests/testw90_example01; eval $EXE gaas.win )
+(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example02; eval $EXE lead.win )
+(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example03; eval $EXE silicon.win )
+(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example04; eval $EXE copper.win )
+(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example05; eval $EXE diamond.win )
+(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example07; eval $EXE silane.win )
