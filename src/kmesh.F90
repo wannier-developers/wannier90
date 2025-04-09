@@ -163,10 +163,8 @@ contains
           l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
           !
           vkpp = kpt_cart(:, nkp) + matmul(lmn(:, loop), recip_lattice)
-          !dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
-          !            + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
-          dist = sqrt(vkpp(1)**2 + vkpp(2)**2 + vkpp(3)**2) !just assume a gamma-centred mesh JJ
-          !
+          dist = sqrt((kpt_cart(1, 1) - vkpp(1))**2 &
+                      + (kpt_cart(2, 1) - vkpp(2))**2 + (kpt_cart(3, 1) - vkpp(3))**2)
           if ((dist .gt. kmesh_input%tol) .and. (dist .gt. dnn0 + kmesh_input%tol)) then
             if (dist .lt. dnn1 - kmesh_input%tol) then
               dnn1 = dist  ! found a closer shell
