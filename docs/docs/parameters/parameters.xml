@@ -1352,10 +1352,6 @@
     <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>gyrotropic</group>
-      <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1364,10 +1360,6 @@
     <description>Minimum spacing between \\(k\\) points in Å\\(^{-1}\\)</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>gyrotropic</group>
-      <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1376,9 +1368,6 @@
     <description>Use adaptive smearing</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1387,9 +1376,6 @@
     <description>Adaptive smearing prefactor</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1398,9 +1384,6 @@
     <description>Maximum allowed value for the adaptive energy smearing</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1409,10 +1392,6 @@
     <description>Analytical form used for the broadened delta function</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>gyrotropic</group>
-      <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1421,9 +1400,6 @@
     <description>Energy smearing (if non-adaptive)</description>
     <groups>
       <group>global</group>
-      <group>berry</group>
-      <group>dos</group>
-      <group>gyrotropic</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
@@ -1461,7 +1437,7 @@
   <parameter tool="postw90">
     <name>spin_axis_polar</name>
     <type units="degrees">P</type>
-    <description>Polar angle of the spin quantization axis (deg)</description>
+    <description>Polar angle of the spin quantization axis</description>
     <groups>
       <group>global</group>
     </groups>
@@ -1469,7 +1445,7 @@
   <parameter tool="postw90">
     <name>spin_axis_azimuth</name>
     <type units="degrees">P</type>
-    <description>Azimuthal angle of the spin quantization axis (deg)</description>
+    <description>Azimuthal angle of the spin quantization axis</description>
     <groups>
       <group>global</group>
     </groups>
@@ -2145,7 +2121,7 @@
   <parameter tool="postw90">
     <name>boltz_relax_time</name>
     <type units="fs">P</type>
-    <description>Relaxation time in fs</description>
+    <description>Relaxation time</description>
     <groups>
       <group>boltzwann</group>
     </groups>
