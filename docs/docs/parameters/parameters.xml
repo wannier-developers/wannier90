@@ -1395,7 +1395,7 @@
   <parameter tool="postw90">
     <name>adpt_smr_max</name>
     <type units="eV">P</type>
-    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <description>Maximum allowed value for the adaptive energy smearing</description>
     <groups>
       <group>global</group>
       <group>berry</group>
@@ -1437,7 +1437,7 @@
   <parameter tool="postw90">
     <name>scissors_shift</name>
     <type units="eV">P</type>
-    <description>Scissors shift applied to the conduction bands (eV) (deprecated)</description>
+    <description>Scissors shift applied to the conduction bands (deprecated)</description>
     <groups>
       <group>global</group>
     </groups>
@@ -1571,7 +1571,7 @@
   <parameter tool="postw90">
     <name>kubo_freq_min</name>
     <type units="eV">P</type>
-    <description>Lower limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)</description>
+    <description>Lower limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity</description>
     <groups>
       <group>berry</group>
     </groups>
@@ -1579,7 +1579,7 @@
   <parameter tool="postw90">
     <name>kubo_freq_max</name>
     <type units="eV">P</type>
-    <description>Upper limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)</description>
+    <description>Upper limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity</description>
     <groups>
       <group>berry</group>
     </groups>
@@ -1619,7 +1619,7 @@
   <parameter tool="postw90">
     <name optional_prefix="kubo_">adpt_smr_max</name>
     <type units="eV">P</type>
-    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <description>Maximum allowed value for the adaptive energy smearing</description>
     <groups>
       <group>berry</group>
     </groups>
@@ -1635,7 +1635,7 @@
   <parameter tool="postw90">
     <name optional_prefix="kubo_">smr_fixed_en_width</name>
     <type units="eV">P</type>
-    <description>Energy smearing (if non-adaptive) for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV)</description>
+    <description>Energy smearing (if non-adaptive) for the optical conductivity, JDOS, shift current and spin Hall conductivity</description>
     <groups>
       <group>berry</group>
     </groups>
@@ -1731,7 +1731,7 @@
   <parameter tool="postw90">
     <name>shc_bandshift_energyshift</name>
     <type units="eV">P</type>
-    <description>Energy shift of the conduction bands (eV)</description>
+    <description>Energy shift of the conduction bands</description>
     <groups>
       <group>berry</group>
     </groups>
@@ -1783,7 +1783,7 @@
   <parameter tool="postw90">
     <name>dos_energy_min</name>
     <type units="eV">P</type>
-    <description>Lower limit of the energy range for computing the DOS (eV)</description>
+    <description>Lower limit of the energy range for computing the DOS</description>
     <groups>
       <group>dos</group>
     </groups>
@@ -1791,7 +1791,7 @@
   <parameter tool="postw90">
     <name>dos_energy_max</name>
     <type units="eV">P</type>
-    <description>Upper limit of the energy range for computing the DOS (eV)</description>
+    <description>Upper limit of the energy range for computing the DOS</description>
     <groups>
       <group>dos</group>
     </groups>
@@ -1799,7 +1799,7 @@
   <parameter tool="postw90">
     <name>dos_energy_step</name>
     <type units="eV">P</type>
-    <description>Step for increasing the energy in the specified range (eV)</description>
+    <description>Step for increasing the energy in the specified range</description>
     <groups>
       <group>dos</group>
     </groups>
@@ -1847,7 +1847,7 @@
   <parameter tool="postw90">
     <name optional_prefix="dos_">adpt_smr_max</name>
     <type units="eV">P</type>
-    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <description>Maximum allowed value for the adaptive energy smearing</description>
     <groups>
       <group>dos</group>
     </groups>
@@ -1855,7 +1855,7 @@
   <parameter tool="postw90">
     <name optional_prefix="dos_">smr_fixed_en_width</name>
     <type units="eV">P</type>
-    <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
+    <description>Energy smearing (if non-adaptive) for the DOS</description>
     <groups>
       <group>dos</group>
     </groups>
@@ -2010,7 +2010,7 @@
   <parameter tool="postw90">
     <name>gyrotropic_freq_min</name>
     <type units="eV">P</type>
-    <description>Lower limit of the frequency range for optical rotation (eV)</description>
+    <description>Lower limit of the frequency range for optical rotation</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
@@ -2018,7 +2018,7 @@
   <parameter tool="postw90">
     <name>gyrotropic_freq_max</name>
     <type units="eV">P</type>
-    <description>Upper limit of the frequency range for optical rotation (eV)</description>
+    <description>Upper limit of the frequency range for optical rotation</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
@@ -2058,7 +2058,7 @@
   <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">smr_fixed_en_width</name>
     <type units="eV">P</type>
-    <description>Energy smearing (eV)</description>
+    <description>Energy smearing</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
@@ -2153,7 +2153,7 @@
   <parameter tool="postw90">
     <name>boltz_mu_min</name>
     <type units="eV">P</type>
-    <description>Minimum value of the chemical potential \\(\\mu\\) in eV</description>
+    <description>Minimum value of the chemical potential \\(\\mu\\)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2161,7 +2161,7 @@
   <parameter tool="postw90">
     <name>boltz_mu_max</name>
     <type units="eV">P</type>
-    <description>Maximum value of the chemical potential \\(\\mu\\) in eV</description>
+    <description>Maximum value of the chemical potential \\(\\mu\\)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2169,7 +2169,7 @@
   <parameter tool="postw90">
     <name>boltz_mu_step</name>
     <type units="eV">P</type>
-    <description>Step for \\(\\mu\\) in eV</description>
+    <description>Step for \\(\\mu\\)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2177,7 +2177,7 @@
   <parameter tool="postw90">
     <name>boltz_temp_min</name>
     <type units="K">P</type>
-    <description>Minimum value of the temperature \\(T\\) in Kelvin</description>
+    <description>Minimum value of the temperature \\(T\\)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2185,7 +2185,7 @@
   <parameter tool="postw90">
     <name>boltz_temp_max</name>
     <type units="K">P</type>
-    <description>Maximum value of the temperature \\(T\\) in Kelvin</description>
+    <description>Maximum value of the temperature \\(T\\)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2193,7 +2193,7 @@
   <parameter tool="postw90">
     <name>boltz_temp_step</name>
     <type units="K">P</type>
-    <description>Step for \\(T\\) in Kelvin</description>
+    <description>Step for \\(T\\)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2201,7 +2201,7 @@
   <parameter tool="postw90">
     <name>boltz_tdf_energy_step</name>
     <type units="eV">P</type>
-    <description>Energy step for the TDF (eV)</description>
+    <description>Energy step for the TDF</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2209,7 +2209,7 @@
   <parameter tool="postw90">
     <name>boltz_tdf_smr_fixed_en_width</name>
     <type units="eV">P</type>
-    <description>Energy smearing for the TDF (eV)</description>
+    <description>Energy smearing for the TDF</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2233,7 +2233,7 @@
   <parameter tool="postw90">
     <name>boltz_dos_energy_min</name>
     <type units="eV">P</type>
-    <description>Minimum value of the energy for the DOS in eV</description>
+    <description>Minimum value of the energy for the DOS</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2241,15 +2241,15 @@
   <parameter tool="postw90">
     <name>boltz_dos_energy_max</name>
     <type units="eV">P</type>
-    <description>Maximum value of the energy for the DOS in eV</description>
+    <description>Maximum value of the energy for the DOS</description>
     <groups>
       <group>boltzwann</group>
     </groups>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_dos_energy_step</name>
-    <type>R</type>
-    <description>Step for the DOS in eV</description>
+    <type units="eV">P</type>
+    <description>Step for the DOS</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2281,7 +2281,7 @@
   <parameter tool="postw90">
     <name optional_prefix="boltz_">adpt_smr_max</name>
     <type units="eV">P</type>
-    <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <description>Maximum allowed value for the adaptive energy smearing</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2289,7 +2289,7 @@
   <parameter tool="postw90">
     <name optional_prefix="boltz_">fixed_en_width</name>
     <type units="eV">P</type>
-    <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
+    <description>Energy smearing (if non-adaptive) for the DOS</description>
     <groups>
       <group>boltzwann</group>
     </groups>
@@ -2313,7 +2313,7 @@
   <parameter tool="postw90">
     <name>boltz_bandshift_energyshift</name>
     <type units="eV">P</type>
-    <description>Energy shift of the conduction bands (eV)</description>
+    <description>Energy shift of the conduction bands</description>
     <groups>
       <group>boltzwann</group>
     </groups>
