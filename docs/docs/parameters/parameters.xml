@@ -2318,4 +2318,31 @@
       <group>geninterp</group>
     </groups>
   </parameter>
+  <parameter tool="postw90">
+    <name>transl_inv</name>
+    <type>L</type>
+    <description>"Use Marzari-Vanderbilt formula for wannier centres"</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>False</default>
+  </parameter>
+  <parameter tool="postw90">
+    <name>transl_inv_full</name>
+    <type>L</type>
+    <description>"Use translationally-invariant formula for position-related matrix elements"</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>False</default>
+  </parameter>
+  <parameter tool="w90">
+    <name>use_ss_functional</name>
+    <type>L</type>
+    <description>"Use Stengel-Spaldin functional in place of the marzari-Vanderbilt funcitonal"</description>
+    <groups>
+      <group>wannierise</group>
+    </groups>
+    <default>False</default>
+  </parameter>
 </root>
