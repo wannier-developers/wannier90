@@ -1182,11 +1182,6 @@
     <default>0.01</default>
     <required>False</required>
   </parameter>
-  <parameter tool="w90" group="transport">
-    <name>fermi_energy</name>
-    <type>R</type>
-    <description>The Fermi energy</description>
-  </parameter>
   <parameter tool="w90">
     <name>tran_num_bb</name>
     <type>I</type>
@@ -1317,27 +1312,6 @@
     <default>0.15</default>
     <required>False</required>
   </parameter>
-  <parameter tool="w90" group="transport">
-    <name>hr_cutoff</name>
-    <type>P</type>
-    <description>Cut-off for the absolute value of the Hamiltonian</description>
-  </parameter>
-  <parameter tool="w90" group="transport">
-    <name>dist_cutoff</name>
-    <type>P</type>
-    <description>Cut-off for the distance between WF</description>
-  </parameter>
-  <parameter tool="w90" group="transport">
-    <name>dist_cutoff_mode</name>
-    <type>S</type>
-    <choices>
-      <choice>three_dim</choice>
-      <choice>two_dim</choice>
-      <choice>one_dim</choice>
-    </choices>
-    <default>three_dim</default>
-    <description>Dimension in which the distance between WF is calculated</description>
-  </parameter>
   <parameter tool="w90">
     <name>one_dim_axis</name>
     <type>S</type>
@@ -1351,11 +1325,6 @@
       <group>transport</group>
     </groups>
     <required>False</required>
-  </parameter>
-  <parameter tool="w90" group="transport">
-    <name>translation_centre_frac</name>
-    <type>R</type>
-    <description>Centre of the unit cell to which final WF are translated</description>
   </parameter>
   <parameter tool="postw90">
     <name>kmesh</name>
@@ -1552,15 +1521,21 @@
       <group>berry</group>
     </groups>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="berry_">kmesh</name>
     <type>I</type>
     <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+    <groups>
+      <group>berry</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="berry_">kmesh_spacing</name>
     <type>R</type>
     <description>Minimum spacing between \\(k\\) points in Å\\(^{-1}\\)</description>
+    <groups>
+      <group>berry</group>
+    </groups>
   </parameter>
   <parameter tool="postw90">
     <name>berry_curv_adpt_kmesh</name>
@@ -1614,30 +1589,47 @@
     </groups>
     <units>?</units>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="kubo_">adpt_smr</name>
     <type>L</type>
     <description>Use adaptive energy smearing for the optical conductivity, JDOS, shift current and spin Hall conductivity</description>
+    <groups>
+      <group>berry</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="kubo_">adpt_smr_fac</name>
     <type>R</type>
     <description>Adaptive smearing prefactor</description>
+    <groups>
+      <group>berry</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="kubo_">adpt_smr_max</name>
     <type>P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <groups>
+      <group>berry</group>
+    </groups>
+    <units>?</units>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="kubo_">smr_type</name>
     <type>S</type>
     <description>Analytical form used for the broadened delta function when computing the optical conductivity, JDOS, shift current and spin Hall conductivity</description>
+    <groups>
+      <group>berry</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="berry">
+  <parameter tool="postw90">
     <name optional_prefix="kubo_">smr_fixed_en_width</name>
     <type>P</type>
     <description>Energy smearing (if non-adaptive) for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV)</description>
+    <groups>
+      <group>berry</group>
+    </groups>
+    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>sc_eta</name>
@@ -1814,40 +1806,63 @@
       <group>dos</group>
     </groups>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">kmesh</name>
     <type>I</type>
     <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+    <groups>
+      <group>dos</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">kmesh_spacing</name>
     <type>R</type>
     <description>Minimum spacing between \\(k\\) points in Å\\(^{-1}\\)</description>
+    <groups>
+      <group>dos</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">adpt_smr</name>
     <type>L</type>
     <description>Use adaptive smearing for the DOS</description>
+    <groups>
+      <group>dos</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">adpt_smr_fac</name>
     <type>R</type>
     <description>Adaptive smearing prefactor</description>
+    <groups>
+      <group>dos</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">adpt_smr_max</name>
     <type>P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <groups>
+      <group>dos</group>
+    </groups>
+    <units>?</units>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">smr_fixed_en_width</name>
     <type>P</type>
     <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
+    <groups>
+      <group>dos</group>
+    </groups>
+    <units>?</units>
   </parameter>
-  <parameter tool="postw90" group="dos">
+  <parameter tool="postw90">
     <name optional_prefix="dos_">smr_type</name>
     <type>S</type>
     <description>Analytical form used for the broadened delta function when computing the DOS</description>
+    <groups>
+      <group>dos</group>
+    </groups>
   </parameter>
   <parameter tool="postw90">
     <name>kpath</name>
@@ -1973,15 +1988,21 @@
       <group>gyrotropic</group>
     </groups>
   </parameter>
-  <parameter tool="postw90" group="gyrotropic">
+  <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">kmesh</name>
     <type>I</type>
     <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+    <groups>
+      <group>gyrotropic</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="gyrotropic">
+  <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">kmesh_spacing</name>
     <type>R</type>
     <description>Minimum spacing between \\(k\\) points in Å\\(^{-1}\\)</description>
+    <groups>
+      <group>gyrotropic</group>
+    </groups>
   </parameter>
   <parameter tool="postw90">
     <name>gyrotropic_freq_min</name>
@@ -2028,15 +2049,22 @@
     </groups>
     <units>?</units>
   </parameter>
-  <parameter tool="postw90" group="gyrotropic">
+  <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">smr_type</name>
     <type>S</type>
     <description>Analytical form used for the broadened delta function</description>
+    <groups>
+      <group>gyrotropic</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="gyrotropic">
+  <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">smr_fixed_en_width</name>
     <type>P</type>
     <description>Energy smearing (eV)</description>
+    <groups>
+      <group>gyrotropic</group>
+    </groups>
+    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">band_list</name>
@@ -2086,15 +2114,21 @@
       <group>boltzwann</group>
     </groups>
   </parameter>
-  <parameter tool="postw90" group="boltzwann">
+  <parameter tool="postw90">
     <name optional_prefix="boltz_">kmesh</name>
     <type>I</type>
     <description>Dimensions of the uniform interpolation \\(k\\)-mesh (one or three integers)</description>
+    <groups>
+      <group>boltzwann</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="boltzwann">
+  <parameter tool="postw90">
     <name optional_prefix="boltz_">kmesh_spacing</name>
     <type>R</type>
     <description>Minimum spacing between \\(k\\) points in Å\\(^{-1}\\)</description>
+    <groups>
+      <group>boltzwann</group>
+    </groups>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_2d_dir</name>
@@ -2231,25 +2265,38 @@
       <group>boltzwann</group>
     </groups>
   </parameter>
-  <parameter tool="postw90" group="boltzwann">
+  <parameter tool="postw90">
     <name optional_prefix="boltz_">smr_type</name>
     <type>S</type>
     <description>Smearing type for the DOS</description>
+    <groups>
+      <group>boltzwann</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="boltzwann">
+  <parameter tool="postw90">
     <name optional_prefix="boltz_">adpt_smr</name>
     <type>L</type>
     <description>Use adaptive smearing for the DOS</description>
+    <groups>
+      <group>boltzwann</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="boltzwann">
+  <parameter tool="postw90">
     <name optional_prefix="boltz_">adpt_smr_fac</name>
     <type>R</type>
     <description>Adaptive smearing prefactor</description>
+    <groups>
+      <group>boltzwann</group>
+    </groups>
   </parameter>
-  <parameter tool="postw90" group="boltzwann">
+  <parameter tool="postw90">
     <name optional_prefix="boltz_">adpt_smr_max</name>
     <type>P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
+    <groups>
+      <group>boltzwann</group>
+    </groups>
+    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="boltz_">fixed_en_width</name>
