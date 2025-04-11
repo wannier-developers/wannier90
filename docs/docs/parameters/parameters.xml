@@ -51,7 +51,12 @@
   </parameter>
   <parameter tool="w90">
     <name>atoms_frac</name>
-    <type>R</type>
+    <types>
+      <type>S</type>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+    </types>
     <description>Positions of atoms in fractional coordinates with respect to the lattice vectors</description>
     <note>*</note>
     <groups>
@@ -70,6 +75,9 @@
       <group>system</group>
     </groups>
     <required>True</required>
+    <dimensions>
+      <dim>3</dim>
+    </dimensions>
   </parameter>
   <parameter tool="w90">
     <name>kpoints</name>
@@ -80,6 +88,7 @@
     </groups>
     <dimensions>
       <dim>*</dim>
+      <dim>3</dim>
     </dimensions>
     <required>False</required>
   </parameter>
@@ -144,6 +153,7 @@
     </groups>
     <dimensions>
       <dim>*</dim>
+      <dim>5</dim>
     </dimensions>
     <required>False</required>
   </parameter>
@@ -482,13 +492,18 @@
   </parameter>
   <parameter tool="w90">
     <name>dis_spheres</name>
-    <type>R</type>
+    <types>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+      <type units="1/Ang">P</type>
+    </types>
     <description>List of centres and radii, for disentanglement only in spheres</description>
     <groups>
       <group>disentanglement</group>
     </groups>
     <dimensions>
-      <dim>*</dim>
+      <dim>$dis_spheres_num</dim>
     </dimensions>
     <required>False</required>
   </parameter>
@@ -1089,6 +1104,9 @@
       <group>transport</group>
     </groups>
     <required>False</required>
+    <dimensions>
+      <dim>3</dim>
+    </dimensions>
   </parameter>
   <parameter tool="w90">
     <name>use_ws_distance</name>
