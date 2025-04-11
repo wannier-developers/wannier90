@@ -20,20 +20,25 @@
   </parameter>
   <parameter tool="w90">
     <name>unit_cell_cart</name>
-    <type>P</type>
+    <type units="Ang">P</type>
     <description>Unit cell vectors in Cartesian coordinates</description>
     <groups>
       <group>system</group>
     </groups>
     <dimensions>
-      <dim>*</dim>
+      <dim>3</dim>
+      <dim>3</dim>
     </dimensions>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>atoms_cart</name>
-    <type>P</type>
+    <types>
+      <type>S</type>
+      <type units="Ang">P</type>
+      <type units="Ang">P</type>
+      <type units="Ang">P</type>
+    </types>
     <description>Positions of atoms in Cartesian coordinates</description>
     <note>*</note>
     <groups>
@@ -42,7 +47,6 @@
     <dimensions>
       <dim>*</dim>
     </dimensions>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
@@ -352,42 +356,38 @@
   </parameter>
   <parameter tool="w90">
     <name>dis_win_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Bottom of the outer energy window</description>
     <groups>
       <group>disentanglement</group>
     </groups>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>dis_win_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Top of the outer energy window</description>
     <groups>
       <group>disentanglement</group>
     </groups>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>dis_froz_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Bottom of the inner (frozen) energy window</description>
     <groups>
       <group>disentanglement</group>
     </groups>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>dis_froz_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Top of the inner (frozen) energy window</description>
     <groups>
       <group>disentanglement</group>
     </groups>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
@@ -402,23 +402,21 @@
   </parameter>
   <parameter tool="w90">
     <name>dis_proj_min</name>
-    <type>P</type>
+    <type>R</type>
     <description>Lower threshold for projectability disentanglement</description>
     <groups>
       <group>disentanglement</group>
     </groups>
-    <units>?</units>
     <default>0.01</default>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>dis_proj_max</name>
-    <type>P</type>
+    <type>R</type>
     <description>Upper threshold for projectability disentanglement</description>
     <groups>
       <group>disentanglement</group>
     </groups>
-    <units>?</units>
     <default>0.95</default>
     <required>False</required>
   </parameter>
@@ -526,12 +524,11 @@
   </parameter>
   <parameter tool="w90">
     <name>conv_tol</name>
-    <type>P</type>
+    <type units="Ang*Ang">P</type>
     <description>The convergence tolerance for finding $\\Omega$</description>
     <groups>
       <group>wannierise</group>
     </groups>
-    <units>?</units>
     <default>1e-10</default>
     <required>False</required>
   </parameter>
@@ -711,7 +708,12 @@
   </parameter>
   <parameter tool="w90">
     <name>slwf_centres</name>
-    <type>P</type>
+    <types>
+      <type>I</type>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+    </types>
     <description>The centres to which the objective WFs are to be constrained</description>
     <groups>
       <group>wannierise</group>
@@ -719,7 +721,6 @@
     <dimensions>
       <dim>*</dim>
     </dimensions>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
@@ -840,7 +841,16 @@
   </parameter>
   <parameter tool="w90">
     <name>kpoint_path</name>
-    <type>P</type>
+    <types>
+      <type>S</type>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+      <type>S</type>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+    </types>
     <description>K-point path for the interpolated band structure</description>
     <groups>
       <group>plot</group>
@@ -848,7 +858,6 @@
     <dimensions>
       <dim>*</dim>
     </dimensions>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
@@ -932,34 +941,31 @@
   </parameter>
   <parameter tool="w90">
     <name>fermi_energy</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>The Fermi energy</description>
     <groups>
       <group>plot</group>
       <group>transport</group>
     </groups>
-    <units>?</units>
     <default>0.0</default>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>fermi_energy_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Lower limit of the Fermi energy range</description>
     <groups>
       <group>plot</group>
     </groups>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>fermi_energy_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Upper limit of the Fermi energy range</description>
     <groups>
       <group>plot</group>
     </groups>
-    <units>?</units>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
@@ -1037,25 +1043,23 @@
   </parameter>
   <parameter tool="w90">
     <name>hr_cutoff</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Cut-off for the absolute value of the Hamiltonian</description>
     <groups>
       <group>plot</group>
       <group>transport</group>
     </groups>
-    <units>?</units>
     <default>0.0</default>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>dist_cutoff</name>
-    <type>P</type>
+    <type units="Ang">P</type>
     <description>Cut-off for the distance between WF</description>
     <groups>
       <group>plot</group>
       <group>transport</group>
     </groups>
-    <units>?</units>
     <default>1000.0</default>
     <required>False</required>
   </parameter>
@@ -1152,23 +1156,21 @@
   </parameter>
   <parameter tool="w90">
     <name>tran_win_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Bottom of the energy window for transport calculation</description>
     <groups>
       <group>transport</group>
     </groups>
-    <units>?</units>
     <default>-3.0</default>
     <required>False</required>
   </parameter>
   <parameter tool="w90">
     <name>tran_win_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Top of the energy window for transport calculation</description>
     <groups>
       <group>transport</group>
     </groups>
-    <units>?</units>
     <default>3.0</default>
     <required>False</required>
   </parameter>
@@ -1374,7 +1376,7 @@
   </parameter>
   <parameter tool="postw90">
     <name>adpt_smr_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
     <groups>
       <group>global</group>
@@ -1382,7 +1384,6 @@
       <group>dos</group>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>smr_type</name>
@@ -1398,7 +1399,7 @@
   </parameter>
   <parameter tool="postw90">
     <name>smr_fixed_en_width</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy smearing (if non-adaptive)</description>
     <groups>
       <group>global</group>
@@ -1406,7 +1407,6 @@
       <group>dos</group>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>num_elec_per_state</name>
@@ -1418,12 +1418,11 @@
   </parameter>
   <parameter tool="postw90">
     <name>scissors_shift</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Scissors shift applied to the conduction bands (eV) (deprecated)</description>
     <groups>
       <group>global</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>num_valence_bands</name>
@@ -1443,21 +1442,19 @@
   </parameter>
   <parameter tool="postw90">
     <name>spin_axis_polar</name>
-    <type>P</type>
+    <type units="degrees">P</type>
     <description>Polar angle of the spin quantization axis (deg)</description>
     <groups>
       <group>global</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>spin_axis_azimuth</name>
-    <type>P</type>
+    <type units="degrees">P</type>
     <description>Azimuthal angle of the spin quantization axis (deg)</description>
     <groups>
       <group>global</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>spin_moment</name>
@@ -1547,30 +1544,27 @@
   </parameter>
   <parameter tool="postw90">
     <name>berry_curv_adpt_kmesh_thresh</name>
-    <type>P</type>
+    <type units="$berry_curv_unit">P</type>
     <description>Threshold magnitude of the Berry curvature for adaptive refinement</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>kubo_freq_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Lower limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>kubo_freq_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Upper limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>kubo_freq_step</name>
@@ -1582,12 +1576,11 @@
   </parameter>
   <parameter tool="postw90">
     <name>kubo_eigval_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum energy eigenvalue included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="kubo_">adpt_smr</name>
@@ -1607,12 +1600,11 @@
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="kubo_">adpt_smr_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="kubo_">smr_type</name>
@@ -1624,12 +1616,11 @@
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="kubo_">smr_fixed_en_width</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy smearing (if non-adaptive) for the optical conductivity, JDOS, shift current and spin Hall conductivity (eV)</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>sc_eta</name>
@@ -1721,12 +1712,11 @@
   </parameter>
   <parameter tool="postw90">
     <name>shc_bandshift_energyshift</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy shift of the conduction bands (eV)</description>
     <groups>
       <group>berry</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>kdotp_kpoint</name>
@@ -1774,25 +1764,23 @@
   </parameter>
   <parameter tool="postw90">
     <name>dos_energy_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Lower limit of the energy range for computing the DOS (eV)</description>
     <groups>
       <group>dos</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>dos_energy_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Upper limit of the energy range for computing the DOS (eV)</description>
     <groups>
       <group>dos</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>dos_energy_step</name>
-    <type>R</type>
+    <type units="eV">P</type>
     <description>Step for increasing the energy in the specified range (eV)</description>
     <groups>
       <group>dos</group>
@@ -1840,21 +1828,19 @@
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="dos_">adpt_smr_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
     <groups>
       <group>dos</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="dos_">smr_fixed_en_width</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
     <groups>
       <group>dos</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="dos_">smr_type</name>
@@ -1952,12 +1938,11 @@
   </parameter>
   <parameter tool="postw90">
     <name>kslice_fermi_level</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>This parameter is not used anymore. Use fermi_energy instead</description>
     <groups>
       <group>kslice</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>kslice_fermi_lines_colour</name>
@@ -2006,48 +1991,43 @@
   </parameter>
   <parameter tool="postw90">
     <name>gyrotropic_freq_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Lower limit of the frequency range for optical rotation (eV)</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>gyrotropic_freq_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Upper limit of the frequency range for optical rotation (eV)</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>gyrotropic_freq_step</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Step for increasing the optical frequency in the specified range</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>gyrotropic_eigval_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum energy eigenvalue included when evaluating the interband natural optical activity</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>gyrotropic_degen_thresh</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>threshold to exclude degenerate bands from the calculation</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">smr_type</name>
@@ -2059,12 +2039,11 @@
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">smr_fixed_en_width</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy smearing (eV)</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="gyrotropic_">band_list</name>
@@ -2147,34 +2126,31 @@
   </parameter>
   <parameter tool="postw90">
     <name>boltz_relax_time</name>
-    <type>P</type>
+    <type units="fs">P</type>
     <description>Relaxation time in fs</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_mu_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Minimum value of the chemical potential \\(\\mu\\) in eV</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_mu_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum value of the chemical potential \\(\\mu\\) in eV</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_mu_step</name>
-    <type>R</type>
+    <type units="eV">P</type>
     <description>Step for \\(\\mu\\) in eV</description>
     <groups>
       <group>boltzwann</group>
@@ -2182,25 +2158,23 @@
   </parameter>
   <parameter tool="postw90">
     <name>boltz_temp_min</name>
-    <type>P</type>
+    <type units="K">P</type>
     <description>Minimum value of the temperature \\(T\\) in Kelvin</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_temp_max</name>
-    <type>P</type>
+    <type units="K">P</type>
     <description>Maximum value of the temperature \\(T\\) in Kelvin</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_temp_step</name>
-    <type>R</type>
+    <type units="K">P</type>
     <description>Step for \\(T\\) in Kelvin</description>
     <groups>
       <group>boltzwann</group>
@@ -2208,7 +2182,7 @@
   </parameter>
   <parameter tool="postw90">
     <name>boltz_tdf_energy_step</name>
-    <type>R</type>
+    <type units="eV">P</type>
     <description>Energy step for the TDF (eV)</description>
     <groups>
       <group>boltzwann</group>
@@ -2216,12 +2190,11 @@
   </parameter>
   <parameter tool="postw90">
     <name>boltz_tdf_smr_fixed_en_width</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy smearing for the TDF (eV)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_tdf_smr_type</name>
@@ -2241,21 +2214,19 @@
   </parameter>
   <parameter tool="postw90">
     <name>boltz_dos_energy_min</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Minimum value of the energy for the DOS in eV</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_dos_energy_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum value of the energy for the DOS in eV</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_dos_energy_step</name>
@@ -2291,21 +2262,19 @@
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="boltz_">adpt_smr_max</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Maximum allowed value for the adaptive energy smearing (eV)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name optional_prefix="boltz_">fixed_en_width</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy smearing (if non-adaptive) for the DOS (eV)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>boltz_bandshift</name>
@@ -2325,12 +2294,11 @@
   </parameter>
   <parameter tool="postw90">
     <name>boltz_bandshift_energyshift</name>
-    <type>P</type>
+    <type units="eV">P</type>
     <description>Energy shift of the conduction bands (eV)</description>
     <groups>
       <group>boltzwann</group>
     </groups>
-    <units>?</units>
   </parameter>
   <parameter tool="postw90">
     <name>geninterp</name>
