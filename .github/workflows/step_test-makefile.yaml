@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         w90-binary-parallel: ["false", "true"]
@@ -18,7 +18,7 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.6
+          python-version: 3.12
       - name: install dependencies
         run: |
           sudo apt-get update
