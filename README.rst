@@ -76,7 +76,7 @@ For the method please cite:
 Licence
 +++++++
 
-The Wannier90 code is licensed under GPLv2. 
+The Wannier90 code is licensed under LGPLv2.1.
 You can read the licence text in the LICENSE file in the root directory 
 of the Wannier90 distribution.
 

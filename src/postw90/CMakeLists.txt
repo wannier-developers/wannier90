@@ -1,3 +1,18 @@
+#------------------------------------------------------------#
+# This file is distributed as part of the Wannier90 code and #
+# under the terms of the                                     #
+#                                                            #
+#      GNU Lesser General Public License, version 2.1        #
+#                                                            #
+# see file `LICENSE' in the root directory of the Wannier90  #
+# distribution or https://www.gnu.org/licenses/lgpl-2.1.html #
+#                                                            #
+# The webpage of the Wannier90 code is www.wannier.org       #
+#                                                            #
+# The Wannier90 code is hosted on GitHub                     #
+# https://github.com/wannier-developers/wannier90            #
+#------------------------------------------------------------#
+
 target_sources(Wannier90_post PRIVATE
 		postw90.F90
 		)

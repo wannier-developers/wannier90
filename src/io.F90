@@ -1,14 +1,16 @@
 !-*- mode: F90 -*-!
 !------------------------------------------------------------!
 ! This file is distributed as part of the Wannier90 code and !
-! under the terms of the GNU General Public License. See the !
-! file `LICENSE' in the root directory of the Wannier90      !
-! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+! under the terms of the                                     !
+!                                                            !
+!      GNU Lesser General Public License, version 2.1        !
+!                                                            !
+! see file `LICENSE' in the root directory of the Wannier90  !
+! distribution or https://www.gnu.org/licenses/lgpl-2.1.html !
 !                                                            !
 ! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! The Wannier90 code is hosted on GitHub:                    !
-!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
@@ -26,7 +28,6 @@ module w90_io
 
   private
 
-  !logical, public, save :: post_proc_flag                        !! Are we in post processing mode
   character(len=10), parameter, public :: w90_version = '3.1.0 ' !! Label for this version of wannier90
 
   public :: io_stopwatch_start

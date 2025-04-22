@@ -1,11 +1,18 @@
 //------------------------------------------------------------//
 // Copyright (C) 2012 Daniel Aberg                            //
+//------------------------------------------------------------//
+// This file is distributed as part of the Wannier90 code and //
+// under the terms of the                                     //
 //                                                            //
-// This file is distributed under the terms of the GNU        //
-// General Public License. See the file `LICENSE' in          //
-// the root directory of the present distribution, or         //
-// http://www.gnu.org/copyleft/gpl.txt .                      //
+//      GNU Lesser General Public License, version 2.1        //
 //                                                            //
+// see file `LICENSE' in the root directory of the Wannier90  //
+// distribution or https://www.gnu.org/licenses/lgpl-2.1.html //
+//                                                            //
+// The webpage of the Wannier90 code is www.wannier.org       //
+//                                                            //
+// The Wannier90 code is hosted on GitHub                     //
+// https://github.com/wannier-developers/wannier90            //
 //------------------------------------------------------------//
 // Code to enable use of the POV-Ray ray-tracing software for //
 // the rendering of Wannier function isosurfaces from .xsf    //

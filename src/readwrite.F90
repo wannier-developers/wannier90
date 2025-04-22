@@ -1,14 +1,16 @@
 !-*- mode: F90 -*-!
 !------------------------------------------------------------!
 ! This file is distributed as part of the Wannier90 code and !
-! under the terms of the GNU General Public License. See the !
-! file `LICENSE' in the root directory of the Wannier90      !
-! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+! under the terms of the                                     !
+!                                                            !
+!      GNU Lesser General Public License, version 2.1        !
+!                                                            !
+! see file `LICENSE' in the root directory of the Wannier90  !
+! distribution or https://www.gnu.org/licenses/lgpl-2.1.html !
 !                                                            !
 ! The webpage of the Wannier90 code is www.wannier.org       !
 !                                                            !
-! The Wannier90 code is hosted on GitHub:                    !
-!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 !                                                            !
@@ -1791,9 +1793,8 @@ contains
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
-    write (stdout, *) '            | of the GNU General Public License as published by |'
-    write (stdout, *) '            | the Free Software Foundation; either version 2 of |'
-    write (stdout, *) '            | the License, or (at your option) any later version|'
+    write (stdout, *) '            | of the GNU Lesser General Public License, version |'
+    write (stdout, *) '            | 2.1 as published by the Free Software Foundation. |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is distributed in the hope that it   |'
     write (stdout, *) '            | will be useful, but WITHOUT ANY WARRANTY; without |'
@@ -1801,10 +1802,10 @@ contains
     write (stdout, *) '            | FITNESS FOR A PARTICULAR PURPOSE. See the GNU     |'
     write (stdout, *) '            | General Public License for more details.          |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            | You should have received a copy of the GNU General|'
-    write (stdout, *) '            | Public License along with this program; if not,   |'
-    write (stdout, *) '            | write to the Free Software Foundation, Inc.,      |'
-    write (stdout, *) '            | 675 Mass Ave, Cambridge, MA 02139, USA.           |'
+    write (stdout, *) '            | You should have received a copy of the GNU Lesser |'
+    write (stdout, *) '            | General Public License along with this program;   |'
+    write (stdout, *) '            | if not, write to the Free Software Foundation,    |'
+    write (stdout, *) '            | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            +---------------------------------------------------+'
     write (stdout, *) '            |    Execution started on ', cdate, ' at ', ctime, '    |'
