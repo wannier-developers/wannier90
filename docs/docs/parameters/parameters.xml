@@ -30,7 +30,7 @@
       <dim>3</dim>
       <dim>3</dim>
     </dimensions>
-    <required>False</required>
+    <required>True</required>
   </parameter>
   <parameter tool="w90">
     <name>atoms_cart</name>
@@ -2340,7 +2340,7 @@
   <parameter tool="w90">
     <name>use_ss_functional</name>
     <type>L</type>
-    <description>Use Stengel-Spaldin functional in place of the Marzari-Vanderbilt funcitonal</description>
+    <description>Use Stengel-Spaldin functional in place of the Marzari-Vanderbilt functional</description>
     <groups>
       <group>wannierise</group>
     </groups>
