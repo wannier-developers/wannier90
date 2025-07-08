@@ -19,7 +19,7 @@ jobs:
       ${{ matrix.mpi && format('🖧 {0}', matrix.mpi) || '' }}
       ${{ matrix.experimental && '[🧪 Experimental]' || '' }}
     runs-on: ${{ matrix.os || 'ubuntu-latest' }}
-    container: ${{ !matrix.os && 'ghcr.io/lecrisut/dev-env:main' || '' }}
+    container: ${{ !matrix.os && format('ghcr.io/lecrisut/dev-env:latest-{0}', matrix.toolchain) || '' }}
     continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
@@ -40,7 +40,7 @@ jobs:
 #            experimental: false
     steps:
       - name: Install missing packages
-        run: sudo dnf install -y bzip2 python-unversioned-command which
+        run: sudo dnf install -y bzip2 python-unversioned-command which diff
       - name: Load mpi module ${{ matrix.mpi || '' }}
         run: |
           # Get interactive profile to be able to load modules
