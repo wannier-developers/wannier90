@@ -413,7 +413,7 @@ contains
 
     ! initialise rguide to projection centres (Cartesians in units of Ang)
     if (wann_control%guiding_centres%enable) then
-      do n = 1, num_proj
+      do n = 1, min(num_wann, num_proj)
         call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
                                   real_lattice)
       enddo
