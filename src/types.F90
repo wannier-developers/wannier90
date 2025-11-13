@@ -170,15 +170,22 @@ module w90_types
     !!==================================================
     !! Contains derived information about the kmesh
     !!==================================================
-    integer              :: nnh           ! the number of b-directions (bka)
-    integer              :: nntot         ! total number of neighbours for each k-point
-    integer, allocatable :: nnlist(:, :)   ! list of neighbours for each k-point
+    integer              :: nnh               ! the number of b-directions (bka)
+    integer              :: nntot             ! total number of neighbours for each k-point
+    integer, allocatable :: nnlist(:, :)      ! list of neighbours for each k-point
     integer, allocatable :: neigh(:, :)
-    integer, allocatable :: nncell(:, :, :) ! gives BZ of each neighbour of each k-point
+    integer, allocatable :: nncell(:, :, :)   ! gives BZ of each neighbour of each k-point
+    ! JJ the following two arrays allow the Stengel-Spalding method to be used without sorting b-vectors globally
+    ! the order of b-vectors is explicit in ".mmn" files, but unfortunately not in ".uHu" files
+    ! these arrays could replace sorting bk(:,:, ik), but this is not exploited now
+    ! these are alloc'd and assigned only in the use_ss_functional=t case
+    integer, allocatable :: nnord(:, :)       ! ordering of b-vectors: bk(:,nnord(nn,ik),ik) = bk(:,nn,1)
+    integer, allocatable :: nninv(:, :)       ! ordering of b-vectors: bk(:,nninv(nn,ik),1)  = bk(:,nn,ik)
+    integer, allocatable :: nnrev(:, :)       ! ordering of b-vectors: bk(:,nnrev(nn,ik),ik) = - bk(:,nn,1) (opposite vec)
     real(kind=dp)              :: wbtot
-    real(kind=dp), allocatable :: wb(:)         ! weights associated with neighbours of each k-point
-    real(kind=dp), allocatable :: bk(:, :, :)     ! the b-vectors that go from each k-point to its neighbours
-    real(kind=dp), allocatable :: bka(:, :)      ! the b-directions from 1st k-point to its neighbours
+    real(kind=dp), allocatable :: wb(:)       ! weights associated with neighbours of each k-point
+    real(kind=dp), allocatable :: bk(:, :, :) ! the b-vectors that go from each k-point to its neighbours
+    real(kind=dp), allocatable :: bka(:, :)   ! the b-directions from 1st k-point to its neighbours
     logical :: explicit_nnkpts
     !! nnkpts block is in the input file (allowed only for post-proc setup)
   end type kmesh_info_type

@@ -263,7 +263,7 @@ contains
       if (kmesh_input%higher_order_nearest_shells) then
         write (stdout, '(1x,a)', advance='no') '| The following shells and their multiples are used: '
       else
-        write (stdout, '(1x,a)', advance='no') '| The following shells are used: '
+        write (stdout, '(1x,a)', advance='no') '| The following shells are used:                     '
       endif
       do ndnn = 1, kmesh_input%num_shells
         if (ndnn .eq. kmesh_input%num_shells) then
@@ -888,6 +888,18 @@ contains
 
     endif
 ![ysl-e]
+
+    ! JJ, is use_ss_functional necessarily defined here, or must it be moved to "special"
+    !if (wann_control%use_ss_functional) then
+    !check allocations, please!!
+    if (.not. gamma_only) then
+      allocate (kmesh_info%nnord(kmesh_info%nntot, num_kpts))
+      allocate (kmesh_info%nninv(kmesh_info%nntot, num_kpts))
+      allocate (kmesh_info%nnrev(kmesh_info%nntot, num_kpts))
+      call kmesh_bvectors_perm(kmesh_info%bk(:, :, :), kmesh_info%bk(:, :, 1), num_kpts, &
+                               kmesh_info%nntot, kmesh_info%nnord, kmesh_info%nninv, &
+                               kmesh_info%nnrev)
+    endif
 
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then
@@ -2354,5 +2366,54 @@ contains
     internal_maxloc = minval(list(1:counter))
 
   end function internal_maxloc
+
+  !================================================
+  subroutine kmesh_bvectors_perm(bvec, bref, num_kpt, num_bvec, perm, invperm, revind)
+    !================================================
+    !
+    !!  Obtain possible permutation in ordering of b-vectors at different kpoints
+    !
+    !================================================
+    implicit none
+
+    ! arguments
+    real(kind=dp), intent(in) :: bvec(:, :, :) ! set of bvecs for each k, possibly permuted, size (3,num_bvec,num_kpt)
+    real(kind=dp), intent(in) :: bref(:, :) ! reference vector ordering, size (3,num_bvec)
+    integer, intent(in) :: num_kpt, num_bvec
+    integer, intent(inout) :: perm(:, :) ! assumed allocated
+    integer, intent(inout) :: invperm(:, :) ! assumed allocated
+    integer, intent(inout) :: revind(:, :)
+
+    ! local variables
+    real(kind=dp), parameter :: tol = 1d-7 ! this should not be smaller than the k-point precision in the .win file
+    integer :: ik, n, m
+    logical :: found, found2
+
+    do ik = 1, num_kpt
+      do n = 1, num_bvec
+        found = .false.
+        found2 = .false.
+        do m = 1, num_bvec
+          if (all(abs(bvec(:, m, ik) - bref(:, n)) < tol)) then
+            found = .true.
+            perm(n, ik) = m
+            invperm(m, ik) = n ! inverse mapping, used in postw90
+            cycle
+          endif
+          if (all(abs(bvec(:, m, ik) + bref(:, n)) < tol)) then
+            found2 = .true.
+            revind(n, ik) = m
+            cycle
+          endif
+        enddo
+        if (.not. found .or. .not. found2) then
+          ! fixme below error
+          write (*, *) "error! sorting b-vectors failed: likely tolerance too high"
+          stop
+        endif
+      enddo
+    enddo
+
+  end subroutine kmesh_bvectors_perm
 
 end module w90_kmesh
