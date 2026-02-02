@@ -897,7 +897,7 @@ contains
       allocate (kmesh_info%nnrev(kmesh_info%nntot, num_kpts))
       call kmesh_bvectors_perm(kmesh_info%bk(:, :, :), kmesh_info%bk(:, :, 1), num_kpts, &
                                kmesh_info%nntot, kmesh_info%nnord, kmesh_info%nninv, &
-                               kmesh_info%nnrev)
+                               kmesh_info%nnrev, error, comm)
     endif
 
     deallocate (kpt_cart, stat=ierr)
@@ -2265,7 +2265,7 @@ contains
   end function internal_maxloc
 
   !================================================
-  subroutine kmesh_bvectors_perm(bvec, bref, num_kpt, num_bvec, perm, invperm, revind)
+  subroutine kmesh_bvectors_perm(bvec, bref, num_kpt, num_bvec, perm, invperm, revind, error, comm)
     !================================================
     !
     !!  Obtain possible permutation in ordering of b-vectors at different kpoints
@@ -2280,6 +2280,8 @@ contains
     integer, intent(inout) :: perm(:, :) ! assumed allocated
     integer, intent(inout) :: invperm(:, :) ! assumed allocated
     integer, intent(inout) :: revind(:, :)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     ! local variables
     real(kind=dp), parameter :: tol = 1d-7 ! this should not be smaller than the k-point precision in the .win file
@@ -2304,9 +2306,8 @@ contains
           endif
         enddo
         if (.not. found .or. .not. found2) then
-          ! fixme below error
-          write (*, *) "error! sorting b-vectors failed: likely tolerance too high"
-          stop
+      call set_error_fatal(error, 'Unable to identify bk-vector permutation (kmesh_bvector_perm); consider k-point precision', comm)
+          return
         endif
       enddo
     enddo

@@ -540,8 +540,6 @@ contains
           enddo
         enddo
 
-        write (*, *) ik, ik2
-
         !debug
         !OK
         !if(ik.ne.ik_prev .and.ik_prev.ne.0) then
