@@ -566,7 +566,11 @@ program = WANNIER90_NNKP_OK
 inputs_args = ('wannier.win', '-pp')
 output = wannier.nnkp
 
-
+# Test combination of guiding centres and select projections
+[testw90_guidingcentre_selectproj/]
+program = WANNIER90_WOUT_OK
+inputs_args = ('silicon.win', '')
+output = silicon.wout
 
 [categories]
 wannier_only = testw90_*
