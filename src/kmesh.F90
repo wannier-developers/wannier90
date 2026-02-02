@@ -50,7 +50,6 @@ module w90_kmesh
 
   public :: kmesh_dealloc
   public :: kmesh_get
-  public :: kmesh_sort
   public :: kmesh_write
 
   integer, parameter :: nsupcell = 5
@@ -263,7 +262,7 @@ contains
       if (kmesh_input%higher_order_nearest_shells) then
         write (stdout, '(1x,a)', advance='no') '| The following shells and their multiples are used: '
       else
-        write (stdout, '(1x,a)', advance='no') '| The following shells are used: '
+        write (stdout, '(1x,a)', advance='no') '| The following shells are used:                     '
       endif
       do ndnn = 1, kmesh_input%num_shells
         if (ndnn .eq. kmesh_input%num_shells) then
@@ -889,6 +888,18 @@ contains
     endif
 ![ysl-e]
 
+    ! JJ, is use_ss_functional necessarily defined here, or must it be moved to "special"
+    !if (wann_control%use_ss_functional) then
+    !check allocations, please!!
+    if (.not. gamma_only) then
+      allocate (kmesh_info%nnord(kmesh_info%nntot, num_kpts))
+      allocate (kmesh_info%nninv(kmesh_info%nntot, num_kpts))
+      allocate (kmesh_info%nnrev(kmesh_info%nntot, num_kpts))
+      call kmesh_bvectors_perm(kmesh_info%bk(:, :, :), kmesh_info%bk(:, :, 1), num_kpts, &
+                               kmesh_info%nntot, kmesh_info%nnord, kmesh_info%nninv, &
+                               kmesh_info%nnrev, error, comm)
+    endif
+
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating kpt_cart in kmesh_get', comm)
@@ -918,108 +929,6 @@ contains
     return
 
   end subroutine kmesh_get
-
-  subroutine kmesh_sort(kmesh_info, num_kpts, error, comm)
-    !==================================================================!
-    !                                                                  !
-    !! Sorts b vectors                                                 !
-    !                                                                  !
-    ! Sort the overlaps in the same neighbor b vector order            !
-    ! with b and -b are nntot/2 far apart                              !
-    !                                                                  !
-    !==================================================================!
-
-    use w90_utility, only: utility_compar
-    use w90_types, only: kmesh_info_type
-
-    implicit none
-
-    type(kmesh_info_type), intent(inout) :: kmesh_info
-    integer, intent(in) :: num_kpts
-    type(w90_error_type), allocatable, intent(out) :: error
-    type(w90_comm_type), intent(in) :: comm
-
-    real(kind=dp), allocatable :: wb_tmp(:), bk_tmp(:, :)
-    integer, allocatable :: nnlist_tmp(:), nncell_tmp(:, :)
-    integer :: na, nn, nkp, ifpos, ifneg, ierr
-
-    allocate (wb_tmp(kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating wb_tmp in kmesh_sort', comm)
-      return
-    endif
-
-    do na = 1, kmesh_info%nnh
-      do nn = 1, kmesh_info%nntot
-        call utility_compar(kmesh_info%bka(1, na), kmesh_info%bk(1, nn, 1), ifpos, ifneg)
-        if (ifpos .eq. 1) then
-          wb_tmp(na) = kmesh_info%wb(nn)
-        else if (ifneg .eq. 1) then
-          wb_tmp(na + kmesh_info%nnh) = kmesh_info%wb(nn)
-        endif
-      enddo
-    enddo
-    kmesh_info%wb(:) = wb_tmp(:)
-
-    deallocate (wb_tmp, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating wb_tmp in kmesh_sort', comm)
-      return
-    endif
-
-    allocate (nnlist_tmp(kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating nnlist_tmp in kmesh_sort', comm)
-      return
-    endif
-    allocate (bk_tmp(3, kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating bk_tmp in kmesh_sort', comm)
-      return
-    endif
-    allocate (nncell_tmp(3, kmesh_info%nntot), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating nncell_tmp in kmesh_sort', comm)
-      return
-    endif
-
-    do nkp = 1, num_kpts
-      do na = 1, kmesh_info%nnh
-        do nn = 1, kmesh_info%nntot
-          call utility_compar(kmesh_info%bka(1, na), kmesh_info%bk(1, nn, nkp), ifpos, ifneg)
-          if (ifpos .eq. 1) then
-            bk_tmp(:, na) = kmesh_info%bk(:, nn, nkp)
-            nnlist_tmp(na) = kmesh_info%nnlist(nkp, nn)
-            nncell_tmp(:, na) = kmesh_info%nncell(:, nkp, nn)
-          else if (ifneg .eq. 1) then
-            bk_tmp(:, na + kmesh_info%nnh) = kmesh_info%bk(:, nn, nkp)
-            nnlist_tmp(na + kmesh_info%nnh) = kmesh_info%nnlist(nkp, nn)
-            nncell_tmp(:, na + kmesh_info%nnh) = kmesh_info%nncell(:, nkp, nn)
-          endif
-        enddo
-      enddo
-      kmesh_info%nnlist(nkp, :) = nnlist_tmp(:)
-      kmesh_info%nncell(:, nkp, :) = nncell_tmp(:, :)
-      kmesh_info%bk(:, :, nkp) = bk_tmp(:, :)
-    enddo
-
-    deallocate (nnlist_tmp, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating nnlist_tmp in kmesh_sort', comm)
-      return
-    endif
-    deallocate (bk_tmp, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating bk_tmp in kmesh_sort', comm)
-      return
-    endif
-    deallocate (nncell_tmp, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating nncell_tmp in kmesh_sort', comm)
-      return
-    endif
-
-  end subroutine kmesh_sort
 
   !================================================!
   subroutine kmesh_write(exclude_bands, kmesh_info, lauto_proj, proj, print_output, kpt_latt, &
@@ -2354,5 +2263,55 @@ contains
     internal_maxloc = minval(list(1:counter))
 
   end function internal_maxloc
+
+  !================================================
+  subroutine kmesh_bvectors_perm(bvec, bref, num_kpt, num_bvec, perm, invperm, revind, error, comm)
+    !================================================
+    !
+    !!  Obtain possible permutation in ordering of b-vectors at different kpoints
+    !
+    !================================================
+    implicit none
+
+    ! arguments
+    real(kind=dp), intent(in) :: bvec(:, :, :) ! set of bvecs for each k, possibly permuted, size (3,num_bvec,num_kpt)
+    real(kind=dp), intent(in) :: bref(:, :) ! reference vector ordering, size (3,num_bvec)
+    integer, intent(in) :: num_kpt, num_bvec
+    integer, intent(inout) :: perm(:, :) ! assumed allocated
+    integer, intent(inout) :: invperm(:, :) ! assumed allocated
+    integer, intent(inout) :: revind(:, :)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    ! local variables
+    real(kind=dp), parameter :: tol = 1d-7 ! this should not be smaller than the k-point precision in the .win file
+    integer :: ik, n, m
+    logical :: found, found2
+
+    do ik = 1, num_kpt
+      do n = 1, num_bvec
+        found = .false.
+        found2 = .false.
+        do m = 1, num_bvec
+          if (all(abs(bvec(:, m, ik) - bref(:, n)) < tol)) then
+            found = .true.
+            perm(n, ik) = m
+            invperm(m, ik) = n ! inverse mapping, used in postw90
+            cycle
+          endif
+          if (all(abs(bvec(:, m, ik) + bref(:, n)) < tol)) then
+            found2 = .true.
+            revind(n, ik) = m
+            cycle
+          endif
+        enddo
+        if (.not. found .or. .not. found2) then
+      call set_error_fatal(error, 'Unable to identify bk-vector permutation (kmesh_bvector_perm); consider k-point precision', comm)
+          return
+        endif
+      enddo
+    enddo
+
+  end subroutine kmesh_bvectors_perm
 
 end module w90_kmesh

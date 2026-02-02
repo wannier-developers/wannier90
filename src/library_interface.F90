@@ -285,7 +285,6 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_alloc, set_error_fatal, code_mpi
     use w90_comms, only: w90_comm_type, valid_communicator
-    use w90_kmesh, only: kmesh_get
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
       w90_wannier90_readwrite_read_special
 
@@ -846,7 +845,7 @@ contains
   subroutine w90_create_kmesh(common_data, istdout, istderr, ierr)
     !! causes w90 to calculate finite difference neighbour lists
     use w90_error_base, only: w90_error_type
-    use w90_kmesh, only: kmesh_get, kmesh_sort
+    use w90_kmesh, only: kmesh_get
 
     implicit none
 
@@ -867,14 +866,6 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
-
-    if (.not. common_data%gamma_only) then
-      call kmesh_sort(common_data%kmesh_info, common_data%num_kpts, error, common_data%comm)
-      if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, common_data%comm)
-        return
-      endif
     endif
 
     common_data%setup_complete = .true.

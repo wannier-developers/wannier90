@@ -39,6 +39,8 @@ module w90_get_oper
   private :: fourier_q_to_R
   private :: get_win_min
 
+  integer :: nno, nn1o, nn2o
+
 contains
 
   !================================================!
@@ -488,8 +490,6 @@ contains
 
       allocate (num_states(num_kpts))
 
-      allocate (phase1(num_wann, num_wann))
-
       wigner_seitz%wannier_centres_from_AA_R(:, :) = 0.d0
 
       do ik = 1, num_kpts
@@ -539,6 +539,7 @@ contains
             S_o(m, n) = cmplx(m_real, m_imag, kind=dp)
           enddo
         enddo
+
         !debug
         !OK
         !if(ik.ne.ik_prev .and.ik_prev.ne.0) then
@@ -588,20 +589,23 @@ contains
         enddo
 
         ! Berry connection matrix
-        ! Assuming all neighbors of a given point are read in sequence!
         !
         if (pw90_berry%transl_inv .and. ik .ne. ik_prev) AA_q_b_diag(:, :, :) = cmplx_0
+
+        nno = nn
+        if (pw90_berry%transl_inv_full) nno = kmesh_info%nninv(nn, ik) ! reorder AA_q_b nn indices required for transl_inv_full method
+
         do idir = 1, 3
-          AA_q_b(:, :, ik, nn, idir) = AA_q_b(:, :, ik, nn, idir) &
-                                       + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*S(:, :)
+          AA_q_b(:, :, ik, nno, idir) = AA_q_b(:, :, ik, nno, idir) &
+                                        + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*S(:, :)
           if (pw90_berry%transl_inv) then
             !
             ! Rewrite band-diagonal elements a la Eq.(31) of MV97
             !
             do i = 1, num_wann
-              AA_q_b_diag(i, nn, idir) = AA_q_b_diag(i, nn, idir) &
-                                         - kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
-                                         *aimag(log(S(i, i)))
+              AA_q_b_diag(i, nno, idir) = AA_q_b_diag(i, nno, idir) &
+                                          - kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
+                                          *aimag(log(S(i, i)))
             enddo
           endif
         end do
@@ -609,7 +613,7 @@ contains
         do idir = 1, 3
           if (pw90_berry%transl_inv) then
             do n = 1, num_wann
-              AA_q_b(n, n, ik, nn, idir) = AA_q_b_diag(n, nn, idir)
+              AA_q_b(n, n, ik, nno, idir) = AA_q_b_diag(n, nno, idir)
             enddo
           endif
         enddo
@@ -631,24 +635,29 @@ contains
 
       if (pw90_berry%transl_inv_full) then
         allocate (r0(num_wann, num_wann, 3))
-        do nn = 1, kmesh_info%nntot
-          do j = 1, num_wann
-            do i = 1, num_wann
-              r0(i, j, :) = (wigner_seitz%wannier_centres_from_AA_R(:, i) + &
-                             wigner_seitz%wannier_centres_from_AA_R(:, j))/2.0_dp
-            enddo
+        allocate (phase1(num_wann, num_wann))
+        do j = 1, num_wann
+          do i = 1, num_wann
+            r0(i, j, :) = (wigner_seitz%wannier_centres_from_AA_R(:, i) + &
+                           wigner_seitz%wannier_centres_from_AA_R(:, j))/2.0_dp
           enddo
-
-          phase1 = (r0(:, :, 1)*kmesh_info%bk(1, nn, 1) + &
-                    r0(:, :, 2)*kmesh_info%bk(2, nn, 1) + &
-                    r0(:, :, 3)*kmesh_info%bk(3, nn, 1))
-          phase1 = exp(cmplx_i*phase1)
-
-          AA_q_b(:, :, :, nn, :) = AA_q_b(:, :, :, nn, :)*spread(spread(phase1, 3, num_kpts), 4, 3)
         enddo
-      endif
 
-      deallocate (phase1)
+        do nn = 1, kmesh_info%nntot
+          do ik = 1, num_kpts
+            phase1 = (r0(:, :, 1)*kmesh_info%bk(1, nn, ik) + &
+                      r0(:, :, 2)*kmesh_info%bk(2, nn, ik) + &
+                      r0(:, :, 3)*kmesh_info%bk(3, nn, ik))
+            phase1 = exp(cmplx_i*phase1)
+
+            nno = kmesh_info%nninv(nn, ik)
+            do idir = 1, 3
+              AA_q_b(:, :, ik, nno, idir) = AA_q_b(:, :, ik, nno, idir)*phase1(:, :)
+            enddo
+          enddo ! ik
+        enddo ! nn
+        deallocate (phase1)
+      endif
 
     endif !on_root
 
@@ -963,9 +972,11 @@ contains
         endif
 
         do idir = 1, 3
-          BB_q_b(:, :, ik, nn, idir) = BB_q_b(:, :, ik, nn, idir) &
-                                       + cmplx_i*phase1(:, :)*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
-                                       *H_q_qb(:, :)
+
+          nno = kmesh_info%nninv(nn, ik)
+          BB_q_b(:, :, ik, nno, idir) = BB_q_b(:, :, ik, nno, idir) &
+                                        + cmplx_i*phase1(:, :)*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
+                                        *H_q_qb(:, :)
         enddo
       enddo !ncount
 
@@ -1272,9 +1283,11 @@ contains
 
             do b = 1, 3
               do a = 1, b
-                CC_q_b(:, :, ik, nn1, nn2, a, b) = CC_q_b(:, :, ik, nn1, nn2, a, b) &
-                                                   + phase1(:, :)*kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
-                                                   *kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_qb1_q_qb2(:, :)
+                nn1o = kmesh_info%nninv(nn1, ik)
+                nn2o = kmesh_info%nninv(nn2, ik)
+                CC_q_b(:, :, ik, nn1o, nn2o, a, b) = CC_q_b(:, :, ik, nn1o, nn2o, a, b) &
+                                                     + phase1(:, :)*kmesh_info%wb(nn1)*kmesh_info%bk(a, nn1, ik) &
+                                                     *kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_qb1_q_qb2(:, :)
               enddo
             enddo
 
@@ -2668,8 +2681,9 @@ contains
               enddo
             enddo
             do b = 1, 3
-              SBB_q_b(:, :, ik, nn2, ipol, b) = SBB_q_b(:, :, ik, nn2, ipol, b) + &
-                                                cmplx_i*phase1(:, :)*kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_q_qb2(:, :)
+              nn2o = kmesh_info%nninv(nn2, ik)
+              SBB_q_b(:, :, ik, nn2o, ipol, b) = SBB_q_b(:, :, ik, nn2o, ipol, b) + &
+                                                 cmplx_i*phase1(:, :)*kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_q_qb2(:, :)
             enddo
           enddo !ipol
         enddo !nn2
@@ -2966,8 +2980,9 @@ contains
               enddo
             enddo
             do b = 1, 3
-              SAA_q_b(:, :, ik, nn2, ipol, b) = SAA_q_b(:, :, ik, nn2, ipol, b) + &
-                                                cmplx_i*phase1(:, :)*kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_q_qb2(:, :)
+              nn2o = kmesh_info%nninv(nn2, ik)
+              SAA_q_b(:, :, ik, nn2o, ipol, b) = SAA_q_b(:, :, ik, nn2o, ipol, b) + &
+                                                 cmplx_i*phase1(:, :)*kmesh_info%wb(nn2)*kmesh_info%bk(b, nn2, ik)*H_q_qb2(:, :)
             enddo
 !             enddo !nn1
           enddo !ipol
