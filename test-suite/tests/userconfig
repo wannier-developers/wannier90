@@ -80,10 +80,11 @@ tolerance = ( (1.0e-5, 1.0e-5, 'origin'))
 [POSTW90_GENINTERPDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_geninterp_dat.parse
+# ignore relative error comparison of values ~zero
 tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
-	       (1.0e-6, 1.0e-6, 'bandkptx'),
-	       (1.0e-6, 1.0e-6, 'bandkpty'),
-	       (1.0e-6, 1.0e-6, 'bandkptz'),                            
+	       (1.0e-6, None, 'bandkptx'),
+	       (1.0e-6, None, 'bandkpty'),
+	       (1.0e-6, None, 'bandkptz'),
 	       (1.0e-2, 1.0e-2, 'bandderivx'),
 	       (1.0e-2, 1.0e-2, 'bandderivy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),                            
