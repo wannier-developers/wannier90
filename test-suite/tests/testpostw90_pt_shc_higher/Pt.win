@@ -27,6 +27,8 @@ shc_alpha = 1
 shc_beta = 2
 shc_gamma = 3
 shc_method = qiao
+spn_formatted = true
+
 fermi_energy_min = 6
 fermi_energy_max = 26
 fermi_energy_step = 0.1
