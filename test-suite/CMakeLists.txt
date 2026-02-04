@@ -131,8 +131,14 @@ add_subdirectory(tests)
 
 ## Functional tests
 set(functional_tests
-		library-mode-test-C-interface
 )
+if (WANNIER90_WITH_C) 
+	# These test requires that the C interface is built
+        # (which requires a --std=f2018 compliant compiler
+	list(APPEND functional_tests
+			library-mode-test-C-interface
+        )
+endif ()
 if (WANNIER90_MPI)
 	# These tests require MPI interface
 	list(APPEND functional_tests

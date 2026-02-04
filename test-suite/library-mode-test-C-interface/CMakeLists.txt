@@ -11,6 +11,10 @@ add_executable(demo wannier.cc)
 target_link_libraries(demo PRIVATE Wannier90::wannier90)
 # TODO: user should not need to set this
 set_property(TARGET demo PROPERTY LINKER_LANGUAGE Fortran)
+# workaround for ifx's particular inclination to its own main def when linking
+if (CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+  string(APPEND CMAKE_Fortran_FLAGS " -nofor-main")
+endif()
 
 enable_testing()
 # TODO: The C interface is still buggy and would segfault
