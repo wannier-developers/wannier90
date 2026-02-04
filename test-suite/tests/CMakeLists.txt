@@ -75,7 +75,7 @@ set(test_names
                 testw90_graphene_pdwf
                 testw90_guidingcentre_selectproj
                 testw90_knbo3_higher
-#               testw90_knbo3_higher_stengel_spaldin  # Dropped until SS+guiding centres fixed
+                testw90_knbo3_higher_stengel_spaldin
                 testw90_lavo3_dissphere
 #		testw90_na_chain_gamma  # Dropped because flaky
                 testw90_nnkpt1

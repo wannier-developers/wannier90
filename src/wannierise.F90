@@ -1917,7 +1917,8 @@ contains
       do nn = 1, kmesh_info%nntot
         do loop_wann = 1, num_wann
           do j = 1, 3
-            sheet(loop_wann, nn, 1) = kmesh_info%bk(j, nn, 1)*rguide(j, loop_wann)
+            sheet(loop_wann, nn, 1) = sheet(loop_wann, nn, 1) &
+                                      + kmesh_info%bk(j, nn, 1)*rguide(j, loop_wann)
           enddo
         enddo
       enddo
@@ -2516,16 +2517,16 @@ contains
 
               cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + &
                                          kmesh_info%wb(nn)*m_matrix_loc(m, n, cnn, nkp_loc)* &
-                                         conjg(sum_mnn(n, nn))
+                                         conjg(sum_mnn(n, nn)/csheet(n, nn, 1))
               cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) - &
                                          kmesh_info%wb(nn)*conjg(m_matrix_loc(n, m, cnn2, nkp_loc))* &
-                                         conjg(sum_mnn(m, nn))
+                                         conjg(sum_mnn(m, nn)/csheet(m, nn, 1))
               cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) - &
                                          kmesh_info%wb(nn)*conjg(m_matrix_loc(n, m, cnn, nkp_loc))* &
-                                         sum_mnn(m, nn)
+                                         sum_mnn(m, nn)/csheet(m, nn, 1)
               cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + &
                                          kmesh_info%wb(nn)*m_matrix_loc(m, n, cnn2, nkp_loc)* &
-                                         sum_mnn(n, nn)
+                                         sum_mnn(n, nn)/csheet(n, nn, 1)
             enddo
           enddo
         enddo

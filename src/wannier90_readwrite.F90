@@ -683,12 +683,6 @@ contains
                                    l_value=wann_control%use_ss_functional)
     if (allocated(error)) return
 
-    if (wann_control%use_ss_functional .and. wann_control%guiding_centres%enable) then
-      call set_error_input(error, &
-                           'Stengel-Spalding combined with guiding centres not supported yet (2Feb26)', comm)
-      return
-    endif
-
     call w90_readwrite_get_keyword(settings, 'num_guide_cycles', found, error, comm, &
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return
