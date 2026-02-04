@@ -27,6 +27,8 @@ shc_gamma=1
 shc_alpha=3
 shc_beta=2
 
+spn_formatted = true
+
 begin unit_cell_cart
 bohr
 -3.6963  0.000  3.6963
