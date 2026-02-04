@@ -63,7 +63,7 @@ program wannier
   use w90_library_extra ! for input_reader_special, overlaps, etc
 
   use w90_comms, only: w90_comm_type, comms_sync_error
-  use w90_io, only: io_commandline, io_date, prterr
+  use w90_io, only: io_commandline, io_date, io_time, prterr
   use w90_sitesym, only: sitesym_read
   use w90_error, only: w90_error_type, set_error_input
 
@@ -147,6 +147,8 @@ program wannier
     call write_kmesh(common_data, stdout, stderr, ierr) ! only active on rank 0
     if (ierr /= 0) stop
     if (rank == 0) close (unit=stderr, status='delete')
+    if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
+    if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif

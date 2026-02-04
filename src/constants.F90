@@ -25,7 +25,7 @@ module w90_constants
   !!
   !! Values of the fundamental constants are taken from
   !! http://physics.nist.gov/cuu/Constants/index.html
-  !! By default CODATA2010 is used (CODATA2006 can be selected
+  !! By default CODATA2006 is used (CODATA2010/18/22 can be selected
   !! using an appropriate compile-time flag (see INSTALL guide)
 
   implicit none
@@ -76,14 +76,74 @@ module w90_constants
   ! http://physics.nist.gov/cuu/Constants/index.html
   !
 !~ Pick up default value; unfortunately, it doesn't work with indentation...
+#ifndef CODATA2022
+#ifndef CODATA2018
 #ifndef CODATA2006
 #ifndef CODATA2010
 #define CODATA2006
 #endif
 #endif
+#endif
+#endif
 
 ! We don't check for multiply-defined flags: if it is the case, the code will not
 ! compile because of multiple definitions of the same flags
+
+#ifdef CODATA2022
+! ##### CODATA 2022 ##### !
+!#warning "WANNIER90 INFO: Using CODATA 2022 constant values"
+  real(kind=dp), parameter :: elem_charge_SI = 1.602176634e-19_dp   ! C
+  !! e
+  real(kind=dp), parameter :: elec_mass_SI = 9.1093837139e-31_dp    ! kg
+  !! $$m_e$$
+  real(kind=dp), parameter :: hbar_SI = 1.054571817e-34_dp          ! J * s
+  !! $$\hbar$$
+  real(kind=dp), parameter :: k_B_SI = 1.380649e-23_dp              ! J / K
+  !! $$k_B$$
+  real(kind=dp), parameter :: bohr_magn_SI = 927.40100657e-26_dp      ! J / T
+  !! $$\mu_B$$
+  real(kind=dp), parameter :: eps0_SI = 8.85418781887e-12_dp          ! F / m
+  !! $$\epsilon_0$$
+  real(kind=dp), parameter :: speedlight_SI = 299792458.0_dp        ! m / s
+  !! $$c$$
+  real(kind=dp), parameter :: eV_au = 3.6749322175665e-2_dp              ! (see table of Conv. Factors)
+  !! eV in atomic units
+  real(kind=dp), parameter :: eV_seconds = 6.582119569e-16_dp
+  !! Electron Volt in seconds
+  real(kind=dp), parameter :: bohr_angstrom_internal = 0.529177210544_dp
+  !! Bohr to $$\AA$$
+  ! Leave the length to this value, and don't exceed in length (needed for output formatting)
+  character(len=75), parameter :: constants_version_str1 = "-> Using CODATA 2022 constant values"
+  character(len=75), parameter :: constants_version_str2 = "   (http://physics.nist.gov/cuu/Constants/index.html)"
+#endif
+
+#ifdef CODATA2018
+! ##### CODATA 2018 ##### !
+!#warning "WANNIER90 INFO: Using CODATA 2018 constant values"
+  real(kind=dp), parameter :: elem_charge_SI = 1.602176634e-19_dp   ! C
+  !! e
+  real(kind=dp), parameter :: elec_mass_SI = 9.1093837015e-31_dp    ! kg
+  !! $$m_e$$
+  real(kind=dp), parameter :: hbar_SI = 1.054571817e-34_dp          ! J * s
+  !! $$\hbar$$
+  real(kind=dp), parameter :: k_B_SI = 1.380649e-23_dp              ! J / K
+  !! $$k_B$$
+  real(kind=dp), parameter :: bohr_magn_SI = 927.40100783e-26_dp      ! J / T
+  !! $$\mu_B$$
+  real(kind=dp), parameter :: eps0_SI = 8.8541878128e-12_dp          ! F / m
+  !! $$\epsilon_0$$
+  real(kind=dp), parameter :: speedlight_SI = 299792458.0_dp        ! m / s
+  !! $$c$$
+  real(kind=dp), parameter :: eV_au = 3.6749322175655e-2_dp              ! (see table of Conv. Factors)
+  !! eV in atomic units
+  real(kind=dp), parameter :: eV_seconds = 6.582119569e-16_dp
+  !! Electron Volt in seconds
+  real(kind=dp), parameter :: bohr_angstrom_internal = 0.529177210903_dp
+  !! Bohr to $$\AA$$
+  ! Leave the length to this value, and don't exceed in length (needed for output formatting)
+  character(len=75), parameter :: constants_version_str1 = "-> Using CODATA 2018 constant values"
+  character(len=75), parameter :: constants_version_str2 = "   (http://physics.nist.gov/cuu/Constants/index.html)"
+#endif
 
 #ifdef CODATA2006
 ! ##### CODATA 2006 ##### !

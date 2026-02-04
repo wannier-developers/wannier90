@@ -1,0 +1,66 @@
+specfile_path: .distro/wannier90.spec
+files_to_sync:
+  - src: .distro/
+    dest: ./
+    delete: true
+    filters:
+      - "protect .git*"
+      - "protect sources"
+      - "protect changelog"
+      - "protect gating.yaml"
+      # Temporary workaround until
+      # https://github.com/packit/packit/pull/2573
+      - "- wannier90.spec"
+  - .packit.yaml
+
+upstream_package_name: wannier90
+downstream_package_name: wannier90
+upstream_tag_template: v{version}
+
+targets:
+  - fedora-all-x86_64
+  - fedora-all-aarch64
+
+_:
+  # Job templates
+  - &build-in-packit
+    job: copr_build
+  - &build-in-lecris
+    <<: *build-in-packit
+    owner: lecris
+  - &tests-downstream
+    job: tests
+    fmf_path: .distro
+    identifier: downstream
+
+jobs:
+  # Upstream jobs
+  - <<: *build-in-lecris
+    trigger: release
+    project: release
+  - <<: *tests-downstream
+    trigger: release
+  - <<: *build-in-lecris
+    trigger: commit
+    branch: main
+    project: nightly
+  - <<: *tests-downstream
+    trigger: commit
+    branch: main
+  - <<: *build-in-packit
+    trigger: pull_request
+  - <<: *tests-downstream
+    trigger: pull_request
+  # Downstream jobs
+  - job: propose_downstream
+    trigger: release
+    dist_git_branches:
+      - fedora-rawhide
+  - job: koji_build
+    trigger: commit
+    dist_git_branches:
+      - fedora-all
+  - job: bodhi_update
+    trigger: commit
+    dist_git_branches:
+      - fedora-branched

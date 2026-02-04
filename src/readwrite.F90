@@ -920,13 +920,13 @@ contains
     if (allocated(error)) return
   end subroutine w90_readwrite_read_kmesh_data
 
-  subroutine w90_readwrite_read_kpoints(settings, pw90_effective_model, kpt_latt, num_kpts, bohr, &
-                                        error, comm)
+  subroutine w90_readwrite_read_kpoints(settings, pw90_effective_model, kpt_latt, num_kpts, mp_grid, &
+                                        bohr, error, comm)
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
     ! arguments
-    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_kpts, mp_grid(3)
     logical, intent(in) :: pw90_effective_model
     real(kind=dp), allocatable, intent(out) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: bohr
@@ -936,7 +936,7 @@ contains
 
     ! local variables
     real(kind=dp), allocatable :: kpt_cart(:, :)
-    integer :: ierr
+    integer :: ierr, ia, ib, ic, ik
     logical :: found
 
     ! pw90_effective_model ignores kpt_cart
@@ -960,9 +960,22 @@ contains
       call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
                                            comm, r_value=kpt_cart)
       if (allocated(error)) return
+      !if (.not. found) then
+      !  call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
+      !  return
+      !endif
       if (.not. found) then
-        call set_error_input(error, 'Error: Did not find the kpoint information in the input file', comm)
-        return
+        ik = 1
+        do ia = 1, mp_grid(1)
+          do ib = 1, mp_grid(2)
+            do ic = 1, mp_grid(3)
+              kpt_cart(1, ik) = real(ia - 1, kind=dp)/mp_grid(1)
+              kpt_cart(2, ik) = real(ib - 1, kind=dp)/mp_grid(2)
+              kpt_cart(3, ik) = real(ic - 1, kind=dp)/mp_grid(3)
+              ik = ik + 1
+            enddo
+          enddo
+        enddo
       endif
       kpt_latt = kpt_cart
 
@@ -1811,7 +1824,7 @@ contains
       write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
 #endif
     else
-      write (stdout, '(/,1x,a,i3,a/)') 'Running in parallel on ', mpi_size, ' CPUs'
+      write (stdout, '(/,1x,a,i3,a)') 'Running in parallel on ', mpi_size, ' CPUs'
     endif
   end subroutine w90_readwrite_write_header
 
@@ -3768,7 +3781,7 @@ contains
     real(kind=dp) :: proj_s_qaxis_tmp(3)
     real(kind=dp) :: proj_zona_tmp
     integer       :: proj_radial_tmp
-    logical       :: lconvert, lrandom, proj_u_tmp, proj_d_tmp
+    logical       :: lconvert, lrandom, proj_u_tmp, proj_d_tmp, found_f
     logical       :: lpartrandom
 
     real(kind=dp) :: xnorm, znorm, cosphi, sinphi, xnorm_new, cosphi_new
@@ -3966,8 +3979,22 @@ contains
           endif
         endif
 
-        ! scan for up or down
-        pos1 = index(dummy, '(')
+        ! scan for up or down staring from the end of the string.
+        pos1 = index(dummy, '(', BACK=.true.)
+        ! We need to exclude the case in which we have no spinor specification (u) (d) etc
+        ! But we have an f-orbital specified.
+        if (pos1 > 0) then
+          found_f = .false.
+          ctemp = (dummy(pos1:))
+          pos2 = index(ctemp, '(x2-y2)')
+          if (pos2 > 0) found_f = .true.
+          pos2 = index(ctemp, '(x2-3y2)')
+          if (pos2 > 0) found_f = .true.
+          pos2 = index(ctemp, '(3x2-y2)')
+          if (pos2 > 0) found_f = .true.
+          if (found_f) pos1 = 0
+        endif
+
         if (spinors) then
           if (pos1 > 0) then
             proj_u_tmp = .false.; proj_d_tmp = .false.

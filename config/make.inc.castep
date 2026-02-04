@@ -1,0 +1,10 @@
+## When building with CASTEP, use its build system for compilers etc.
+
+include $(CASTEP_ROOT)/obj/platforms/$(CASTEP_ARCH).mk
+
+MPIF90 := $(F90)
+F90 := $(FC)
+COMMS := $(COMMS_ARCH)
+FCOPTS := $(OPT)
+LDOPTS := $(OPT)
+LIBS := $(BLAS_LIB_SEARCH_PATH) $(MATH_LIBS)

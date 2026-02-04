@@ -8,7 +8,7 @@ berry_curv_adpt_kmesh_thresh,P,"Threshold magnitude of the Berry curvature for a
 kubo_freq_min,P,"Lower limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)"
 kubo_freq_max,P,"Upper limit of the frequency range for optical spectra, JDOS, shift current and spin Hall conductivity (eV)"
 kubo_freq_step,R,"Step for increasing the optical frequency in the specified range"
-kubo_eigval_max,P,"Maximum energy eigenvalue included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity"
+kubo_eigval_max,P,"Maximum energy eigenvalue included when evaluating the Kubo-Greenwood conductivity, JDOS, shift current and spin Hall conductivity (eV)"
 [kubo_]adpt_smr,L,"Use adaptive energy smearing for the optical conductivity, JDOS, shift current and spin Hall conductivity"
 [kubo_]adpt_smr_fac,R,"Adaptive smearing prefactor"
 [kubo_]adpt_smr_max,P,"Maximum allowed value for the adaptive energy smearing (eV)"

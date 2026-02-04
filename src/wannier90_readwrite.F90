@@ -132,7 +132,8 @@ contains
     call w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_kpoints(settings, .false., kpt_latt, num_kpts, bohr, error, comm)
+    call w90_readwrite_read_kpoints(settings, .false., kpt_latt, num_kpts, mp_grid, bohr, error, &
+                                    comm)
     if (allocated(error)) return
 
     call w90_wannier90_readwrite_read_explicit_kpts(settings, w90_calculation, kmesh_info, &
@@ -278,11 +279,15 @@ contains
                                     error, comm)
       if (allocated(error)) return
 
-      if (.not. has_kpath) then
-        call w90_readwrite_read_explicit_kpath(settings, kpoint_path, has_explicit_kpath, w90_calculation%bands_plot, &
-                                               bohr, error, comm)
-        if (allocated(error)) return
+      call w90_readwrite_read_explicit_kpath(settings, kpoint_path, has_explicit_kpath, w90_calculation%bands_plot, &
+                                             bohr, error, comm)
+      if (allocated(error)) return
+
+      if (has_kpath .and. has_explicit_kpath) then
+        call set_error_input(error, 'Error: cannot specify both kpath and explicit_kpath', comm)
       endif
+      if (allocated(error)) return
+
       call w90_wannier90_readwrite_read_plot_info(settings, wvfn_read, error, comm)
       if (allocated(error)) return
 
@@ -677,6 +682,12 @@ contains
     call w90_readwrite_get_keyword(settings, 'use_ss_functional', found, error, comm, &
                                    l_value=wann_control%use_ss_functional)
     if (allocated(error)) return
+
+    if (wann_control%use_ss_functional .and. wann_control%guiding_centres%enable) then
+      call set_error_input(error, &
+                           'Stengel-Spalding combined with guiding centres not supported yet (2Feb26)', comm)
+      return
+    endif
 
     call w90_readwrite_get_keyword(settings, 'num_guide_cycles', found, error, comm, &
                                    i_value=wann_control%guiding_centres%num_guide_cycles)

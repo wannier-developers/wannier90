@@ -1,0 +1,6 @@
+summary: Test the bundled ctests
+discover+:
+  how: fmf
+  path: test-suite
+execute:
+  how: tmt
