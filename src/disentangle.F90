@@ -2490,16 +2490,18 @@ contains
       call set_error_alloc(error, 'Error allocating wkomegai1 in dis_extract', comm)
       return
     endif
-    allocate (czmat_in(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating czmat_in in dis_extract', comm)
-      return
-    endif
-    allocate (czmat_out(num_bands, num_bands, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating czmat_out in dis_extract', comm)
-      return
-    endif
+    if (lsitesymmetry) then !we only need these large arrays for the symmetry code
+      allocate (czmat_in(num_bands, num_bands, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating czmat_in in dis_extract', comm)
+        return
+      endif
+      allocate (czmat_out(num_bands, num_bands, num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating czmat_out in dis_extract', comm)
+        return
+      endif
+    end if
     allocate (history(dis_control%conv_window), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating history in dis_extract', comm)
@@ -2934,15 +2936,17 @@ contains
     enddo
     ! [BIG ITERATION LOOP (iter)]
 
-    deallocate (czmat_out, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating czmat_out in dis_extract', comm)
-      return
-    endif
-    deallocate (czmat_in, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating czmat_in in dis_extract', comm)
-      return
+    if (lsitesymmetry) then
+      deallocate (czmat_out, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating czmat_out in dis_extract', comm)
+        return
+      endif
+      deallocate (czmat_in, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating czmat_in in dis_extract', comm)
+        return
+      endif
     endif
     deallocate (czmat_out_loc, stat=ierr)
     if (ierr /= 0) then
