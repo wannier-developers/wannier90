@@ -8,7 +8,7 @@ structure calculations.*
 - Outline: *Obtain the quantum conductance of a pristine single-walled
     carbon nanotube*
 
-- Directory: `tutorials/tutorial14/periodic` *Files can be downloaded fron [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial15)*
+- Directory: `tutorials/tutorial14/periodic` *Files can be downloaded from [here](https://github.com/wannier-developers/wannier90/tree/develop/tutorials/tutorial15)*
 
 - Input Files
 

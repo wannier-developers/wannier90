@@ -53,7 +53,7 @@
 
 Inspect the output file `LaVO3.wout`. In the initial summary, you will
 see that the disentanglement was performed only within one sphere of
-radius 0.2 arount the point $A=(0.5, 0.5, 0.5)$ in reciprocal space:
+radius 0.2 around the point $A=(0.5, 0.5, 0.5)$ in reciprocal space:
 
 ```vi title="Output file"
 |  Number of spheres in k-space              :                 1             |

@@ -87,7 +87,7 @@
     `Grace: Read sets` should pop up. Select `p_vs_e.dat` in the `Files`
     section, click `Ok` at the bottom and close the window. You should
     now be able to see a quite noisy function that is bounded between 1
-    and 0. You can modify the appearence of the plot by clicking on
+    and 0. You can modify the appearance of the plot by clicking on
     `Plot` in the top bar and then `Set appearance...`. In the `Main`
     section of the pop-up window change the symbol type from `None` to
     `Circle`. Change the line type from straight to none, since the
