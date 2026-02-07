@@ -1285,7 +1285,7 @@ independent components of $\gamma_{abc}$ (antisymmetric in $ab$): $yzx$,
 $zxy$ ,$xyz$, $yzy$, $yzz$, $zxz$, $xyy$, $xyx$ and $zxx$. For tensors
 $C_{ab}$, $D_{ab}$, $\widetilde D_{ab}$, $K_{ab}$ the symmetric and
 antisymmetric components are writted. Thus, the columns 3 to 11 are
-marked as $xx$, $yy$, $zz$, $xy$, $xz$, $yz$, $x$, $y$, $z$, wich
+marked as $xx$, $yy$, $zz$, $xy$, $xz$, $yz$, $x$, $y$, $z$, which
 correspond ,e.g., for $D_{ab}$ to $D_{xx}$, $D_{yy}$, $D_{zz}$,
 $(D_{xy}+D_{yx})/2$, $(D_{xz}+D_{zx})/2$, $(D_{yz}+D_{zy})/2$,
 $(D_{yz}-D_{zy})/2$, $(D_{zx}-D_{xz})/2$, $(D_{xy}-D_{yx})/2$
@@ -1399,7 +1399,7 @@ For two-dimensional systems, the direction along which the system is
 non-periodic. It can assume the following values: `x` for a 2D system on
 the $yz$ plane, `y` for a 2D system on the $xz$ plane, `z` for a 2D
 system on the $xy$ plane, or `no` for a 3D system with periodicity along
-all threee directions.
+all three directions.
 
 This value is used when calculating the Seebeck coefficient, where the
 electrical conductivity tensor needs to be inverted. If the value is

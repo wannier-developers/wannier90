@@ -54,7 +54,7 @@ strings: `T`, `true`, `.true.`.
 
 For further examples see Section
 [Master input file: `seedname.win`](sample_inputs.md#winfile)
-and the the `wannier90` Tutorial.
+and the `wannier90` Tutorial.
 
 ## Keyword List
 
@@ -65,7 +65,7 @@ and the the `wannier90` Tutorial.
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords defining the system. Argument types are
-represented by, I for a integer, R for a real number, P for a physical
+represented by, I for an integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
 
 - `atoms_cart` and `atoms_frac` may not both be defined in the same input file.
@@ -77,9 +77,9 @@ value, L for a logical value and S for a text string.
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords defining job control. Argument types are
-represented by, I for a integer, R for a real number, P for a physical
+represented by, I for an integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
-translate_home_cell only relevant if `write_xyz` is `.true.`
+translate_home_cell is only relevant if `write_xyz` is `.true.`
 
 ### Disentanglement Parameters
 
@@ -88,7 +88,7 @@ translate_home_cell only relevant if `write_xyz` is `.true.`
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the disentanglement. Argument
-types are represented by, I for a integer, R for a real number, P for a
+types are represented by, I for an integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 
 ### Wannierise Parameters
@@ -98,7 +98,7 @@ physical value, L for a logical value and S for a text string.
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the wannierisation. Argument
-types are represented by, I for a integer, R for a real number, P for a
+types are represented by, I for an integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 
 - `fixed_step` and `trial_step` may not both be defined in the same input
@@ -114,7 +114,7 @@ file.
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling the plotting. Argument types
-are represented by, I for a integer, R for a real number, P for a
+are represented by, I for an integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 
 - `wannier_plot_radius` only applies when `wannier_plot_format` is `cube`.
@@ -126,7 +126,7 @@ physical value, L for a logical value and S for a text string.
 <!-- markdownlint-enable MD013 -->
 
 `seedname.win` file keywords controlling transport. Argument types are
-represented by, I for a integer, R for a real number, P for a physical
+represented by, I for an integer, R for a real number, P for a physical
 value, L for a logical value and S for a text string.
 
 ## System
@@ -259,8 +259,8 @@ end kpoints
 There is no default.
 
 !!! note
-    There is an utility provided with `wannier90`, called
-    `kmesh.pl`, which helps to generate the explicit list of $k$ points
+    There is a utility provided with `wannier90`, called
+    `kmesh.pl`, which helps to generate the explicit list of $k$-points
     required by `wannier90`. See Sec. [`kmesh.pl`](../appendices/utilities.md#kmeshpl).
 
 ### `logical :: gamma_only`
@@ -362,14 +362,14 @@ also if the k-points do not describe a regular mesh.
 
 ### `real(kind=dp) :: kmesh_tol`
 
-Two kpoints belong to the same shell if the distance between them is
+Two k-points belong to the same shell if the distance between them is
 less than `kmesh_tol`. Units are Ang.
 
 The default value is 0.000001 Ang.
 
 ### `integer :: higher_order_n`
 
-Specifies the order of finite-difference(FD) formula. The default is 1.
+Specifies the order of finite-difference (FD) formula. The default is 1.
 Assuming the first-order FD uses #1, #3 shells for neighbors,
 then the n-th-order FD also includes 2, 3, ..., n times #1, #3 shells.
 A very high value of n may require larger `search_shells`.
@@ -449,7 +449,7 @@ No default.
 
 ### `integer :: exclude_bands(:)`
 
-A k-point independent list of states to excluded from the calculation of
+A k-point independent list of states to exclude from the calculation of
 the overlap matrices; for example to select only valence states, or
 ignore semi-core states. This keyword is passed to the first-principles
 code via the `seedname.nnkp` file. For example, to exclude bands 2, 6,
@@ -761,7 +761,7 @@ The default value is 1.0E-10
 
 Whether or not to use preconditioning to speed up the minimization of
 the spreads. This is based on the same idea as the classical
-Tetter-Payne-Allan preconditionning for DFT and dampens the
+Teter-Payne-Allan preconditioning for DFT and dampens the
 high-frequency oscillations of the gradient due to contributions from
 large real lattice vectors. It is useful when the optimization is slow,
 especially on fine grids. When `optimisation<3`, this uses a slower
@@ -1338,7 +1338,7 @@ The default value is `false`.
 
 ### `logical :: write_bvec`
 
-If `write_bvec = true`, then the the matrix elements of
+If `write_bvec = true`, then the matrix elements of
 bvector and their weights will be written to a file `seedname.bvec`.
 
 The default value is `false`.

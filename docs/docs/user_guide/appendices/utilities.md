@@ -240,7 +240,7 @@ If no options are specified, all the files
 (`mmn, amn, spn, UNK, uHu, uIu`) are considered.
 
 Binary (unformatted Fortran) files are supported, though not
-reccommended, since they are compiler-dependent. A safer choice is to
+recommended, since they are compiler-dependent. A safer choice is to
 use (bigger) formatted files, with options:
 
 `spn_formatted, uiu_formatted, uhu_formatted, unk_formatted`

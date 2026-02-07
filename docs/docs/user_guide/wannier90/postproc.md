@@ -12,7 +12,7 @@ $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}$ (Ref. [@marzari-prb97], Eq. (62);
 Ref. [@souza-prb01], Eq. (22)).
 
-Once the overlaps and projection have been computed and written to files
+Once the overlaps and projections have been computed and written to files
 `seedname.mmn` and `seedname.amn`, respectively, set `postproc_setup` to
 `.false.` and run the code. Output is written to the file
 `seedname.wout`.
@@ -25,7 +25,7 @@ The file `seedname.nnkp` provides the information needed to determine
 the required overlap elements $M_{mn}^{(\mathbf{k,b})}$ and projections
 $A_{mn}^{(\mathbf{k})}$. It is written automatically when the code is
 invoked with the `-pp` command-line option (or when
-`postproc_setup=.true.` in `seedname.win`. There should be no need for
+`postproc_setup=.true.` in `seedname.win`). There should be no need for
 the user to edit this file.
 
 Much of the information in `seedname.nnkp` is arranged in blocks
@@ -38,7 +38,7 @@ The first line of the file is a user comment, e.g., the date and time:
 
 `File written on 12Feb2006 at 15:13:12`
 
-The only logical keyword is `calc_only_A`, eg,
+The only logical keyword is `calc_only_A`, e.g.,
 
 `calc_only_A  :  F`
 
@@ -82,7 +82,7 @@ end kpoints
 
 The first line in the block is the total number of k-points `num_kpts`.
 The subsequent `num_kpts` lines specify the k-points in crystallographic
-co-ordinates relative to the reciprocal lattice vectors.
+coordinates relative to the reciprocal lattice vectors.
 
 ### `Projections` block
 
@@ -104,7 +104,7 @@ Notes:
 of MLWF `num_wann`.
 
 `centre`: three real numbers; projection function centre in
-crystallographic co-ordinates relative to the direct lattice vectors.
+crystallographic coordinates relative to the direct lattice vectors.
 
 `l  mr  r`: three integers; $l$ and $m_\mathrm{r}$ specify the angular
 part $\Theta_{lm_{\mathrm{r}}}(\theta,\varphi)$, and $\mathrm{r}$
@@ -119,7 +119,7 @@ measured.
 
 `x-axis`: three real numbers; must be orthogonal to `z-axis`; default is
 `1.0 0.0 0.0` or a vector perpendicular to `z-axis` if `z-axis` is
-given; defines the axis from with the azimuthal angle $\varphi$ in
+given; defines the axis from which the azimuthal angle $\varphi$ in
 spherical polar coordinates is measured.
 
 `zona`: real number; the value of $\frac{Z}{a}$ associated with the
@@ -165,11 +165,11 @@ end nnkpts
 First line: `nntot`, the number of nearest neighbours belonging to each
 k-point of the Monkhorst-Pack mesh
 
-Subsequent lines: `nntot`$\times$`num_kpts` lines, ie, `nntot` lines of
+Subsequent lines: `nntot`$\times$`num_kpts` lines, i.e., `nntot` lines of
 data for each k-point of the mesh.
 
-Each line of consists of 5 integers. The first is the k-point number
-`nkp`. The second to the fifth specify it's nearest neighbours
+Each line consists of 5 integers. The first is the k-point number
+`nkp`. The second to the fifth specify its nearest neighbours
 $\mathbf{k+b}$: the second integer points to the k-point that is the
 periodic image of the $\mathbf{k+b}$ that we want; the last three
 integers give the G-vector, in reciprocal lattice units, that brings the
@@ -191,7 +191,7 @@ end exclude_bands
 To exclude bands (independent of k-point) from the calculation of the
 overlap and projection matrices, for example to ignore shallow-core
 states. The first line is the number of states to exclude, the following
-lines give the states for be excluded.
+lines give the states to be excluded.
 
 ### `auto_projections` block
 
@@ -243,7 +243,7 @@ orbitals inside pseudopotentials as initial guesses.
 
 As a concrete example: one wishes to have a set of four sp$^3$
 projection orbitals on, say, a carbon atom at (0.5,0.5,0.5) in
-fractional co-ordinates relative to the direct lattice vectors. In this
+fractional coordinates relative to the direct lattice vectors. In this
 case `seedname.win` will contain the following lines:
 
 ```vi title="Input file"
@@ -650,7 +650,7 @@ The procedure is as follows.
     eigenvalues in the full BZ (`seedname.mmn`, `seedname.amn`, and
     `seedname.eig`) from those in the IBZ (`seedname.immn`,
     `seedname.iamn`, and `seedname.ieig`) by using the symmetry
-    information (`seedname.isym`). The relations between these quantites
+    information (`seedname.isym`). The relations between these quantities
     in the IBZ and full BZ are explained in Ref. [@Koretsune2023].
 
 5. Run `wannier90` (with `postproc_setup = .false.` or, equivalently,
@@ -685,7 +685,7 @@ See also [the section on the  `seedname.eig` file](#seednameeig-file).
 INPUT
 
 The file `seedname.isym` contains the data needed to construct Wannier
-functions from imformation computed only in the IBZ.
+functions from information computed only in the IBZ.
 
 First line: a user comment, e.g., the date and time
 
@@ -758,7 +758,7 @@ $\hat{h}({\bf k})$, (a number from 1 to `nsymmetry`) and a number
 of non-zero elements of $\hat{h}({\bf k})$.
 
 Subsequent lines of each block: 2 integers and 2 real numbers per line.
-These specify band indeces, $m$ and $n$, and real and imaginary parts of
+These specify band indices, $m$ and $n$, and real and imaginary parts of
 $h_{mn}({\bf k})$. Only non-zero components of $h_{mn}({\bf k})$ are
 written.
 
@@ -773,5 +773,5 @@ operation, $\hat{g}$, and a number of non-zero elements of the rotation
 matrix, $D_{mn}(\hat{g})$.
 
 Subsequent lines of each block: 2 integers and 2 real numbers per line.
-These specify indeces of Wannier functions, $m$ and $n$, and real and
+These specify indices of Wannier functions, $m$ and $n$, and real and
 imaginary parts of $D_{mn}(\hat{g})$.

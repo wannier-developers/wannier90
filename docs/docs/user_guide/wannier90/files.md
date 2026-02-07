@@ -106,7 +106,7 @@ information.
 
 The header provides some basic information about `wannier90`, the
 authors, the code version and release, and the execution time of the
-current run. The header looks like the following different (the string
+current run. The header looks like the following (the string
 might slightly change across different versions):
 
 ```vi title="Output file"
@@ -196,7 +196,7 @@ plotting.
 
 ### Nearest-neighbour k-points
 
-This part of the output files provides information on the
+This part of the output file provides information on the
 $\mathrm{b}$-vectors and weights chosen to satisfy the condition of
 Eq. [B1](parameters.md#mjx-eqn:eq:B1).
 
@@ -562,7 +562,7 @@ Wannier functions are at the target centres:
 
 After WF have been localised, `wannier90` enters its plotting routines
 (if required). For example, if you have specified an interpolated
-bandstucture:
+bandstructure:
 
 ```vi title="Output file"
  *---------------------------------------------------------------------------*
@@ -816,7 +816,7 @@ the matrix elements of bvector and their weights. The first line gives
 the date and time at which the file was created. The second line states
 the number of k-points and the total number of neighbours for each
 k-point `nntot`. Then all the other lines contain the b-vector (x,y,z)
-coordinate and weigths for each k-points and each of its neighbours.
+coordinate and weights for each k-points and each of its neighbours.
 
 ## `seedname_wsvec.dat`
 

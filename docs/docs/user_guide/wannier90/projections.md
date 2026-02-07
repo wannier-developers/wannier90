@@ -25,7 +25,7 @@ orbitals (sp, sp$^{2}$, sp$^{3}$, sp$^{3}$d etc.) can be constructed by
 simple linear combination $|\phi\rangle =
 \sum_{nlm} C_{nlm}|nlm\rangle$ for some coefficients $C_{nlm}$.
 
-The angular functions that use as a basis for the projections are not
+The angular functions that are used as a basis for the projections are not
 the canonical spherical harmonics $Y_{lm}$ of the hydrogenic Schrödinger
 equation but rather the *real* (in the sense of non-imaginary) states
 $\Theta_{lm_{\mathrm{r}}}$, obtained by a unitary transformation. For
@@ -49,12 +49,12 @@ End Projections
 
 `units`:
 Optional. Either `Ang` or `Bohr` to specify whether the projection
-centres specified in this block (if given in Cartesian co-ordinates) are
+centres specified in this block (if given in Cartesian coordinates) are
 in units of Angstrom or Bohr, respectively. The default value is `Ang`.
 
 `site`:
 `C`, `Al`, etc. applies to all atoms of that type
-`f=0,0.50,0` -- centre on `(0.0,0.5,0.0)` in **fractional** coordinates
+`f=0.0,0.5,0.0` -- centre on `(0.0,0.5,0.0)` in **fractional** coordinates
 (crystallographic units) relative to the direct lattice vectors
 `c=0.0,0.805,0.0` -- centre on `(0.0,0.805,0.0)` in **Cartesian**
 coordinates in units specified by the optional string `units` in the
@@ -66,14 +66,15 @@ appropriate character string. See
 Tables [Angular functions](#angular-functions)
 and [Hybrids](#hybrids).
 Examples:
-`l=2,mr=1` or `dz2` -- a single projection with $l=2$,
+
+* `l=2,mr=1` or `dz2` -- a single projection with $l=2$,
 $m_{\textrm{r}}=1$ (i.e., d$_{z^{2}}$)
-`l=2,mr=1,4` or `dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
-d$_{xz}$
-`l=-3` or `sp3` -- four sp$^{3}$ hybrids
+* `l=2,mr=1,4` or `dz2,dx2-y2` -- two functions: d$_{z^{2}}$ and
+d$_{x^2-y^2}$
+* `l=-3` or `sp3` -- four sp$^{3}$ hybrids
 Specific hybrid orbitals may be specified as follows:
-`l=-3,mr=1,3` or `sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
-Multiple states may be specified by separating with '`;`', e.g.,
+* `l=-3,mr=1,3` or `sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
+* Multiple states may be specified by separating with '`;`', e.g.,
 `sp3;l=0` or `l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
 
 `zaxis` (optional):
@@ -97,18 +98,18 @@ always in reciprocal Angstrom. Default is `zona=1.0`.
 
 ### Examples
 
-- CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
+* CuO, s,p and d on all Cu; sp$^3$ hybrids on O:
 
     `Cu:l=0;l=1;l=2`
 
     `O:l=-3` or `O:sp3`
 
-- A single projection onto a p$_z$ orbital orientated in the (1,1,1)
+* A single projection onto a p$_z$ orbital orientated in the (1,1,1)
 direction:
 
     `c=0,0,0:l=1,mr=1:z=1,1,1` or `c=0,0,0:pz:z=1,1,1`
 
-- Project onto s, p and d (with no radial nodes), and s and p (with
+* Project onto s, p and d (with no radial nodes), and s and p (with
 one radial node) in silicon:
 
     ```vi title="Input file"
@@ -148,34 +149,34 @@ direction. Default is `0,0,1`
 
 ### Spinor Examples
 
-- 18 projections on an iron site
+* 18 projections on an iron site
 
     `Fe:sp3d2;dxy;dxx;dyz`
 
-- same as above
+* same as above
 
     `Fe:sp3d2;dxy;dxx;dyz(u,d)`
 
-- same as above
+* same as above
 
     `Fe:sp3d2;dxy;dxz;dyz(u,d)[0,0,1]`
 
-- same as above but quantisation axis is now x
+* same as above but quantisation axis is now x
 
     `Fe:sp3d2;dxy;dxz;dyz(u,d)[1,0,0]`
 
-- now only 9 projections onto up states
+* now only 9 projections onto up states
 
     `Fe:sp3d2;dxy;dxz;dyz(u)`
 
-- 9 projections onto up-states and 3 on down
+* 9 projections onto up-states and 3 on down
 
     ```vi title="Input file"
     Fe:sp3d2;dxy;dxz;dyz(u)
     Fe:dxy;dxz;dyz(d)
     ```
 
-- projections onto alternate spin states for two lattice sites (Cr1,
+* projections onto alternate spin states for two lattice sites (Cr1,
     Cr2)
 
     ```vi title="Input file"
@@ -258,7 +259,7 @@ with particular values of $l$ and $m_{\mathrm{r}}$ for $l\ge0$.
 |           -2 |        1         |  `sp2-1`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $+\frac{1}{\sqrt{2}}$`py`                       |
 |           -2 |        2         |  `sp2-2`  | $\frac{1}{\sqrt{3}}$`s` $-\frac{1}{\sqrt{6}}$`px` $-\frac{1}{\sqrt{2}}$`py`                       |
 |           -2 |        3         |  `sp2-3`  |              $\frac{1}{\sqrt{3}}$`s` $+\frac{2}{\sqrt{6}}$`px`                                    |
-|           -3 |        1         |  `sp3-1`  |                $\frac{1}{2}$(`s` $+$ `px` $+$ `py`                                                |
+|           -3 |        1         |  `sp3-1`  |                $\frac{1}{2}$(`s` $+$ `px` $+$ `py` $+$ `pz`)                                                |
 |           -3 |        2         |  `sp3-2`  |                $\frac{1}{2}$(`s` $+$ `px` $-$ `py` $-$ `pz`)                                      |
 |           -3 |        3         |  `sp3-3`  |                $\frac{1}{2}$(`s` $-$ `px` $+$ `py` $-$ `pz`)                                      |
 |           -3 |        4         |  `sp3-4`  |                $\frac{1}{2}$(`s` $-$ `px` $-$ `py` $+$ `pz`)                                      |
@@ -302,11 +303,11 @@ novel materials with complex band structure, it may be extremely hard to
 identify *a-priori* a good initial guess for the projection functions
 used to generate the $A_{mn}^{(\mathbf{k})}$ matrices. In these cases,
 one can use a different approach, known as the SCDM-**k**
-method[@LinLin-ArXiv2017], based on a QR factorization with column
+method [@LinLin-ArXiv2017], based on a QR factorization with column
 pivoting (QRCP) of the density matrix from the self-consistent field
 calculation, which allows one to avoid the tedious step of specifying a
-projection block altogether, hence to avoid . This method is robust in
-generating well localised function with the correct spatial orientations
+projection block altogether. This method is robust in generating well
+localised functions with the correct spatial orientations
 and in general in finding the global minimum of the spread functional
 $\Omega$. Any electronic-structure code should in principle be able to
 implement the SCDM-**k** method within their interface with Wannier90,
@@ -364,8 +365,8 @@ tag `atom_proj = .true.`. This will ask `pw2wannier90` to read the
 pseudo-atomic orbitals from the pseudopotential files, and use them to
 compute the `amn` file.
 
-Some times, one may want to exclude semi-core states from
-Wannierisation, for such cases, one can inspect the stdout of
+Sometimes, one may want to exclude semi-core states from
+Wannierisation; for such cases, one can inspect the stdout of
 `pw2wannier90`, which will print the orbitals used for computing `amn`,
 e.g.,
 
@@ -388,7 +389,7 @@ state # 8: atom 2 (C ), wfc 2 (l=1 m= 3)
 
 Here it shows that there are two carbon atoms, each with one $s$ and
 three $p$ orbitals. If one wants to exclude specific orbital(s), there
-is an additional input `atom_proj_exclude`, which accept a list of
+is an additional input `atom_proj_exclude`, which accepts a list of
 integers, e.g.,
 
 ```vi title="Input file"
@@ -404,7 +405,7 @@ a custom set of orbitals, and ask `pw2wannier90` to use them for
 computing `amn`. This can be done by setting
 
 ```vi title="Input file"
-atom_proj_dir = './ext_proj'`
+atom_proj_dir = './ext_proj'
 ```
 
 where the directory `ext_proj` contains the orbitals for all the atomic
@@ -420,10 +421,10 @@ format of the file is:
     ```
 
     which means the radial grid has $n_g = 1141$ points, and there are
-    $n_p = 3$ projectors.
+    $n_p = 2$ projectors.
 
 2. The second line contains $n_p$ integers specifying the angular
-    momentums of all the projectors, e.g.,
+    momenta of all the projectors, e.g.,
 
     ```vi title="Input file"
     0 1

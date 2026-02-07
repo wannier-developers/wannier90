@@ -5,7 +5,7 @@ In `wannier90` v.2.1, a new flag `use_ws_distance` has been introduced
 `.false.` reproduces the "standard" behavior of `wannier90` in v.2.0.1
 and earlier, while setting it to `.true.` changes the interpolation
 method as described below. In general, this allows a smoother
-interpolation, helps reducing (a bit) the number of $k-$points required
+interpolation, helps reduce (a bit) the number of $k-$points required
 for interpolation, and reproduces the band structure of large supercells
 sampled at $\Gamma$ only (setting it to `.false.` produces instead flat
 bands, which might instead be the intended behaviour for small molecules
@@ -16,7 +16,7 @@ $w_{n\mathrm{\rm{R}}}(\mathrm{\rm{r}})$ that we build from
 $N\times M\times L$ $k-$points are actually periodic over a supercell of
 size $N\times M\times L$, but when you use them to interpolate you want
 them to be *zero* outside this supercell. In 1D it is pretty obvious
-want we mean here, but in 3D what you really want that they are zero
+what we mean here, but in 3D what you really want is that they are zero
 outside the Wigner--Seitz cell of the $N\times M\times L$ superlattice.
 
 The best way to impose this condition is to check that every real-space
@@ -28,13 +28,13 @@ distances are between Wannier functions which are not centred on
 $\mathrm{\rm{R}}=0$. Hence, when you want to consider the matrix element
 of a generic operator $\mathrm{\rm{O}}$ (i.e., the Hamiltonian)
 $\langle w_{i\mathrm{\rm{0}}}(\mathrm{\rm{r}})|\mathrm{\rm{O}}|w_{j\mathrm{\rm{R}}}(\mathrm{\rm{r}})\rangle$
-you must take in account that the centre $\mathrm{\rm{\tau}}_i$ of
+you must take into account that the centre $\mathrm{\rm{\tau}}_i$ of
 $w_{i\mathrm{\rm{0}}}(\mathrm{\rm{r}})$ may be very far away from
 $\mathrm{\rm{0}}$ and the centre $\mathrm{\rm{\tau}}_j$ of
 $w_{j\mathrm{\rm{R}}}(\mathrm{\rm{r}})$ may be very far away from
 $\mathrm{\rm{R}}$.
 
-There are many way to find the shortest possible distance between
+There are many ways to find the shortest possible distance between
 $w_{i\mathrm{\rm{0}}}(\mathrm{\rm{r}})$ and
 $w_{j\mathrm{\rm{R}}}(\mathrm{\rm{r}}-\mathrm{\rm{R}})$, the one used
 here is to consider the distance
@@ -70,7 +70,7 @@ actual centres of the Wannier functions. Using the centres of the
 unit-cell to which the Wannier functions belong is not enough (but is
 easier, and saves you one index).
 
-Point 3 is not stricly necessary, but using it helps enforcing the
+Point 3 is not strictly necessary, but using it helps enforcing the
 symmetry of the system in the resulting band structure. You will get
 some small but evident symmetry breaking in the band plots if you just
 pick one of the equivalent $\mathrm{\rm{\tilde R}}$ vectors.
@@ -81,11 +81,11 @@ a molecule carefully placed in the periodic cell).
 
 In some other cases, the effect may exist but be imperceptible. E.g., if
 you use a very fine grid of $k-$points, even if you don't centre each
-functions perfectly, the periodic copies will still be so far away that
-the change in centre applied with $\tt use\_ws\_distance$ does not
+function perfectly, the periodic copies will still be so far away that
+the change in centre applied with `use_ws_distance` does not
 matter.
 
-When instead you use few $k-$points, activating the
-$\tt use\_ws\_distance$ may help a lot in avoiding spurious oscillations
+When instead you use few $k-$points, activating `use_ws_distance` may
+help a lot in avoiding spurious oscillations
 of the band structure even when the Wannier functions are well
 converged.

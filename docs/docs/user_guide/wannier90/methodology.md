@@ -39,7 +39,7 @@ $$
 
 The total spread
 can be decomposed into a gauge invariant term $\Omega_{\rm I}$ plus a
-term ${\tilde \Omega}$ that is dependant on the gauge choice
+term ${\tilde \Omega}$ that is dependent on the gauge choice
 $\mathbf{U}^{(\mathbf{k})}$. ${\tilde \Omega}$ can be further divided
 into terms diagonal and off-diagonal in the WF basis, $\Omega_{\rm D}$
 and $\Omega_{\rm OD}$,
@@ -77,7 +77,7 @@ $$
 $$
 
 The MV method
-minimises the gauge dependent spread $\tilde{\Omega}$ with respect the
+minimises the gauge dependent spread $\tilde{\Omega}$ with respect to the
 set of $\mathbf{U}^{(\mathbf{k})}$ to obtain MLWF.
 
 `wannier90` requires two ingredients from an initial electronic
