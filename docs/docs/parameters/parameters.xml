@@ -348,7 +348,7 @@
   <parameter tool="w90">
     <name>write_vdw_data</name>
     <type>L</type>
-    <description>To write data for futher processing by w90vdw utility</description>
+    <description>To write data for further processing by w90vdw utility</description>
     <groups>
       <group>job</group>
     </groups>

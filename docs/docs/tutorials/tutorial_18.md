@@ -222,7 +222,7 @@ gnuplot
 plot 'Fe-kubo_A_xy.dat' u 1:2 w l
 ```
 
-Comapare the $\omega\rightarrow 0$ limit with the result obtained
+Compare the $\omega\rightarrow 0$ limit with the result obtained
 earlier by integrating the Berry curvature.
 
 !!! note

@@ -115,7 +115,7 @@ convention, but the individual terms that compose it do.
 On output, the program generates a set of 18 files named
 `SEED-sc_***.dat`, which correspond to the different tensor components
 of the shift current (note that the 9 remaining components until
-totaling $3\times3\times3=27$ can be obtained from the 18 outputed by
+totaling $3\times3\times3=27$ can be obtained from the 18 outputted by
 taking into account that $\sigma^{abc}$ is symmetric under
 $b\leftrightarrow c$ index exchange). For plotting the only finite
 shift-current component of GaAs $\sigma^{xyz}$ (units of A/V$^{2}$) as
