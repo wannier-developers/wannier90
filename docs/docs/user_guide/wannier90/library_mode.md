@@ -40,7 +40,7 @@ which is non-zero in case of error.  This allows the calling code to ignore
 errors in the Wannier90 library or to exit using the calling program's own error
 handling mechanism.  Synchronisation of error state across MPI ranks is
 performed prior to all MPI operations.  Error handling internally adopts the
-strategy developed by [Bálint Aradi](https://github.com/aradi/errorfx)
+strategy developed by [Bálint Aradi](https://github.com/aradi/errorfx).
 
 Section [Using the Library](#using-the-library) provides detailed instructions
 on using the library interface.
@@ -72,7 +72,7 @@ projections (Ref. [@marzari-prb97], Eq. (62); Ref. [@souza-prb01], Eq. (22))
 ```
 
 The library exposes a number of functions via a Fortran module that should be
-*use*d.  Use follows the following steps:
+*use*d.  Use follows these steps:
 
 1. create an instance of the [library data structure](#lib_common_type)
 2. set necessary control parameters/flags/options using
@@ -89,12 +89,12 @@ The library exposes a number of functions via a Fortran module that should be
 8. obtain the finite difference neighbour BZ offsets using
    [w90_get_gkpb](#w90_get_gkpb)
 9. (optionally) get projector definition corresponding to input string
-   [w90_get_proj](#w90_get_gkpb)
+   [w90_get_proj](#w90_get_proj)
 10. calculate projections and overlap
 11. pass pointers to $U$, $M$, $U^{opt}$ and (if disentangling) eigenvalue
     matrices using [w90_set_eigval](#w90_set_eigval),
 [w90_set_u_matrix](#w90_set_u_matrix), etc
-12. initial projections, $A$, should be stored in the u_opt matrix
+12. initial projections, $A$, should be stored in the $U^{opt}$ matrix
 13. if disentangling is required, call [w90_disentangle](#w90_disentangle)
 14. prepare for MLWF algorithm by projecting $M$, $U^{opt}$ onto subspace by
     calling [w90_project_overlap](#w90_project_overlap)

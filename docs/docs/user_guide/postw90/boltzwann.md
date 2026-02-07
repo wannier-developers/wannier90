@@ -168,7 +168,7 @@ tensor $\mathrm{\bm{\Sigma}}$ on a grid of energies.
 The first lines are comments (starting with \# characters) which
 describe the content of the file. Then, there is a line for each energy
 $\varepsilon$ on the grid, containing a number of columns. The first is
-the energy $\varepsilon$, the followings are the components if
+the energy $\varepsilon$, the following are the components if
 $\mathrm{\bm{\Sigma}}(\varepsilon)$ in the following order:
 $\Sigma_{xx}$, $\Sigma_{xy}$, $\Sigma_{yy}$, $\Sigma_{xz}$,
 $\Sigma_{yz}$, $\Sigma_{zz}$. If spin decomposition is required (input

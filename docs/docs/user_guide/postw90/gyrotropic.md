@@ -189,6 +189,6 @@ in a Wannier-function basis following Ref. [@yates-prb07].
 ## `gyrotropic_task=-spin`: compute also the spin component of NOA and KME
 
 Unless this task is specified, only the orbital contributions are
-calcuated in NOA and KME, thus contributions from
+calculated in NOA and KME, thus contributions from
 Eqs. $\eqref{eq:m-spin}$
 and $\eqref{eq:B-ac-spin}$ are omitted.
