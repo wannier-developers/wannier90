@@ -1287,7 +1287,6 @@ contains
       integer, intent(in) :: optimisation
 
       ! local
-      complex(kind=dp), external :: zdotc
       complex(kind=dp) :: fac, rdotk
       real(kind=dp) :: rvec_cart(3)
       real(kind=dp) :: alpha_precond
@@ -1408,8 +1407,8 @@ contains
       logical, intent(inout) :: lrandom
 
       ! local
-      complex(kind=dp), external :: zdotc
       integer :: m
+      complex(kind=dp) :: zres
 
       m = count(dist_k == mpirank(comm))*num_wann*num_wann ! for dimensioning
 
@@ -1419,9 +1418,13 @@ contains
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       if (wann_control%precond) then
-        gcnorm1 = real(zdotc(m, cdodq_precond_loc, 1, cdodq_loc, 1), dp)
+        ! compute (zdotc) cdodq_precond_loc.cdodq_loc^c
+        call zgemv('c', m, 1, cmplx_1, cdodq_precond_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
+        gcnorm1 = real(zres, dp)
       else
-        gcnorm1 = real(zdotc(m, cdodq_loc, 1, cdodq_loc, 1), dp)
+        ! compute (zdotc) cdodq_loc.cdodq_loc^c
+        call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
+        gcnorm1 = real(zres, dp)
       endif
       call comms_allreduce(gcnorm1, 1, 'SUM', error, comm)
       if (allocated(error)) return
@@ -1468,7 +1471,9 @@ contains
 
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
-      doda0 = -real(zdotc(m, cdodq_loc, 1, cdq_loc, 1), dp)
+      ! compute (zdotc) cdodq_loc.cdq_loc^c
+      call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdq_loc, 1, cmplx_0, zres, 1)
+      doda0 = -real(zres, dp)
 
       call comms_allreduce(doda0, 1, 'SUM', error, comm)
       if (allocated(error)) return
@@ -1489,7 +1494,9 @@ contains
           gcfac = 0.0_dp
 
           ! re-calculate gradient along search direction
-          doda0 = -real(zdotc(m, cdodq_loc, 1, cdq_loc, 1), dp)
+          ! compute (zdotc) cdodq_loc.cdq_loc^c
+          call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdq_loc, 1, cmplx_0, zres, 1)
+          doda0 = -real(zres, dp)
 
           call comms_allreduce(doda0, 1, 'SUM', error, comm)
           if (allocated(error)) return
