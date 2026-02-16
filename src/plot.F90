@@ -1647,18 +1647,24 @@ contains
       else
         wann_plot_num = 0
       endif
-      allocate (wann_func(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
-                          -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                          -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot_num), stat=ierr)
+
+      ! Supercell grid bounds
+      nxx_lo = -((ngs(1))/2)*ngx
+      nxx_hi = ((ngs(1) + 1)/2)*ngx - 1
+      nyy_lo = -((ngs(2))/2)*ngy
+      nyy_hi = ((ngs(2) + 1)/2)*ngy - 1
+      nzz_lo = -((ngs(3))/2)*ngz
+      nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
+      ngrid = ngx*ngy*ngz
+
+      allocate (wann_func(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, wann_plot_num), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier', comm)
         return
       endif
       wann_func = cmplx_0
       if (spinors) then
-        allocate (wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
-                               -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                               -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot_num), &
+        allocate (wann_func_nc(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, 2, wann_plot_num), &
                   stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_wannier', comm)
@@ -1693,15 +1699,6 @@ contains
           return
         endif
       endif
-
-      ! Supercell grid bounds
-      nxx_lo = -((ngs(1))/2)*ngx
-      nxx_hi = ((ngs(1) + 1)/2)*ngx - 1
-      nyy_lo = -((ngs(2))/2)*ngy
-      nyy_hi = ((ngs(2) + 1)/2)*ngy - 1
-      nzz_lo = -((ngs(3))/2)*ngz
-      nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
-      ngrid = ngx*ngy*ngz
 
       if (.not. spinors) then
         allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
@@ -1906,19 +1903,19 @@ contains
       end do !loop over kpoints
 
       if (spinors) then
-        call comms_reduce(wann_func_nc(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1, 1), &
+        call comms_reduce(wann_func_nc(nxx_lo, nyy_lo, nzz_lo, 1, 1), &
                           size(wann_func_nc), 'SUM', error, comm)
       else
-        call comms_reduce(wann_func(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1), &
+        call comms_reduce(wann_func(nxx_lo, nyy_lo, nzz_lo, 1), &
                           size(wann_func), 'SUM', error, comm)
       endif
       if (allocated(error)) return
 
       if (on_root) then
         if (spinors) then
-          do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-            do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-              do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+          do nzz = nzz_lo, nzz_hi
+            do nyy = nyy_lo, nyy_hi
+              do nxx = nxx_lo, nxx_hi
                 do loop_w = 1, wann_plot_num
                   upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
                                   conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
@@ -1958,9 +1955,9 @@ contains
           do loop_w = 1, wann_plot_num
             tmaxx = 0.0
             wmod = cmplx_1
-            do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-              do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-                do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+            do nzz = nzz_lo, nzz_hi
+              do nyy = nyy_lo, nyy_hi
+                do nxx = nxx_lo, nxx_hi
                   wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                   tmax = real(wann_func(nxx, nyy, nzz, loop_w)* &
                               conjg(wann_func(nxx, nyy, nzz, loop_w)), dp)
@@ -1982,9 +1979,9 @@ contains
           !
           do loop_w = 1, wann_plot_num
             ratmax = 0.0_dp
-            do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-              do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-                do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+            do nzz = nzz_lo, nzz_hi
+              do nyy = nyy_lo, nyy_hi
+                do nxx = nxx_lo, nxx_hi
                   if (abs(real(wann_func(nxx, nyy, nzz, loop_w), dp)) >= 0.01_dp) then
                     ratio = abs(aimag(wann_func(nxx, nyy, nzz, loop_w)))/ &
                             abs(real(wann_func(nxx, nyy, nzz, loop_w), dp))
@@ -2189,8 +2186,8 @@ contains
             izz = int((abs(qzz) - 1)/ngz)
 !            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
 !            if (qzz.gt.(ngs(3)-1)*ngz-1) then
-            if (qzz .lt. (-((ngs(3))/2)*ngz)) qzz = qzz + izz*ngz
-            if (qzz .gt. ((ngs(3) + 1)/2)*ngz - 1) then
+            if (qzz .lt. nzz_lo) qzz = qzz + izz*ngz
+            if (qzz .gt. nzz_hi) then
               write (stdout, *) 'Error plotting WF cube. Try one of the following:'
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2203,8 +2200,8 @@ contains
               iyy = int((abs(qyy) - 1)/ngy)
 !               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
 !               if (qyy.gt.(ngs(2)-1)*ngy-1) then
-              if (qyy .lt. (-((ngs(2))/2)*ngy)) qyy = qyy + iyy*ngy
-              if (qyy .gt. ((ngs(2) + 1)/2)*ngy - 1) then
+              if (qyy .lt. nyy_lo) qyy = qyy + iyy*ngy
+              if (qyy .gt. nyy_hi) then
                 write (stdout, *) 'Error plotting WF cube. Try one of the following:'
                 write (stdout, *) '   (1) increase wannier_plot_supercell;'
                 write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2217,8 +2214,8 @@ contains
                 ixx = int((abs(qxx) - 1)/ngx)
 !                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
 !                  if (qxx.gt.(ngs(1)-1)*ngx-1) then
-                if (qxx .lt. (-((ngs(1))/2)*ngx)) qxx = qxx + ixx*ngx
-                if (qxx .gt. ((ngs(1) + 1)/2)*ngx - 1) then
+                if (qxx .lt. nxx_lo) qxx = qxx + ixx*ngx
+                if (qxx .gt. nxx_hi) then
                   write (stdout, *) 'Error plotting WF cube. Try one of the following:'
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2423,8 +2420,8 @@ contains
           write (file_unit, '(3f12.7)') dirl(2, 1), dirl(2, 2), dirl(2, 3)
           write (file_unit, '(3f12.7)') dirl(3, 1), dirl(3, 2), dirl(3, 3)
           write (file_unit, '(6e13.5)') &
-            (((real(wann_func(nx, ny, nz, loop_b)), nx=-((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1), &
-              ny=-((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1), nz=-((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1)
+            (((real(wann_func(nx, ny, nz, loop_b)), nx=nxx_lo, nxx_hi), &
+              ny=nyy_lo, nyy_hi), nz=nzz_lo, nzz_hi)
           write (file_unit, '("END_DATAGRID_3D",/, "END_BLOCK_DATAGRID_3D")')
           close (file_unit)
 
