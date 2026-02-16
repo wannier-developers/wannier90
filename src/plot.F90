@@ -1888,19 +1888,17 @@ contains
               if (nx .lt. 1) nx = nx + ngx
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
               catmp = phase_x(nxx)*phase_yz
-              if (.not. spinors) then
-                do loop_w = 1, wann_plot_num
+              do loop_w = 1, wann_plot_num
+                if (.not. spinors) then
                   wann_func(nxx, nyy, nzz, loop_w) = &
                     wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
-                end do
-              else
-                do loop_w = 1, wann_plot_num
+                else
                   wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
                   wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
-                end do
-              endif
+                endif
+              end do
             end do
           end do
         end do
