@@ -2082,17 +2082,17 @@ contains
       integer, allocatable :: atomic_Z(:)
       logical :: lmol, lcrys
       character(len=2), dimension(109) :: periodic_table = (/ &
-           & 'H ', 'He', &
-           & 'Li', 'Be', 'B ', 'C ', 'N ', 'O ', 'F ', 'Ne', &
-           & 'Na', 'Mg', 'Al', 'Si', 'P ', 'S ', 'Cl', 'Ar', &
-           & 'K ', 'Ca', 'Sc', 'Ti', 'V ', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', &
-           & 'Rb', 'Sr', 'Y ', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I ', 'Xe', &
-           & 'Cs', 'Ba', &
-           & 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', &
-           & 'Hf', 'Ta', 'W ', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', &
-           & 'Fr', 'Ra', &
-           & 'Ac', 'Th', 'Pa', 'U ', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
-           & 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt'/)
+           & 'h ', 'he', &
+           & 'li', 'be', 'b ', 'c ', 'n ', 'o ', 'f ', 'ne', &
+           & 'na', 'mg', 'al', 'si', 'p ', 's ', 'cl', 'ar', &
+           & 'k ', 'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', &
+           & 'rb', 'sr', 'y ', 'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i ', 'xe', &
+           & 'cs', 'ba', &
+           & 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', &
+           & 'hf', 'ta', 'w ', 're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', &
+           & 'fr', 'ra', &
+           & 'ac', 'th', 'pa', 'u ', 'np', 'pu', 'am', 'cm', 'bk', 'cf', 'es', 'fm', 'md', 'no', 'lr', &
+           & 'rf', 'db', 'sg', 'bh', 'hs', 'mt'/)
 
       associate (ngs=>wannier_plot%supercell)
 
@@ -2112,6 +2112,7 @@ contains
 
         ! Assign atomic numbers to species
         max_elements = size(periodic_table)
+        atomic_Z(:) = 0
         do isp = 1, atom_data%num_species
           do iname = 1, max_elements
             if (atom_data%symbol(isp) .eq. periodic_table(iname)) then
@@ -2196,7 +2197,7 @@ contains
             write (stdout, '(a,3f12.6)') 'wann_cen=', (wannier_data%centres(i, wann_index), i=1, 3)
           endif
 
-          allocate (wann_cube(1:ilength(3), 1:ilength(2), 1:ilength(1)), stat=ierr)
+          allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
           if (ierr .ne. 0) then
             call set_error_alloc(error, 'Error: allocating wann_cube in wannier_plot', comm)
             return
@@ -2241,7 +2242,7 @@ contains
                   call set_error_warn(error, 'Error plotting WF cube.', comm)
                   return
                 endif
-                wann_cube(nzz, nyy, nxx) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
+                wann_cube(nxx, nyy, nzz) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
               enddo
             enddo
           enddo
@@ -2346,7 +2347,7 @@ contains
             do nyy = 1, ilength(2)
               do nzz = 1, ilength(3), 6
                 nend = min(nzz + 5, ilength(3))
-                write (file_unit, '(6E13.5)') wann_cube(nzz:nend, nyy, nxx)
+                write (file_unit, '(6E13.5)') wann_cube(nxx, nyy, nzz:nend)
               enddo
             enddo
           enddo
@@ -2426,7 +2427,7 @@ contains
           endif
           do nsp = 1, atom_data%num_species
             do nat = 1, atom_data%species_num(nsp)
-              write (file_unit, '(a2,3x,3f12.7)') atom_data%symbol(nsp), (atom_data%pos_cart(i, nat, nsp), i=1, 3)
+              write (file_unit, '(a2,3x,3f12.7)') atom_data%label(nsp), (atom_data%pos_cart(i, nat, nsp), i=1, 3)
             end do
           end do
 
@@ -3191,7 +3192,7 @@ contains
     end do
     do nsp = 1, atom_data%num_species
       do nat = 1, atom_data%species_num(nsp)
-        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%symbol(nsp), atom_data%pos_cart(:, nat, nsp)
+        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%label(nsp), atom_data%pos_cart(:, nat, nsp)
       end do
     end do
     close (xyz_unit)
