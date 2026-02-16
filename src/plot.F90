@@ -1839,26 +1839,22 @@ contains
         ! Contract band index: c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
         if (.not. spinors) then
           c_wvfn = cmplx_0
-          do loop_b = 1, num_wann
-            do loop_w = 1, wann_plot_num
-              uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
-              do npoint = 1, ngrid
-                c_wvfn(npoint, loop_w) = c_wvfn(npoint, loop_w) + uw*r_wvfn(npoint, loop_b)
-              end do
-            end do
-          end do
         else
           c_wvfn_nc = cmplx_0
-          do loop_b = 1, num_wann
-            do loop_w = 1, wann_plot_num
-              uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
-              do npoint = 1, ngrid
+        endif
+        do loop_b = 1, num_wann
+          do loop_w = 1, wann_plot_num
+            uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
+            do npoint = 1, ngrid
+              if (.not. spinors) then
+                c_wvfn(npoint, loop_w) = c_wvfn(npoint, loop_w) + uw*r_wvfn(npoint, loop_b)
+              else
                 c_wvfn_nc(npoint, loop_w, 1) = c_wvfn_nc(npoint, loop_w, 1) + uw*r_wvfn_nc(npoint, loop_b, 1)
                 c_wvfn_nc(npoint, loop_w, 2) = c_wvfn_nc(npoint, loop_w, 2) + uw*r_wvfn_nc(npoint, loop_b, 2)
-              end do
+              endif
             end do
           end do
-        endif
+        end do
 
         ! Precompute factored phase arrays for this k-point
         do nxx = nxx_lo, nxx_hi
@@ -1876,6 +1872,10 @@ contains
         !
         ! nx ny nz are the nxx nyy nzz brought back to the unit cell in
         ! which u_nk(r)=cptwrb(r,n)  is represented
+        !
+        ! There is a big performance improvement in looping over num_wann
+        ! in the inner loop. This is poor memory access for wann_func and
+        ! but the reduced number of operations wins out.
         do nzz = nzz_lo, nzz_hi
           nz = mod(nzz, ngz)
           if (nz .lt. 1) nz = nz + ngz
