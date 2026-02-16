@@ -1598,10 +1598,10 @@ contains
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)
 
-    ! ZGEMM pre-contraction arrays
-    complex(kind=dp), allocatable :: u_matrix_plot(:, :)
+    ! Pre-contracted wavefunction: band sum done once per unit cell point
     complex(kind=dp), allocatable :: c_wvfn(:, :)
     complex(kind=dp), allocatable :: c_wvfn_nc(:, :, :)
+    complex(kind=dp) :: uw, phase_yz
     integer :: ngrid
 
     ! Factored phase arrays
@@ -1694,7 +1694,7 @@ contains
         endif
       endif
 
-      ! Supercell grid bounds and total grid size
+      ! Supercell grid bounds
       nxx_lo = -((ngs(1))/2)*ngx
       nxx_hi = ((ngs(1) + 1)/2)*ngx - 1
       nyy_lo = -((ngs(2))/2)*ngy
@@ -1703,12 +1703,7 @@ contains
       nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
       ngrid = ngx*ngy*ngz
 
-      ! --- ZGEMM work arrays ---
-      allocate (u_matrix_plot(num_wann, wann_plot_num), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating u_matrix_plot in plot_wannier', comm)
-        return
-      endif
+      ! --- Pre-contraction work array ---
       if (.not. spinors) then
         allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
         if (ierr /= 0) then
@@ -1843,25 +1838,32 @@ contains
           endif
         end if
 
-        ! --- ZGEMM: contract band index ---
-        ! c_wvfn(ngrid, wann_plot_num) = r_wvfn(ngrid, num_wann) @ u_matrix_plot(num_wann, wann_plot_num)
-        do loop_w = 1, wann_plot_num
-          u_matrix_plot(:, loop_w) = u_matrix(:, wannier_plot%list(loop_w), loop_kpt)
-        end do
+        ! --- Contract band index per unit cell point (stride-1, vectorisable) ---
+        ! c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
+        ! This is done once per k-point over the unit cell grid (ngrid points).
+        ! The supercell loop then reuses c_wvfn 27 times (for supercell=3)
+        ! instead of recomputing the band sum at every replica.
         if (.not. spinors) then
-          call zgemm('N', 'N', ngrid, wann_plot_num, num_wann, &
-                     cmplx_1, r_wvfn(1, 1), ngrid, &
-                     u_matrix_plot(1, 1), num_wann, &
-                     cmplx_0, c_wvfn(1, 1), ngrid)
+          c_wvfn = cmplx_0
+          do loop_b = 1, num_wann
+            do loop_w = 1, wann_plot_num
+              uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
+              do npoint = 1, ngrid
+                c_wvfn(npoint, loop_w) = c_wvfn(npoint, loop_w) + uw*r_wvfn(npoint, loop_b)
+              end do
+            end do
+          end do
         else
-          call zgemm('N', 'N', ngrid, wann_plot_num, num_wann, &
-                     cmplx_1, r_wvfn_nc(1, 1, 1), ngrid, &
-                     u_matrix_plot(1, 1), num_wann, &
-                     cmplx_0, c_wvfn_nc(1, 1, 1), ngrid)
-          call zgemm('N', 'N', ngrid, wann_plot_num, num_wann, &
-                     cmplx_1, r_wvfn_nc(1, 1, 2), ngrid, &
-                     u_matrix_plot(1, 1), num_wann, &
-                     cmplx_0, c_wvfn_nc(1, 1, 2), ngrid)
+          c_wvfn_nc = cmplx_0
+          do loop_b = 1, num_wann
+            do loop_w = 1, wann_plot_num
+              uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
+              do npoint = 1, ngrid
+                c_wvfn_nc(npoint, loop_w, 1) = c_wvfn_nc(npoint, loop_w, 1) + uw*r_wvfn_nc(npoint, loop_b, 1)
+                c_wvfn_nc(npoint, loop_w, 2) = c_wvfn_nc(npoint, loop_w, 2) + uw*r_wvfn_nc(npoint, loop_b, 2)
+              end do
+            end do
+          end do
         endif
 
         ! --- Precompute factored phase arrays for this k-point ---
@@ -1876,37 +1878,51 @@ contains
         end do
 
         ! --- Accumulate Wannier function on supercell grid ---
-        ! The band loop has been eliminated by the ZGEMM contraction above.
-        ! The exp() has been factored into 1D phase arrays.
-        do nzz = nzz_lo, nzz_hi
-          nz = mod(nzz, ngz)
-          if (nz .lt. 1) nz = nz + ngz
-          do nyy = nyy_lo, nyy_hi
-            ny = mod(nyy, ngy)
-            if (ny .lt. 1) ny = ny + ngy
-            do nxx = nxx_lo, nxx_hi
-              nx = mod(nxx, ngx)
-              if (nx .lt. 1) nx = nx + ngx
-
-              npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-              catmp = phase_x(nxx)*phase_y(nyy)*phase_z(nzz)
-
-              if (.not. spinors) then
+        ! The band loop has been eliminated by the contraction above.
+        ! Each unit cell point's contracted value is reused ngs(1)*ngs(2)*ngs(3) times.
+        if (.not. spinors) then
+          do nzz = nzz_lo, nzz_hi
+            nz = mod(nzz, ngz)
+            if (nz .lt. 1) nz = nz + ngz
+            do nyy = nyy_lo, nyy_hi
+              ny = mod(nyy, ngy)
+              if (ny .lt. 1) ny = ny + ngy
+              phase_yz = phase_y(nyy)*phase_z(nzz)
+              do nxx = nxx_lo, nxx_hi
+                nx = mod(nxx, ngx)
+                if (nx .lt. 1) nx = nx + ngx
+                npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
+                catmp = phase_x(nxx)*phase_yz
                 do loop_w = 1, wann_plot_num
                   wann_func(nxx, nyy, nzz, loop_w) = &
                     wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
                 end do
-              else
+              end do
+            end do
+          end do
+        else
+          do nzz = nzz_lo, nzz_hi
+            nz = mod(nzz, ngz)
+            if (nz .lt. 1) nz = nz + ngz
+            do nyy = nyy_lo, nyy_hi
+              ny = mod(nyy, ngy)
+              if (ny .lt. 1) ny = ny + ngy
+              phase_yz = phase_y(nyy)*phase_z(nzz)
+              do nxx = nxx_lo, nxx_hi
+                nx = mod(nxx, ngx)
+                if (nx .lt. 1) nx = nx + ngx
+                npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
+                catmp = phase_x(nxx)*phase_yz
                 do loop_w = 1, wann_plot_num
                   wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
                   wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
                 end do
-              endif
+              end do
             end do
           end do
-        end do
+        endif
 
       end do !loop over kpoints
 
@@ -2021,7 +2037,6 @@ contains
     ! --- Cleanup ---
     if (allocated(c_wvfn)) deallocate (c_wvfn)
     if (allocated(c_wvfn_nc)) deallocate (c_wvfn_nc)
-    if (allocated(u_matrix_plot)) deallocate (u_matrix_plot)
     if (allocated(phase_x)) deallocate (phase_x)
     if (allocated(phase_y)) deallocate (phase_y)
     if (allocated(phase_z)) deallocate (phase_z)
@@ -2061,7 +2076,7 @@ contains
       real(kind=dp) :: comf(3), wcf(3), diff(3), difc(3), dist
       integer :: ierr, iname, max_elements
       integer :: isp, iat, nzz, nyy, nxx, loop_w, qxx, qyy, qzz, wann_index
-      integer :: istart(3), iend(3), ilength(3)
+      integer :: istart(3), iend(3), ilength(3), nend
       integer :: ixx, iyy, izz
       integer :: irdiff(3), icount
       integer, allocatable :: atomic_Z(:)
@@ -2181,7 +2196,7 @@ contains
             write (stdout, '(a,3f12.6)') 'wann_cen=', (wannier_data%centres(i, wann_index), i=1, 3)
           endif
 
-          allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
+          allocate (wann_cube(1:ilength(3), 1:ilength(2), 1:ilength(1)), stat=ierr)
           if (ierr .ne. 0) then
             call set_error_alloc(error, 'Error: allocating wann_cube in wannier_plot', comm)
             return
@@ -2190,13 +2205,11 @@ contains
           ! initialise
           wann_cube = 0.0_dp
 
-          do nzz = 1, ilength(3)
-            qzz = nzz + istart(3) - 1
-            izz = int((abs(qzz) - 1)/ngz)
-!            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
-!            if (qzz.gt.(ngs(3)-1)*ngz-1) then
-            if (qzz .lt. (-((ngs(3))/2)*ngz)) qzz = qzz + izz*ngz
-            if (qzz .gt. ((ngs(3) + 1)/2)*ngz - 1) then
+          do nxx = 1, ilength(1)
+            qxx = nxx + istart(1) - 1
+            ixx = int((abs(qxx) - 1)/ngx)
+            if (qxx .lt. (-((ngs(1))/2)*ngx)) qxx = qxx + ixx*ngx
+            if (qxx .gt. ((ngs(1) + 1)/2)*ngx - 1) then
               write (stdout, *) 'Error plotting WF cube. Try one of the following:'
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2207,8 +2220,6 @@ contains
             do nyy = 1, ilength(2)
               qyy = nyy + istart(2) - 1
               iyy = int((abs(qyy) - 1)/ngy)
-!               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
-!               if (qyy.gt.(ngs(2)-1)*ngy-1) then
               if (qyy .lt. (-((ngs(2))/2)*ngy)) qyy = qyy + iyy*ngy
               if (qyy .gt. ((ngs(2) + 1)/2)*ngy - 1) then
                 write (stdout, *) 'Error plotting WF cube. Try one of the following:'
@@ -2218,13 +2229,11 @@ contains
                 call set_error_warn(error, 'Error plotting WF cube.', comm)
                 return
               endif
-              do nxx = 1, ilength(1)
-                qxx = nxx + istart(1) - 1
-                ixx = int((abs(qxx) - 1)/ngx)
-!                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
-!                  if (qxx.gt.(ngs(1)-1)*ngx-1) then
-                if (qxx .lt. (-((ngs(1))/2)*ngx)) qxx = qxx + ixx*ngx
-                if (qxx .gt. ((ngs(1) + 1)/2)*ngx - 1) then
+              do nzz = 1, ilength(3)
+                qzz = nzz + istart(3) - 1
+                izz = int((abs(qzz) - 1)/ngz)
+                if (qzz .lt. (-((ngs(3))/2)*ngz)) qzz = qzz + izz*ngz
+                if (qzz .gt. ((ngs(3) + 1)/2)*ngz - 1) then
                   write (stdout, *) 'Error plotting WF cube. Try one of the following:'
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2232,7 +2241,7 @@ contains
                   call set_error_warn(error, 'Error plotting WF cube.', comm)
                   return
                 endif
-                wann_cube(nxx, nyy, nzz) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
+                wann_cube(nzz, nyy, nxx) = real(wann_func(qxx, qyy, qzz, loop_w), dp)
               enddo
             enddo
           enddo
@@ -2335,9 +2344,9 @@ contains
           ! Volumetric data in batches of 6 values per line, 'z'-direction first.
           do nxx = 1, ilength(1)
             do nyy = 1, ilength(2)
-              do nzz = 1, ilength(3)
-                write (file_unit, '(E13.5)', advance='no') wann_cube(nxx, nyy, nzz)
-                if ((mod(nzz, 6) .eq. 0) .or. (nzz .eq. ilength(3))) write (file_unit, '(a)') ''
+              do nzz = 1, ilength(3), 6
+                nend = min(nzz + 5, ilength(3))
+                write (file_unit, '(6E13.5)') wann_cube(nzz:nend, nyy, nxx)
               enddo
             enddo
           enddo
