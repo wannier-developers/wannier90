@@ -1703,7 +1703,6 @@ contains
       nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
       ngrid = ngx*ngy*ngz
 
-      ! --- Pre-contraction work array ---
       if (.not. spinors) then
         allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
         if (ierr /= 0) then
@@ -1718,7 +1717,6 @@ contains
         endif
       endif
 
-      ! --- Factored phase arrays ---
       allocate (phase_x(nxx_lo:nxx_hi), phase_y(nyy_lo:nyy_hi), phase_z(nzz_lo:nzz_hi), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating phase arrays in plot_wannier', comm)
@@ -1838,11 +1836,7 @@ contains
           endif
         end if
 
-        ! --- Contract band index per unit cell point (stride-1, vectorisable) ---
-        ! c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
-        ! This is done once per k-point over the unit cell grid (ngrid points).
-        ! The supercell loop then reuses c_wvfn 27 times (for supercell=3)
-        ! instead of recomputing the band sum at every replica.
+        ! Contract band index: c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
         if (.not. spinors) then
           c_wvfn = cmplx_0
           do loop_b = 1, num_wann
@@ -1866,7 +1860,7 @@ contains
           end do
         endif
 
-        ! --- Precompute factored phase arrays for this k-point ---
+        ! Precompute factored phase arrays for this k-point
         do nxx = nxx_lo, nxx_hi
           phase_x(nxx) = exp(twopi*cmplx_i*kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp))
         end do
@@ -1877,52 +1871,39 @@ contains
           phase_z(nzz) = exp(twopi*cmplx_i*kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp))
         end do
 
-        ! --- Accumulate Wannier function on supercell grid ---
-        ! The band loop has been eliminated by the contraction above.
-        ! Each unit cell point's contracted value is reused ngs(1)*ngs(2)*ngs(3) times.
-        if (.not. spinors) then
-          do nzz = nzz_lo, nzz_hi
-            nz = mod(nzz, ngz)
-            if (nz .lt. 1) nz = nz + ngz
-            do nyy = nyy_lo, nyy_hi
-              ny = mod(nyy, ngy)
-              if (ny .lt. 1) ny = ny + ngy
-              phase_yz = phase_y(nyy)*phase_z(nzz)
-              do nxx = nxx_lo, nxx_hi
-                nx = mod(nxx, ngx)
-                if (nx .lt. 1) nx = nx + ngx
-                npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-                catmp = phase_x(nxx)*phase_yz
+        ! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
+        ! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
+        !
+        ! nx ny nz are the nxx nyy nzz brought back to the unit cell in
+        ! which u_nk(r)=cptwrb(r,n)  is represented
+        do nzz = nzz_lo, nzz_hi
+          nz = mod(nzz, ngz)
+          if (nz .lt. 1) nz = nz + ngz
+          do nyy = nyy_lo, nyy_hi
+            ny = mod(nyy, ngy)
+            if (ny .lt. 1) ny = ny + ngy
+            phase_yz = phase_y(nyy)*phase_z(nzz)
+            do nxx = nxx_lo, nxx_hi
+              nx = mod(nxx, ngx)
+              if (nx .lt. 1) nx = nx + ngx
+              npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
+              catmp = phase_x(nxx)*phase_yz
+              if (.not. spinors) then
                 do loop_w = 1, wann_plot_num
                   wann_func(nxx, nyy, nzz, loop_w) = &
                     wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
                 end do
-              end do
-            end do
-          end do
-        else
-          do nzz = nzz_lo, nzz_hi
-            nz = mod(nzz, ngz)
-            if (nz .lt. 1) nz = nz + ngz
-            do nyy = nyy_lo, nyy_hi
-              ny = mod(nyy, ngy)
-              if (ny .lt. 1) ny = ny + ngy
-              phase_yz = phase_y(nyy)*phase_z(nzz)
-              do nxx = nxx_lo, nxx_hi
-                nx = mod(nxx, ngx)
-                if (nx .lt. 1) nx = nx + ngx
-                npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-                catmp = phase_x(nxx)*phase_yz
+              else
                 do loop_w = 1, wann_plot_num
                   wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
                   wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
                 end do
-              end do
+              endif
             end do
           end do
-        endif
+        end do
 
       end do !loop over kpoints
 
@@ -2034,7 +2015,6 @@ contains
 
     end associate
 
-    ! --- Cleanup ---
     if (allocated(c_wvfn)) deallocate (c_wvfn)
     if (allocated(c_wvfn_nc)) deallocate (c_wvfn_nc)
     if (allocated(phase_x)) deallocate (phase_x)
