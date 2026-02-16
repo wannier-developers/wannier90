@@ -1573,7 +1573,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    real(kind=dp) :: scalfac, tmax, tmaxx, x_0ang, y_0ang, z_0ang
+    real(kind=dp) :: tmax, tmaxx, x_0ang, y_0ang, z_0ang
     real(kind=dp) :: fxcry(3), dirl(3, 3), w_real, w_imag, ratmax, ratio
     real(kind=dp) :: upspinor, dnspinor, upphase, dnphase
 
@@ -1597,6 +1597,16 @@ contains
     character(len=60) :: wanxsf, wancube
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)
+
+    ! ZGEMM pre-contraction arrays
+    complex(kind=dp), allocatable :: u_matrix_plot(:, :)
+    complex(kind=dp), allocatable :: c_wvfn(:, :)
+    complex(kind=dp), allocatable :: c_wvfn_nc(:, :, :)
+    integer :: ngrid
+
+    ! Factored phase arrays
+    complex(kind=dp), allocatable :: phase_x(:), phase_y(:), phase_z(:)
+    integer :: nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
@@ -1682,6 +1692,42 @@ contains
           call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_wannier', comm)
           return
         endif
+      endif
+
+      ! Supercell grid bounds and total grid size
+      nxx_lo = -((ngs(1))/2)*ngx
+      nxx_hi = ((ngs(1) + 1)/2)*ngx - 1
+      nyy_lo = -((ngs(2))/2)*ngy
+      nyy_hi = ((ngs(2) + 1)/2)*ngy - 1
+      nzz_lo = -((ngs(3))/2)*ngz
+      nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
+      ngrid = ngx*ngy*ngz
+
+      ! --- ZGEMM work arrays ---
+      allocate (u_matrix_plot(num_wann, wann_plot_num), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating u_matrix_plot in plot_wannier', comm)
+        return
+      endif
+      if (.not. spinors) then
+        allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating c_wvfn in plot_wannier', comm)
+          return
+        endif
+      else
+        allocate (c_wvfn_nc(ngrid, wann_plot_num, 2), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating c_wvfn_nc in plot_wannier', comm)
+          return
+        endif
+      endif
+
+      ! --- Factored phase arrays ---
+      allocate (phase_x(nxx_lo:nxx_hi), phase_y(nyy_lo:nyy_hi), phase_z(nzz_lo:nzz_hi), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating phase arrays in plot_wannier', comm)
+        return
       endif
 
       call io_date(cdate, ctime)
@@ -1797,73 +1843,67 @@ contains
           endif
         end if
 
-        ! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
-        ! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
-        !
-        ! nx ny nz are the nxx nyy nzz brought back to the unit cell in
-        ! which u_nk(r)=cptwrb(r,n)  is represented
-        !
-        ! There is a big performance improvement in looping over num_wann
-        ! in the inner loop. This is poor memory access for wann_func and
-        ! but the reduced number of operations wins out.
+        ! --- ZGEMM: contract band index ---
+        ! c_wvfn(ngrid, wann_plot_num) = r_wvfn(ngrid, num_wann) @ u_matrix_plot(num_wann, wann_plot_num)
+        do loop_w = 1, wann_plot_num
+          u_matrix_plot(:, loop_w) = u_matrix(:, wannier_plot%list(loop_w), loop_kpt)
+        end do
+        if (.not. spinors) then
+          call zgemm('N', 'N', ngrid, wann_plot_num, num_wann, &
+                     cmplx_1, r_wvfn(1, 1), ngrid, &
+                     u_matrix_plot(1, 1), num_wann, &
+                     cmplx_0, c_wvfn(1, 1), ngrid)
+        else
+          call zgemm('N', 'N', ngrid, wann_plot_num, num_wann, &
+                     cmplx_1, r_wvfn_nc(1, 1, 1), ngrid, &
+                     u_matrix_plot(1, 1), num_wann, &
+                     cmplx_0, c_wvfn_nc(1, 1, 1), ngrid)
+          call zgemm('N', 'N', ngrid, wann_plot_num, num_wann, &
+                     cmplx_1, r_wvfn_nc(1, 1, 2), ngrid, &
+                     u_matrix_plot(1, 1), num_wann, &
+                     cmplx_0, c_wvfn_nc(1, 1, 2), ngrid)
+        endif
 
-        do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
+        ! --- Precompute factored phase arrays for this k-point ---
+        do nxx = nxx_lo, nxx_hi
+          phase_x(nxx) = exp(twopi*cmplx_i*kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp))
+        end do
+        do nyy = nyy_lo, nyy_hi
+          phase_y(nyy) = exp(twopi*cmplx_i*kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp))
+        end do
+        do nzz = nzz_lo, nzz_hi
+          phase_z(nzz) = exp(twopi*cmplx_i*kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp))
+        end do
+
+        ! --- Accumulate Wannier function on supercell grid ---
+        ! The band loop has been eliminated by the ZGEMM contraction above.
+        ! The exp() has been factored into 1D phase arrays.
+        do nzz = nzz_lo, nzz_hi
           nz = mod(nzz, ngz)
           if (nz .lt. 1) nz = nz + ngz
-          do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
+          do nyy = nyy_lo, nyy_hi
             ny = mod(nyy, ngy)
             if (ny .lt. 1) ny = ny + ngy
-            do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+            do nxx = nxx_lo, nxx_hi
               nx = mod(nxx, ngx)
               if (nx .lt. 1) nx = nx + ngx
 
-              scalfac = kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp) + &
-                        kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp) + &
-                        kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp)
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-              catmp = exp(twopi*cmplx_i*scalfac)
-              do loop_b = 1, num_wann
+              catmp = phase_x(nxx)*phase_y(nyy)*phase_z(nzz)
+
+              if (.not. spinors) then
                 do loop_w = 1, wann_plot_num
-                  if (.not. spinors) then
-                    wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w) + &
-                                                       u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)* &
-                                                       r_wvfn(npoint, loop_b)*catmp
-                  else
-                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
-                      wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
-                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
-                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
-                      wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
-                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
-                    if (loop_b == num_wann) then ! last loop
-                      upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
-                                      conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
-                      dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
-                                      conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
-                      if (wannier_plot%spinor_phase) then
-                        upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
-                        dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
-                      else
-                        upphase = 1.0_dp; dnphase = 1.0_dp
-                      endif
-                      select case (wannier_plot%spinor_mode)
-                      case ('total')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor + dnspinor), 0.0_dp, dp)
-                      case ('up')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor), 0.0_dp, dp)*upphase
-                      case ('down')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
-                      case default
-                        call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wannier_plot%spinor_mode), comm)
-                        return
-                      end select
-                      wann_func(nxx, nyy, nzz, loop_w) = &
-                        wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
-                    endif
-                  endif
+                  wann_func(nxx, nyy, nzz, loop_w) = &
+                    wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
                 end do
-              end do
+              else
+                do loop_w = 1, wann_plot_num
+                  wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
+                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
+                  wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
+                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
+                end do
+              endif
             end do
           end do
         end do
@@ -1977,6 +2017,14 @@ contains
       end if !on_root
 
     end associate
+
+    ! --- Cleanup ---
+    if (allocated(c_wvfn)) deallocate (c_wvfn)
+    if (allocated(c_wvfn_nc)) deallocate (c_wvfn_nc)
+    if (allocated(u_matrix_plot)) deallocate (u_matrix_plot)
+    if (allocated(phase_x)) deallocate (phase_x)
+    if (allocated(phase_y)) deallocate (phase_y)
+    if (allocated(phase_z)) deallocate (phase_z)
 
     return
 
