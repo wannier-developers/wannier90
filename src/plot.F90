@@ -2206,11 +2206,13 @@ contains
           ! initialise
           wann_cube = 0.0_dp
 
-          do nxx = 1, ilength(1)
-            qxx = nxx + istart(1) - 1
-            ixx = int((abs(qxx) - 1)/ngx)
-            if (qxx .lt. (-((ngs(1))/2)*ngx)) qxx = qxx + ixx*ngx
-            if (qxx .gt. ((ngs(1) + 1)/2)*ngx - 1) then
+          do nzz = 1, ilength(3)
+            qzz = nzz + istart(3) - 1
+            izz = int((abs(qzz) - 1)/ngz)
+!            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
+!            if (qzz.gt.(ngs(3)-1)*ngz-1) then
+            if (qzz .lt. (-((ngs(3))/2)*ngz)) qzz = qzz + izz*ngz
+            if (qzz .gt. ((ngs(3) + 1)/2)*ngz - 1) then
               write (stdout, *) 'Error plotting WF cube. Try one of the following:'
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2221,6 +2223,8 @@ contains
             do nyy = 1, ilength(2)
               qyy = nyy + istart(2) - 1
               iyy = int((abs(qyy) - 1)/ngy)
+!               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
+!               if (qyy.gt.(ngs(2)-1)*ngy-1) then
               if (qyy .lt. (-((ngs(2))/2)*ngy)) qyy = qyy + iyy*ngy
               if (qyy .gt. ((ngs(2) + 1)/2)*ngy - 1) then
                 write (stdout, *) 'Error plotting WF cube. Try one of the following:'
@@ -2230,11 +2234,13 @@ contains
                 call set_error_warn(error, 'Error plotting WF cube.', comm)
                 return
               endif
-              do nzz = 1, ilength(3)
-                qzz = nzz + istart(3) - 1
-                izz = int((abs(qzz) - 1)/ngz)
-                if (qzz .lt. (-((ngs(3))/2)*ngz)) qzz = qzz + izz*ngz
-                if (qzz .gt. ((ngs(3) + 1)/2)*ngz - 1) then
+              do nxx = 1, ilength(1)
+                qxx = nxx + istart(1) - 1
+                ixx = int((abs(qxx) - 1)/ngx)
+!                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
+!                  if (qxx.gt.(ngs(1)-1)*ngx-1) then
+                if (qxx .lt. (-((ngs(1))/2)*ngx)) qxx = qxx + ixx*ngx
+                if (qxx .gt. ((ngs(1) + 1)/2)*ngx - 1) then
                   write (stdout, *) 'Error plotting WF cube. Try one of the following:'
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
