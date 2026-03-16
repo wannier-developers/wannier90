@@ -34,9 +34,9 @@ jobs:
           # PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-signatures: ".cla/version1/signatures.json"
-          path-to-document: "https://github.com/wannier-developers/wannier90/blob/main/.cla/version1/CLA.md"
+          path-to-document: "https://github.com/wannier-developers/wannier90/blob/develop/.cla/version1/CLA.md"
           # branch should not be protected
-          branch: "main"
+          branch: "develop"
           allowlist: bot*
 
           # the followings are the optional inputs - If the optional inputs are not given, then default values will be taken
@@ -44,7 +44,7 @@ jobs:
           #remote-repository-name: enter the  remote repository name where the signatures should be stored (Default is storing the signatures in the same repository)
           #create-file-commit-message: 'For example: Creating file for storing CLA Signatures'
           #signed-commit-message: 'For example: $contributorName has signed the CLA in $owner/$repo#$pullRequestNo'
-          custom-notsigned-prcomment: 'Thank you for your submission, we really appreciate it. Like many open-source projects, we ask that you accept our [Contributor License Agreement](https://github.com/wannier-developers/wannier90/blob/main/.cla/version1/CLA.md) before we can merge your contribution. You can accept the CLA by just copying the sentence below and posting it as a Pull Request Comment.'
+          custom-notsigned-prcomment: 'Thank you for your submission, we really appreciate it. Like many open-source projects, we ask that you accept our [Contributor License Agreement](https://github.com/wannier-developers/wannier90/blob/develop/.cla/version1/CLA.md) before we can merge your contribution. You can accept the CLA by just copying the sentence below and posting it as a Pull Request Comment.'
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby accept the CLA'
           custom-allsigned-prcomment: |
             All contributors have accepted the CLA ✅
