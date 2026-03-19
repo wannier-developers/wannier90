@@ -36,7 +36,7 @@ fermi_energy = 12.6631
 
 transl_inv = F
 transl_inv_full=T
-higher_order_n=2 
+higher_order_n=2
 
 begin kpoints
   0.00000000  0.00000000  0.00000000

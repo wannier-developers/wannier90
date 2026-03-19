@@ -13,7 +13,7 @@
 
 
 \begin{enumerate}
-	\item {\it Inspect the output file \tt{silicon.wout}.} 
+	\item {\it Inspect the output file \tt{silicon.wout}.}
 
 	Starting from 4 $sp3$ orbitals on each Silicon atom we obtain two sets of 4 WFs, all with the same spread, that show the $sp3$ character one would expect from symmetry considerations. A summary of the wannierisation is given in tab.\ref{tab3.1}. At the end of the {\tt .wout} file you should find the info on the final state of the minimization, here we show an extract of the output file
 	\begin{tcolorbox}[sharp corners,boxrule=0.5pt]
@@ -29,7 +29,7 @@
   WF centre and spread    7  (  0.888640,  1.810140,  0.888660 )     1.81240614
   WF centre and spread    8  (  0.888643,  0.888652,  1.810090 )     1.81245230
   Sum of centres and spreads (  5.397417,  5.397539,  5.397353 )    14.49957450
- 
+
          Spreads (Ang^2)       Omega I      =    11.849193709
         ================       Omega D      =     0.105470243
                                Omega OD     =     2.544910550
@@ -66,12 +66,12 @@ K 0.37500 -0.37500 0.0000 G 0.00000  \phantom{-}0.00000 0.0000
 
 end kpoint\_path
 	\end{quote}}
-	which gives the bandstructure shown in \Fig{fig3.2}-(a)-bottom. 
+	which gives the bandstructure shown in \Fig{fig3.2}-(a)-bottom.
 
-	\item[Extra :] {\it Try plotting along different paths.} 
+	\item[Extra :] {\it Try plotting along different paths.}
 
 	Another path usually used for Silicon is \mbox{W-$\Gamma$-X-W-L-$\Gamma$} shown in \Fig{fig3.1}-(b)-top and the corresponding bands are shown in \Fig{fig3.2}-(b)-bottom. To obtain this path you need to replace the previous {\tt kpoint\_path} block with the following block
-	{\tt 
+	{\tt
 	\begin{quote}
 	begin kpoint\_path
 
@@ -86,7 +86,7 @@ end kpoint\_path
 	L  \phantom{-}0.00000  0.50000  \phantom{-}0.00000 G  \phantom{-}0.00000  0.00000  \phantom{-}0.00000
 
     end kpoint\_path
-	\end{quote}} 
+	\end{quote}}
 
 	\begin{figure}[t!]
 	\centering

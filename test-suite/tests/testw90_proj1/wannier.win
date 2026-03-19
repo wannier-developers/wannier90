@@ -1,4 +1,4 @@
-num_wann 5 
+num_wann 5
 
 spinors : false
 
@@ -8,15 +8,14 @@ End projections
 
 begin unit_cell_cart
 Bohr
-10 0 0 
+10 0 0
 0 10 0
 0 0 10
 end unit_cell_cart
 begin atoms_frac
-Bi  0.2338900  0.2338900  0.2338900 
+Bi  0.2338900  0.2338900  0.2338900
 end atoms_frac
-mp_grid: 1 1 1 
+mp_grid: 1 1 1
 begin kpoints
-0 0 0 
+0 0 0
 end kpoints
-

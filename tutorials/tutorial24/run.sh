@@ -76,5 +76,3 @@ cat input/Te.win >> Te.win
 $postw90cmd Te
 cp Te.win Te.win-NOA
 mv Te.wpout Te.wpout-NOA
-
-

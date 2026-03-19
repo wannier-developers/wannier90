@@ -232,7 +232,7 @@ contains
       valid_communicator = .false.
     else
       valid_communicator = .true.
-    endif
+    end if
 #else
     valid_communicator = .true.
 #endif
@@ -712,14 +712,14 @@ contains
                         ierr)
       else
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_SUM, root_id, comm%comm, ierr)
-      endif
+      end if
     case ('PRD')
       if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_INTEGER, MPI_PROD, root_id, comm%comm, &
                         ierr)
       else
         call mpi_reduce(array, array, size, MPI_INTEGER, MPI_PROD, root_id, comm%comm, ierr)
-      endif
+      end if
     case default
       call set_base_error(error, 'Unknown operation in comms_reduce_int', code_mpi)
       return
@@ -758,7 +758,7 @@ contains
       else
         call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_SUM, root_id, comm%comm, &
                         ierr)
-      endif
+      end if
     case ('PRD')
       if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, &
@@ -766,7 +766,7 @@ contains
       else
         call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_PROD, root_id, comm%comm, &
                         ierr)
-      endif
+      end if
     case ('MIN')
       if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, &
@@ -774,7 +774,7 @@ contains
       else
         call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_MIN, root_id, comm%comm, &
                         ierr)
-      endif
+      end if
     case ('MAX')
       if (rank == root_id) then
         call mpi_reduce(MPI_IN_PLACE, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, &
@@ -782,7 +782,7 @@ contains
       else
         call mpi_reduce(array, array, size, MPI_DOUBLE_PRECISION, MPI_MAX, root_id, comm%comm, &
                         ierr)
-      endif
+      end if
     case default
       call set_base_error(error, 'Unknown operation in comms_reduce_real', code_mpi)
       return

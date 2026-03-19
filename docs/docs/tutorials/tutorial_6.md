@@ -62,9 +62,9 @@ Inspect the output file `copper.wout`.
 
     ```vi title="Input file"
     restart = plot
-    
+
     fermi_energy = [insert your value here]
-    
+
     fermi_surface_plot = true
     ```
 

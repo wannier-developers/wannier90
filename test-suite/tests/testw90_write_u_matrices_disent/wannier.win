@@ -1,15 +1,15 @@
 mp_grid            = 4 4 4
 num_bands          = 8
 num_wann           = 4
-#select_projections = 2 3 4 # select only the (3) p projectors from (4) sp3 provided 
+#select_projections = 2 3 4 # select only the (3) p projectors from (4) sp3 provided
 
 #dis_froz_min       = 10.0
-#dis_froz_max       = 16.0 # covers the flattish p-like band 
+#dis_froz_max       = 16.0 # covers the flattish p-like band
 dis_win_min        = 5.8 # slightly below lowest eval for band(5)
 dis_win_max        = 28.4 # sligtly above highest eval for band(8)
 dis_mix_ratio      = 1.0
 
-write_u_matrices   =  true 
+write_u_matrices   =  true
 num_iter           =  0 # suppress Wannierisation
 
 begin atoms_frac

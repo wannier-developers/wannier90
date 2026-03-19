@@ -179,10 +179,10 @@ the actual $\mathbf{k+b}$ that we need.
 ### `exclude_bands` block
 
 ```vi title="Input file"
-begin exclude_bands 
-  8 
-  1 
-  2 
+begin exclude_bands
+  8
+  1
+  2
   .
   .
 end exclude_bands
@@ -587,7 +587,7 @@ follows:
       R(1,1)   R(2,1)   R(3,1)
       R(1,2)   R(2,2)   R(3,2)
       R(1,3)   R(2,3)   R(3,3)
-       t(1)     t(2)     t(3)   
+       t(1)     t(2)     t(3)
 ```
 
 Here, $R$ is the rotational part of symmetry operations ($3\times3$

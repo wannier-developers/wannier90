@@ -26,7 +26,7 @@
 /
 ATOMIC_SPECIES
 Ga  68.926  Ga.pbe-dn-kjpaw_psl.0.2.UPF
-As  74.922  As.pbe-n-kjpaw_psl.0.2.UPF 
+As  74.922  As.pbe-n-kjpaw_psl.0.2.UPF
 ATOMIC_POSITIONS {crystal}
 Ga 0.00 0.00 0.00
 As 0.25 0.25 0.25

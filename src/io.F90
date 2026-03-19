@@ -71,8 +71,8 @@ contains
         timers%clocks(i)%ptime = t
         timers%clocks(i)%ncalls = timers%clocks(i)%ncalls + 1
         return
-      endif
-    enddo
+      end if
+    end do
 
     if (.not. timers%overflow) then
       if (timers%nnames == nmax) then
@@ -84,8 +84,8 @@ contains
         timers%clocks(timers%nnames)%ctime = 0.0_dp
         timers%clocks(timers%nnames)%ptime = t
         timers%clocks(timers%nnames)%ncalls = 1
-      endif
-    endif
+      end if
+    end if
 
     return
 
@@ -118,7 +118,7 @@ contains
       if (timers%clocks(i)%label .eq. tag) then
         timers%clocks(i)%ctime = timers%clocks(i)%ctime + t - timers%clocks(i)%ptime
         return
-      endif
+      end if
     end do
 
     return
@@ -142,7 +142,7 @@ contains
 
     if (timers%overflow) then
       write (stdout, '(1x,a)') 'Warning: Timer array overflowed, some timing data has been lost'
-    endif
+    end if
     write (stdout, '(/1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|                             TIMING INFORMATION                            |'
     write (stdout, '(1x,a)') '*===========================================================================*'
@@ -151,7 +151,7 @@ contains
     do i = 1, timers%nnames
       write (stdout, '(1x,"|",a50,":",i10,4x,f10.3,"|")') &
         timers%clocks(i)%label, timers%clocks(i)%ncalls, timers%clocks(i)%ctime
-    enddo
+    end do
     write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
 
     return
@@ -216,7 +216,7 @@ contains
         print_help = .true.
       else  ! must be the seedname
         seedname = trim(ctemp(1))
-      endif
+      end if
     else ! not 2 - as mpi call might add commands to argument list
       if (any(index(ctemp(1), help_flag(:)) > 0)) then
         print_help = .true.
@@ -233,8 +233,8 @@ contains
       else  ! must be the seedname
         seedname = trim(ctemp(1))
         if (seedname(1:1) == '-') print_help = .true.
-      endif
-    endif
+      end if
+    end if
 
     ! If on the command line the whole seedname.win was passed, I strip the last ".win"
     if (len(trim(seedname)) .ge. 5) then
@@ -264,14 +264,14 @@ contains
         write (6, '(a)') '  postw90.x [-h|--help]              : print this help message'
       end if
       stop
-    endif
+    end if
 
     if (print_version) then
       if (prog == 'wannier90') then
         write (6, '(a,a)') 'Wannier90: ', trim(w90_version)
       elseif (prog == 'postw90') then
         write (6, '(a,a)') 'Postw90: ', trim(w90_version)
-      endif
+      end if
       stop
     end if
 
@@ -359,7 +359,7 @@ contains
       first = .false.
     else
       io_time = t1 - t0
-    endif
+    end if
     return
   end function io_time
 
@@ -389,7 +389,7 @@ contains
     else
       call system_clock(c1)
       io_wallclocktime = real(c1 - c0)/real(rate)
-    endif
+    end if
     return
   end function io_wallclocktime
 
@@ -422,14 +422,14 @@ contains
           failrank = j
           ie = je
           call comms_no_sync_recv(mesg, 128, j, le, comm)
-        endif
-      enddo
+        end if
+      end do
       ! if the error is on rank0
       if (error%code /= code_remote .and. error%code /= 0) then
         failrank = 0
         ie = error%code
         mesg = error%message
-      endif
+      end if
 
       write (istdout, *) 'Exiting.......'
       write (istdout, '(1x,a)') trim(mesg)
@@ -446,10 +446,10 @@ contains
       if (je /= code_remote .and. je /= 0) then
         mesg = error%message
         call comms_no_sync_send(mesg, 128, 0, le, comm)
-      endif
-    endif
-    flush(istdout)
-    flush(istderr)
+      end if
+    end if
+    flush (istdout)
+    flush (istderr)
 
     error%code = code_deactivated
     deallocate (error) ! else allocated error trips uncaught error mechanism (ifdef W90DEV, see io.F90)
