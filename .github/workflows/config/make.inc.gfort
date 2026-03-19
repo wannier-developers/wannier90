@@ -18,4 +18,3 @@ LDOPTS = -fprofile-arcs -ftest-coverage -fstrict-aliasing  -fno-omit-frame-point
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas
-

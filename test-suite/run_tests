@@ -186,4 +186,3 @@ if __name__ == "__main__":
 
     # Exit with the same error code
     sys.exit(return_code)
-

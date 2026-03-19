@@ -16,4 +16,3 @@ LDOPTS = -O2
 #LDOPTS = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
 LIBDIR =  /mnt/buildbot/binary/mvapich23_pgi185/lib
 LIBS   = -llapack -lblas  -L$(LIBDIR) -lmpi
-

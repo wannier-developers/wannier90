@@ -35,8 +35,3 @@ LDOPTS = -g -pthread
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas
-
-
-
-
-

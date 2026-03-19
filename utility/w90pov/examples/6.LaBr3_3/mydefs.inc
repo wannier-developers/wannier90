@@ -164,4 +164,3 @@ photons{
  elblob2(level, maxp, funp, c1, c2, c3, corg, col, trans)
  elblob2(level, minp, funm, c1, c2, c3, corg, CW_angle (col,60), trans)
 #end
-

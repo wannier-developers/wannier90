@@ -19,4 +19,3 @@ mp_grid: 1 1 1
 begin kpoints
 0 0 0
 end kpoints
-

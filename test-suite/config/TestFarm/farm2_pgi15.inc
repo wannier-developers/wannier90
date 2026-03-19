@@ -16,4 +16,3 @@ LDOPTS = -O2
 #LDOPTS = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
 LIBDIR =  /home/farm2/local/pgi_1507/linux86-64/15.7/mpi/mpich/lib
 LIBS   = -llapack -lblas  -L$(LIBDIR) -lmpi
-

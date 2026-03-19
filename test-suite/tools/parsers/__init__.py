@@ -9,4 +9,3 @@ show_output = False
 
 if os.environ.get('W90VERBOSETESTS', 'false').lower() == 'true':
     show_output = True
-
