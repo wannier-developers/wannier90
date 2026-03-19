@@ -26,6 +26,7 @@ jobs:
       matrix:
         toolchain: [ gcc ]
         mpi: [false, openmpi, mpich]
+        experimental: [false]
         include:
           - toolchain: intel
             mpi: false
