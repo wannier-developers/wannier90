@@ -959,19 +959,19 @@ contains
     if (allocated(error)) return
 
     pw90_berry%tetrahedron_method = .false.
-    call w90_readwrite_get_keyword('tetrahedron_method', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'tetrahedron_method', found, error, comm, &
                                    l_value=pw90_berry%tetrahedron_method)
     if (pw90_berry%tetrahedron_method .and. index(pw90_berry%task, 'shc') == 0) &
       call set_error_input(error, 'Error: tetrahedron_method only implemented in the shc routine', comm)
 
     pw90_berry%tetrahedron_higher_correction = .true.
-    call w90_readwrite_get_keyword('tetrahedron_higher_correction', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'tetrahedron_higher_correction', found, error, comm, &
                                    l_value=pw90_berry%tetrahedron_method)
     if (.not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
       (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
 
     pw90_berry%tetrahedron_cutoff = 1.e-4_dp
-    call w90_readwrite_get_keyword('tetrahedron_cutoff', found, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'tetrahedron_cutoff', found, error, comm, &
                                    r_value=pw90_berry%tetrahedron_cutoff)
     if (pw90_berry%tetrahedron_cutoff <= 0._dp) call set_error_input &
       (error, 'Error: tetrahedron_cutoff must be greater than zero', comm)

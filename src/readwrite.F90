@@ -1461,7 +1461,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'tetrahedron_method', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'transl_inv', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'transl_inv_full', found, error, comm)
-    call w90_readwrite_get_keyword(settinss, 'tetrahedron_cutoff', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tetrahedron_cutoff', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'uhu_formatted', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'use_degen_pert', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'wanint_kpoint_file', found, error, comm)

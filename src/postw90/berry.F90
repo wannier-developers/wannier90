@@ -3092,7 +3092,7 @@ contains
     use w90_constants, only: dp, cmplx_0, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate
     use w90_error, only: w90_error_type
-    use w90_comms, only: w90comm_type
+    use w90_comms, only: w90_comm_type
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
       ws_distance_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, wigner_seitz_type
@@ -3106,7 +3106,7 @@ contains
     type(wigner_seitz_type), intent(inout) :: wigner_seitz
     type(ws_distance_type), intent(inout) :: ws_distance
     type(w90_error_type), allocatable, intent(out) :: error
-    type(w90comm_type), intent(in) :: comm
+    type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: num_wann
     integer, intent(in) :: mp_grid(3)
