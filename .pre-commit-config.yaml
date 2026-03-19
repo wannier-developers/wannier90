@@ -1,3 +1,7 @@
+exclude: (?x)^(
+  pwscf/.*
+  )
+
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.1.0
@@ -13,27 +17,12 @@ repos:
         docs/mkdocs.yml
       )$
   - id: trailing-whitespace
-    files: (?x)^(
-        Makefile|
-        config/make[.]inc[.\w]*|
-        tutorials/tutorial\d\d[-]?\w*/.+win|
-        src/.+
-      )$
   - id: end-of-file-fixer
-    files: (?x)^(
-        Makefile|
-        config/make[.]inc[.\w]*|
-        tutorials/tutorial\d\d[-]?\w*/.+win|
-        src/.+
-      )$
 - repo: https://github.com/fortran-lang/fprettify
   rev: v0.3.3
   hooks:
   - id: fprettify
     args: ['--indent', '2']
-    exclude: (?x)^(
-        pwscf/.*
-      )$
     verbose: true
 - repo: https://github.com/DavidAnson/markdownlint-cli2
   rev: v0.12.1
