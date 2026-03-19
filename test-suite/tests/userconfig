@@ -269,5 +269,3 @@ tolerance = ( (1.0e-6, 1.0e-6, 'kpath'),
 benchmark = default
 date_fmt = %d%m%Y
 vcs = git
-
-

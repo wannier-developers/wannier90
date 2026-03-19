@@ -22,4 +22,3 @@ LIBS = -llapack -lblas
 
 # ACML for blas and lapack
 #LIBS = -lacml
-

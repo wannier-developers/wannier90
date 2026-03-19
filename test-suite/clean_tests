@@ -143,6 +143,3 @@ if __name__ == "__main__":
     if not is_git_repo:
         print("*** Warning! I am not able to fully clean the test directories ***")
         print("*** as this is not a git repository                            ***")
-
-
-
