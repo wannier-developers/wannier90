@@ -2304,7 +2304,9 @@ contains
           end if
         end do
         if (.not. found .or. .not. found2) then
-      call set_error_fatal(error, 'Unable to identify bk-vector permutation (kmesh_bvector_perm); consider k-point precision', comm)
+          call set_error_fatal(error, &
+                               'Unable to identify bk-vector permutation (kmesh_bvector_perm); consider k-point precision', &
+                               comm)
           return
         end if
       end do
