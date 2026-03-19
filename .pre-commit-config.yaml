@@ -4,7 +4,7 @@ exclude: (?x)^(
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.1.0
+  rev: v6.0.0
   hooks:
   - id: check-yaml
     exclude: (?x)^(
@@ -19,7 +19,7 @@ repos:
   - id: trailing-whitespace
   - id: end-of-file-fixer
 - repo: https://github.com/fortran-lang/fprettify
-  rev: v0.3.3
+  rev: v0.3.7
   hooks:
   - id: fprettify
     args: ['--indent', '2']
