@@ -60,7 +60,7 @@ contains
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
-      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+                             w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -79,7 +79,7 @@ contains
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
-      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+                             w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -94,12 +94,12 @@ contains
 
   subroutine read_all_input(wann90, pw90, eigval, eig_ok, seedname, istdout, istderr, ierr)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type, &
-      w90_wannier90_readwrite_read_special
+                                       w90_wannier90_readwrite_read_special
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_readall, pw90_extra_io_type
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
-      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+                             w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -175,8 +175,8 @@ contains
                                           wann90%num_kpts, istdout, seedname, error, wann90%comm)
           if (.not. allocated(error)) then
             call w90_set_eigval(wann90, read_eigs)
-          endif
-        endif
+          end if
+        end if
         if (allocated(error)) then
           write (istderr, *) 'Error in wannier90 eigenvalues', error%code, error%message
           ierr = sign(1, error%code)
@@ -205,27 +205,27 @@ contains
               write (istderr, *) 'Error in read alloc', error%code, error%message
               ierr = sign(1, error%code)
               deallocate (error)
-            endif
-          endif
+            end if
+          end if
           call w90_readwrite_clean_infile(wann90%settings, istdout, seedname, error, wann90%comm)
           if (allocated(error)) then
             write (istderr, *) 'Error in input close', error%code, error%message
             ierr = sign(1, error%code)
             deallocate (error)
-          endif
-        endif
-      endif
-    endif
+          end if
+        end if
+      end if
+    end if
   end subroutine read_all_input
 
   subroutine read_pw90_input(wann90, pw90, seedname, istdout, istderr, ierr)
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, w90_extra_io_type, &
-      w90_wannier90_readwrite_read_special
+                                       w90_wannier90_readwrite_read_special
     use w90_error_base, only: w90_error_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_readwrite, only: w90_postw90_readwrite_read, pw90_extra_io_type
     use w90_readwrite, only: w90_readwrite_in_file, w90_readwrite_clean_infile, &
-      w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
+                             w90_readwrite_read_final_alloc, w90_readwrite_read_eigvals
 
     implicit none
     type(lib_common_type), intent(inout) :: wann90
@@ -286,10 +286,10 @@ contains
             write (istderr, *) 'Error in input close', error%code, error%message
             ierr = sign(1, error%code)
             deallocate (error)
-          endif
-        endif
-      endif
-    endif
+          end if
+        end if
+      end if
+    end if
   end subroutine read_pw90_input
 
   subroutine read_checkpoint(wann90, pw90, istdout, istderr, ierr)
@@ -339,8 +339,8 @@ contains
         write (istderr, *) 'Error in reading checkpoint matrices', error%code, error%message
         ierr = sign(1, error%code)
         deallocate (error)
-      endif
-    endif
+      end if
+    end if
   end subroutine read_checkpoint
 
   subroutine pw_setup(wann90, pw90, istdout, istderr, ierr)
@@ -365,7 +365,7 @@ contains
       write (istderr, *) 'Error in post setup', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine pw_setup
 
   subroutine calc_v_matrix(wann90, pw90, v_matrix)
@@ -395,11 +395,11 @@ contains
             do i = 1, wann90%num_wann
               v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
                                          + wann90%u_opt(m, i, loop_kpt)*wann90%u_matrix(i, j, loop_kpt)
-            enddo
-          enddo
-        enddo
-      enddo
-    endif
+            end do
+          end do
+        end do
+      end do
+    end if
     pw90%v_matrix => v_matrix
   end subroutine calc_v_matrix
 
@@ -444,10 +444,10 @@ contains
         write (istderr, *) 'Error in dos', error%code, error%message
         ierr = sign(1, error%code)
         deallocate (error)
-      endif
+      end if
     else
       write (istdout, *) ' No dos calculation requested'
-    endif
+    end if
   end subroutine calc_dos
 
   subroutine boltzwann(wann90, pw90, istdout, istderr, ierr)
@@ -484,7 +484,7 @@ contains
       write (istderr, *) 'Error in boltzwann', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine boltzwann
 
   subroutine gyrotropic(wann90, pw90, istdout, istderr, ierr)
@@ -527,7 +527,7 @@ contains
       write (istderr, *) 'Error in gyrotropic', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine gyrotropic
 
   subroutine berry(wann90, pw90, istdout, istderr, ierr)
@@ -584,7 +584,7 @@ contains
       write (istderr, *) 'Error in berry', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine berry
 
   subroutine kpath(wann90, pw90, istdout, istderr, ierr)
@@ -640,7 +640,7 @@ contains
       write (istderr, *) 'Error in kpath', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine kpath
 
   subroutine kslice(wann90, pw90, istdout, istderr, ierr)
@@ -696,7 +696,7 @@ contains
       write (istderr, *) 'Error in kslice', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine kslice
 
   subroutine spin_moment(wann90, pw90, istdout, istderr, ierr)
@@ -732,7 +732,7 @@ contains
       write (istderr, *) 'Error in spin_moment', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine spin_moment
 
   subroutine geninterp(wann90, pw90, istdout, istderr, ierr)
@@ -765,7 +765,7 @@ contains
       write (istderr, *) 'Error in geninterp', error%code, error%message
       ierr = sign(1, error%code)
       deallocate (error)
-    endif
+    end if
   end subroutine geninterp
 
 end module w90_lib_all

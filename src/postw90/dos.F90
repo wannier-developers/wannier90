@@ -22,7 +22,7 @@ module w90_dos
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -56,10 +56,10 @@ contains
     use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_postw90_types, only: pw90_dos_mod_type, pw90_berry_mod_type, &
-      pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
-      kpoint_dist_type
+                                 pw90_band_deriv_degen_type, pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
+                                 kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, w90_system_type, ws_distance_type, timer_list_type
+                         ws_region_type, w90_system_type, ws_distance_type, timer_list_type
     use w90_get_oper, only: get_HH_R, get_SS_R
     use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
@@ -138,7 +138,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating dos_energyarray in dos subroutine', comm)
       return
-    endif
+    end if
 
     do ifreq = 1, num_freq
       dos_energyarray(ifreq) = pw90_dos%energy_min + real(ifreq - 1, dp)*d_omega
@@ -148,17 +148,17 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating HH in dos', comm)
       return
-    endif
+    end if
     allocate (delHH(num_wann, num_wann, 3), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating delHH in dos', comm)
       return
-    endif
+    end if
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating UU in dos', comm)
       return
-    endif
+    end if
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
@@ -203,8 +203,8 @@ contains
         write (stdout, '(3x,a)') 'Selected WFs |Rn> are:'
         do i = 1, pw90_dos%num_project
           write (stdout, '(5x,a,2x,i3)') 'n =', pw90_dos%project(i)
-        enddo
-      endif
+        end do
+      end if
 
       write (stdout, '(/,5x,a,f9.4,a,f9.4,a)') &
         'Energy range: [', pw90_dos%energy_min, ',', pw90_dos%energy_max, '] eV'
@@ -331,7 +331,7 @@ contains
       do ifreq = 1, num_freq
         omega = dos_energyarray(ifreq)
         write (dos_unit, '(4E16.8)') omega, dos_all(ifreq, :)
-      enddo
+      end do
       close (dos_unit)
       if (print_output%timing_level > 1) call io_stopwatch_stop('dos', timer)
     end if
@@ -340,17 +340,17 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating HH in dos_main', comm)
       return
-    endif
+    end if
     deallocate (delHH, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating delHH in dos_main', comm)
       return
-    endif
+    end if
     deallocate (UU, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating UU in dos_main', comm)
       return
-    endif
+    end if
 
   end subroutine dos_main
 
@@ -592,7 +592,7 @@ contains
     use w90_constants, only: dp, smearing_cutoff, min_smearing_binwidth_ratio
     use w90_utility, only: utility_w0gauss
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_dos_mod_type, pw90_smearing_type, &
-      wigner_seitz_type
+                                 wigner_seitz_type
     use w90_types, only: wannier_data_type, ws_region_type, ws_distance_type
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_w0gauss
@@ -642,13 +642,13 @@ contains
         call set_error_input(error, 'Cannot call doskpt with levelspacing_k and ' &
                              //'without adptative smearing', comm)
         return
-      endif
+      end if
     else
       if (smearing%use_adaptive) then
         call set_error_input(error, 'Cannot call doskpt without levelspacing_k and ' &
                              //'with adptative smearing', comm)
         return
-      endif
+      end if
     end if
 
     r_num_elec_per_state = real(num_elec_per_state, kind=dp)
@@ -660,7 +660,7 @@ contains
                        kpt, real_lattice, spn_nk, mp_grid, num_wann, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
 
     binwidth = EnergyArray(2) - EnergyArray(1)
 
@@ -744,9 +744,9 @@ contains
               dos_k(loop_f, 3) = dos_k(loop_f, 3) &
                                  + rdum*beta_sq*abs(UU(pw90_dos%project(j), i))**2
             end if
-          enddo
-        endif
-      enddo !loop_f
+          end do
+        end if
+      end do !loop_f
     end do !loop over bands
 
   end subroutine dos_get_k

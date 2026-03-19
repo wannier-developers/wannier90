@@ -109,8 +109,8 @@ contains
     if (found) then
       if (unlucky_rank > 0) then
         print_output%timing_level = -unlucky_rank
-      endif
-    endif
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm, &
                                    i_value=print_output%iprint)
@@ -165,8 +165,8 @@ contains
         return
       else if (length_unit .eq. 'bohr') then
         lenconfac = 1.0_dp/bohr
-      endif
-    endif
+      end if
+    end if
 
     ! Length unit (ang --> Ang, bohr --> Bohr) set to uppercase for printout
     ic = ichar(length_unit(1:1))
@@ -194,7 +194,7 @@ contains
     else if (num_wann <= 0) then
       call set_error_input(error, 'Error: num_wann must be greater than zero', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_read_num_wann
 
   subroutine w90_readwrite_read_total_bands(settings, total_bands, error, comm)
@@ -239,7 +239,7 @@ contains
       if (nk /= nkin) then
         call set_error_input(error, 'Error: incorrect length of k-distribution (distk)', comm)
         return
-      endif
+      end if
       allocate (distk(nkin))
       call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
       if (allocated(error)) return
@@ -248,7 +248,7 @@ contains
       allocate (distk(nkin))
       distk = 0 ! default to no distribution if not specified
     end if
-  endsubroutine w90_readwrite_read_distk
+  end subroutine w90_readwrite_read_distk
 
   subroutine w90_readwrite_read_exclude_bands(settings, exclude_bands, num_exclude_bands, error, &
                                               comm)
@@ -274,20 +274,20 @@ contains
       if (num_exclude_bands < 1) then
         call set_error_input(error, 'Error: problem reading exclude_bands', comm)
         return
-      endif
+      end if
       allocate (exclude_bands(num_exclude_bands), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, &
                              'Error allocating exclude_bands in w90_readwrite_read_exclude_bands', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, num_exclude_bands, &
                                           .false., error, comm, exclude_bands)
       if (allocated(error)) return
       if (any(exclude_bands < 1)) then
         call set_error_input(error, 'Error: exclude_bands must contain positive numbers', comm)
         return
-      endif
+      end if
     end if
   end subroutine w90_readwrite_read_exclude_bands
 
@@ -319,11 +319,11 @@ contains
           call set_error_input(error, &
                                'Error: num_bands must be greater than or equal to num_wann', comm)
           return
-        endif
+        end if
       else
         num_bands = num_wann
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_readwrite_read_num_bands
 
   subroutine w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
@@ -350,7 +350,7 @@ contains
     if (gamma_only .and. (num_kpts .ne. 1)) then
       call set_error_input(error, 'Error: gamma_only is true, but num_kpts > 1', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_read_gamma_only
 
   subroutine w90_readwrite_read_mp_grid(settings, pw90_effective_model, mp_grid, num_kpts, error, &
@@ -410,13 +410,13 @@ contains
       w90_system%spinors = ltmp
     else
       w90_system%spinors = .false.
-    endif
+    end if
     ! We need to know if the bands are double degenerate due to spin, e.g. when calculating DOS
     if (w90_system%spinors) then
       w90_system%num_elec_per_state = 1
     else
       w90_system%num_elec_per_state = 2 ! the default
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'num_elec_per_state', found, error, comm, &
                                    i_value=itmp)
@@ -431,9 +431,9 @@ contains
           return
         else
           w90_system%num_elec_per_state = itmp
-        endif
-      endif
-    endif
+        end if
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'num_valence_bands', found, error, comm, &
                                    i_value=w90_system%num_valence_bands)
@@ -441,7 +441,7 @@ contains
     if (found .and. (w90_system%num_valence_bands .le. 0)) then
       call set_error_input(error, 'Error: num_valence_bands should be greater than zero', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_read_system
 
   subroutine w90_readwrite_read_kpath(settings, kpoint_path, path_found, bands_plot, error, comm)
@@ -471,13 +471,13 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating labels in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating points in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
       if (allocated(error)) return
     end if
@@ -489,8 +489,8 @@ contains
       if (kpoint_path%num_points_first_segment < 0) then
         call set_error_input(error, 'Error: bands_num_points must be positive', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_readwrite_read_kpath
 
   subroutine w90_readwrite_read_explicit_kpath(settings, kpoint_path, ok, bands_plot, bohr, error, comm)
@@ -520,13 +520,13 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating explicit_kpath labels in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating explicit kpoint labels in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_keyword_explicit_kpath(settings, kpoint_path, error, comm)
       if (allocated(error)) return
       call w90_readwrite_read_explicit_kpath_points(settings, kpoint_path%bands_kpt_frac, bohr, &
@@ -580,7 +580,7 @@ contains
       n = 1
       fermi_energy_step = 0.0_dp
       fermi_energy_min = fermi_energy
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'fermi_energy_min', fermi_energy_scan, error, comm, &
                                    r_value=fermi_energy_min)
@@ -590,7 +590,7 @@ contains
         call set_error_input(error, &
                              'Error: Cannot specify both fermi_energy and fermi_energy_min', comm)
         return
-      endif
+      end if
 
       call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm, &
                                      r_value=fermi_energy_max)
@@ -601,7 +601,7 @@ contains
         call set_error_input(error, &
                              'Error: fermi_energy_max must be larger than fermi_energy_min', comm)
         return
-      endif
+      end if
 
       call w90_readwrite_get_keyword(settings, 'fermi_energy_step', found, error, comm, &
                                      r_value=fermi_energy_step)
@@ -611,21 +611,21 @@ contains
       else if (found .and. fermi_energy_step <= 0.0_dp) then
         call set_error_input(error, 'Error: fermi_energy_step must be positive', comm)
         return
-      endif
+      end if
 
       n = nint(abs((fermi_energy_max - fermi_energy_min)/fermi_energy_step)) + 1
       fermi_energy_step = (fermi_energy_max - fermi_energy_min)/real(n - 1, dp)
-    endif
+    end if
 
     allocate (fermi_energy_list(n), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, &
                            'Error allocating fermi_energy_list in w90_readwrite_read_fermi_energy', comm)
       return
-    endif
+    end if
     do i = 1, n
       fermi_energy_list(i) = fermi_energy_min + (i - 1)*fermi_energy_step
-    enddo
+    end do
   end subroutine w90_readwrite_read_fermi_energy
 
   subroutine w90_readwrite_read_ws_data(settings, ws_region, error, comm)
@@ -669,7 +669,7 @@ contains
       if (any(ws_region%ws_search_size <= 0)) then
         call set_error_input(error, 'Error: ws_search_size elements must be greater than zero', comm)
         return
-      endif
+      end if
     end if
   end subroutine w90_readwrite_read_ws_data
 
@@ -715,7 +715,7 @@ contains
             call set_error_file(error, 'w90_wannier90_readwrite_read: mismatch in '//trim(seedname)//'.eig', comm)
             return
           end if
-        enddo
+        end do
       end do
       close (eig_unit)
     end if
@@ -755,7 +755,7 @@ contains
       call set_error_input(error, &
                            'Error: w90_readwrite_read_dis_manifold: check disentanglement windows (win_max < win_min !)', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm, &
                                    r_value=dis_manifold%froz_max)
@@ -770,11 +770,11 @@ contains
     if (dis_manifold%froz_max .lt. dis_manifold%froz_min) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: check disentanglement frozen windows', comm)
       return
-    endif
+    end if
     if (found2 .and. .not. found) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: found dis_froz_min but not dis_froz_max', comm)
       return
-    endif
+    end if
 
     ! ndimwin/lwindow are not read
 
@@ -796,8 +796,8 @@ contains
       if ((dis_manifold%proj_min < 0.0_dp) .or. (dis_manifold%proj_min > 1.0_dp)) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_min < 0.0 or > 1.0', comm)
         return
-      endif
-    endif
+      end if
+    end if
     call w90_readwrite_get_keyword(settings, 'dis_proj_max', found2, error, comm, &
                                    r_value=dis_manifold%proj_max)
     if (allocated(error)) return
@@ -805,12 +805,12 @@ contains
       if ((dis_manifold%proj_max < 0.0_dp) .or. (dis_manifold%proj_max > 1.0_dp)) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < 0.0 or > 1.0', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (dis_manifold%proj_max < dis_manifold%proj_min) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < dis_proj_min', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_read_dis_manifold
 
   subroutine w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
@@ -837,21 +837,21 @@ contains
     if (kmesh_input%search_shells < 0) then
       call set_error_input(error, 'Error: search_shells must be positive', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'search_supcell_size', found, error, comm, &
                                    i_value=kmesh_input%search_supcell_size)
     if (allocated(error)) return
     if (kmesh_input%search_supcell_size < 0) then
       call set_error_input(error, 'Error: search_supcell_size must be positive', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'higher_order_n', found, error, comm, &
                                    i_value=kmesh_input%higher_order_n)
     if (allocated(error)) return
     if (kmesh_input%higher_order_n < 0) then
       call set_error_input(error, 'Error: higher_order_n must be positive', comm)
       return
-    endif
+    end if
 
     n = kmesh_input%higher_order_n
     kmesh_input%max_shells_h = n*(4*n**2 + 15*n + 17)/6
@@ -863,7 +863,7 @@ contains
     if (allocated(error)) return
     if (.not. kmesh_input%higher_order_nearest_shells) then
       kmesh_input%max_shells_aux = 6
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm, &
                                    r_value=kmesh_input%tol)
@@ -871,7 +871,7 @@ contains
     if (kmesh_input%tol < 0.0_dp) then
       call set_error_input(error, 'Error: kmesh_tol must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
                                         .true., error, comm)
@@ -880,26 +880,26 @@ contains
       if (kmesh_input%num_shells < 0 .or. kmesh_input%num_shells > kmesh_input%max_shells_h) then
         call set_error_input(error, 'Error: number of shell in shell_list must be between zero and kmesh_input%max_shells_h', comm)
         return
-      endif
+      end if
       allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
                                           .false., error, comm, kmesh_input%shell_list)
       if (allocated(error)) return
       if (any(kmesh_input%shell_list < 1)) then
         call set_error_input(error, 'Error: shell_list must contain positive numbers', comm)
         return
-      endif
+      end if
     else
       ! this is the default allocation of the shell_list--used by kmesh_shell_automatic()
       allocate (kmesh_input%shell_list(kmesh_input%max_shells_h), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating shell_list in w90_readwrite_read_kmesh_data', comm)
         return
-      endif
+      end if
     end if
 
     call w90_readwrite_get_keyword(settings, 'num_shells', found, error, comm, i_value=itmp)
@@ -908,7 +908,7 @@ contains
       call set_error_input(error, &
                            'Error: Found obsolete keyword num_shells. Its value does not agree with shell_list', comm)
       return
-    endif
+    end if
 
     ! If .true., does not perform the check of B1 of
     ! Marzari, Vanderbild, PRB 56, 12847 (1997)
@@ -948,14 +948,14 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_kpoints', comm)
       return
-    endif
+    end if
 
     if (.not. pw90_effective_model) then
       allocate (kpt_cart(3, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_kpoints', comm)
         return
-      endif
+      end if
 
       call w90_readwrite_get_keyword_block(settings, 'kpoints', found, num_kpts, 3, bohr, error, &
                                            comm, r_value=kpt_cart)
@@ -973,18 +973,18 @@ contains
               kpt_cart(2, ik) = real(ib - 1, kind=dp)/mp_grid(2)
               kpt_cart(3, ik) = real(ic - 1, kind=dp)/mp_grid(3)
               ik = ik + 1
-            enddo
-          enddo
-        enddo
-      endif
+            end do
+          end do
+        end do
+      end if
       kpt_latt = kpt_cart
 
       deallocate (kpt_cart, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_kpoints', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_readwrite_read_kpoints
 
   subroutine w90_readwrite_read_explicit_kpath_points(settings, kpt_latt, bohr, &
@@ -1015,13 +1015,13 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_explicit_kpath', comm)
       return
-    endif
+    end if
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword_block(settings, 'explicit_kpath', found, num_kpts, 3, bohr, error, &
                                          comm, r_value=kpt_cart)
@@ -1029,14 +1029,14 @@ contains
     if (.not. found) then
       call set_error_input(error, 'Error: Found explicit_kpath_labels but there is no explicit_kpath block', comm)
       return
-    endif
+    end if
     kpt_latt = kpt_cart
 
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_read_explicit_kpath_points
 
   subroutine w90_readwrite_read_lattice(settings, real_lattice, bohr, error, comm)
@@ -1058,7 +1058,7 @@ contains
     if (.not. found) then
       call set_error_input(error, 'Error: Did not find the cell information in the input file', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_read_lattice
 
   subroutine w90_readwrite_read_atoms(settings, atom_data, real_lattice, bohr, error, comm)
@@ -1096,13 +1096,13 @@ contains
 
       if (.not. (found .or. found2 .or. found3)) then
         return ! neither specified, not necessarily an error (only needed if projectors wanted)
-      endif
+      end if
 
       ! if supplied, need both entries: labels and positions
       if (.not. (found .and. (found2 .or. found3))) then
         call set_error_input(error, 'Error: Must specify both symbols and atoms_frac (or atoms_cart)', comm)
         return
-      endif
+      end if
 
       if (found) atom_data%num_atoms = nsymb ! shape of symbols is n, i_temp returns n
 
@@ -1114,13 +1114,13 @@ contains
         call w90_readwrite_get_keyword_vector(settings, 'symbols', found, i_temp, error, comm, &
                                               c2_value=atoms_label_tmp)
         if (allocated(error)) return
-      endif
+      end if
 
       if (found2) then
         call w90_readwrite_get_keyword_vector(settings, 'atoms_cart', found, i_temp, error, comm, &
                                               r2_value=atoms_pos_cart_tmp)
         if (allocated(error)) return
-      endif
+      end if
 
       if (found3) then
         allocate (atoms_pos_frac_tmp(3, atom_data%num_atoms))
@@ -1131,9 +1131,9 @@ contains
         do loop = 1, atom_data%num_atoms
           call utility_cart_to_frac(atoms_pos_frac_tmp(:, loop), &
                                     atoms_pos_cart_tmp(:, loop), transpose(real_lattice))
-        enddo
+        end do
         deallocate (atoms_pos_frac_tmp)
-      endif
+      end if
 
       call w90_readwrite_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, error, comm)
       if (allocated(error)) return
@@ -1142,7 +1142,7 @@ contains
       deallocate (atoms_pos_cart_tmp)
 
       return ! no futher action in library mode
-    endif
+    end if
 
     i_temp = 0
     i_temp2 = 0
@@ -1522,7 +1522,7 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating in_data in w90_readwrite_clean_infile', comm)
       return
-    endif
+    end if
     settings%num_lines = 0
   end subroutine w90_readwrite_clean_infile
 
@@ -1557,20 +1557,20 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating ndimwin in w90_wannier90_read_final_alloc()', comm)
         return
-      endif
+      end if
       if (allocated(dis_manifold%nfirstwin)) deallocate (dis_manifold%nfirstwin)
       allocate (dis_manifold%nfirstwin(num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nfirstwin in w90_wannier90_read_final_alloc()', comm)
         return
-      endif
+      end if
       if (allocated(dis_manifold%lwindow)) deallocate (dis_manifold%lwindow)
       allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating lwindow in w90_wannier90_read_final_alloc()', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
 !    if ( wannier_plot .and. (index(wannier_plot_format,'cub').ne.0) ) then
 !       cosa(1)=dot_product(real_lattice(1,:),real_lattice(2,:))
@@ -1586,14 +1586,14 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating wannier_centres in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     wannier_data%centres = 0.0_dp
     if (allocated(wannier_data%spreads)) deallocate (wannier_data%spreads)
     allocate (wannier_data%spreads(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating wannier_spreads in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     wannier_data%spreads = 0.0_dp
   end subroutine w90_readwrite_read_final_alloc
 
@@ -1699,7 +1699,7 @@ contains
         if (w90_readwrite_get_smearing_index < 0) then
           call set_error_input(error, 'Wrong m-p smearing order in keyword '//trim(keyword), comm)
           return
-        endif
+        end if
       end if
     elseif (index(string, 'f-d') > 0) then
       w90_readwrite_get_smearing_index = -99
@@ -1825,7 +1825,7 @@ contains
 #endif
     else
       write (stdout, '(/,1x,a,i3,a)') 'Running in parallel on ', mpi_size, ' CPUs'
-    endif
+    end if
   end subroutine w90_readwrite_write_header
 
 !================================================!
@@ -1858,106 +1858,106 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating ndimwin in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(dis_manifold%lwindow)) then
       deallocate (dis_manifold%lwindow, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating lwindow in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(eigval)) then
       deallocate (eigval, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating eigval in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(kmesh_input%shell_list)) then
       deallocate (kmesh_input%shell_list, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating shell_list in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(kpt_latt)) then
       deallocate (kpt_latt, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating kpt_latt in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(kpoint_path%labels)) then
       deallocate (kpoint_path%labels, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating labels in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(kpoint_path%points)) then
       deallocate (kpoint_path%points, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating points in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(atom_data%label)) then
       deallocate (atom_data%label, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating atoms_label in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(atom_data%symbol)) then
       deallocate (atom_data%symbol, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating atoms_symbol in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(atom_data%pos_cart)) then
       deallocate (atom_data%pos_cart, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating atoms_pos_cart in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(atom_data%species_num)) then
       deallocate (atom_data%species_num, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating atoms_species_num in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(input_proj)) then
       deallocate (input_proj, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating input_proj in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(exclude_bands)) then
       deallocate (exclude_bands, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating exclude_bands in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(wannier_data%centres)) then
       deallocate (wannier_data%centres, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating wannier_centres in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(wannier_data%spreads)) then
       deallocate (wannier_data%spreads, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating wannier_spreads in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_readwrite_dealloc
 
 !~  !================================================!
@@ -2169,28 +2169,28 @@ contains
     if (ntmp .ne. num_bands) then
       call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_bands', comm)
       return
-    endif
+    end if
     read (chk_unit) ntmp                           ! Number of excluded bands
     if (ntmp .ne. num_exclude_bands) then
       call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_exclude_bands', comm)
       return
-    endif
+    end if
     read (chk_unit) (tmp_excl_bands(i), i=1, num_exclude_bands) ! Excluded bands
     do i = 1, num_exclude_bands
       if (tmp_excl_bands(i) .ne. exclude_bands(i)) then
         call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in exclude_bands', comm)
         return
-      endif
-    enddo
+      end if
+    end do
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Real lattice
     do j = 1, 3
       do i = 1, 3
         if (abs(tmp_latt(i, j) - real_lattice(i, j)) .gt. eps6) then
           call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in real_lattice', comm)
           return
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
     read (chk_unit) ((tmp_latt(i, j), i=1, 3), j=1, 3)  ! Reciprocal lattice
     do j = 1, 3
@@ -2198,40 +2198,40 @@ contains
         if (abs(tmp_latt(i, j) - recip_lattice(i, j)) .gt. eps6) then
           call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in recip_lattice', comm)
           return
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
     read (chk_unit) ntmp                ! K-points
     if (ntmp .ne. num_kpts) then
       call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_kpts', comm)
       return
-    endif
+    end if
     read (chk_unit) (tmp_mp_grid(i), i=1, 3)         ! M-P grid
     do i = 1, 3
       if (tmp_mp_grid(i) .ne. mp_grid(i)) then
         call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in mp_grid', comm)
         return
-      endif
-    enddo
+      end if
+    end do
     read (chk_unit) ((tmp_kpt_latt(i, nkp), i=1, 3), nkp=1, num_kpts)
     do nkp = 1, num_kpts
       do i = 1, 3
         if (abs(tmp_kpt_latt(i, nkp) - kpt_latt(i, nkp)) .gt. eps6) then
           call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in kpt_latt', comm)
           return
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
     read (chk_unit) ntmp                ! nntot
     if (ntmp .ne. kmesh_info%nntot) then
       call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in nntot', comm)
       return
-    endif
+    end if
     read (chk_unit) ntmp                ! num_wann
     if (ntmp .ne. num_wann) then
       call set_error_file(error, 'w90_readwrite_read_chk: Mismatch in num_wann', comm)
       return
-    endif
+    end if
     ! End of consistency checks
 
     read (chk_unit) checkpoint             ! checkpoint
@@ -2304,8 +2304,8 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_read_chkpt', comm)
           return
-        endif
-      endif
+        end if
+      end if
       read (chk_unit, err=122) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
 
       ! ndimwin
@@ -2314,8 +2314,8 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_read_chkpt', comm)
           return
-        endif
-      endif
+        end if
+      end if
       read (chk_unit, err=123) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
@@ -2324,7 +2324,7 @@ contains
     else
       ! if not read, u_matrix_opt must be explicitly zeroed
       u_matrix_opt(:, :, :) = 0
-    endif
+    end if
 
     ! U_matrix
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
@@ -2424,8 +2424,8 @@ contains
       if (distk(ikg) == rank) then
         m_matrix_local(:num_wann, :num_wann, :, ikl) = m_matrix(:, :, :, ikg)
         ikl = ikl + 1
-      endif
-    enddo
+      end if
+    end do
 
     call comms_bcast(have_disentangled, 1, error, comm)
     if (allocated(error)) return
@@ -2438,16 +2438,16 @@ contains
           if (ierr /= 0) then
             call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_chkpt_dist', comm)
             return
-          endif
-        endif
+          end if
+        end if
 
         if (.not. allocated(dis_manifold%ndimwin)) then
           allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) then
             call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_chkpt_dist', comm)
             return
-          endif
-        endif
+          end if
+        end if
       end if
 
       call comms_bcast(dis_manifold%lwindow(1, 1), num_bands*num_kpts, error, comm)
@@ -2506,7 +2506,7 @@ contains
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
         if (len(trim(dummy)) > 0) settings%num_lines = settings%num_lines + 1
-      endif
+      end if
 
     end do
 
@@ -2521,7 +2521,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating settings%in_data in w90_readwrite_in_file', comm)
       return
-    endif
+    end if
 
     line_counter = 0
     do loop = 1, tot_num_lines
@@ -2603,11 +2603,11 @@ contains
           else
             call set_error_fatal(error, 'Error: keyword sought, but no variable provided to assign to. (readwrite.F90)', comm)
             return
-          endif
+          end if
           found = .true.
           return
-        endif
-      enddo
+        end if
+      end do
     else if (allocated(settings%in_data)) then
       ! by default, scan the input file
 
@@ -2621,7 +2621,7 @@ contains
         if (found) then
           call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
           return
-        endif
+        end if
         found = .true.
         dummy = settings%in_data(loop) (kl + 1:)
         settings%in_data(loop) (1:maxlen) = ' '
@@ -2642,14 +2642,14 @@ contains
           else
             call set_error_input(error, 'Error: Problem reading logical keyword '//trim(keyword), comm)
             return
-          endif
-        endif
+          end if
+        end if
         if (present(i_value)) read (dummy, *, err=220, end=220) i_value
         if (present(r_value)) read (dummy, *, err=220, end=220) r_value
       end if
     else
       ! error condition
-    endif
+    end if
 
     return
 220 call set_error_input(error, 'Error: Problem reading keyword '//trim(keyword), comm)
@@ -2722,7 +2722,7 @@ contains
           end if
           found = .true.
         end if
-      enddo
+      end do
 
     else if (allocated(settings%in_data)) then
 
@@ -2732,7 +2732,7 @@ contains
         if (found) then
           call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
           return
-        endif
+        end if
         found = .true.
         dummy = settings%in_data(loop) (kl + 1:)
         settings%in_data(loop) (1:maxlen) = ' '
@@ -2750,11 +2750,11 @@ contains
           ! array and convert each element to logical
           call set_error_input(error, 'w90_readwrite_get_keyword_vector unimplemented for logicals', comm)
           return
-        endif
+        end if
         if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
         if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
       end if
-    endif
+    end if
 
     return
 
@@ -2808,10 +2808,10 @@ contains
             length = size(settings%entries(loop)%c2d, 1)
           else
             call set_error_input(error, 'lib array not i or r, r2d or c2d', comm)
-          endif
+          end if
           found = .true.
         end if
-      enddo
+      end do
 
     else if (allocated(settings%in_data)) then
 
@@ -2823,7 +2823,7 @@ contains
         if (found) then
           call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
           return
-        endif
+        end if
         found = .true.
         dummy = settings%in_data(loop) (kl + 1:)
         dummy = adjustl(dummy)
@@ -2838,7 +2838,7 @@ contains
         if (len_trim(dummy) == 0) then
           call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank', comm)
           return
-        endif
+        end if
         length = 1
         dummy = adjustl(dummy)
         do
@@ -2849,10 +2849,10 @@ contains
             length = length + 1
           else
             exit
-          endif
+          end if
         end do
       end if
-    endif ! in_data
+    end if ! in_data
   end subroutine w90_readwrite_get_vector_length
 
   !================================================!
@@ -2919,7 +2919,7 @@ contains
           end if
           found = .true.
         end if
-      enddo
+      end do
 
     else if (allocated(settings%in_data)) then
       do loop = 1, settings%num_lines
@@ -2931,7 +2931,7 @@ contains
         if (found_s) then
           call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
           return
-        endif
+        end if
         found_s = .true.
       end do
 
@@ -2949,7 +2949,7 @@ contains
         if (found_e) then
           call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
           return
-        endif
+        end if
         found_e = .true.
       end do
 
@@ -2977,13 +2977,13 @@ contains
       if ((blen .ne. rows) .and. (blen .ne. rows + 1) .and. (rows .gt. 0)) then
         call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
         return
-      endif
+      end if
 
       if ((blen .eq. rows + 1) .and. (rows .gt. 0) .and. &
           (index(trim(keyword), 'unit_cell_cart') .eq. 0)) then
         call set_error_input(error, 'Error: Wrong number of lines in block '//trim(keyword), comm)
         return
-      endif
+      end if
 
       found = .true.
 
@@ -2997,10 +2997,10 @@ contains
         else
           call set_error_input(error, 'Error: Units in block '//trim(keyword)//' not recognised', comm)
           return
-        endif
+        end if
         settings%in_data(line_s) (1:maxlen) = ' '
         line_s = line_s + 1
-      endif
+      end if
 
       !    r_value=1.0_dp
       counter = 0
@@ -3013,7 +3013,7 @@ contains
           ! array and convert each element to logical
           call set_error_input(error, 'w90_readwrite_get_keyword_block unimplemented for logicals', comm)
           return
-        endif
+        end if
         if (present(i_value)) read (dummy, *, err=240, end=240) (i_value(i, counter), i=1, columns)
         if (present(r_value)) read (dummy, *, err=240, end=240) (r_value(i, counter), i=1, columns)
       end do
@@ -3021,11 +3021,11 @@ contains
       if (lconvert) then
         if (present(r_value)) then
           r_value = r_value*bohr
-        endif
-      endif
+        end if
+      end if
 
       settings%in_data(line_s:line_e) (1:maxlen) = ' '
-    endif
+    end if
     return
 
 240 call set_error_input(error, 'Error: Problem reading block keyword '//trim(keyword), comm)
@@ -3091,7 +3091,7 @@ contains
       if (found_s) then
         call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -3109,7 +3109,7 @@ contains
       if (found_e) then
         call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_e = .true.
     end do
 
@@ -3131,7 +3131,7 @@ contains
       dummy = settings%in_data(line_s + 1)
       read (dummy, *, end=555) atsym, (atpos(i), i=1, 3)
       lunits = .false.
-    endif
+    end if
 
     if (rows <= 0) then !cope with empty blocks
       found = .false.
@@ -3207,7 +3207,7 @@ contains
       if (found_s) then
         call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -3220,7 +3220,7 @@ contains
       if (found_e) then
         call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_e = .true.
     end do
 
@@ -3244,10 +3244,10 @@ contains
       else
         call set_error_input(error, 'Error: Units in block atoms_cart not recognised in readwrite_get_atoms', comm)
         return
-      endif
+      end if
       settings%in_data(line_s) (1:maxlen) = ' '
       line_s = line_s + 1
-    endif
+    end if
 
     counter = 0
     do loop = line_s + 1, line_e - 1
@@ -3291,17 +3291,17 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_species_num in readwrite_get_atoms', comm)
       return
-    endif
+    end if
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_label in readwrite_get_atoms', comm)
       return
-    endif
+    end if
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_symbol in readwrite_get_atoms', comm)
       return
-    endif
+    end if
     atom_data%species_num(:) = 0
 
     do loop = 1, atom_data%num_species
@@ -3318,7 +3318,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_pos_cart in readwrite_get_atoms', comm)
       return
-    endif
+    end if
 
     do loop = 1, atom_data%num_species
       counter = 0
@@ -3386,17 +3386,17 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_species_num in w90_readwrite_lib_set_atoms', comm)
       return
-    endif
+    end if
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_label in w90_readwrite_lib_set_atoms', comm)
       return
-    endif
+    end if
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_symbol in w90_readwrite_lib_set_atoms', comm)
       return
-    endif
+    end if
 
     atom_data%species_num(:) = 0
 
@@ -3414,7 +3414,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating atoms_pos_cart in w90_readwrite_lib_set_atoms', comm)
       return
-    endif
+    end if
 
     do loop = 1, atom_data%num_species
       counter = 0
@@ -3480,7 +3480,7 @@ contains
     if (lcount .and. present(i_value)) then
       call set_error_input(error, 'w90_readwrite_get_range_vector: incorrect call', comm)
       return
-    endif
+    end if
 
     kl = len_trim(keyword)
 
@@ -3497,13 +3497,13 @@ contains
               call w90_readwrite_get_keyword_vector(settings, keyword, found, length, error, comm, &
                                                     i_value=i_value)
               return
-            endif
+            end if
           else
             dummy = settings%entries(loop)%txtdata
             dummy = adjustl(dummy)
-          endif
-        endif
-      enddo
+          end if
+        end if
+      end do
     else ! usual input (.win) file read
       do loop = 1, settings%num_lines
         in = index(settings%in_data(loop), trim(keyword))
@@ -3512,7 +3512,7 @@ contains
           call set_error_input(error, 'Error: Found keyword '//trim(keyword) &
                                //' more than once in input file', comm)
           return
-        endif
+        end if
         found = .true.
         dummy = settings%in_data(loop) (kl + 1:)
         dummy = adjustl(dummy)
@@ -3522,7 +3522,7 @@ contains
           dummy = adjustl(dummy)
         end if
       end do
-    endif
+    end if
 
     if (.not. found) return
 
@@ -3530,14 +3530,14 @@ contains
     if (len_trim(dummy) == 0) then
       call set_error_input(error, 'Error: keyword '//trim(keyword)//' is blank', comm)
       return
-    endif
+    end if
     dummy = adjustl(dummy)
     do
       i_punc = scan(dummy, c_punc)
       if (i_punc == 0) then
         call set_error_input(error, 'Error parsing keyword '//trim(keyword), comm)
         return
-      endif
+      end if
       c_num1 = dummy(1:i_punc - 1)
       read (c_num1, *, err=101, end=101) num1
       dummy = adjustl(dummy(i_punc:))
@@ -3563,7 +3563,7 @@ contains
       if (scan(dummy, c_range) == 1) then
         call set_error_input(error, 'Error parsing keyword '//trim(keyword)//' incorrect range', comm)
         return
-      endif
+      end if
       if (index(dummy, ' ') == 1) exit
     end do
 
@@ -3574,7 +3574,7 @@ contains
           if (i_value(loop) == i_value(loop_r)) then
             call set_error_input(error, 'Error parsing keyword '//trim(keyword)//' duplicate values', comm)
             return
-          endif
+          end if
         end do
       end do
     end if
@@ -3616,7 +3616,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating ccentres_frac in w90_readwrite_get_centre_constraints', comm)
       return
-    endif
+    end if
 
     do loop1 = 1, num_wann
       do loop2 = 1, 3
@@ -3633,14 +3633,14 @@ contains
         if (index1 > 0) then
           call set_error_input(error, "slwf_centres block hasn't ended yet", comm)
           return
-        endif
+        end if
         index1 = index(dummy, 'end')
         if (index1 > 0) then
           index1 = index(dummy, 'slwf_centres')
           if (index1 == 0) then
             call set_error_input(error, 'Wrong ending of block (need to end slwf_centres)', comm)
             return
-          endif
+          end if
           settings%in_data(loop1) (1:maxlen) = ' '
           exit
         end if
@@ -3691,7 +3691,7 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating ccentres_frac in w90_readwrite_get_centre_constraints', comm)
       return
-    endif
+    end if
   end subroutine w90_readwrite_get_centre_constraints
 
   !================================================!
@@ -3718,7 +3718,7 @@ contains
       if (column > 4) then
         call set_error_input(error, "Didn't expect anything else after Lagrange multiplier", comm)
         return
-      endif
+      end if
       if (column < 4) read (dummy(start:finish), '(f10.10)') ccentres_frac(wann, column)
     end if
     column = column + 1
@@ -3803,8 +3803,8 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating input_proj in w90_readwrite_get_projections', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     lconvert = .false.
     lrandom = .false.
@@ -3820,7 +3820,7 @@ contains
         if (found_s) then
           call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
           return
-        endif
+        end if
         found_s = .true.
       end do
 
@@ -3834,7 +3834,7 @@ contains
           call set_error_input(error, &
                                'w90_readwrite_get_projections: Found '//trim(end_st)//' more than once in input file', comm)
           return
-        endif
+        end if
         found_e = .true.
       end do
 
@@ -3873,20 +3873,20 @@ contains
             if (.not. lcount) settings%in_data(line_s) (1:maxlen) = ' '
             line_s = line_s + 1
             lconvert = .true.
-          endif
-        endif
-      endif
+          end if
+        end if
+      end if
 
     elseif (allocated(settings%entries)) then ! reading from setopt
       do loop = 1, settings%num_entries
         if (settings%entries(loop)%keyword == 'projections') then
           if (settings%entries(loop)%txtdata == 'bohr') lconvert = .true.
           if (settings%entries(loop)%txtdata == 'random') lrandom = .true.
-        endif
-      enddo
+        end if
+      end do
       line_s = 0
       line_e = settings%num_entries
-    endif ! reading from input file or entries
+    end if ! reading from input file or entries
 
     counter = 0
     if (.not. lrandom) then
@@ -3904,14 +3904,14 @@ contains
           proj_d_tmp = .true.
         else
           spn_counter = 1
-        endif
+        end if
         ! Strip input line of all spaces
         if (allocated(settings%entries)) then
           if (settings%entries(line)%keyword /= 'projections') cycle
           dummy = utility_strip(settings%entries(line)%txtdata)
         else
           dummy = utility_strip(settings%in_data(line))
-        endif
+        end if
         if (len(trim(dummy)) == 0) cycle
         dummy = adjustl(dummy)
         pos1 = index(dummy, ':')
@@ -3920,7 +3920,7 @@ contains
           call set_error_input(error, &
                                'w90_wannier90_readwrite_read_projection: malformed projection definition: '//trim(dummy), comm)
           return
-        endif
+        end if
         sites = 0
         ctemp = dummy(:pos1 - 1)
         ! Read the atomic site
@@ -3941,7 +3941,7 @@ contains
             call set_error_input(error, 'w90_wannier90_readwrite_read_projection: ' &
                                  //'Atom centred projection requested but no atoms defined', comm)
             return
-          endif
+          end if
           do loop = 1, atom_data%num_species
             if (trim(ctemp) == atom_data%label(loop)) then
               species = loop
@@ -3951,7 +3951,7 @@ contains
             if (loop == atom_data%num_species) then
               call set_error_input(error, 'w90_wannier90_readwrite_read_projection: Atom site not recognised '//trim(ctemp), comm)
               return
-            endif
+            end if
           end do
         end if
 
@@ -3967,17 +3967,17 @@ contains
               call set_error_input(error, &
                                    'w90_readwrite_get_projections: no closing square bracket for spin quantisation dir', comm)
               return
-            endif
+            end if
             ctemp = ctemp(:pos2 - 1)
             call utility_string_to_coord(ctemp, proj_s_qaxis_tmp, error, comm)
             dummy = dummy(:pos1 - 1) ! remove [ ] section
-          endif
+          end if
         else
           if (pos1 > 0) then
             call set_error_input(error, 'w90_readwrite_get_projections: spin qdir is defined but spinors=.false.', comm)
             return
-          endif
-        endif
+          end if
+        end if
 
         ! scan for up or down staring from the end of the string.
         pos1 = index(dummy, '(', BACK=.true.)
@@ -3993,7 +3993,7 @@ contains
           pos2 = index(ctemp, '(3x2-y2)')
           if (pos2 > 0) found_f = .true.
           if (found_f) pos1 = 0
-        endif
+        end if
 
         if (spinors) then
           if (pos1 > 0) then
@@ -4003,7 +4003,7 @@ contains
             if (pos2 == 0) then
               call set_error_input(error, 'w90_readwrite_get_projections: no closing bracket for spin', comm)
               return
-            endif
+            end if
             ctemp = ctemp(:pos2 - 1)
             if (index(ctemp, 'u') > 0) proj_u_tmp = .true.
             if (index(ctemp, 'd') > 0) proj_d_tmp = .true.
@@ -4014,15 +4014,15 @@ contains
               return
             else
               spn_counter = 1
-            endif
+            end if
             dummy = dummy(:pos1 - 1) ! remove ( ) section
-          endif
+          end if
         else
           if (pos1 > 0) then
             call set_error_input(error, 'w90_readwrite_get_projections: spin is defined but spinors=.false.', comm)
             return
-          endif
-        endif
+          end if
+        end if
 
         !Now we know the sites for this line. Get the angular momentum states
         pos1 = index(dummy, ':')
@@ -4038,7 +4038,7 @@ contains
             ctemp3 = ctemp2
           else
             ctemp3 = ctemp2(:pos2 - 1)
-          endif
+          end if
           if (index(ctemp3, 'l=') == 1) then
             mstate = index(ctemp3, ',')
             if (mstate > 0) then
@@ -4049,7 +4049,7 @@ contains
             if (l_tmp < -5 .or. l_tmp > 3) then
               call set_error_input(error, 'w90_readwrite_get_projections: Incorrect l state requested', comm)
               return
-            endif
+            end if
             if (mstate == 0) then
               if (l_tmp >= 0) then
                 do loop_m = 1, 2*l_tmp + 1
@@ -4065,12 +4065,12 @@ contains
                 ang_states(1:5, l_tmp) = 1
               elseif (l_tmp == -5) then !sp3d2
                 ang_states(1:6, l_tmp) = 1
-              endif
+              end if
             else
               if (index(ctemp3, 'mr=') /= mstate + 1) then
                 call set_error_input(error, 'w90_readwrite_get_projections: Problem reading m state', comm)
                 return
-              endif
+              end if
               ctemp4 = ctemp3(mstate + 4:)
               do
                 pos3 = index(ctemp4, ',')
@@ -4078,13 +4078,13 @@ contains
                   ctemp5 = ctemp4
                 else
                   ctemp5 = ctemp4(:pos3 - 1)
-                endif
+                end if
                 read (ctemp5(1:), *, err=102, end=102) m_tmp
                 if (l_tmp >= 0) then
                   if ((m_tmp > 2*l_tmp + 1) .or. (m_tmp <= 0)) then
                     call set_error_input(error, 'w90_readwrite_get_projections: m is > l !', comm)
                     return
-                  endif
+                  end if
                 elseif (l_tmp == -1 .and. (m_tmp > 2 .or. m_tmp <= 0)) then
                   call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (1)', comm)
                   return
@@ -4100,11 +4100,11 @@ contains
                 elseif (l_tmp == -5 .and. (m_tmp > 6 .or. m_tmp <= 0)) then
                   call set_error_input(error, 'w90_readwrite_get_projections: m has incorrect value (5)', comm)
                   return
-                endif
+                end if
                 ang_states(m_tmp, l_tmp) = 1
                 if (pos3 == 0) exit
                 ctemp4 = ctemp4(pos3 + 1:)
-              enddo
+              end do
             end if
           else
             do
@@ -4113,7 +4113,7 @@ contains
                 ctemp4 = ctemp3
               else
                 ctemp4 = ctemp3(:pos3 - 1)
-              endif
+              end if
               read (ctemp4(1:), *, err=106, end=106) m_string
               select case (trim(adjustl(m_string)))
               case ('s')
@@ -4210,11 +4210,11 @@ contains
               end select
               if (pos3 == 0) exit
               ctemp3 = ctemp3(pos3 + 1:)
-            enddo
-          endif
+            end do
+          end if
           if (pos2 == 0) exit
           ctemp2 = ctemp2(pos2 + 1:)
-        enddo
+        end do
         ! check for non-default values
         if (pos1 > 0) then
           dummy = dummy(pos1 + 1:)
@@ -4226,7 +4226,7 @@ contains
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
             call utility_string_to_coord(ctemp, proj_z_tmp, error, comm)
             if (allocated(error)) return
-          endif
+          end if
           ! x axis
           pos1 = index(dummy, 'x=')
           if (pos1 > 0) then
@@ -4235,7 +4235,7 @@ contains
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
             call utility_string_to_coord(ctemp, proj_x_tmp, error, comm)
             if (allocated(error)) return
-          endif
+          end if
           ! diffusivity of orbital
           pos1 = index(dummy, 'zona=')
           if (pos1 > 0) then
@@ -4243,7 +4243,7 @@ contains
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
             read (ctemp, *, err=104, end=104) proj_zona_tmp
-          endif
+          end if
           ! nodes for the radial part
           pos1 = index(dummy, 'r=')
           if (pos1 > 0) then
@@ -4251,7 +4251,7 @@ contains
             pos2 = index(ctemp, ':')
             if (pos2 > 0) ctemp = ctemp(:pos2 - 1)
             read (ctemp, *, err=105, end=105) proj_radial_tmp
-          endif
+          end if
         end if
         ! if (sites == -1) then
         !   if (counter + spn_counter*sum(ang_states) > num_proj) &
@@ -4282,11 +4282,11 @@ contains
                     else
                       if (loop_s == 1) input_proj(counter)%s = 1
                       if (loop_s == 2) input_proj(counter)%s = -1
-                    endif
+                    end if
                     input_proj(counter)%s_qaxis(:) = proj_s_qaxis_tmp
-                  endif
+                  end if
                 end do
-              endif
+              end if
             end do
           end do
         else
@@ -4313,9 +4313,9 @@ contains
                       else
                         if (loop_s == 1) input_proj(counter)%s = 1
                         if (loop_s == 2) input_proj(counter)%s = -1
-                      endif
+                      end if
                       input_proj(counter)%s_qaxis(:) = proj_s_qaxis_tmp
-                    endif
+                    end if
                   end do
                 end if
               end do
@@ -4330,7 +4330,7 @@ contains
         if (counter .lt. num_wann) then
           call set_error_input(error, 'w90_readwrite_get_projections: too few projection functions defined', comm)
           return
-        endif
+        end if
       end if
     end if ! .not. lrandom
 
@@ -4339,9 +4339,9 @@ contains
         num_proj = num_wann
       else
         num_proj = counter
-      endif
+      end if
       return
-    endif
+    end if
 
     if (lpartrandom .or. lrandom) then
       call random_seed()  ! comment out this line for reproducible random positions!
@@ -4365,8 +4365,8 @@ contains
           input_proj(loop)%s_qaxis(2) = 0.0_dp
           input_proj(loop)%s_qaxis(3) = 1.0_dp
         end if
-      enddo
-    endif
+      end do
+    end if
 
     ! I shouldn't get here, but just in case
     if (.not. lcount .and. allocated(settings%in_data)) settings%in_data(line_s:line_e) (1:maxlen) = ' '
@@ -4407,7 +4407,7 @@ contains
           xnorm_new = sqrt(sum(input_proj(loop)%x(:)*input_proj(loop)%x(:)))
           input_proj(loop)%x(:) = input_proj(loop)%x(:)/xnorm_new   ! normalise
           goto 555
-        endif
+        end if
 
         ! If projection axes non-orthogonal enough, then
         ! user may have made a mistake and should check
@@ -4415,7 +4415,7 @@ contains
           write (stdout, *) ' Projection:', loop
           call set_error_input(error, ' Error in projections: z and x axes are not orthogonal', comm)
           return
-        endif
+        end if
 
         ! If projection axes are "reasonably orthogonal", project x-axis
         ! onto plane perpendicular to z-axis to make them more so
@@ -4431,11 +4431,11 @@ contains
           write (stdout, *) ' Projection:'
           call set_error_input(error, ' Error: z and x axes are still not orthogonal after projection', comm)
           return
-        endif
+        end if
 
-      endif
+      end if
 
-    enddo
+    end do
 
     return
 
@@ -4489,7 +4489,7 @@ contains
       if (found_s) then
         call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -4502,7 +4502,7 @@ contains
       if (found_e) then
         call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_e = .true.
     end do
 
@@ -4515,7 +4515,7 @@ contains
       if (line_e <= line_s) then
         call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
         return
-      endif
+      end if
     else
       return !just not found
     end if
@@ -4537,9 +4537,9 @@ contains
           ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
           if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
             kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
-        enddo
-      enddo
-    endif
+        end do
+      end do
+    end if
 
     settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
@@ -4586,7 +4586,7 @@ contains
       if (found_s) then
         call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -4599,7 +4599,7 @@ contains
       if (found_e) then
         call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_e = .true.
     end do
 
@@ -4612,7 +4612,7 @@ contains
       if (line_e <= line_s) then
         call set_error_input(error, 'Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file', comm)
         return
-      endif
+      end if
     else
       return !just not found
     end if
@@ -4632,9 +4632,9 @@ contains
           ic = ichar(kpoint_path%labels(loop) (inner_loop:inner_loop))
           if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
             kpoint_path%labels(loop) (inner_loop:inner_loop) = char(ic + ichar('Z') - ichar('z'))
-        enddo
-      enddo
-    endif
+        end do
+      end do
+    end if
 
     settings%in_data(line_s:line_e) (1:maxlen) = ' '
 
@@ -4681,7 +4681,7 @@ contains
       if (found_s) then
         call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_s = .true.
     end do
 
@@ -4694,7 +4694,7 @@ contains
       if (found_e) then
         call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
         return
-      endif
+      end if
       found_e = .true.
     end do
 
