@@ -1,5 +1,5 @@
  #the C tensor -- Eq. B6 of TAS17
- # in units of [ Ampere/cm ] 
+ # in units of [ Ampere/cm ]
 #                             |                                      symmetric part                                     ||              asymmetric part              |
    # EFERMI(eV)      omega(eV)             xx             yy             zz             xy             xz             yz              x              y              z
    0.200000E+01   0.000000E+00   0.361959E+01   0.326754E+01   0.447568E+01  -0.210217E+00  -0.393533E+00   0.324436E+00   0.000000E+00   0.000000E+00   0.000000E+00

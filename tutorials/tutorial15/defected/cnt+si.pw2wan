@@ -1,4 +1,4 @@
-&inputpp 
+&inputpp
    outdir         = './'
    prefix         = 'cnt+si'
    seedname       = 'cnt+si'

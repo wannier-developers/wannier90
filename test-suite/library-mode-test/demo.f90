@@ -53,9 +53,9 @@ program ok
     do ikb = 0, nkabc(2) - 1
       do ikc = 0, nkabc(3) - 1
         i = i + 1
-        kpt(1, i) = dble(ika)/dble(nkabc(1)); 
-        kpt(2, i) = dble(ikb)/dble(nkabc(2)); 
-        kpt(3, i) = dble(ikc)/dble(nkabc(3)); 
+        kpt(1, i) = dble(ika)/dble(nkabc(1));
+        kpt(2, i) = dble(ikb)/dble(nkabc(2));
+        kpt(3, i) = dble(ikc)/dble(nkabc(3));
       enddo
     enddo
   enddo
@@ -102,9 +102,9 @@ program ok
   call w90_set_comm(w90main, mpi_comm_world)
   call w90_input_setopt(w90main, 'gaas', stdout, stderr, ierr) ! apply settings
 
-  call w90_get_nn(w90main, nn, stdout, stderr, ierr); 
+  call w90_get_nn(w90main, nn, stdout, stderr, ierr);
   allocate (nnkp(nk, nn))
-  call w90_get_nnkp(w90main, nnkp, stdout, stderr, ierr); 
+  call w90_get_nnkp(w90main, nnkp, stdout, stderr, ierr);
   allocate (m_matrix(nb, nb, nn, nk))
   allocate (u_matrix_opt(nb, nw, nk))
   call w90_set_m_local(w90main, m_matrix) ! m_matrix_local_orig

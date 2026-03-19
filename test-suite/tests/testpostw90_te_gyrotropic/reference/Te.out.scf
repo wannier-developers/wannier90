@@ -1,11 +1,11 @@
 
-     Program PWSCF v.6.2 (svn rev. 13949:13950) starts on  3Jan2018 at 14:37:23 
+     Program PWSCF v.6.2 (svn rev. 13949:13950) starts on  3Jan2018 at 14:37:23
 
      This program is part of the open-source Quantum ESPRESSO suite
      for quantum simulation of materials; please cite
          "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
          "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
-          URL http://www.quantum-espresso.org", 
+          URL http://www.quantum-espresso.org",
      in publications or presentations arising from this work. More details at
      http://www.quantum-espresso.org/quote
 
@@ -23,12 +23,12 @@
      Subspace diagonalization in iterative solution of the eigenvalue problem:
      a serial algorithm will be used
 
- 
+
      G-vector sticks info
      --------------------
      sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
      Sum         199     199     61                 2981     2981     577
- 
+
 
 
      bravais-lattice index     =            4
@@ -49,14 +49,14 @@
      celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
 
      crystal axes: (cart. coord. in units of alat)
-               a(1) = (   1.000000   0.000000   0.000000 )  
-               a(2) = (  -0.500000   0.866025   0.000000 )  
-               a(3) = (   0.000000   0.000000   1.336800 )  
+               a(1) = (   1.000000   0.000000   0.000000 )
+               a(2) = (  -0.500000   0.866025   0.000000 )
+               a(3) = (   0.000000   0.000000   1.336800 )
 
      reciprocal axes: (cart. coord. in units 2 pi/alat)
-               b(1) = (  1.000000  0.577350  0.000000 )  
-               b(2) = (  0.000000  1.154701  0.000000 )  
-               b(3) = (  0.000000  0.000000  0.748055 )  
+               b(1) = (  1.000000  0.577350  0.000000 )
+               b(2) = (  0.000000  1.154701  0.000000 )
+               b(3) = (  0.000000  0.000000  0.748055 )
 
 
      PseudoPot. # 1 for Te read from file:
@@ -64,7 +64,7 @@
      MD5 check sum: 2f4834189a22ccc7f0b39c4d5b713b52
      Pseudo is Norm-conserving + core correction, Zval =  6.0
      Generated using "atomic" code by A. Dal Corso  v.5.2.0
-     Using radial grid of 1245 points,  2 beta functions with: 
+     Using radial grid of 1245 points,  2 beta functions with:
                 l(1) =   1
                 l(2) =   2
 
@@ -76,7 +76,7 @@
 
                                     s                        frac. trans.
 
-      isym =  1     identity                                     
+      isym =  1     identity
 
  cryst.   s( 1) = (     1          0          0      )
                   (     0          1          0      )
@@ -87,7 +87,7 @@
                   (  0.0000000  0.0000000  1.0000000 )
 
 
-      isym =  2     180 deg rotation - cart. axis [1,0,0]        
+      isym =  2     180 deg rotation - cart. axis [1,0,0]
 
  cryst.   s( 2) = (     1          0          0      )    f =(  0.0000000 )
                   (    -1         -1          0      )       (  0.0000000 )
@@ -98,7 +98,7 @@
                   (  0.0000000  0.0000000 -1.0000000 )       (  0.4456000 )
 
 
-      isym =  3     120 deg rotation - cryst. axis [0,0,1]       
+      isym =  3     120 deg rotation - cryst. axis [0,0,1]
 
  cryst.   s( 3) = (     0          1          0      )    f =(  0.0000000 )
                   (    -1         -1          0      )       (  0.0000000 )
@@ -109,7 +109,7 @@
                   (  0.0000000  0.0000000  1.0000000 )       ( -0.4456000 )
 
 
-      isym =  4     120 deg rotation - cryst. axis [0,0,-1]      
+      isym =  4     120 deg rotation - cryst. axis [0,0,-1]
 
  cryst.   s( 4) = (    -1         -1          0      )    f =(  0.0000000 )
                   (     1          0          0      )       (  0.0000000 )
@@ -120,7 +120,7 @@
                   (  0.0000000  0.0000000  1.0000000 )       (  0.4456000 )
 
 
-      isym =  5     180 deg rotation - cryst. axis [0,1,0]       
+      isym =  5     180 deg rotation - cryst. axis [0,1,0]
 
  cryst.   s( 5) = (    -1         -1          0      )    f =(  0.0000000 )
                   (     0          1          0      )       (  0.0000000 )
@@ -131,7 +131,7 @@
                   (  0.0000000  0.0000000 -1.0000000 )       ( -0.4456000 )
 
 
-      isym =  6     180 deg rotation - cryst. axis [1,1,0]       
+      isym =  6     180 deg rotation - cryst. axis [1,1,0]
 
  cryst.   s( 6) = (     0          1          0      )
                   (     1          0          0      )
@@ -142,11 +142,11 @@
                   (  0.0000000  0.0000000 -1.0000000 )
 
 
-     point group D_3 (32)   
+     point group D_3 (32)
      there are  3 classes
      the character table:
 
-       E     2C3   3C2' 
+       E     2C3   3C2'
 A_1    1.00  1.00  1.00
 A_2    1.00  1.00 -1.00
 E      2.00 -1.00  0.00
@@ -154,11 +154,11 @@ E      2.00 -1.00  0.00
      the symmetry operations in each class and the name of the first element:
 
      E        1
-          identity                                               
+          identity
      2C3      3    4
-          120 deg rotation - cryst. axis [0,0,1]                 
+          120 deg rotation - cryst. axis [0,0,1]
      3C2'     2    5    6
-          180 deg rotation - cart. axis [1,0,0]                  
+          180 deg rotation - cart. axis [1,0,0]
 
    Cartesian axes
 
@@ -309,7 +309,7 @@ E      2.00 -1.00  0.00
     -7.4999  -4.2629  -4.2629   3.0455   3.3373   3.3373   4.3809   4.3809
      5.1402   7.0159   7.0159   7.6235  11.1411
 
-     occupation numbers 
+     occupation numbers
      1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0000
      1.0002   0.0000   0.0000   0.0000   0.0000
 
@@ -318,7 +318,7 @@ E      2.00 -1.00  0.00
     -6.6253  -6.6253  -2.2615   2.1711   3.4001   3.4001   4.8005   5.0798
      5.0798   6.3998   6.3998   6.4301  10.1268
 
-     occupation numbers 
+     occupation numbers
      1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0001
      1.0001   0.0125   0.0125   0.0080   0.0000
 
@@ -327,7 +327,7 @@ E      2.00 -1.00  0.00
     -6.3981  -5.0499  -4.0511   1.2663   1.6645   2.4368   2.5038   5.1155
      5.2823   6.7755   6.7967   8.9831   9.6868
 
-     occupation numbers 
+     occupation numbers
      1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0001
      1.0025   0.0000   0.0000   0.0000   0.0000
 
@@ -336,7 +336,7 @@ E      2.00 -1.00  0.00
     -5.9900  -5.5792  -4.0513   0.4007   2.4330   2.4416   3.5618   3.8757
      5.8246   6.6851   7.9887   8.5764  10.6556
 
-     occupation numbers 
+     occupation numbers
      1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0000   1.0000
      0.9862   0.0001   0.0000   0.0000   0.0000
 
@@ -357,7 +357,7 @@ E      2.00 -1.00  0.00
      convergence has been achieved in   7 iterations
 
      Writing output data file Te.save
- 
+
      init_run     :      0.08s CPU      0.08s WALL (       1 calls)
      electrons    :      0.35s CPU      0.41s WALL (       1 calls)
 
@@ -396,15 +396,15 @@ E      2.00 -1.00  0.00
      calbec       :      0.02s CPU      0.03s WALL (    2972 calls)
      fft          :      0.02s CPU      0.01s WALL (      90 calls)
      fftw         :      0.23s CPU      0.22s WALL (    4088 calls)
- 
+
      Parallel routines
      fft_scatt_xy :      0.04s CPU      0.04s WALL (    4178 calls)
      fft_scatt_yz :      0.04s CPU      0.02s WALL (    4178 calls)
- 
+
      PWSCF        :     0.55s CPU         1.11s WALL
 
- 
-   This run was terminated on:  14:37:24   3Jan2018            
+
+   This run was terminated on:  14:37:24   3Jan2018
 
 =------------------------------------------------------------------------------=
    JOB DONE.

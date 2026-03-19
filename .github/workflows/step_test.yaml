@@ -40,16 +40,16 @@ jobs:
         run: |
           # Get interactive profile to be able to load modules
           source /etc/profile
-          
+
           # Save the current environment since we only want the added difference
           printenv > orig_env
-          
+
           # Load the relevant mpi module
           module load mpi/${{ matrix.mpi }}-$(arch)
           printenv > module_env
-          
+
           diff orig_env module_env | sed -n 's/> //p' >> $GITHUB_ENV
-          
+
           # Set MPI flag on
           echo "WITH_MPI=ON" >> $GITHUB_ENV
         if: matrix.mpi

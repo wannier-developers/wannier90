@@ -132,7 +132,7 @@ add_subdirectory(tests)
 ## Functional tests
 set(functional_tests
 )
-if (WANNIER90_WITH_C) 
+if (WANNIER90_WITH_C)
 	# These test requires that the C interface is built
         # (which requires a --std=f2018 compliant compiler
 	list(APPEND functional_tests

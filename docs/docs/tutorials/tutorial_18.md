@@ -64,7 +64,7 @@ If you have already run that example, you can reuse the output files from steps
 6. Run `postw90`
 
     ```bash title="Terminal"
-    postw90.x Fe # (1)! 
+    postw90.x Fe # (1)!
     mpirun -np 8 postw90.x Fe # (2)!
     ```
 

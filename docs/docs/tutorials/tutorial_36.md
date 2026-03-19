@@ -59,7 +59,7 @@
 
     ```vi title="Input file"
     restart = plot
-    
+
     bands_plot = true
     ```
 

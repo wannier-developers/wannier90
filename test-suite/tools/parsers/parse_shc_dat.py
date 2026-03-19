@@ -22,7 +22,7 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         pieces = l.split()
 
         if lno == 0:
@@ -43,7 +43,7 @@ def parse(fname):
             continue
 
         if freqscan:
-            if len(pieces) == 4 : 
+            if len(pieces) == 4 :
                 retdict['frequency'].append(float(pieces[1]))
                 retdict['shc_re'].append(float(pieces[2]))
                 retdict['shc_im'].append(float(pieces[3]))
@@ -51,7 +51,7 @@ def parse(fname):
                 raise ValueError("Wrong line length ({}, instead of 4); line content: {}".format(
                     len(pieces), l))
         else:
-            if len(pieces) == 3 : 
+            if len(pieces) == 3 :
                 retdict['energy'].append(float(pieces[1]))
                 retdict['shc'].append(float(pieces[2]))
             else:

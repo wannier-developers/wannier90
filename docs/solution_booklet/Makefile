@@ -1,5 +1,5 @@
 tutorial.pdf: solution_booklet.tex
-	pdflatex solution_booklet.tex 
+	pdflatex solution_booklet.tex
 	bibtex   solution_booklet
 	pdflatex solution_booklet.tex
 	bibtex   solution_booklet

@@ -155,34 +155,34 @@ plotting.
                                     ------
                                     SYSTEM
                                     ------
- 
+
                               Lattice Vectors (Ang)
                     a_1     3.938486   0.000000   0.000000
                     a_2     0.000000   3.938486   0.000000
                     a_3     0.000000   0.000000   3.938486
- 
+
                    Unit Cell Volume:      61.09251  (Ang^3)
- 
+
                         Reciprocal-Space Vectors (Ang^-1)
                     b_1     1.595330   0.000000   0.000000
                     b_2     0.000000   1.595330   0.000000
                     b_3     0.000000   0.000000   1.595330
-  
+
  *----------------------------------------------------------------------------*
  |   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |
  +----------------------------------------------------------------------------+
  | Ba   1   0.00000   0.00000   0.00000   |    0.00000   0.00000   0.00000    |
  | Ti   1   0.50000   0.50000   0.50000   |    1.96924   1.96924   1.96924    |
                                           .
-                                          . 
+                                          .
  *----------------------------------------------------------------------------*
-  
+
                                 ------------
                                 K-POINT GRID
                                 ------------
-  
+
              Grid size =  4 x  4 x  4      Total points =   64
-  
+
  *---------------------------------- MAIN ------------------------------------*
  |  Number of Wannier Functions               :                 9             |
  |  Number of input Bloch states              :                 9             |
@@ -245,8 +245,8 @@ Then, each step of the iterative minimisation of $\Omega_{\mathrm{I}}$
 is reported.
 
 ```vi title="Output file"
-                   Extraction of optimally-connected subspace                  
-                   ------------------------------------------                  
+                   Extraction of optimally-connected subspace
+                   ------------------------------------------
  +---------------------------------------------------------------------+<-- DIS
  |  Iter     Omega_I(i-1)      Omega_I(i)      Delta (frac.)    Time   |<-- DIS
  +---------------------------------------------------------------------+<-- DIS
@@ -254,7 +254,7 @@ is reported.
        2       3.66268867       3.66268867       6.911E-15      0.37    <-- DIS
                                        .
                                        .
-                                   
+
              <<<      Delta < 1.000E-10  over  3 iterations     >>>
              <<< Disentanglement convergence criteria satisfied >>>
 
@@ -289,7 +289,7 @@ spread of each WF is reported.
  +--------------------------------------------------------------------+<-- CONV
  | Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV
  +--------------------------------------------------------------------+<-- CONV
- 
+
  ------------------------------------------------------------------------------
  Initial State
   WF centre and spread    1  (  0.000000,  1.969243,  1.969243 )     1.52435832
@@ -305,7 +305,7 @@ spread of each WF is reported.
                                       .
                                       .
   Sum of centres and spreads ( 11.815458, 11.815458, 11.815458 )    12.62663472
- 
+
       1    -0.313E-02     0.0697660962       12.6266347170       0.34  <-- CONV
         O_D=      0.0000000 O_OD=      0.1460380 O_TOT=     12.6266347 <-- SPRD
  Delta: O_D= -0.4530841E-18 O_OD= -0.3133809E-02 O_TOT= -0.3133809E-02 <-- DLTA
@@ -316,7 +316,7 @@ spread of each WF is reported.
                                       .
                                       .
    Sum of centres and spreads ( 11.815458, 11.815458, 11.815458 )    12.62646411
- 
+
       2    -0.171E-03     0.0188848262       12.6264641055       0.38  <-- CONV
         O_D=      0.0000000 O_OD=      0.1458674 O_TOT=     12.6264641 <-- SPRD
  Delta: O_D= -0.2847260E-18 O_OD= -0.1706115E-03 O_TOT= -0.1706115E-03 <-- DLTA
@@ -330,7 +330,7 @@ spread of each WF is reported.
                                       .
                                       .
   Sum of centres and spreads ( 11.815458, 11.815458, 11.815458 )    12.62645344
- 
+
          Spreads (Ang^2)       Omega I      =    12.480596753
         ================       Omega D      =     0.000000000
                                Omega OD     =     0.145856689
@@ -474,7 +474,7 @@ Delta: O_IOD= -0.1245020E+00 O_D=  0.0000000E+00 O_TOT= -0.8835502E-01 <-- DLTA
   WF centre and spread    3  (  0.895973,  0.917426, -0.895973 )     2.14313664
   WF centre and spread    4  ( -0.917426, -0.895973, -0.895973 )     2.14313664
   Sum of centres and spreads ( -0.015669,  0.015669,  0.015669 )     7.85316486
- 
+
          Spreads (Ang^2)       Omega IOD    =     1.423371553
         ================       Omega D      =     0.000383395
                                Omega Rest   =     9.276919811
@@ -568,7 +568,7 @@ bandstructure:
  *---------------------------------------------------------------------------*
  |                               PLOTTING                                    |
  *---------------------------------------------------------------------------*
-  
+
  Calculating interpolated band-structure
 ```
 
@@ -589,7 +589,7 @@ the `timing_level` input parameter (set to 1 by default).
  |wann: main                                        :         1         1.860|
  |plot: main                                        :         1         0.168|
  *---------------------------------------------------------------------------*
- 
+
  All done: wannier90 exiting
 ```
 
@@ -668,7 +668,7 @@ number `ik` and the total number of bands `num_band` in the file. The
 full file will be read by `wannier90` as:
 
 ```fortran title="Fortran"
-read(file_unit) ngx,ngy,ngz,ik,nbnd  
+read(file_unit) ngx,ngy,ngz,ik,nbnd
 do loop_b=1,num_bands
   read(file_unit) (r_wvfn(nx,loop_b),nx=1,ngx*ngy*ngz)
 end do
@@ -685,7 +685,7 @@ is assumed to have the form:
 and the file will be read by `wannier90` as:
 
 ```fortran title="Fortran"
-read(file_unit) ngx,ngy,ngz,ik,nbnd  
+read(file_unit) ngx,ngy,ngz,ik,nbnd
 do loop_b=1,num_bands
   read(file_unit) (r_wvfn_nc(nx,loop_b,1),nx=1,ngx*ngy*ngz) ! up-spinor
   read(file_unit) (r_wvfn_nc(nx,loop_b,2),nx=1,ngx*ngy*ngz) ! down-spinor
@@ -715,7 +715,7 @@ $n$, and the real and imaginary parts of the Hamiltonian matrix element
 $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
 
 ```vi title="Output file"
- Created on 24May2007 at 23:32:09                            
+ Created on 24May2007 at 23:32:09
         20
         17
     4   1   2    1    4    1    1    2    1    4    6    1    1   1   2
@@ -753,10 +753,10 @@ created. The second to fourth lines are the lattice vectors in Angstrom
 unit.
 
 ```vi title="Output file"
- written on 27Jan2020 at 18:08:42 
-  -1.8050234585004898        0.0000000000000000        1.8050234585004898     
-   0.0000000000000000        1.8050234585004898        1.8050234585004898     
-  -1.8050234585004898        1.8050234585004898        0.0000000000000000 
+ written on 27Jan2020 at 18:08:42
+  -1.8050234585004898        0.0000000000000000        1.8050234585004898
+   0.0000000000000000        1.8050234585004898        1.8050234585004898
+  -1.8050234585004898        1.8050234585004898        0.0000000000000000
 ```
 
 The next part is the same as `seedname_hr.dat`. The fifth line states
@@ -1115,9 +1115,9 @@ elements are in column-major order (ie, cycling over rows first and then
 columns). There is an empty line between each block of data.
 
 ```vi title="Output file"
- written on 15Sep2016 at 16:33:46 
+ written on 15Sep2016 at 16:33:46
            64           8           8
-  
+
    0.0000000000  +0.0000000000  +0.0000000000
    0.4468355787  +0.1394579978
   -0.0966033667  +0.4003934902
@@ -1152,9 +1152,9 @@ elements are in column-major order (ie, cycling over rows first and then
 columns). There is an empty line between each block of data.
 
 ```vi title="Output file"
- written on 15Sep2016 at 16:33:46 
+ written on 15Sep2016 at 16:33:46
            64           8          16
-     
+
    0.0000000000  +0.0000000000  +0.0000000000
    1.0000000000  +0.0000000000
   +0.0000000000  +0.0000000000
@@ -1163,7 +1163,7 @@ columns). There is an empty line between each block of data.
    .
    .
    .
-   
+
    0.1250000000   0.0000000000  +0.0000000000
    1.0000000000  +0.0000000000
   +0.0000000000  +0.0000000000

@@ -15,10 +15,10 @@ Rev. B \textbf{87}, 235109 (2013).}
 \end{figure}
 
 \begin{itemize}
-	\item [1-3] These are common to all calculations, and they have already been performed in previous examples. Hence, no results are shown here.  
+	\item [1-3] These are common to all calculations, and they have already been performed in previous examples. Hence, no results are shown here.
 
 The space group of GaAs is $F{-}43m$ (sequential  number 276 in the International Tables for Crystallography, Vol. A).
-In our example the Ga atom is placed at the origin, whose Wyckoff letter is $a$ and its multiplicity is $4$. The site symmetry group of $a$ is ${-}43m$, which is isomorphous to the full point group of the crystal, also known as $T_d^2$. This is due to the fact that $F{-}43m$ is symmorphic. Hence, $a$ contains 24 symmetry operations (see \Tab{tab21.1}). The As atom is placed at (0.25,0.25,0.25) in fractional coordinates, whose Wyckoff letter is $c$ and its multiplicity is 4. It also contains 24 symmetry operations (see \Tab{tab21.2}). 
+In our example the Ga atom is placed at the origin, whose Wyckoff letter is $a$ and its multiplicity is $4$. The site symmetry group of $a$ is ${-}43m$, which is isomorphous to the full point group of the crystal, also known as $T_d^2$. This is due to the fact that $F{-}43m$ is symmorphic. Hence, $a$ contains 24 symmetry operations (see \Tab{tab21.1}). The As atom is placed at (0.25,0.25,0.25) in fractional coordinates, whose Wyckoff letter is $c$ and its multiplicity is 4. It also contains 24 symmetry operations (see \Tab{tab21.2}).
 \begin{table}[b!]
 	\centering
 	\captionsetup{width=.5\textwidth}
@@ -38,14 +38,14 @@ In our example the Ga atom is placed at the origin, whose Wyckoff letter is $a$ 
 	\captionsetup{width=.5\textwidth}
 	\caption{24 symmetry operations for the Wyckoff position $4c$ in $-43m$ \cite{bilbaocrystserver}.}
 	\begin{tabular}{@{} |l|l|l|l| @{}}\toprule[1.5pt]
-	x,y,z & -x+1/2,-y+1/2, z & -x+1/2,y,-z+1/2 & x,-y+1/2,-z+1/2  \\ 
+	x,y,z & -x+1/2,-y+1/2, z & -x+1/2,y,-z+1/2 & x,-y+1/2,-z+1/2  \\
 	\hline
 	z,x,y & z,-x+1/2,-y+1/2 & -z+1/2,-x+1/2,y & -z+1/2,x,-y+1/2  \\
 	\hline
-	y,z,x & -y+1/2,z,-x+1/2 & y,-z+1/2,-x+1/2 & -y+1/2,-z+1/2,x  \\ 
+	y,z,x & -y+1/2,z,-x+1/2 & y,-z+1/2,-x+1/2 & -y+1/2,-z+1/2,x  \\
 	\hline
-	y,x,z & -y+1/2,-x+1/2,z & y,-x+1/2,-z+1/2 & -y+1/2,x,-z+1/2 \\ 
-	\hline 
+	y,x,z & -y+1/2,-x+1/2,z & y,-x+1/2,-z+1/2 & -y+1/2,x,-z+1/2 \\
+	\hline
 	x,z,y & -x+1/2,z,-y+1/2 & -x+1/2,-z+1/2,y & x,-z+1/2,-y+1/2 \\
 	\hline
 	z,y,x & z,-y+1/2,-x+1/2 & -z+1/2,y,-x+1/2 & -z+1/2,-y+1/2,x \\
@@ -60,13 +60,13 @@ The list of site-symmetry operations may be found in the {\tt .sym} file and in 
 \begin{itemize}
 	\item[1-5] {\it  Compute the symmetry-adapted MLWF.}
 
-	The ${-}43m$ site-symmetry group is isomorphous to $T_d^2$. From the table of characters of $T_d^2$ we find 5 irreducible representations (\textit{irrep}). The irrep with character $A_1$ is a one-dimensional representation, whose eigenfunction is spherically symmetric. Hence, a single $s$-like orbital in (0,0,0) may be used. However, this is not enough as the choice of the initial guess must also be compatible with the symmetry of the bands. In fact, if we tried to wannierise only the lowest band, excluding all the other bands (this can be done by changing the input file as {\tt num\_wann = 1, num\_bands = 1} and {\tt exclude\_bands = 1-5, 7-19}), the resulting $1\times1$ $U(\mathbf{k})$ could not fulfill Eq. 19 in Ref.~\onlinecite{Sakuma}. Similarly, if we tried to wannierise only the three top bands. 
+	The ${-}43m$ site-symmetry group is isomorphous to $T_d^2$. From the table of characters of $T_d^2$ we find 5 irreducible representations (\textit{irrep}). The irrep with character $A_1$ is a one-dimensional representation, whose eigenfunction is spherically symmetric. Hence, a single $s$-like orbital in (0,0,0) may be used. However, this is not enough as the choice of the initial guess must also be compatible with the symmetry of the bands. In fact, if we tried to wannierise only the lowest band, excluding all the other bands (this can be done by changing the input file as {\tt num\_wann = 1, num\_bands = 1} and {\tt exclude\_bands = 1-5, 7-19}), the resulting $1\times1$ $U(\mathbf{k})$ could not fulfill Eq. 19 in Ref.~\onlinecite{Sakuma}. Similarly, if we tried to wannierise only the three top bands.
 	{\tt
 	\begin{quote}
 	begin projections
-	
+
 	f= 0.0, 0.0, 0.0 : s
-	
+
 	end projections
 	\end{quote}
 	}
@@ -75,11 +75,11 @@ The list of site-symmetry operations may be found in the {\tt .sym} file and in 
  	\begin{tcolorbox}[sharp corners,boxrule=0.5pt]
  	{\small
  	\begin{verbatim}
-  ----------------                                                                    
-  *** Compute DMN                                                                     
-  ----------------                                                                    
-                                                                                      
-  Number of symmetry operators =    24    
+  ----------------
+  *** Compute DMN
+  ----------------
+
+  Number of symmetry operators =    24
 	\end{verbatim}
 	}
 	\end{tcolorbox}
@@ -101,9 +101,9 @@ The list of site-symmetry operations may be found in the {\tt .sym} file and in 
 	{\tt
 	\begin{quote}
 	begin projections
-	
+
 	f= 0.0, 0.0, 0.0 : p
-	
+
 	end projections
 	\end{quote}
 	}
@@ -131,7 +131,7 @@ The list of site-symmetry operations may be found in the {\tt .sym} file and in 
 \begin{itemize}
 	\item[1-5] {\it  Compute the symmetry-adapted MLWFs.}
 
-	We can construct also construct a representation of dimension $4=3+1$ for the 4 valence bands by specifying 1 $s$-like orbital and 3 $p$-like orbitals on Ga, which corresponds to the irreducible representations $A_1$ and $T_2$ respectively. However, it would not be possible to  
+	We can construct also construct a representation of dimension $4=3+1$ for the 4 valence bands by specifying 1 $s$-like orbital and 3 $p$-like orbitals on Ga, which corresponds to the irreducible representations $A_1$ and $T_2$ respectively. However, it would not be possible to
 {\tt
 \begin{quote}
 begin projections
@@ -231,7 +231,7 @@ f= 0.125, -.375, 0.125: s
 end projections
 	\end{quote}
 	}
-	
+
 \end{itemize}
 	\begin{figure}[h!]
 	\centering

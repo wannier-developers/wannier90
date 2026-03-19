@@ -59,9 +59,9 @@
 6. Run `postw90` to compute nonlinear shift current
 
     ```bash title="Terminal"
-    postw90.x GaAs` # (1)! 
+    postw90.x GaAs` # (1)!
 
-    mpirun -np 8 postw90.x GaAs  # (2)! 
+    mpirun -np 8 postw90.x GaAs  # (2)!
     ```
 
     1. serial execution
