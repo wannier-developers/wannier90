@@ -17,7 +17,7 @@ cat proj.out |grep '=='|awk '{print $5}' > e.dat
 cat proj.out |grep '|psi|^2'|awk '{print $3}' > p.dat
 paste e.dat p.dat > tmp.dat
 
-sort -k1n tmp.dat > p_vs_e.dat 
+sort -k1n tmp.dat > p_vs_e.dat
 
 # Clean workspace
 rm e.dat p.dat tmp.dat

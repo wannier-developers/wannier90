@@ -183,7 +183,7 @@ w90_input_setopt must be called after the last call to w90_set_option.
     CALL w90_set_option(w90main, 'kpoints', kpt_latt)   ! rank-2 real array
     CALL w90_set_option(w90main, 'mp_grid', mp_grid)    ! rank-1 integer array
     CALL w90_set_option(w90main, 'num_iter', num_iter)  ! integer scalar
-    CALL w90_set_option(w90main, 'spinors', noncolin)   ! logical 
+    CALL w90_set_option(w90main, 'spinors', noncolin)   ! logical
     CALL w90_set_option(w90main, 'dis_froz_max', dis_froz_max) ! real scalar
 ```
 

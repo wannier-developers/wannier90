@@ -1,4 +1,4 @@
-This folder contains make.inc template files that are used by different 
+This folder contains make.inc template files that are used by different
 test farms.
 
 Currently included test farms include:

@@ -16,7 +16,7 @@ from . import show_output
 # 2: multiplicity
 near_neigh_re = re.compile(r"^\s*\|\s+(\d+)\s+([\d\.]+)\s*(\d+)\s*")
 
-# Match the 'WF centre and spread' line. 
+# Match the 'WF centre and spread' line.
 # Groups:
 # 0: idx
 # 1: centre_x
@@ -57,7 +57,7 @@ def parse(fname):
 
         ###############################################################
         # Nearest-neighbour Shells
-        # Start from the fourth line after 
+        # Start from the fourth line after
         # 'Distance to Nearest-Neighbour Shells',
         # then stop at the line with ------------------
         if "Distance to Nearest-Neighbour Shells" in l:
@@ -65,11 +65,11 @@ def parse(fname):
                 match = near_neigh_re.search(l2)
                 if not match or '--------------------------------------' in l2:
                     break
-                _, dist, mult = match.groups() 
+                _, dist, mult = match.groups()
                 retdict["near_neigh_dist"].append(float(dist))
                 retdict["near_neigh_mult"].append(int(mult))
             continue
-        
+
         ###############################################################
         # b_k vectors
         # Start from the fourth line after
@@ -152,7 +152,7 @@ def parse(fname):
             retdict["omegaTotal_C"].append(float(match.groups()[0]))
             continue
         ###############################################################
-        
+
 
     retdict = dict(retdict)
     if show_output:

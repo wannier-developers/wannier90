@@ -138,7 +138,7 @@ The `seedname_hr.dat` file should be copied to a directory containing
 executable for the utility. Within that directory, run:
 
 ```bash title="Terminal"
-./PL_assess.x  nk1 nk2 nk3 num_wann 
+./PL_assess.x  nk1 nk2 nk3 num_wann
 ```
 
 where:

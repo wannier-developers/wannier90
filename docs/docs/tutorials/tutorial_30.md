@@ -60,8 +60,8 @@
 6. Run `postw90`
 
     ```bash title="Terminal"
-    postw90.x GaAs # (1)! 
-    mpirun -np 8 postw90.x GaAs # (2)! 
+    postw90.x GaAs # (1)!
+    mpirun -np 8 postw90.x GaAs # (2)!
     ```
 
     1. serial execution

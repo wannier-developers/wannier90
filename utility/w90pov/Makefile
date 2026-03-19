@@ -7,7 +7,7 @@ OBJECTS= \
 	$(OBJ)/main.o
 GENMODS= \
 	$(OBJ)/general.o \
-	$(OBJ)/io.o 
+	$(OBJ)/io.o
 
 MODULES=$(OBJ)/write_df3.o\
 	$(OBJ)/driver.o

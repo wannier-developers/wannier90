@@ -71,7 +71,7 @@ the new input files `Fe.pw2wan` and `Fe.win`.
 6. Run `postw90` to compute the orbital magnetization.
 
     ```bash title="Terminal"
-    postw90.x Fe # (1)! 
+    postw90.x Fe # (1)!
     mpirun -np 8 postw90.x Fe  # (2)!
     ```
 

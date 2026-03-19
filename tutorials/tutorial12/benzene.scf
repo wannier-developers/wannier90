@@ -5,18 +5,18 @@
     pseudo_dir   = '../../pseudo/'
     outdir       = './'
  /
- &system    
+ &system
     ibrav     =  1
     celldm(1) = 30
     nat       =  12
     ntyp      =  2
     ecutwfc   = 30.0
     ecutrho   = 240.0
-    occupations = 'fixed' 
+    occupations = 'fixed'
  /
  &electrons
     diagonalization = 'david'
-    mixing_beta     =  0.2 
+    mixing_beta     =  0.2
     conv_thr        =  1.0e-8
  /
 ATOMIC_SPECIES

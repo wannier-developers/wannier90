@@ -13,7 +13,7 @@
     ibrav=6
     a=16.0
     b=16.0
-    c=2.4628  
+    c=2.4628
     cosab=0.0
     cosac=0.0
     cosbc=0.0
@@ -31,7 +31,7 @@
     conv_thr =  1.0d-10
  /
 ATOMIC_SPECIES
- C    1   C.pbe-rrkjus.UPF 
+ C    1   C.pbe-rrkjus.UPF
 ATOMIC_POSITIONS {angstrom}
 C      3.378034423     -0.712837316     -0.615700000
 C      3.378034423      0.712837316     -0.615700000
