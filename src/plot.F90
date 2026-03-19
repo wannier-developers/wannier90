@@ -1706,20 +1706,20 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating c_wvfn in plot_wannier', comm)
           return
-        endif
+        end if
       else
         allocate (c_wvfn_nc(ngrid, wann_plot_num, 2), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating c_wvfn_nc in plot_wannier', comm)
           return
-        endif
-      endif
+        end if
+      end if
 
       allocate (phase_x(nxx_lo:nxx_hi), phase_y(nyy_lo:nyy_hi), phase_z(nzz_lo:nzz_hi), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating phase arrays in plot_wannier', comm)
         return
-      endif
+      end if
 
       call io_date(cdate, ctime)
       do loop_kpt = 1, num_kpts
@@ -1839,7 +1839,7 @@ contains
           c_wvfn = cmplx_0
         else
           c_wvfn_nc = cmplx_0
-        endif
+        end if
         do loop_b = 1, num_wann
           do loop_w = 1, wann_plot_num
             uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
@@ -1849,7 +1849,7 @@ contains
               else
                 c_wvfn_nc(npoint, loop_w, 1) = c_wvfn_nc(npoint, loop_w, 1) + uw*r_wvfn_nc(npoint, loop_b, 1)
                 c_wvfn_nc(npoint, loop_w, 2) = c_wvfn_nc(npoint, loop_w, 2) + uw*r_wvfn_nc(npoint, loop_b, 2)
-              endif
+              end if
             end do
           end do
         end do
@@ -2330,10 +2330,9 @@ contains
               do nzz = 1, ilength(3), 6
                 nend = min(nzz + 5, ilength(3))
                 write (file_unit, '(6E13.5)') wann_cube(nxx, nyy, nzz:nend)
-              enddo
-            enddo
-          enddo
-
+              end do
+            end do
+          end do
 
           deallocate (wann_cube, stat=ierr)
           if (ierr .ne. 0) then
@@ -2908,8 +2907,8 @@ contains
 !~             if (abs(aimag(f_w(r,s))-aimag(f_w2(r,s))).gt.eps6) then
 !~                write(*,'(a,i6,i6,f16.10,f16.10)') 'Im: ',r,s,aimag(f_w(r,s)),aimag(f_w2(r,s))
 !~             endif
-!~          enddo
-!~       enddo
+!~          end do
+!~       end do
 
     else
       ! for valence only, all occupancies are unity
