@@ -51,5 +51,5 @@ jobs:
 
             ---
             <sub>You might need to click the "Update/Rebase branch" button to update the pull request and rerun the GitHub actions to pass the CLA check.</sub>
-          #lock-pullrequest-aftermerge: false - if you don't want this bot to automatically lock the pull request after merging (default - true)
+          lock-pullrequest-aftermerge: false - if you don't want this bot to automatically lock the pull request after merging (default - true)
           #use-dco-flag: true - If you are using DCO instead of CLA
