@@ -1573,7 +1573,7 @@ contains
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    real(kind=dp) :: scalfac, tmax, tmaxx, x_0ang, y_0ang, z_0ang
+    real(kind=dp) :: tmax, tmaxx, x_0ang, y_0ang, z_0ang
     real(kind=dp) :: fxcry(3), dirl(3, 3), w_real, w_imag, ratmax, ratio
     real(kind=dp) :: upspinor, dnspinor, upphase, dnphase
 
@@ -1597,6 +1597,16 @@ contains
     character(len=60) :: wanxsf, wancube
     character(len=9)  :: cdate, ctime
     logical           :: inc_band(num_bands)
+
+    ! Pre-contracted wavefunction: band sum done once per unit cell point
+    complex(kind=dp), allocatable :: c_wvfn(:, :)
+    complex(kind=dp), allocatable :: c_wvfn_nc(:, :, :)
+    complex(kind=dp) :: uw, phase_yz
+    integer :: ngrid
+
+    ! Factored phase arrays
+    complex(kind=dp), allocatable :: phase_x(:), phase_y(:), phase_z(:)
+    integer :: nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi
 
     num_nodes = mpisize(comm)
     my_node_id = mpirank(comm)
@@ -1637,18 +1647,25 @@ contains
       else
         wann_plot_num = 0
       end if
-      allocate (wann_func(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
-                          -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                          -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot_num), stat=ierr)
+
+      ! Supercell grid bounds
+      nxx_lo = -((ngs(1))/2)*ngx
+      nxx_hi = ((ngs(1) + 1)/2)*ngx - 1
+      nyy_lo = -((ngs(2))/2)*ngy
+      nyy_hi = ((ngs(2) + 1)/2)*ngy - 1
+      nzz_lo = -((ngs(3))/2)*ngz
+      nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
+      ngrid = ngx*ngy*ngz
+
+      allocate (wann_func(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, wann_plot_num), stat=ierr)
+
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier', comm)
         return
       end if
       wann_func = cmplx_0
       if (spinors) then
-        allocate (wann_func_nc(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
-                               -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                               -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, 2, wann_plot_num), &
+        allocate (wann_func_nc(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, 2, wann_plot_num), &
                   stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_wannier', comm)
@@ -1682,6 +1699,26 @@ contains
           call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_wannier', comm)
           return
         end if
+      end if
+
+      if (.not. spinors) then
+        allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating c_wvfn in plot_wannier', comm)
+          return
+        end if
+      else
+        allocate (c_wvfn_nc(ngrid, wann_plot_num, 2), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating c_wvfn_nc in plot_wannier', comm)
+          return
+        end if
+      end if
+
+      allocate (phase_x(nxx_lo:nxx_hi), phase_y(nyy_lo:nyy_hi), phase_z(nzz_lo:nzz_hi), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating phase arrays in plot_wannier', comm)
+        return
       end if
 
       call io_date(cdate, ctime)
@@ -1797,6 +1834,37 @@ contains
           end if
         end if
 
+        ! Contract band index: c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
+        if (.not. spinors) then
+          c_wvfn = cmplx_0
+        else
+          c_wvfn_nc = cmplx_0
+        end if
+        do loop_b = 1, num_wann
+          do loop_w = 1, wann_plot_num
+            uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
+            do npoint = 1, ngrid
+              if (.not. spinors) then
+                c_wvfn(npoint, loop_w) = c_wvfn(npoint, loop_w) + uw*r_wvfn(npoint, loop_b)
+              else
+                c_wvfn_nc(npoint, loop_w, 1) = c_wvfn_nc(npoint, loop_w, 1) + uw*r_wvfn_nc(npoint, loop_b, 1)
+                c_wvfn_nc(npoint, loop_w, 2) = c_wvfn_nc(npoint, loop_w, 2) + uw*r_wvfn_nc(npoint, loop_b, 2)
+              end if
+            end do
+          end do
+        end do
+
+        ! Precompute factored phase arrays for this k-point
+        do nxx = nxx_lo, nxx_hi
+          phase_x(nxx) = exp(twopi*cmplx_i*kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp))
+        end do
+        do nyy = nyy_lo, nyy_hi
+          phase_y(nyy) = exp(twopi*cmplx_i*kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp))
+        end do
+        do nzz = nzz_lo, nzz_hi
+          phase_z(nzz) = exp(twopi*cmplx_i*kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp))
+        end do
+
         ! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
         ! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
         !
@@ -1806,63 +1874,28 @@ contains
         ! There is a big performance improvement in looping over num_wann
         ! in the inner loop. This is poor memory access for wann_func and
         ! but the reduced number of operations wins out.
-
-        do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
+        do nzz = nzz_lo, nzz_hi
           nz = mod(nzz, ngz)
           if (nz .lt. 1) nz = nz + ngz
-          do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
+          do nyy = nyy_lo, nyy_hi
             ny = mod(nyy, ngy)
             if (ny .lt. 1) ny = ny + ngy
-            do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+            phase_yz = phase_y(nyy)*phase_z(nzz)
+            do nxx = nxx_lo, nxx_hi
               nx = mod(nxx, ngx)
               if (nx .lt. 1) nx = nx + ngx
-
-              scalfac = kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp) + &
-                        kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp) + &
-                        kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp)
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-              catmp = exp(twopi*cmplx_i*scalfac)
-              do loop_b = 1, num_wann
-                do loop_w = 1, wann_plot_num
-                  if (.not. spinors) then
-                    wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w) + &
-                                                       u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)* &
-                                                       r_wvfn(npoint, loop_b)*catmp
-                  else
-                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
-                      wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
-                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
-                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
-                      wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
-                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
-                    if (loop_b == num_wann) then ! last loop
-                      upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
-                                      conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
-                      dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
-                                      conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
-                      if (wannier_plot%spinor_phase) then
-                        upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
-                        dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
-                      else
-                        upphase = 1.0_dp; dnphase = 1.0_dp
-                      end if
-                      select case (wannier_plot%spinor_mode)
-                      case ('total')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor + dnspinor), 0.0_dp, dp)
-                      case ('up')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor), 0.0_dp, dp)*upphase
-                      case ('down')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
-                      case default
-                        call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wannier_plot%spinor_mode), comm)
-                        return
-                      end select
-                      wann_func(nxx, nyy, nzz, loop_w) = &
-                        wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
-                    end if
-                  end if
-                end do
+              catmp = phase_x(nxx)*phase_yz
+              do loop_w = 1, wann_plot_num
+                if (.not. spinors) then
+                  wann_func(nxx, nyy, nzz, loop_w) = &
+                    wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
+                else
+                  wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
+                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
+                  wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
+                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
+                end if
               end do
             end do
           end do
@@ -1871,19 +1904,19 @@ contains
       end do !loop over kpoints
 
       if (spinors) then
-        call comms_reduce(wann_func_nc(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1, 1), &
+        call comms_reduce(wann_func_nc(nxx_lo, nyy_lo, nzz_lo, 1, 1), &
                           size(wann_func_nc), 'SUM', error, comm)
       else
-        call comms_reduce(wann_func(-((ngs(1))/2)*ngx, -((ngs(2))/2)*ngy, -((ngs(3))/2)*ngz, 1), &
+        call comms_reduce(wann_func(nxx_lo, nyy_lo, nzz_lo, 1), &
                           size(wann_func), 'SUM', error, comm)
       end if
       if (allocated(error)) return
 
       if (on_root) then
         if (spinors) then
-          do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-            do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-              do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+          do nzz = nzz_lo, nzz_hi
+            do nyy = nyy_lo, nyy_hi
+              do nxx = nxx_lo, nxx_hi
                 do loop_w = 1, wann_plot_num
                   upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
                                   conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
@@ -1923,9 +1956,9 @@ contains
           do loop_w = 1, wann_plot_num
             tmaxx = 0.0
             wmod = cmplx_1
-            do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-              do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-                do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+            do nzz = nzz_lo, nzz_hi
+              do nyy = nyy_lo, nyy_hi
+                do nxx = nxx_lo, nxx_hi
                   wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
                   tmax = real(wann_func(nxx, nyy, nzz, loop_w)* &
                               conjg(wann_func(nxx, nyy, nzz, loop_w)), dp)
@@ -1947,9 +1980,9 @@ contains
           !
           do loop_w = 1, wann_plot_num
             ratmax = 0.0_dp
-            do nzz = -((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1
-              do nyy = -((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1
-                do nxx = -((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1
+            do nzz = nzz_lo, nzz_hi
+              do nyy = nyy_lo, nyy_hi
+                do nxx = nxx_lo, nxx_hi
                   if (abs(real(wann_func(nxx, nyy, nzz, loop_w), dp)) >= 0.01_dp) then
                     ratio = abs(aimag(wann_func(nxx, nyy, nzz, loop_w)))/ &
                             abs(real(wann_func(nxx, nyy, nzz, loop_w), dp))
@@ -1977,6 +2010,12 @@ contains
       end if !on_root
 
     end associate
+
+    if (allocated(c_wvfn)) deallocate (c_wvfn)
+    if (allocated(c_wvfn_nc)) deallocate (c_wvfn_nc)
+    if (allocated(phase_x)) deallocate (phase_x)
+    if (allocated(phase_y)) deallocate (phase_y)
+    if (allocated(phase_z)) deallocate (phase_z)
 
     return
 
@@ -2013,23 +2052,23 @@ contains
       real(kind=dp) :: comf(3), wcf(3), diff(3), difc(3), dist
       integer :: ierr, iname, max_elements
       integer :: isp, iat, nzz, nyy, nxx, loop_w, qxx, qyy, qzz, wann_index
-      integer :: istart(3), iend(3), ilength(3)
+      integer :: istart(3), iend(3), ilength(3), nend
       integer :: ixx, iyy, izz
       integer :: irdiff(3), icount
       integer, allocatable :: atomic_Z(:)
       logical :: lmol, lcrys
       character(len=2), dimension(109) :: periodic_table = (/ &
-           & 'H ', 'He', &
-           & 'Li', 'Be', 'B ', 'C ', 'N ', 'O ', 'F ', 'Ne', &
-           & 'Na', 'Mg', 'Al', 'Si', 'P ', 'S ', 'Cl', 'Ar', &
-           & 'K ', 'Ca', 'Sc', 'Ti', 'V ', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', &
-           & 'Rb', 'Sr', 'Y ', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I ', 'Xe', &
-           & 'Cs', 'Ba', &
-           & 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', &
-           & 'Hf', 'Ta', 'W ', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', &
-           & 'Fr', 'Ra', &
-           & 'Ac', 'Th', 'Pa', 'U ', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
-           & 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt'/)
+           & 'h ', 'he', &
+           & 'li', 'be', 'b ', 'c ', 'n ', 'o ', 'f ', 'ne', &
+           & 'na', 'mg', 'al', 'si', 'p ', 's ', 'cl', 'ar', &
+           & 'k ', 'ca', 'sc', 'ti', 'v ', 'cr', 'mn', 'fe', 'co', 'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr', &
+           & 'rb', 'sr', 'y ', 'zr', 'nb', 'mo', 'tc', 'ru', 'rh', 'pd', 'ag', 'cd', 'in', 'sn', 'sb', 'te', 'i ', 'xe', &
+           & 'cs', 'ba', &
+           & 'la', 'ce', 'pr', 'nd', 'pm', 'sm', 'eu', 'gd', 'tb', 'dy', 'ho', 'er', 'tm', 'yb', 'lu', &
+           & 'hf', 'ta', 'w ', 're', 'os', 'ir', 'pt', 'au', 'hg', 'tl', 'pb', 'bi', 'po', 'at', 'rn', &
+           & 'fr', 'ra', &
+           & 'ac', 'th', 'pa', 'u ', 'np', 'pu', 'am', 'cm', 'bk', 'cf', 'es', 'fm', 'md', 'no', 'lr', &
+           & 'rf', 'db', 'sg', 'bh', 'hs', 'mt'/)
 
       associate (ngs => wannier_plot%supercell)
 
@@ -2049,6 +2088,7 @@ contains
 
         ! Assign atomic numbers to species
         max_elements = size(periodic_table)
+        atomic_Z(:) = 0
         do isp = 1, atom_data%num_species
           do iname = 1, max_elements
             if (atom_data%symbol(isp) .eq. periodic_table(iname)) then
@@ -2147,8 +2187,8 @@ contains
             izz = int((abs(qzz) - 1)/ngz)
 !            if (qzz.lt.-ngz) qzz=qzz+izz*ngz
 !            if (qzz.gt.(ngs(3)-1)*ngz-1) then
-            if (qzz .lt. (-((ngs(3))/2)*ngz)) qzz = qzz + izz*ngz
-            if (qzz .gt. ((ngs(3) + 1)/2)*ngz - 1) then
+            if (qzz .lt. nzz_lo) qzz = qzz + izz*ngz
+            if (qzz .gt. nzz_hi) then
               write (stdout, *) 'Error plotting WF cube. Try one of the following:'
               write (stdout, *) '   (1) increase wannier_plot_supercell;'
               write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2161,8 +2201,8 @@ contains
               iyy = int((abs(qyy) - 1)/ngy)
 !               if (qyy.lt.-ngy) qyy=qyy+iyy*ngy
 !               if (qyy.gt.(ngs(2)-1)*ngy-1) then
-              if (qyy .lt. (-((ngs(2))/2)*ngy)) qyy = qyy + iyy*ngy
-              if (qyy .gt. ((ngs(2) + 1)/2)*ngy - 1) then
+              if (qyy .lt. nyy_lo) qyy = qyy + iyy*ngy
+              if (qyy .gt. nyy_hi) then
                 write (stdout, *) 'Error plotting WF cube. Try one of the following:'
                 write (stdout, *) '   (1) increase wannier_plot_supercell;'
                 write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2175,8 +2215,8 @@ contains
                 ixx = int((abs(qxx) - 1)/ngx)
 !                  if (qxx.lt.-ngx) qxx=qxx+ixx*ngx
 !                  if (qxx.gt.(ngs(1)-1)*ngx-1) then
-                if (qxx .lt. (-((ngs(1))/2)*ngx)) qxx = qxx + ixx*ngx
-                if (qxx .gt. ((ngs(1) + 1)/2)*ngx - 1) then
+                if (qxx .lt. nxx_lo) qxx = qxx + ixx*ngx
+                if (qxx .gt. nxx_hi) then
                   write (stdout, *) 'Error plotting WF cube. Try one of the following:'
                   write (stdout, *) '   (1) increase wannier_plot_supercell;'
                   write (stdout, *) '   (2) decrease wannier_plot_radius;'
@@ -2287,9 +2327,9 @@ contains
           ! Volumetric data in batches of 6 values per line, 'z'-direction first.
           do nxx = 1, ilength(1)
             do nyy = 1, ilength(2)
-              do nzz = 1, ilength(3)
-                write (file_unit, '(E13.5)', advance='no') wann_cube(nxx, nyy, nzz)
-                if ((mod(nzz, 6) .eq. 0) .or. (nzz .eq. ilength(3))) write (file_unit, '(a)') ''
+              do nzz = 1, ilength(3), 6
+                nend = min(nzz + 5, ilength(3))
+                write (file_unit, '(6E13.5)') wann_cube(nxx, nyy, nzz:nend)
               end do
             end do
           end do
@@ -2369,7 +2409,7 @@ contains
           end if
           do nsp = 1, atom_data%num_species
             do nat = 1, atom_data%species_num(nsp)
-              write (file_unit, '(a2,3x,3f12.7)') atom_data%symbol(nsp), (atom_data%pos_cart(i, nat, nsp), i=1, 3)
+              write (file_unit, '(a2,3x,3f12.7)') atom_data%label(nsp), (atom_data%pos_cart(i, nat, nsp), i=1, 3)
             end do
           end do
 
@@ -2381,8 +2421,8 @@ contains
           write (file_unit, '(3f12.7)') dirl(2, 1), dirl(2, 2), dirl(2, 3)
           write (file_unit, '(3f12.7)') dirl(3, 1), dirl(3, 2), dirl(3, 3)
           write (file_unit, '(6e13.5)') &
-            (((real(wann_func(nx, ny, nz, loop_b)), nx=-((ngs(1))/2)*ngx, ((ngs(1) + 1)/2)*ngx - 1), &
-              ny=-((ngs(2))/2)*ngy, ((ngs(2) + 1)/2)*ngy - 1), nz=-((ngs(3))/2)*ngz, ((ngs(3) + 1)/2)*ngz - 1)
+            (((real(wann_func(nx, ny, nz, loop_b)), nx=nxx_lo, nxx_hi), &
+              ny=nyy_lo, nyy_hi), nz=nzz_lo, nzz_hi)
           write (file_unit, '("END_DATAGRID_3D",/, "END_BLOCK_DATAGRID_3D")')
           close (file_unit)
 
@@ -2863,12 +2903,12 @@ contains
 !~          do s=1,num_wann
 !~             if (abs(real(f_w(r,s),dp)-real(f_w2(r,s),dp)).gt.eps6) then
 !~                write(*,'(i6,i6,f16.10,f16.10)') r,s,real(f_w(r,s),dp),real(f_w2(r,s),dp)
-!~             endif
+!~             end if
 !~             if (abs(aimag(f_w(r,s))-aimag(f_w2(r,s))).gt.eps6) then
 !~                write(*,'(a,i6,i6,f16.10,f16.10)') 'Im: ',r,s,aimag(f_w(r,s)),aimag(f_w2(r,s))
-!~             endif
-!~          enddo
-!~       enddo
+!~             end if
+!~          end do
+!~       end do
 
     else
       ! for valence only, all occupancies are unity
@@ -3134,7 +3174,7 @@ contains
     end do
     do nsp = 1, atom_data%num_species
       do nat = 1, atom_data%species_num(nsp)
-        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%symbol(nsp), atom_data%pos_cart(:, nat, nsp)
+        write (xyz_unit, '(a2,5x,3(f14.8,3x))') atom_data%label(nsp), atom_data%pos_cart(:, nat, nsp)
       end do
     end do
     close (xyz_unit)
