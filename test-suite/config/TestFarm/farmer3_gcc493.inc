@@ -8,7 +8,7 @@ FCOPTS = -O3 -g -x f95-cpp-input -I/home/farmer3/local/mpitch314_gcc493/include/
 LDOPTS = -g -pthread
 
 #Next two lines are good for debugging
-#FCOPTS = -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace 
+#FCOPTS = -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
 #LDOPTS = -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -O1 -g -fbacktrace
 
 
@@ -22,7 +22,7 @@ LDOPTS = -g -pthread
 #=======================
 # NETLIB LAPACK and BLAS
 #=======================
-#LIBDIR = /rscratch/jry20/LIB/gfortran 
+#LIBDIR = /rscratch/jry20/LIB/gfortran
 #LIBS = -L$(LIBDIR)  -llapack -lblas
 
 #=======================
@@ -32,4 +32,3 @@ LDOPTS = -g -pthread
 # on Ubuntu
 #=======================
 LIBS = -llapack -lblas
-

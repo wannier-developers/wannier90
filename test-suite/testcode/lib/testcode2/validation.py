@@ -229,7 +229,7 @@ def compare_data(benchmark, test, default_tolerance, tolerances,
     comparable = comparable and compat.compat_all(kc == 0 for kc in key_counts.values())
     status = Status()
     msg = []
-    
+
     if not comparable:
         status = Status([False])
         bench_only = bench_params - test_params

@@ -47,7 +47,7 @@ position of the inner and outer energy windows are shown in the bandstructure
 
     ```vi title="Input file"
     restart = plot
-    
+
     bands_plot = true
     ```
 

@@ -23,13 +23,12 @@
  /
 
 ATOMIC_SPECIES
-   Ga     234.00000  Ga.rel-pbe-dn-kjpaw_psl.0.2.UPF 
-   As     123.00000  As.rel-pbe-n-kjpaw_psl.0.2.UPF  
- 
+   Ga     234.00000  Ga.rel-pbe-dn-kjpaw_psl.0.2.UPF
+   As     123.00000  As.rel-pbe-n-kjpaw_psl.0.2.UPF
+
 ATOMIC_POSITIONS {crystal}
 Ga       0.00        0.00        0.00
 As       0.25        0.25        0.25
 
 K_POINTS {automatic}
 10 10 10  0  0  0
-

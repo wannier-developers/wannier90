@@ -13,4 +13,3 @@ LDOPTS=-O2
 
 LIBDIR = /home/farm2/local/intel15/composer_xe_2015.3.187/mkl/lib/intel64/
 LIBS   = -L/home/farm2/local/impi51_intel15/compilers_and_libraries_2016.0.079/linux/mpi/intel64/lib/ -lmpi -lmpifort  -L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
-

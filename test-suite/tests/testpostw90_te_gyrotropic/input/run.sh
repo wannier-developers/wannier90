@@ -36,4 +36,3 @@ fi
 $wan90cmd Te
 
 $postw90cmd Te
-

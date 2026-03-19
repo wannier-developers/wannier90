@@ -18,7 +18,7 @@ class DirLock:
         self.lock = threading.Lock()
     def with_lock(self, func):
         '''Decorate function to be executed whilst holding the lock.
-        
+
 :param function func: arbitary function.
 '''
         @compat.functools.wraps(func)
@@ -37,7 +37,7 @@ The thread executing the function holds the lock whilst entering ddir and
 executing the function.  This makes such actions thread-safe with respect to
 the directory location but is not appropriate for computationally-demanding
 functions.
-        
+
 :param string ddir: directory in which the decorated function is executed.
 '''
         # Because we wish to use this as a decorator with arguments passed to
@@ -46,7 +46,7 @@ functions.
         # decorators at: http://stackoverflow.com/a/1594484
         def wrapper(func):
             '''Wrap func to hold lock whilst being executed in ddir.
-            
+
 :param string func: arbitrary function.
 '''
             @compat.functools.wraps(func)

@@ -23,12 +23,12 @@ module w90_postw90_readwrite
 
   use w90_constants, only: dp, maxlen
   use w90_types, only: print_output_type, print_output_type, wannier_data_type, &
-    kmesh_input_type, kmesh_info_type, dis_manifold_type, atom_data_type, kpoint_path_type, &
-    proj_type, w90_system_type, ws_region_type, settings_type
+                       kmesh_input_type, kmesh_info_type, dis_manifold_type, atom_data_type, kpoint_path_type, &
+                       proj_type, w90_system_type, ws_region_type, settings_type
   use w90_readwrite
   use w90_postw90_types
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -497,22 +497,22 @@ contains
         index(pw90_kslice%task, 'shc') == 0) then
       call set_error_input(error, 'Error: value of kslice_task not recognised in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     if (kslicel .and. index(pw90_kslice%task, 'curv') > 0 .and. &
         index(pw90_kslice%task, 'morb') > 0) then
       call set_error_input(error, "Error: kslice_task cannot include both 'curv' and 'morb'", comm)
       return
-    endif
+    end if
     if (kslicel .and. index(pw90_kslice%task, 'shc') > 0 .and. &
         index(pw90_kslice%task, 'morb') > 0) then
       call set_error_input(error, "Error: kslice_task cannot include both 'shc' and 'morb'", comm)
       return
-    endif
+    end if
     if (kslicel .and. index(pw90_kslice%task, 'shc') > 0 .and. &
         index(pw90_kslice%task, 'curv') > 0) then
       call set_error_input(error, "Error: kslice_task cannot include both 'shc' and 'curv'", comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_vector_length(settings, 'kslice_2dkmesh', found, i, error, comm)
     if (allocated(error)) return
@@ -530,13 +530,13 @@ contains
         call set_error_input(error, 'Error: kslice_2dkmesh must be provided as either' &
                              //' one integer or a vector of two integers', comm)
         return
-      endif
+      end if
       if (any(pw90_kslice%kmesh2d <= 0)) then
         call set_error_input(error, 'Error: kslice_2dkmesh elements must be greater than zero', &
                              comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     call w90_readwrite_get_keyword_vector(settings, 'kslice_corner', found, 3, error, comm, &
                                           r_value=pw90_kslice%corner)
@@ -558,7 +558,7 @@ contains
       call set_error_input(error, 'Error: value of kslice_fermi_lines_colour not recognised ' &
                            //'in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
 !    slice_plot_format         = 'plotmv'
 !    call w90_readwrite_get_keyword(settings, 'slice_plot_format',found,c_value=slice_plot_format)
   end subroutine w90_wannier90_readwrite_read_kslice
@@ -586,7 +586,7 @@ contains
     if (found) then
       pw90_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'smr_type', error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     ! By default: adaptive smearing
     call w90_readwrite_get_keyword(settings, 'adpt_smr', found, error, comm, &
@@ -600,7 +600,7 @@ contains
     if (found .and. (pw90_smearing%adaptive_prefactor <= 0._dp)) then
       call set_error_input(error, 'Error: adpt_smr_fac must be greater than zero', comm)
       return
-    endif
+    end if
 
     ! By default: 1 eV
     call w90_readwrite_get_keyword(settings, 'adpt_smr_max', found, error, comm, &
@@ -609,7 +609,7 @@ contains
     if (pw90_smearing%adaptive_max_width <= 0._dp) then
       call set_error_input(error, 'Error: adpt_smr_max must be greater than zero', comm)
       return
-    endif
+    end if
 
     ! By default: if adpt_smr is manually set to false by the user, but he/she doesn't
     ! define smr_fixed_en_width: NO smearing, i.e. just the histogram
@@ -619,7 +619,7 @@ contains
     if (found .and. (pw90_smearing%fixed_width < 0._dp)) then
       call set_error_input(error, 'Error: smr_fixed_en_width must be greater than or equal to zero', comm)
       return
-    endif
+    end if
   end subroutine w90_wannier90_readwrite_read_smearing
 
   !================================================!
@@ -719,7 +719,7 @@ contains
                                             3, error, comm, r_value=gyrotropic_box_tmp)
       if (allocated(error)) return
       if (found) pw90_gyrotropic%box(i, :) = gyrotropic_box_tmp(:)
-    enddo
+    end do
     call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_center', found, 3, error, &
                                           comm, r_value=gyrotropic_box_tmp)
     if (allocated(error)) return
@@ -734,13 +734,13 @@ contains
       if (pw90_gyrotropic%num_bands < 1) then
         call set_error_input(error, 'Error: problem reading gyrotropic_band_list', comm)
         return
-      endif
+      end if
       if (allocated(pw90_gyrotropic%band_list)) deallocate (pw90_gyrotropic%band_list)
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, &
                                           pw90_gyrotropic%num_bands, .false., error, comm, &
                                           pw90_gyrotropic%band_list)
@@ -748,7 +748,7 @@ contains
       if (any(pw90_gyrotropic%band_list < 1) .or. any(pw90_gyrotropic%band_list > num_wann)) then
         call set_error_input(error, 'Error: gyrotropic_band_list asks for a non-valid bands', comm)
         return
-      endif
+      end if
     else
       ! include all bands in the calculation
       pw90_gyrotropic%num_bands = num_wann
@@ -757,7 +757,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating gyrotropic_band_list in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       do loop = 1, num_wann
         pw90_gyrotropic%band_list(loop) = loop
       end do
@@ -770,7 +770,7 @@ contains
     if (found .and. (smr_max_arg <= 0._dp)) then
       call set_error_input(error, 'Error: smr_max_arg must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_gyrotropic%smearing%max_arg = smr_max_arg
     call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_max_arg', found, error, comm, &
@@ -779,7 +779,7 @@ contains
     if (found .and. (pw90_gyrotropic%smearing%max_arg <= 0._dp)) then
       call set_error_input(error, 'Error: gyrotropic_smr_max_arg must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_gyrotropic%smearing%fixed_width = smr_fixed_en_width
     call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_fixed_en_width', found, error, comm, &
@@ -788,7 +788,7 @@ contains
     if (found .and. (pw90_gyrotropic%smearing%fixed_width < 0._dp)) then
       call set_error_input(error, 'Error: gyrotropic_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
-    endif
+    end if
 
     ! By default: use the "global" smearing index
     pw90_gyrotropic%smearing%type_index = smr_index
@@ -800,7 +800,7 @@ contains
                                                                              'gyrotropic_smr_type', &
                                                                              error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
   end subroutine w90_wannier90_readwrite_read_gyrotropic
 
@@ -844,7 +844,7 @@ contains
     if (pw90_berry%transl_inv .and. pw90_berry%transl_inv_full) then
       call set_error_input(error, 'Error: If transl_inv_full=T, transl_inv=T is not recommended', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'guiding_centres', found, error, comm, &
                                    l_value=pw90_berry%guiding_centres)
@@ -855,7 +855,7 @@ contains
     if (pw90_calculation%berry .and. .not. found) then
       call set_error_input(error, 'Error: berry=T and berry_task is not set', comm)
       return
-    endif
+    end if
     if (pw90_calculation%berry .and. index(pw90_berry%task, 'ahc') == 0 &
         .and. index(pw90_berry%task, 'morb') == 0 &
         .and. index(pw90_berry%task, 'kubo') == 0 .and. index(pw90_berry%task, 'sc') == 0 &
@@ -863,7 +863,7 @@ contains
 
       call set_error_input(error, 'Error: value of berry_task not recognised in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh', found, error, comm, &
                                    i_value=pw90_berry%curv_adpt_kmesh)
@@ -871,7 +871,7 @@ contains
     if (pw90_berry%curv_adpt_kmesh < 1) then
       call set_error_input(error, 'Error:  berry_curv_adpt_kmesh must be a positive integer', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh_thresh', found, error, comm, &
                                    r_value=pw90_berry%curv_adpt_kmesh_thresh)
@@ -883,7 +883,7 @@ contains
     if (pw90_berry%curv_unit .ne. 'ang2' .and. pw90_berry%curv_unit .ne. 'bohr2') then
       call set_error_input(error, 'Error: value of berry_curv_unit not recognised in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'wanint_kpoint_file', found, error, comm, &
                                    l_value=pw90_berry%wanint_kpoint_file)
@@ -904,7 +904,7 @@ contains
     if (found .and. (pw90_berry%kubo_smearing%adaptive_prefactor <= 0._dp)) then
       call set_error_input(error, 'Error: kubo_adpt_smr_fac must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_berry%kubo_smearing%adaptive_max_width = pw90_smearing%adaptive_max_width
     call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_max', found, error, comm, &
@@ -913,7 +913,7 @@ contains
     if (pw90_berry%kubo_smearing%adaptive_max_width <= 0._dp) then
       call set_error_input(error, 'Error: kubo_adpt_smr_max must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_berry%kubo_smearing%fixed_width = pw90_smearing%fixed_width
     call w90_readwrite_get_keyword(settings, 'kubo_smr_fixed_en_width', found, error, comm, &
@@ -922,7 +922,7 @@ contains
     if (found .and. (pw90_berry%kubo_smearing%fixed_width < 0._dp)) then
       call set_error_input(error, 'Error: kubo_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'sc_phase_conv', found, error, comm, &
                                    i_value=pw90_berry%sc_phase_conv)
@@ -930,7 +930,7 @@ contains
     if ((pw90_berry%sc_phase_conv .ne. 1) .and. ((pw90_berry%sc_phase_conv .ne. 2))) then
       call set_error_input(error, 'Error: sc_phase_conv must be either 1 or 2', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'sc_use_eta_corr', found, error, comm, &
                                    l_value=pw90_berry%sc_use_eta_corr)
@@ -944,7 +944,7 @@ contains
       pw90_berry%kubo_smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'kubo_smr_type', &
                                                                              error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'sc_eta', found, error, comm, &
                                    r_value=pw90_berry%sc_eta)
@@ -984,19 +984,19 @@ contains
       if (kdotp_num_bands < 1) then
         call set_error_input(error, 'Error: problem reading kdotp_num_bands', comm)
         return
-      endif
+      end if
       allocate (pw90_berry%kdotp_bands(kdotp_num_bands), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kdotp_num_bands in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, kdotp_num_bands, &
                                           .false., error, comm, pw90_berry%kdotp_bands)
       if (allocated(error)) return
       if (any(pw90_berry%kdotp_bands < 1)) then
         call set_error_input(error, 'Error: kdotp_bands must contain positive numbers', comm)
         return
-      endif
+      end if
     end if
 
   end subroutine w90_wannier90_readwrite_read_berry
@@ -1035,7 +1035,7 @@ contains
     if (found .and. (pw90_spin_hall%alpha < 1 .or. pw90_spin_hall%alpha > 3)) then
       call set_error_input(error, 'Error:  shc_alpha must be 1, 2 or 3', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'shc_beta', found, error, comm, &
                                    i_value=pw90_spin_hall%beta)
@@ -1043,7 +1043,7 @@ contains
     if (found .and. (pw90_spin_hall%beta < 1 .or. pw90_spin_hall%beta > 3)) then
       call set_error_input(error, 'Error:  shc_beta must be 1, 2 or 3', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'shc_gamma', found, error, comm, &
                                    i_value=pw90_spin_hall%gamma)
@@ -1051,7 +1051,7 @@ contains
     if (found .and. (pw90_spin_hall%gamma < 1 .or. pw90_spin_hall%gamma > 3)) then
       call set_error_input(error, 'Error:  shc_gamma must be 1, 2 or 3', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'shc_bandshift', found, error, comm, &
                                    l_value=pw90_spin_hall%bandshift)
@@ -1061,7 +1061,7 @@ contains
     if ((abs(scissors_shift) > 1.0e-7_dp) .and. pw90_spin_hall%bandshift) then
       call set_error_input(error, 'Error: shc_bandshift and scissors_shift cannot be used simultaneously', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'shc_bandshift_firstband', found, error, comm, &
                                    i_value=pw90_spin_hall%bandshift_firstband)
@@ -1069,11 +1069,11 @@ contains
     if (pw90_spin_hall%bandshift .and. (.not. found)) then
       call set_error_input(error, 'Error: shc_bandshift required but no shc_bandshift_firstband provided', comm)
       return
-    endif
+    end if
     if ((pw90_spin_hall%bandshift_firstband < 1) .and. found) then
       call set_error_input(error, 'Error: shc_bandshift_firstband must >= 1', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'shc_bandshift_energyshift', found, error, comm, &
                                    r_value=pw90_spin_hall%bandshift_energyshift)
@@ -1081,7 +1081,7 @@ contains
     if (pw90_spin_hall%bandshift .and. (.not. found)) then
       call set_error_input(error, 'Error: shc_bandshift required but no shc_bandshift_energyshift provided', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'shc_method', found, error, comm, &
                                    c_value=pw90_spin_hall%method)
@@ -1089,20 +1089,20 @@ contains
     if (index(berry_task, 'shc') > 0 .and. .not. found) then
       call set_error_input(error, 'Error: berry_task=shc and shc_method is not set', comm)
       return
-    endif
+    end if
     if (index(berry_task, 'shc') > 0 .and. index(pw90_spin_hall%method, 'qiao') == 0 &
         .and. index(pw90_spin_hall%method, 'ryoo') == 0) then
       call set_error_input(error, 'Error: value of shc_method not recognised in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     if (index(pw90_spin_hall%method, 'qiao') > 0) then
       call w90_readwrite_get_keyword(settings, 'transl_inv_full', found, error, comm, &
                                      l_value=transl_inv_full)
       if (transl_inv_full) then
         call set_error_input(error, 'Error: transl_inv_full=T not implemented for shc_method=qiao', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
   end subroutine w90_wannier90_readwrite_read_spin_hall
 
@@ -1157,11 +1157,11 @@ contains
         index(pw90_kpath%task, 'shc') == 0) then
       call set_error_input(error, 'Error: value of kpath_task not recognised in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     if (.not. allocated(kpoint_path%labels) .and. pw90_calculation%kpath) then
       call set_error_input(error, 'Error: a kpath plot has been requested but there is no kpoint_path block', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'kpath_num_points', found, error, comm, &
                                    i_value=pw90_kpath%num_points)
@@ -1169,7 +1169,7 @@ contains
     if (pw90_kpath%num_points < 0) then
       call set_error_input(error, 'Error: kpath_num_points must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'kpath_bands_colour', found, error, comm, &
                                    c_value=pw90_kpath%bands_colour)
@@ -1179,12 +1179,12 @@ contains
         index(pw90_kpath%bands_colour, 'shc') == 0) then
       call set_error_input(error, 'Error: value of kpath_bands_colour not recognised in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     if (pw90_calculation%kpath .and. index(pw90_kpath%task, 'shc') > 0 .and. &
         index(pw90_kpath%task, 'spin') > 0) then
       call set_error_input(error, "Error: kpath_task cannot include both 'shc' and 'spin'", comm)
       return
-    endif
+    end if
 
   end subroutine w90_wannier90_readwrite_read_pw90_kpath
 
@@ -1218,7 +1218,7 @@ contains
       dos_plot = .true.
     else
       dos_plot = .false.
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'dos_task', found, error, comm, c_value=pw90_dos%task)
     if (allocated(error)) return
     if (pw90_calculation%dos) then
@@ -1226,12 +1226,12 @@ contains
           index(pw90_dos%task, 'find_fermi_energy') == 0) then
         call set_error_input(error, 'Error: value of dos_task not recognised in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       if (index(pw90_dos%task, 'dos_plot') > 0) dos_plot = .true.
       if (index(pw90_dos%task, 'find_fermi_energy') > 0 .and. found_fermi_energy) then
         call set_error_input(error, 'Error: Cannot set "dos_task = find_fermi_energy" and give a value to "fermi_energy"', comm)
         return
-      endif
+      end if
     end if
 
 !    sigma_abc_onlyorb=.false.
@@ -1257,7 +1257,7 @@ contains
     if (found .and. (pw90_dos%smearing%adaptive_prefactor <= 0._dp)) then
       call set_error_input(error, 'Error: dos_adpt_smr_fac must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_dos%smearing%adaptive_max_width = pw90_smearing%adaptive_max_width
     call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_max', found, error, comm, &
@@ -1266,7 +1266,7 @@ contains
     if (pw90_dos%smearing%adaptive_max_width <= 0._dp) then
       call set_error_input(error, 'Error: dos_adpt_smr_max must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_dos%smearing%fixed_width = pw90_smearing%fixed_width
     call w90_readwrite_get_keyword(settings, 'dos_smr_fixed_en_width', found, error, comm, &
@@ -1275,7 +1275,7 @@ contains
     if (found .and. (pw90_dos%smearing%fixed_width < 0._dp)) then
       call set_error_input(error, 'Error: dos_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
-    endif
+    end if
 
 !    dos_gaussian_width        = 0.1_dp
 !    call w90_readwrite_get_keyword(settings, 'dos_gaussian_width',found,r_value=dos_gaussian_width)
@@ -1290,13 +1290,13 @@ contains
       if (pw90_dos%num_project < 1) then
         call set_error_input(error, 'Error: problem reading dos_project', comm)
         return
-      endif
+      end if
       if (allocated(pw90_dos%project)) deallocate (pw90_dos%project)
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating dos_project in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'dos_project', found, pw90_dos%num_project, &
                                           .false., error, comm, pw90_dos%project)
       if (allocated(error)) return
@@ -1304,7 +1304,7 @@ contains
           any(pw90_dos%project > num_wann)) then
         call set_error_input(error, 'Error: dos_project asks for out-of-range Wannier functions', comm)
         return
-      endif
+      end if
     else
       ! by default plot all
       pw90_dos%num_project = num_wann
@@ -1313,11 +1313,11 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating dos_project in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       do i = 1, pw90_dos%num_project
         pw90_dos%project(i) = i
       end do
-    endif
+    end if
 
     ! By default: use the "global" smearing index
     pw90_dos%smearing%type_index = pw90_smearing%type_index
@@ -1327,7 +1327,7 @@ contains
       pw90_dos%smearing%type_index = w90_readwrite_get_smearing_index(ctmp, 'dos_smr_type', &
                                                                       error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
   end subroutine w90_wannier90_readwrite_read_dos
 
@@ -1424,7 +1424,7 @@ contains
     if (found .and. (pw90_boltzwann%dos_energy_step <= 0._dp)) then
       call set_error_input(error, 'Error: boltz_dos_energy_step must be positive', comm)
       return
-    endif
+    end if
 
     if (associated(eigval)) then
       pw90_boltzwann%dos_energy_min = minval(eigval) - 0.6667_dp
@@ -1449,7 +1449,7 @@ contains
     if (pw90_boltzwann%dos_energy_max <= pw90_boltzwann%dos_energy_min) then
       call set_error_input(error, 'Error: boltz_dos_energy_max must be greater than boltz_dos_energy_min', comm)
       return
-    endif
+    end if
 
     pw90_boltzwann%dos_smearing%use_adaptive = pw90_smearing%use_adaptive
     call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr', found, error, comm, &
@@ -1463,7 +1463,7 @@ contains
     if (found .and. (pw90_boltzwann%dos_smearing%adaptive_prefactor <= 0._dp)) then
       call set_error_input(error, 'Error: boltz_dos_adpt_smr_fac must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_boltzwann%dos_smearing%adaptive_max_width = pw90_smearing%adaptive_max_width
     call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_max', found, error, comm, &
@@ -1472,7 +1472,7 @@ contains
     if (pw90_boltzwann%dos_smearing%adaptive_max_width <= 0._dp) then
       call set_error_input(error, 'Error: boltz_dos_adpt_smr_max must be greater than zero', comm)
       return
-    endif
+    end if
 
     pw90_boltzwann%dos_smearing%fixed_width = pw90_smearing%fixed_width
     call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_fixed_en_width', found, error, comm, &
@@ -1481,7 +1481,7 @@ contains
     if (found .and. (pw90_boltzwann%dos_smearing%fixed_width < 0._dp)) then
       call set_error_input(error, 'Error: boltz_dos_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'boltz_mu_min', found, error, comm, &
                                    r_value=pw90_boltzwann%mu_min)
@@ -1489,29 +1489,29 @@ contains
     if ((.not. found) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_min provided', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'boltz_mu_max', found2, error, comm, &
                                    r_value=pw90_boltzwann%mu_max)
     if (allocated(error)) return
     if ((.not. found2) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_max provided', comm)
       return
-    endif
+    end if
     if (found .and. found2 .and. (pw90_boltzwann%mu_max < pw90_boltzwann%mu_min)) then
       call set_error_input(error, 'Error: boltz_mu_max must be greater than boltz_mu_min', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'boltz_mu_step', found, error, comm, &
                                    r_value=pw90_boltzwann%mu_step)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_mu_step provided', comm)
       return
-    endif
+    end if
     if (found .and. (pw90_boltzwann%mu_step <= 0._dp)) then
       call set_error_input(error, 'Error: boltz_mu_step must be greater than zero', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'boltz_temp_min', found, error, comm, &
                                    r_value=pw90_boltzwann%temp_min)
@@ -1519,33 +1519,33 @@ contains
     if ((.not. found) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_min provided', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'boltz_temp_max', found2, error, comm, &
                                    r_value=pw90_boltzwann%temp_max)
     if (allocated(error)) return
     if ((.not. found2) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_max provided', comm)
       return
-    endif
+    end if
     if (found .and. found2 .and. (pw90_boltzwann%temp_max < pw90_boltzwann%temp_min)) then
       call set_error_input(error, 'Error: boltz_temp_max must be greater than boltz_temp_min', comm)
       return
-    endif
+    end if
     if (found .and. (pw90_boltzwann%temp_min <= 0._dp)) then
       call set_error_input(error, 'Error: boltz_temp_min must be greater than zero', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'boltz_temp_step', found, error, comm, &
                                    r_value=pw90_boltzwann%temp_step)
     if (allocated(error)) return
     if ((.not. found) .and. do_boltzwann) then
       call set_error_input(error, 'Error: BoltzWann required but no boltz_temp_step provided', comm)
       return
-    endif
+    end if
     if (found .and. (pw90_boltzwann%temp_step <= 0._dp)) then
       call set_error_input(error, 'Error: boltz_temp_step must be greater than zero', comm)
       return
-    endif
+    end if
 
     ! The interpolation mesh is read later on
 
@@ -1556,7 +1556,7 @@ contains
     if (pw90_boltzwann%tdf_energy_step <= 0._dp) then
       call set_error_input(error, 'Error: boltz_tdf_energy_step must be greater than zero', comm)
       return
-    endif
+    end if
 
     ! For TDF: TDF smeared in a NON-adaptive way; value in eV, default = 0._dp
     ! (i.e., no smearing)
@@ -1567,7 +1567,7 @@ contains
     if (found .and. (pw90_boltzwann%tdf_smearing%fixed_width < 0._dp)) then
       call set_error_input(error, 'Error: boltz_TDF_smr_fixed_en_width must be greater than or equal to zero', comm)
       return
-    endif
+    end if
 
     ! By default: use the "global" smearing index
     pw90_boltzwann%tdf_smearing%type_index = pw90_smearing%type_index
@@ -1577,7 +1577,7 @@ contains
       pw90_boltzwann%tdf_smearing%type_index = &
         w90_readwrite_get_smearing_index(ctmp, 'boltz_tdf_smr_type', error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     ! By default: use the "global" smearing index
     pw90_boltzwann%dos_smearing%type_index = pw90_smearing%type_index
@@ -1586,7 +1586,7 @@ contains
     if (found) then
       pw90_boltzwann%dos_smearing%type_index = &
         w90_readwrite_get_smearing_index(ctmp, 'boltz_dos_smr_type', error, comm)
-    endif
+    end if
 
     ! By default: 10 fs relaxation time
     call w90_readwrite_get_keyword(settings, 'boltz_relax_time', found, error, comm, &
@@ -1604,14 +1604,14 @@ contains
     if (pw90_boltzwann%bandshift .and. (.not. found)) then
       call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_firstband provided', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'boltz_bandshift_energyshift', found, error, comm, &
                                    r_value=pw90_boltzwann%bandshift_energyshift)
     if (allocated(error)) return
     if (pw90_boltzwann%bandshift .and. (.not. found)) then
       call set_error_input(error, 'Error: boltz_bandshift required but no boltz_bandshift_energyshift provided', comm)
       return
-    endif
+    end if
   end subroutine w90_wannier90_readwrite_read_boltzwann
 
   !================================================!
@@ -1684,7 +1684,7 @@ contains
     if (found .and. pw90_extra_io%kubo_freq_step < 0.0_dp) then
       call set_error_input(error, 'Error: kubo_freq_step must be positive', comm)
       return
-    endif
+    end if
 
     pw90_berry%kubo_nfreq = nint((pw90_extra_io%kubo_freq_max - pw90_extra_io%kubo_freq_min) &
                                  /pw90_extra_io%kubo_freq_step) + 1
@@ -1697,12 +1697,12 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kubo_freq_list in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     do i = 1, pw90_berry%kubo_nfreq
       pw90_berry%kubo_freq_list(i) = pw90_extra_io%kubo_freq_min + &
                                      (i - 1)*(pw90_extra_io%kubo_freq_max - &
                                               pw90_extra_io%kubo_freq_min)/(pw90_berry%kubo_nfreq - 1)
-    enddo
+    end do
 
     ! TODO: Alternatively, read list of (complex) frequencies; kubo_nfreq is
     !       the length of the list
@@ -1728,13 +1728,13 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     do i = 1, pw90_gyrotropic%nfreq
       pw90_gyrotropic%freq_list(i) = pw90_extra_io%gyrotropic_freq_min &
                                      + (i - 1)*(pw90_extra_io%gyrotropic_freq_max &
                                                 - pw90_extra_io%gyrotropic_freq_min)/(pw90_gyrotropic%nfreq - 1) &
                                      + cmplx_i*pw90_gyrotropic%smearing%fixed_width
-    enddo
+    end do
 
     if (dis_manifold%frozen_states) then
       pw90_berry%kubo_eigval_max = dis_manifold%froz_max + 0.6667_dp
@@ -1791,7 +1791,7 @@ contains
       if (kmesh%spacing .le. 0._dp) then
         call set_error_input(error, 'Error: kmesh_spacing must be greater than zero', comm)
         return
-      endif
+      end if
       global_kmesh_set = .true.
 
       call w90_readwrite_set_kmesh(kmesh%spacing, recip_lattice, kmesh%mesh)
@@ -1802,7 +1802,7 @@ contains
       if (global_kmesh_set) then
         call set_error_input(error, 'Error: cannot set both kmesh and kmesh_spacing', comm)
         return
-      endif
+      end if
       if (i .eq. 1) then
         global_kmesh_set = .true.
         call w90_readwrite_get_keyword_vector(settings, 'kmesh', found, 1, error, comm, &
@@ -1822,7 +1822,7 @@ contains
       if (any(kmesh%mesh <= 0)) then
         call set_error_input(error, 'Error: kmesh elements must be greater than zero', comm)
         return
-      endif
+      end if
     end if
     ! [GP-end]
   end subroutine w90_wannier90_readwrite_read_global_kmesh
@@ -1927,7 +1927,7 @@ contains
       if (module_kmesh%spacing .le. 0._dp) then
         call set_error_input(error, 'Error: '//trim(moduleprefix)//'_kmesh_spacing must be greater than zero', comm)
         return
-      endif
+      end if
 
       call w90_readwrite_set_kmesh(module_kmesh%spacing, recip_lattice, module_kmesh%mesh)
     end if
@@ -1939,7 +1939,7 @@ contains
         call set_error_input(error, 'Error: cannot set both '//trim(moduleprefix)//'_kmesh and ' &
                              //trim(moduleprefix)//'_kmesh_spacing', comm)
         return
-      endif
+      end if
       if (i .eq. 1) then
         call w90_readwrite_get_keyword_vector(settings, trim(moduleprefix)//'_kmesh', found2, &
                                               1, error, comm, i_value=module_kmesh%mesh)
@@ -1959,7 +1959,7 @@ contains
       if (any(module_kmesh%mesh <= 0)) then
         call set_error_input(error, 'Error: '//trim(moduleprefix)//'_kmesh elements must be greater than zero', comm)
         return
-      endif
+      end if
     end if
 
     if ((found .eqv. .false.) .and. (found2 .eqv. .false.)) then
@@ -1973,7 +1973,7 @@ contains
         if (should_be_defined) then
           call set_error_input(error, 'Error: '//trim(moduleprefix)//' module required, but no interpolation mesh given.', comm)
           return
-        endif
+        end if
       end if
     end if
   end subroutine get_module_kmesh
@@ -2033,7 +2033,7 @@ contains
       write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
     else
       write (stdout, '(28x,a22)') 'Lattice Vectors (Bohr)'
-    endif
+    end if
     write (stdout, 101) 'a_1', (real_lattice(1, I)*print_output%lenconfac, i=1, 3)
     write (stdout, 101) 'a_2', (real_lattice(2, I)*print_output%lenconfac, i=1, 3)
     write (stdout, 101) 'a_3', (real_lattice(3, I)*print_output%lenconfac, i=1, 3)
@@ -2050,13 +2050,13 @@ contains
       write (stdout, '(2x,a7)') '(Ang^3)'
     else
       write (stdout, '(2x,a8)') '(Bohr^3)'
-    endif
+    end if
     write (stdout, *)
     if (print_output%lenconfac .eq. 1.0_dp) then
       write (stdout, '(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
     else
       write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
-    endif
+    end if
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     write (stdout, 101) 'b_1', (recip_lattice(1, I)/print_output%lenconfac, i=1, 3)
     write (stdout, 101) 'b_2', (recip_lattice(2, I)/print_output%lenconfac, i=1, 3)
@@ -2069,7 +2069,7 @@ contains
         write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
       else
         write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
-      endif
+      end if
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       call utility_inverse_mat(real_lattice, inv_lattice)
       do nsp = 1, atom_data%num_species
@@ -2099,8 +2099,8 @@ contains
           w90_system%num_valence_bands, '|'
       else
         write (stdout, '(1x,a78)') '|  Number of valence bands                   :       not defined             |'
-      endif
-    endif
+      end if
+    end if
     if (pw90_calculation%spin_decomp .or. print_output%iprint > 2) &
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Spin decomposition                        :', pw90_calculation%spin_decomp, '|'
     if (pw90_calculation%spin_moment .or. print_output%iprint > 2) &
@@ -2112,12 +2112,12 @@ contains
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Spn file-type                   :', 'formatted', '|'
       else
         write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Spn file-type                   :', 'unformatted', '|'
-      endif
+      end if
       if (pw90_oper_read%uHu_formatted) then
         write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  uHu file-type                   :', 'formatted', '|'
       else
         write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  uHu file-type                   :', 'unformatted', '|'
-      endif
+      end if
     end if
 
     if (size(fermi_energy_list) == 1) then
@@ -2145,7 +2145,7 @@ contains
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
         pw90_extra_io%smear%fixed_width, '|'
-    endif
+    end if
     write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
       trim(w90_readwrite_get_smearing_type(pw90_extra_io%smear%type_index)), '|'
     if (pw90_extra_io%global_kmesh_set) then
@@ -2158,10 +2158,10 @@ contains
         write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
           , pw90_extra_io%global_kmesh%mesh(1), 'x', pw90_extra_io%global_kmesh%mesh(2), 'x', &
           pw90_extra_io%global_kmesh%mesh(3), '|'
-      endif
+      end if
     else
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Global interpolation k-points defined     :', '       F', '|'
-    endif
+    end if
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
 
     ! DOS
@@ -2172,7 +2172,7 @@ contains
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Wannier Projected DOS             :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Wannier Projected DOS             :', '       F', '|'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', pw90_dos%energy_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum energy range for DOS plot         :', pw90_dos%energy_max, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Energy step for DOS plot                  :', pw90_dos%energy_step, '|'
@@ -2193,7 +2193,7 @@ contains
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
             pw90_dos%smearing%fixed_width, '|'
-        endif
+        end if
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(w90_readwrite_get_smearing_type(pw90_dos%smearing%type_index)), '|'
       endif
@@ -2219,9 +2219,9 @@ contains
           write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :', &
             pw90_dos%kmesh%mesh(1), 'x', pw90_dos%kmesh%mesh(2), 'x', &
             pw90_dos%kmesh%mesh(3), '|'
-        endif
-      endif
-    endif
+        end if
+      end if
+    end if
     write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
 
     if (pw90_calculation%kpath .or. print_output%iprint > 2) then
@@ -2232,22 +2232,22 @@ contains
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy bands                         :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy bands                         :', '       F', '|'
-      endif
+      end if
       if (index(pw90_kpath%task, 'curv') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature                      :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature                      :', '       F', '|'
-      endif
+      end if
       if (index(pw90_kpath%task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
-      endif
+      end if
       if (index(pw90_kpath%task, 'shc') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the bands    :', trim(pw90_kpath%bands_colour), '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       write (stdout, '(1x,a78)') '|   K-space path sections:                                                   |'
@@ -2261,7 +2261,7 @@ contains
         end do
       end if
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    endif
+    end if
 
     if (pw90_calculation%kslice .or. print_output%iprint > 2) then
       write (stdout, '(1x,a78)') '*--------------------------------- KSLICE -----------------------------------*'
@@ -2272,22 +2272,22 @@ contains
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot energy contours (fermi lines)        :', '       F', '|'
-      endif
+      end if
       if (index(pw90_kslice%task, 'curv') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature (sum over occ states):', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot Berry curvature (sum over occ states):', '       F', '|'
-      endif
+      end if
       if (index(pw90_kslice%task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot orbital magnetisation contribution   :', '       F', '|'
-      endif
+      end if
       if (index(pw90_kslice%task, 'shc') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Plot spin Hall conductivity contribution  :', '       F', '|'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Property used to colour code the lines    :', &
         trim(pw90_kslice%fermi_lines_colour), '|'
       write (stdout, '(1x,a78)') '|  2D slice parameters (in reduced coordinates):                             |'
@@ -2297,7 +2297,7 @@ contains
       write (stdout, '(1x,a14,2x,3F8.3,10x,a12,2x,i4,9x,a1)') &
         '|    Vector2: ', (pw90_kslice%b2(i), i=1, 3), ' Divisions:', pw90_kslice%kmesh2d(1), '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    endif
+    end if
 
     if (pw90_calculation%berry .or. print_output%iprint > 2) then
       write (stdout, '(1x,a78)') '*--------------------------------- BERRY ------------------------------------*'
@@ -2306,32 +2306,32 @@ contains
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Optical Conductivity and JDOS     :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Optical Conductivity and JDOS     :', '       F', '|'
-      endif
+      end if
       if (index(pw90_berry%task, 'ahc') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Anomalous Hall Conductivity       :', '       F', '|'
-      endif
+      end if
       if (index(pw90_berry%task, 'sc') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Shift Current                     :', '       F', '|'
-      endif
+      end if
       if (index(pw90_berry%task, 'kdotp') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute k.p expansion coefficients        :', '       F', '|'
-      endif
+      end if
       if (index(pw90_berry%task, 'morb') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Orbital Magnetisation             :', '       F', '|'
-      endif
+      end if
       if (index(pw90_berry%task, 'shc') > 0) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       T', '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Compute Spin Hall Conductivity            :', '       F', '|'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Lower frequency for optical responses     :', &
         pw90_extra_io%kubo_freq_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Upper frequency for optical responses     :', &
@@ -2372,10 +2372,10 @@ contains
           write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
           write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
             pw90_berry%kubo_smearing%fixed_width, '|'
-        endif
+        end if
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(w90_readwrite_get_smearing_type(pw90_berry%kubo_smearing%type_index)), '|'
-      endif
+      end if
       if (pw90_extra_io%global_kmesh%mesh(1) == pw90_berry%kmesh%mesh(1) .and. &
           pw90_extra_io%global_kmesh%mesh(2) == pw90_berry%kmesh%mesh(2) .and. &
           pw90_extra_io%global_kmesh%mesh(3) == pw90_berry%kmesh%mesh(3)) then
@@ -2388,17 +2388,17 @@ contains
         else
           write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
             , pw90_berry%kmesh%mesh(1), 'x', pw90_berry%kmesh%mesh(2), 'x', pw90_berry%kmesh%mesh(3), '|'
-        endif
-      endif
+        end if
+      end if
       if (pw90_berry%curv_adpt_kmesh > 1) then
         write (stdout, '(1x,a46,10x,i8,13x,a1)') '|  Using an adaptive refinement mesh of size :', pw90_berry%curv_adpt_kmesh, '|'
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Threshold for adaptive refinement         :', &
           pw90_berry%curv_adpt_kmesh_thresh, '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :', '    none', '|'
-      endif
+      end if
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    endif
+    end if
 
     if (pw90_calculation%gyrotropic .or. print_output%iprint > 2) then
       write (stdout, '(1x,a78)') '*--------------------------------- GYROTROPIC   ------------------------------------*'
@@ -2424,7 +2424,7 @@ contains
         write (stdout, '(1x,a78)') '|  Using global smearing parameters                                          |'
       else
         write (stdout, '(1x,a78)') '|  Using local  smearing parameters                                          |'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Fixed width smearing                      :', '       T', '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Smearing width                            :', &
         pw90_gyrotropic%smearing%fixed_width, '|'
@@ -2444,10 +2444,10 @@ contains
       else
         write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
           , pw90_gyrotropic%kmesh%mesh(1), 'x', pw90_gyrotropic%kmesh%mesh(2), 'x', pw90_gyrotropic%kmesh%mesh(3), '|'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Adaptive refinement                       :', '    not implemented', '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    endif
+    end if
 
     if (pw90_calculation%boltzwann .or. print_output%iprint > 2) then
       write (stdout, '(1x,a78)') '*------------------------------- BOLTZWANN ----------------------------------*'
@@ -2458,7 +2458,7 @@ contains
           trim(pw90_extra_io%boltz_2d_dir), '|'
       else
         write (stdout, '(1x,a78)') '|  3d Structure                              :                 T             |'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Relaxation Time (fs)                      :', pw90_boltzwann%relax_time, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum Value of Chemical Potential (eV)  :', pw90_boltzwann%mu_min, '|'
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Maximum Value of Chemical Potential (eV)  :', pw90_boltzwann%mu_max, '|'
@@ -2479,8 +2479,8 @@ contains
         else
           write (stdout, '(1x,a46,2x,i4,1x,a1,i4,1x,a1,i4,13x,1a)') '|  Grid size                                 :' &
             , pw90_boltzwann%kmesh%mesh(1), 'x', pw90_boltzwann%kmesh%mesh(2), 'x', pw90_boltzwann%kmesh%mesh(3), '|'
-        endif
-      endif
+        end if
+      end if
       write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Step size for TDF (eV)                    :', &
         pw90_boltzwann%tdf_energy_step, '|'
       write (stdout, '(1x,a25,5x,a43,4x,a1)') '|  TDF Smearing Function ', &
@@ -2490,7 +2490,7 @@ contains
           '|  TDF fixed Smearing width (eV)             :', pw90_boltzwann%tdf_smearing%fixed_width, '|'
       else
         write (stdout, '(1x,a78)') '|  TDF fixed Smearing width                  :         unsmeared             |'
-      endif
+      end if
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Compute DOS at same time                  :', pw90_boltzwann%calc_also_dos, '|'
       if (pw90_boltzwann%calc_also_dos .and. print_output%iprint > 2) then
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Minimum energy range for DOS plot         :', &
@@ -2516,13 +2516,13 @@ contains
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  DOS Fixed width smearing                  :', '       T', '|'
             write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  DOS Smearing width                         :', &
               pw90_boltzwann%dos_smearing%fixed_width, '|'
-          endif
+          end if
           write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
             trim(w90_readwrite_get_smearing_type(pw90_boltzwann%dos_smearing%type_index)), '|'
-        endif
-      endif
+        end if
+      end if
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    endif
+    end if
 
     if (pw90_calculation%geninterp .or. print_output%iprint > 2) then
       write (stdout, '(1x,a78)') '*------------------------Generic Band Interpolation--------------------------*'
@@ -2530,7 +2530,7 @@ contains
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Calculate band gradients                  :', pw90_geninterp%alsofirstder, '|'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Write data into a single file             :', pw90_geninterp%single_file, '|'
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-    endif
+    end if
 
 101 format(20x, a3, 2x, 3F11.6)
 
@@ -2574,22 +2574,22 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating dos_project in w90_postw90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(fermi_energy_list)) then
       deallocate (fermi_energy_list, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating fermi_energy_list in w90_postw90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(pw90_berry%kubo_freq_list)) then
       deallocate (pw90_berry%kubo_freq_list, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating kubo_freq_list in w90_postw90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_postw90_readwrite_dealloc
 
   ! extra postw90 memory
@@ -2683,7 +2683,7 @@ contains
       write (stdout, '(1x,a2,a42,a2,10x,a8,13x,a1)') '| ', comment1, ' :', '       T', '|'
     else
       write (stdout, '(1x,a2,a42,a2,10x,a8,13x,a1)') '| ', comment1, ' :', '       F', '|'
-    endif
+    end if
   end subroutine parameters_gyro_write_task
 
 end module w90_postw90_readwrite

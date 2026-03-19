@@ -40,6 +40,3 @@ def parse(fname):
             print("  {}: {}".format(k, retdict[k]))
         print("-"*72)
     return retdict
-
-
-

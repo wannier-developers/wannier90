@@ -81,7 +81,7 @@ both the up- and down-spin channels, effectively doubling their number.
     values.
 
     ```bash title="Terminal"
-    postw90.x Fe # (1)! 
+    postw90.x Fe # (1)!
     mpirun -np 8 postw90.x Fe # (2)!
     ```
 
@@ -178,17 +178,17 @@ may want to increase `kslice_2dkmesh`.)
 
     ```vi title="Input file"
     kslice = true
-    
+
     kslice_task = fermi_lines
-    
+
     fermi_energy = \[insert your value here\]
-    
+
     kslice_corner = 0.0 0.0 0.0
-    
+
     kslice_b1 = 0.5 -0.5 -0.5
-    
+
     kslice_b2 = 0.5 0.5 0.5
-    
+
     kslice_2dkmesh = 200 200
     ```
 
@@ -196,7 +196,7 @@ may want to increase `kslice_2dkmesh`.)
 
     ```vi title="Input file"
     postw90.x iron_up
-    
+
     postw90.x iron_dn
     ```
 
@@ -216,9 +216,9 @@ may want to increase `kslice_2dkmesh`.)
 
     ```vi title="Input file"
     dos = true
-    
+
     spin_decomp = true
-    
+
     dos_kmesh = 25 25 25
     ```
 

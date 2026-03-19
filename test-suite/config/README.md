@@ -1,4 +1,4 @@
-This folder contains make.inc template files that are used by different 
+This folder contains make.inc template files that are used by different
 test farms.
 
 Currently included test farms include:
@@ -8,4 +8,3 @@ Currently included test farms include:
 
 - EPW_testfarm: for the test farm managed by the EPW developers, hosted
   currently at http://129.67.86.21:8010
-
