@@ -1895,7 +1895,7 @@ contains
                     wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
                   wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
-                endif
+                end if
               end do
             end do
           end do
@@ -2903,10 +2903,10 @@ contains
 !~          do s=1,num_wann
 !~             if (abs(real(f_w(r,s),dp)-real(f_w2(r,s),dp)).gt.eps6) then
 !~                write(*,'(i6,i6,f16.10,f16.10)') r,s,real(f_w(r,s),dp),real(f_w2(r,s),dp)
-!~             endif
+!~             end if
 !~             if (abs(aimag(f_w(r,s))-aimag(f_w2(r,s))).gt.eps6) then
 !~                write(*,'(a,i6,i6,f16.10,f16.10)') 'Im: ',r,s,aimag(f_w(r,s)),aimag(f_w2(r,s))
-!~             endif
+!~             end if
 !~          end do
 !~       end do
 
