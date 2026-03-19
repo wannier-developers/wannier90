@@ -98,8 +98,8 @@ contains
     if (present(force_recompute)) then
       if (force_recompute) then
         call clean_ws_translate(ws_distance)
-      endif
-    endif
+      end if
+    end if
     if (ws_distance%done) return
     ws_distance%done = .true.
 
@@ -112,17 +112,17 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating irdist_ws in ws_translate_dist', comm)
       return
-    endif
+    end if
     allocate (ws_distance%crdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating crdist_ws in ws_translate_dist', comm)
       return
-    endif
+    end if
     allocate (ws_distance%ndeg(num_wann, num_wann, nrpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating wcenter_ndeg in ws_translate_dist', comm)
       return
-    endif
+    end if
 
     !translation_centre_frac = 0._dp
     ws_distance%ndeg = 0
@@ -155,10 +155,10 @@ contains
             tmp_frac = REAL(ws_distance%irdist(:, ideg, iw, jw, ir), kind=dp)
             CALL utility_frac_to_cart(tmp_frac, tmp, real_lattice)
             ws_distance%crdist(:, ideg, iw, jw, ir) = tmp
-          enddo
-        enddo
-      enddo
-    enddo
+          end do
+        end do
+      end do
+    end do
   end subroutine ws_translate_dist
 
   !================================================!
@@ -232,10 +232,10 @@ contains
             shifts(1, :) = i*mp_grid(1)
             shifts(2, :) = j*mp_grid(2)
             shifts(3, :) = k*mp_grid(3)
-          endif
-        enddo
-      enddo
-    enddo
+          end if
+        end do
+      end do
+    end do
 
     ! Now, second loop to find the list of R_out that differ from R_in
     ! by a large-supercell lattice vector and are equally distant from R0
@@ -252,7 +252,7 @@ contains
       R_out(:, 1) = R0
       ! I can safely return as 'shifts' is already set
       return
-    endif
+    end if
     !
     ! take R_bz to cryst(frac) coord for translating
     call utility_cart_to_frac(R_bz, R_in_f, inv_lattice)
@@ -279,11 +279,11 @@ contains
             shifts(1, ndeg) = shifts(1, ndeg) + i*mp_grid(1)
             shifts(2, ndeg) = shifts(2, ndeg) + j*mp_grid(2)
             shifts(3, ndeg) = shifts(3, ndeg) + k*mp_grid(3)
-          endif
+          end if
 
-        enddo
-      enddo
-    enddo
+        end do
+      end do
+    end do
     !================================================!
   end subroutine R_wz_sc
   !================================================!
@@ -323,7 +323,7 @@ contains
     if (ierr /= 0) then
       call set_error_file(error, 'Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', comm)
       return
-    endif
+    end if
 
     if (use_ws_distance) then
       header = '## written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'

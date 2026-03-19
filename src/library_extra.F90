@@ -92,7 +92,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     call w90_wannier90_readwrite_read_special(common_data%settings, common_data%atom_data, &
                                               common_data%kmesh_input, common_data%kmesh_info, &
@@ -111,7 +111,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     common_data%seedname = seedname
 
@@ -122,29 +122,29 @@ contains
                              'Error allocating ndimwin in input_reader_special() call', common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
       allocate (common_data%dis_manifold%nfirstwin(common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, &
                              'Error allocating nfirstwin in input_reader_special() call', common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
       allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, &
                              'Error allocating lwindow in input_reader_special() call', common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
-    endif
+      end if
+    end if
     allocate (common_data%wannier_data%centres(3, common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, &
                            'Error allocating wannier_centres in input_reader_special() call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     common_data%wannier_data%centres = 0.0_dp
     allocate (common_data%wannier_data%spreads(common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
@@ -152,7 +152,7 @@ contains
                            'Error in allocating wannier_spreads in input_reader_special() call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     common_data%wannier_data%spreads = 0.0_dp
 
     ! remove any remaining acceptable keywords; anything that remains is an input error
@@ -160,7 +160,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
   end subroutine input_reader_special
@@ -187,7 +187,7 @@ contains
     if (mpirank(common_data%comm) == 0) then ! root only
       if (.not. allocated(common_data%kmesh_info%nnlist)) then
         call w90_create_kmesh(common_data, istdout, istderr, ierr)
-      endif
+      end if
 
       call kmesh_write(common_data%exclude_bands, common_data%kmesh_info, &
                        common_data%select_proj%auto_projections, common_data%proj_input, &
@@ -197,8 +197,8 @@ contains
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
-    endif
+      end if
+    end if
     call comms_sync_error(common_data%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
   end subroutine write_kmesh
 
@@ -224,7 +224,7 @@ contains
       call set_error_fatal(error, 'Error: kmesh is not setup before reading overlap matrix', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! projections are stored in u_opt
     call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%u_matrix_opt, &
@@ -236,7 +236,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine overlaps
 
   subroutine read_eigvals(common_data, eigval, istdout, istderr, ierr)
@@ -267,7 +267,7 @@ contains
                            'Error: eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     call w90_readwrite_read_eigvals(eig_found, eigval, common_data%num_bands, common_data%num_kpts, &
                                     istdout, common_data%seedname, error, common_data%comm)
@@ -279,7 +279,7 @@ contains
                            'Error: failed to read eigenvalues file in read_eigvals', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine read_eigvals
 
   subroutine write_chkpt(common_data, label, istdout, istderr, ierr)
@@ -321,18 +321,18 @@ contains
     else if (.not. associated(common_data%m_matrix_local)) then
       call set_error_fatal(error, &
                            'Error: m_matrix_local not set for write_chkpt call', common_data%comm)
-    endif
+    end if
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     allocate (global_k(nkrank), stat=istat)
     if (istat /= 0) then
       call set_error_alloc(error, 'Error allocating global_k in write_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     global_k = huge(1)
     ikl = 1
@@ -340,8 +340,8 @@ contains
       if (rank == common_data%dist_kpoints(ikg)) then
         global_k(ikl) = ikg
         ikl = ikl + 1
-      endif
-    enddo
+      end if
+    end do
 
     ! reassemble full m matrix by MPI reduction
     !
@@ -354,17 +354,17 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     m(:, :, :, :) = 0.d0
     do ikl = 1, nkrank
       ikg = global_k(ikl)
       m(:, :, :, ikg) = common_data%m_matrix_local(1:nw, 1:nw, :, ikl)
-    enddo
+    end do
     call comms_reduce(m(1, 1, 1, 1), nw*nw*nn*nk, 'SUM', error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     if (rank == 0) then
       call w90_wannier90_readwrite_write_chkpt(label, common_data%exclude_bands, &
@@ -377,14 +377,14 @@ contains
                                                common_data%have_disentangled, &
                                                common_data%print_output%iprint, istdout, &
                                                common_data%seedname)
-    endif
+    end if
 
     deallocate (m, stat=istat)
     if (istat /= 0) then
       call set_error_dealloc(error, 'Error deallocating m in write_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine write_chkpt
 
   subroutine read_chkpt(common_data, checkpoint, istdout, istderr, ierr)
@@ -425,7 +425,7 @@ contains
       call set_error_alloc(error, 'Error allocating m in read_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     if (rank == 0) then
       if (allocated(common_data%exclude_bands)) nexclude = size(common_data%exclude_bands)
@@ -441,8 +441,8 @@ contains
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     ! scatter from m_matrix to m_matrix_local (cf overlap_read)
     call w90_readwrite_chkpt_dist(common_data%dis_manifold, common_data%wannier_data, &
@@ -453,14 +453,14 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     deallocate (m, stat=istat)
     if (istat /= 0) then
       call set_error_alloc(error, 'Error deallocating m in read_chkpt', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine read_chkpt
 
   subroutine print_times(common_data, istdout)
@@ -493,7 +493,7 @@ contains
       call set_error_fatal(error, 'Error in k-point distribution, mpisize < 1', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     common_data%dist_kpoints = dist
   end subroutine set_kpoint_distribution
 end module w90_library_extra

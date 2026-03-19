@@ -93,55 +93,55 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_allocate', comm)
           return
-        endif
+        end if
       else
         allocate (m_matrix_orig(0, 0, 0, 0))
-      endif
+      end if
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, nkl), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating m_matrix_orig_local in overlap_allocate', comm)
         return
-      endif
+      end if
       m_matrix_orig = cmplx_0
       m_matrix_orig_local = cmplx_0
     else
       allocate (m_matrix_orig_local(0, 0, 0, 0))
       allocate (m_matrix_orig(0, 0, 0, 0))
-    endif
+    end if
 
     if (on_root) then
       allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating m_matrix in overlap_allocate', comm)
         return
-      endif
+      end if
       m_matrix = cmplx_0
     else
       allocate (m_matrix(0, 0, 0, 0))
-    endif
+    end if
     allocate (m_matrix_local(num_wann, num_wann, nntot, nkl), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m_matrix_local in overlap_allocate', comm)
       return
-    endif
+    end if
     m_matrix_local = cmplx_0
 
     allocate (a_matrix(num_bands, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating a_matrix in overlap_allocate', comm)
       return
-    endif
+    end if
     allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix in overlap_allocate', comm)
       return
-    endif
+    end if
     u_matrix = cmplx_0
     allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix_opt in overlap_allocate', comm)
       return
-    endif
+    end if
     u_matrix_opt = cmplx_0
 
     if (timing_level > 0) call io_stopwatch_stop('overlap: allocate', timer)
@@ -210,15 +210,15 @@ contains
     my_node_id = mpirank(comm)
     if (my_node_id == 0) then
       on_root = .true.
-    endif
+    end if
     allocate (map_kpts(num_kpts))
     nkp_loc = 1
     do nkp = 1, num_kpts
       if (dist_k(nkp) == my_node_id) then
         map_kpts(nkp) = nkp_loc
         nkp_loc = nkp_loc + 1
-      endif
-    enddo
+      end if
+    end do
 
     if (timing_level > 0) call io_stopwatch_start('overlap: read', timer)
 
@@ -241,16 +241,16 @@ contains
     if (nb_tmp .ne. num_bands) then
       call set_error_file(error, trim(seedname)//'.mmn has not the right number of bands', comm)
       return
-    endif
+    end if
     if (nkp_tmp .ne. num_kpts) then
       call set_error_file(error, trim(seedname)//'.mmn has not the right number of k-points', comm)
       return
-    endif
+    end if
     if (nntot_tmp .ne. kmesh_info%nntot) then
       write (*, *) my_node_id, nntot_tmp, kmesh_info%nntot
       call set_error_file(error, trim(seedname)//'.mmn has not the right number of nearest neighbours', comm)
       return
-    endif
+    end if
 
     ! Read the overlaps
     num_mmn = num_kpts*kmesh_info%nntot
@@ -258,15 +258,15 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating mmn_tmp in overlap_read', comm)
       return
-    endif
+    end if
     do ncount = 1, num_mmn
       read (mmn_in, *, err=103, end=103) nkp, nkp2, nnl, nnm, nnn
       do n = 1, num_bands
         do m = 1, num_bands
           read (mmn_in, *, err=103, end=103) m_real, m_imag
           mmn_tmp(m, n) = cmplx(m_real, m_imag, kind=dp)
-        enddo
-      enddo
+        end do
+      end do
       if (dist_k(nkp) == my_node_id) then
         nn = 0
         nn_found = .false.
@@ -282,8 +282,8 @@ contains
               call set_error_file(error, 'Error reading '//trim(seedname)// &
                                   '.mmn. More than one matching nearest neighbour found', comm)
               return
-            endif
-          endif
+            end if
+          end if
         end do
         if (nn .eq. 0) then
           if (on_root) write (stdout, '(/a,i8,2i5,i4,2x,3i3)') &
@@ -298,7 +298,7 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating mmn_tmp in overlap_read', comm)
       return
-    endif
+    end if
     close (mmn_in)
 
     !if (disentanglement) then
@@ -330,25 +330,25 @@ contains
       if (nb_tmp .ne. num_bands) then
         call set_error_file(error, trim(seedname)//'.amn has not the right number of bands', comm)
         return
-      endif
+      end if
       if (nkp_tmp .ne. num_kpts) then
         call set_error_file(error, trim(seedname)//'.amn has not the right number of k-points', comm)
         return
-      endif
+      end if
       if (np_tmp .ne. num_proj) then
         call set_error_file(error, trim(seedname)//'.amn has not the right number of projections', comm)
         return
-      endif
+      end if
 
       if (num_proj > num_wann .and. .not. select_projection%lselproj) then
         call set_error_file(error, trim(seedname)//'.amn has too many projections to be used without selecting a subset', comm)
         return
-      endif
+      end if
 
       if (.not. allocated(select_projection%proj2wann_map)) then
         call set_error_fatal(error, 'select_projection%proj2wann_map not allocated in overlap_read call', comm)
         return
-      endif
+      end if
 
       ! Read the projections
       num_amn = num_bands*num_proj*num_kpts
@@ -594,7 +594,7 @@ contains
     if (info .ne. 0) then
       call set_error_fatal(error, 'Diagonalization of lambda in overlap_rotate failed', comm)
       return
-    endif
+    end if
 
     ! For debugging
 !~    write(stdout,*) 'EIGENVALUES - CHECK WITH CP OUTPUT'
@@ -670,52 +670,52 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating u_matrix_opt in overlap_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(a_matrix)) then
       deallocate (a_matrix, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating a_matrix in overlap_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(m_matrix_orig)) then
       deallocate (m_matrix_orig, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating m_matrix_orig in overlap_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(m_matrix_orig_local)) then
       deallocate (m_matrix_orig_local, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating m_matrix_orig_local in overlap_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (on_root) then
       if (allocated(m_matrix)) then
         deallocate (m_matrix, stat=ierr)
         if (ierr /= 0) then
           call set_error_dealloc(error, 'Error deallocating m_matrix in overlap_dealloc', comm)
           return
-        endif
-      endif
-    endif
+        end if
+      end if
+    end if
     if (allocated(m_matrix_local)) then
       deallocate (m_matrix_local, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating m_matrix_local in overlap_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(u_matrix)) then
       deallocate (u_matrix, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating u_matrix in overlap_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     return
 
@@ -735,7 +735,7 @@ contains
     use w90_constants
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_dealloc, &
-      set_error_fatal
+                         set_error_fatal
     use w90_utility, only: utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_u_matrix
     use w90_wannier90_types, only: sitesym_type
@@ -786,22 +786,22 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating svals in overlap_project', comm)
       return
-    endif
+    end if
     allocate (cz(num_bands, num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cz in overlap_project', comm)
       return
-    endif
+    end if
     allocate (cvdag(num_bands, num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cvdag in overlap_project', comm)
       return
-    endif
+    end if
     allocate (cwork(4*num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cwork in overlap_project', comm)
       return
-    endif
+    end if
 
     ! Calculate the transformation matrix CU = CS^(-1/2).CA,
     ! where CS = CA.CA^\dagger.
@@ -818,10 +818,10 @@ contains
           write (stdout, *) ' K-POINT NKP=', nkp, ' INFO=', info
           if (info .lt. 0) then
             write (stdout, *) ' THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
-          endif
+          end if
           call set_error_fatal(error, 'Error in ZGESVD in overlap_project', comm)
           return
-        endif
+        end if
 
         ! u_matrix(:,:,nkp)=matmul(cz,cvdag)
         call utility_zgemm(u_matrix(:, :, nkp), cz, 'N', cvdag, 'N', num_wann)
@@ -834,7 +834,7 @@ contains
             ctmp2 = cmplx_0
             do m = 1, num_bands
               ctmp2 = ctmp2 + u_matrix(m, j, nkp)*conjg(u_matrix(m, i, nkp))
-            enddo
+            end do
             if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) then
               write (stdout, *) ' ERROR: unitarity of initial U'
               write (stdout, '(1x,a,i2)') 'nkp= ', nkp
@@ -844,7 +844,7 @@ contains
                 real(ctmp2, dp), aimag(ctmp2)
               call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project', comm)
               return
-            endif
+            end if
             if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
               write (stdout, *) ' ERROR: unitarity of initial U'
               write (stdout, '(1x,a,i2)') 'nkp= ', nkp
@@ -854,13 +854,13 @@ contains
                 real(ctmp2, dp), aimag(ctmp2)
               call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project', comm)
               return
-            endif
-          enddo
-        enddo
+            end if
+          end do
+        end do
       else
         u_matrix(:, :, nkp) = 0.0_dp
-      endif
-    enddo
+      end if
+    end do
     ! NKP
     call comms_allreduce(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
     if (allocated(error)) return
@@ -869,7 +869,7 @@ contains
       call sitesym_symmetrize_u_matrix(sitesym, u_matrix, num_bands, num_wann, num_kpts, num_wann, &
                                        stdout, error, comm) !RS: update U(Rk)
       if (allocated(error)) return
-    endif
+    end if
 
     ! so now we have the U's that rotate the wavefunctions at each k-point.
     ! the matrix elements M_ij have also to be updated
@@ -886,7 +886,7 @@ contains
           m_matrix_local(:, :, nn, nkp_loc) = cz(:, :)
         end do
         nkp_loc = nkp_loc + 1
-      endif
+      end if
     end do
     !call comms_reduce(m_matrix(1,1,1,1), num_wann*num_wann*nntot*num_kpts, 'SUM', error, comm)
     !if (allocated(error)) return
@@ -895,22 +895,22 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cwork in overlap_project', comm)
       return
-    endif
+    end if
     deallocate (cvdag, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cvdag in overlap_project', comm)
       return
-    endif
+    end if
     deallocate (cz, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cz in overlap_project', comm)
       return
-    endif
+    end if
     deallocate (svals, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating svals in overlap_project', comm)
       return
-    endif
+    end if
 
     if (timing_level > 1) call io_stopwatch_stop('overlap: project', timer)
 
@@ -933,7 +933,7 @@ contains
     use w90_constants
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_error, only: w90_error_type, set_error_alloc, set_error_fatal, set_error_dealloc, &
-      set_error_fatal
+                         set_error_fatal
     use w90_utility, only: utility_zgemm
     use w90_types, only: timer_list_type
 
@@ -967,37 +967,37 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix_r in overlap_project_gamma', comm)
       return
-    endif
+    end if
     allocate (svals(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating svals in overlap_project_gamma', comm)
       return
-    endif
+    end if
     allocate (work(5*num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating work in overlap_project_gamma', comm)
       return
-    endif
+    end if
     allocate (rz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rz in overlap_project_gamma', comm)
       return
-    endif
+    end if
     allocate (rv(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rv in overlap_project_gamma', comm)
       return
-    endif
+    end if
     allocate (cz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cz in overlap_project_gamma', comm)
       return
-    endif
+    end if
     allocate (cvdag(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cvdag in overlap_project_gamma', comm)
       return
-    endif
+    end if
 
     !
 !~    ! If a wavefunction is real except for a phase factor e^(i*phi_m) = ph_g(m)
@@ -1061,10 +1061,10 @@ contains
       write (stdout, *) ' ERROR: IN DGESVD IN overlap_project_gamma'
       if (info .lt. 0) then
         write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
-      endif
+      end if
       call set_error_fatal(error, 'overlap_project_gamma: problem in DGESVD 1', comm)
       return
-    endif
+    end if
 
     call dgemm('N', 'N', num_wann, num_wann, num_wann, 1.0_dp, rz, num_wann, rv, num_wann, 0.0_dp, &
                u_matrix_r, num_wann)
@@ -1076,7 +1076,7 @@ contains
         rtmp2 = 0.0_dp
         do m = 1, num_wann
           rtmp2 = rtmp2 + u_matrix_r(m, j)*u_matrix_r(m, i)
-        enddo
+        end do
         if ((i .eq. j) .and. (abs(rtmp2 - 1.0_dp) .gt. eps5)) then
           write (stdout, *) ' ERROR: unitarity of initial U'
           write (stdout, '(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j
@@ -1085,7 +1085,7 @@ contains
             rtmp2
           call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project_gamma', comm)
           return
-        endif
+        end if
         if ((i .ne. j) .and. (abs(rtmp2) .gt. eps5)) then
           write (stdout, *) ' ERROR: unitarity of initial U'
           write (stdout, '(1x,a,i2,2x,a,i2)') 'i= ', i, 'j= ', j
@@ -1094,9 +1094,9 @@ contains
             rtmp2
           call set_error_fatal(error, 'Error in unitarity of initial U in overlap_project_gamma', comm)
           return
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
 
     u_matrix(:, :, 1) = cmplx(u_matrix_r(:, :), 0.0_dp, dp)
 
@@ -1115,37 +1115,37 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cvdag in overlap_project_gamma', comm)
       return
-    endif
+    end if
     deallocate (cz, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cz in overlap_project_gamma', comm)
       return
-    endif
+    end if
     deallocate (rv, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rv in overlap_project_gamma', comm)
       return
-    endif
+    end if
     deallocate (rz, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rz in overlap_project_gamma', comm)
       return
-    endif
+    end if
     deallocate (work, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating work in overlap_project_gamma', comm)
       return
-    endif
+    end if
     deallocate (svals, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating svals in overlap_project_gamma', comm)
       return
-    endif
+    end if
     deallocate (u_matrix_r, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u_matrix_r in overlap_project_gamma', comm)
       return
-    endif
+    end if
 
     if (timing_level > 1) call io_stopwatch_stop('overlap: project_gamma', timer)
 
