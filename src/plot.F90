@@ -1646,8 +1646,7 @@ contains
         wann_plot_num = size(wannier_plot%list)
       else
         wann_plot_num = 0
-<<<<<<< efficient_plotting
-      endif
+      end if
 
       ! Supercell grid bounds
       nxx_lo = -((ngs(1))/2)*ngx
@@ -1659,12 +1658,7 @@ contains
       ngrid = ngx*ngy*ngz
 
       allocate (wann_func(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, wann_plot_num), stat=ierr)
-=======
-      end if
-      allocate (wann_func(-((ngs(1))/2)*ngx:((ngs(1) + 1)/2)*ngx - 1, &
-                          -((ngs(2))/2)*ngy:((ngs(2) + 1)/2)*ngy - 1, &
-                          -((ngs(3))/2)*ngz:((ngs(3) + 1)/2)*ngz - 1, wann_plot_num), stat=ierr)
->>>>>>> develop
+
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier', comm)
         return
@@ -1891,7 +1885,6 @@ contains
               nx = mod(nxx, ngx)
               if (nx .lt. 1) nx = nx + ngx
               npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-<<<<<<< efficient_plotting
               catmp = phase_x(nxx)*phase_yz
               do loop_w = 1, wann_plot_num
                 if (.not. spinors) then
@@ -1903,50 +1896,6 @@ contains
                   wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
                     wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
                 endif
-=======
-              catmp = exp(twopi*cmplx_i*scalfac)
-              do loop_b = 1, num_wann
-                do loop_w = 1, wann_plot_num
-                  if (.not. spinors) then
-                    wann_func(nxx, nyy, nzz, loop_w) = wann_func(nxx, nyy, nzz, loop_w) + &
-                                                       u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)* &
-                                                       r_wvfn(npoint, loop_b)*catmp
-                  else
-                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
-                      wann_func_nc(nxx, nyy, nzz, 1, loop_w) + & ! up-spinor
-                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 1)*catmp
-                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
-                      wann_func_nc(nxx, nyy, nzz, 2, loop_w) + & ! down-spinor
-                      u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)*r_wvfn_nc(npoint, loop_b, 2)*catmp
-                    if (loop_b == num_wann) then ! last loop
-                      upspinor = real(wann_func_nc(nxx, nyy, nzz, 1, loop_w)* &
-                                      conjg(wann_func_nc(nxx, nyy, nzz, 1, loop_w)), dp)
-                      dnspinor = real(wann_func_nc(nxx, nyy, nzz, 2, loop_w)* &
-                                      conjg(wann_func_nc(nxx, nyy, nzz, 2, loop_w)), dp)
-                      if (wannier_plot%spinor_phase) then
-                        upphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 1, loop_w), dp))
-                        dnphase = sign(1.0_dp, real(wann_func_nc(nxx, nyy, nzz, 2, loop_w), dp))
-                      else
-                        upphase = 1.0_dp; dnphase = 1.0_dp
-                      end if
-                      select case (wannier_plot%spinor_mode)
-                      case ('total')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor + dnspinor), 0.0_dp, dp)
-                      case ('up')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(upspinor), 0.0_dp, dp)*upphase
-                      case ('down')
-                        wann_func(nxx, nyy, nzz, loop_w) = cmplx(sqrt(dnspinor), 0.0_dp, dp)*dnphase
-                      case default
-                        call set_error_file(error, 'plot_wannier: Invalid wannier_plot_spinor_mode '&
-                            &//trim(wannier_plot%spinor_mode), comm)
-                        return
-                      end select
-                      wann_func(nxx, nyy, nzz, loop_w) = &
-                        wann_func(nxx, nyy, nzz, loop_w)/real(num_kpts, dp)
-                    end if
-                  end if
-                end do
->>>>>>> develop
               end do
             end do
           end do
@@ -2378,21 +2327,13 @@ contains
           ! Volumetric data in batches of 6 values per line, 'z'-direction first.
           do nxx = 1, ilength(1)
             do nyy = 1, ilength(2)
-<<<<<<< efficient_plotting
               do nzz = 1, ilength(3), 6
                 nend = min(nzz + 5, ilength(3))
                 write (file_unit, '(6E13.5)') wann_cube(nxx, nyy, nzz:nend)
               enddo
             enddo
           enddo
-=======
-              do nzz = 1, ilength(3)
-                write (file_unit, '(E13.5)', advance='no') wann_cube(nxx, nyy, nzz)
-                if ((mod(nzz, 6) .eq. 0) .or. (nzz .eq. ilength(3))) write (file_unit, '(a)') ''
-              end do
-            end do
-          end do
->>>>>>> develop
+
 
           deallocate (wann_cube, stat=ierr)
           if (ierr .ne. 0) then
