@@ -5,14 +5,87 @@
  The Maximally-Localised Generalised Wannier Functions Code
 
 
+ In version Wannier90 version 4 there are two supported installation methods,
+ GNU Make and CMake.
 
- INSTALLATION
- ------------
 
- Requirements: A Fortran 95 compiler (most f90 compilers are really f95)
+ INSTALLATION USING CMAKE
+ ------------------------
+
+ Requirements: cmake version > 3.25
+               Fortran compiler (compliant with 2008 standard)
                LAPACK and BLAS libraries
-	       (Optional) MPI libraries for parallel execution of the
-                  postw90.x executable
+               MPI libraries and headers (optional)
+               Fortran f2018 compiler (optional for C interface)
+
+ Cmake will generally attempt to find a suitable configuration using internal defaults
+ and search methods to find the necessary compilers and numerical libraries.  On many
+ systems this will be sufficient to produce a working installation.
+
+ On a linux system, such a build may be accomplished by:
+
+        mkdir build
+        cd build
+        cmake ..
+        make
+
+ The resulting executables can be found in the build/bin directory.  System-wide installation
+ is achieved with (assuming appropriate privileges, for example using sudo):
+
+        make install
+
+ and you can run the tests using:
+
+        ctest
+
+ The installation directory defaults (on linux) to /usr/local/; this can be changed via
+
+        cmake ../ -DCMAKE_INSTALL_PREFIX=/path
+
+ See https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
+
+ Some options are available to steer compilation; to enable a parallel build:
+
+        cmake ../ -DWANNIER90_MPI=ON
+
+ If suitable MPI libraries are found, they will be reported in the output in, eg:
+
+        -- Found LAPACK: /usr/lib64/libopenblas.so;-lm;-ldl
+        -- Found MPI_Fortran: /usr/lib64/openmpi/lib/libmpi_usempif08.so (found version "3.1")
+
+ To choose a specific compiler, eg, the Intel LLVM compiler "ifx":
+
+        cmake ../ -DCMAKE_Fortran_COMPILER=ifx
+
+ This command will fail if the specified compiler is not available in your path.
+
+ To choose a specific LAPACK/BLAS library by vendor name:
+
+        cmake ../ -DBLA_VENDOR=OpenBLAS
+
+ The corresponding libraries must be findable in standard system directories, or paths in
+ your environment (such as LD_LIBRARY_PATH on linux).
+
+ Check that the result is what you intend:
+        -- Found BLAS: /usr/lib64/libopenblas.so
+        -- Found LAPACK: /usr/lib64/libopenblas.so;/usr/lib64/libopenblas.so
+
+ A common choice might be Intel10_64lp_seq: Intel MKL 64 bit, sequential code, lp64 model.
+ See https://cmake.org/cmake/help/latest/module/FindBLAS.html for more information.
+
+ To use the C interface to the Wannier90 library, it is necessary to have a f2018
+ capable compiler and to define WANNIER90_WITH_C:
+
+        cmake ../ -DWANNIER90_WITH_C=ON
+
+
+ INSTALLATION USING GNUMAKE
+ --------------------------
+
+
+ Requirements: A Fortran 2008 compiler (most recent f90 compilers support this standard)
+               LAPACK and BLAS libraries
+	       (Optional) MPI libraries for parallel execution
 
  Configuration:
    The system dependent parameters (e.g. compiler name) are contained in a file
@@ -31,7 +104,7 @@
      To know if your make version is GNU, type
        make -v
      If you have a GNU make utility, the first line of the output should
-     read somethink like
+     read something like
        GNU Make 3.81
      Refer to your local system administrator for further information.
 
