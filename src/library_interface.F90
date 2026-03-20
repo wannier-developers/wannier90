@@ -862,7 +862,8 @@ contains
 
     call kmesh_get(common_data%kmesh_input, common_data%kmesh_info, common_data%print_output, &
                    common_data%kpt_latt, common_data%real_lattice, common_data%num_kpts, &
-                   common_data%gamma_only, istdout, common_data%timer, error, common_data%comm)
+                   common_data%gamma_only, common_data%seedname, istdout, common_data%timer, &
+                   error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return

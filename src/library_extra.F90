@@ -170,7 +170,7 @@ contains
 
     use w90_comms, only: mpirank, comms_sync_error
     use w90_error_base, only: w90_error_type
-    use w90_kmesh, only: kmesh_get, kmesh_write
+    use w90_kmesh, only: kmesh_write
 
     implicit none
 
@@ -188,6 +188,7 @@ contains
       if (.not. allocated(common_data%kmesh_info%nnlist)) then
         call w90_create_kmesh(common_data, istdout, istderr, ierr)
       end if
+      if (ierr /= 0) return
 
       call kmesh_write(common_data%exclude_bands, common_data%kmesh_info, &
                        common_data%select_proj%auto_projections, common_data%proj_input, &

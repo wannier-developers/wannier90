@@ -308,7 +308,7 @@ program postw90
   end if ! on_root
 
   call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                 num_kpts, gamma_only, stdout, timer, error, comm)
+                 num_kpts, gamma_only, seedname, stdout, timer, error, comm)
   if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
