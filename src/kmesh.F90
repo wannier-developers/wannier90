@@ -242,6 +242,7 @@ contains
 
     ! Get the shell weights to satisfy the B1 condition
     if (kmesh_input%kmesh_shell_from_file) then
+      ! note: B1 condition is not tested in kmesh_shell_from_file(); test occurs below
       call kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
                                  recip_lattice, lmn, multi, num_kpts, seedname, stdout, timer, &
                                  error, comm)
@@ -535,12 +536,12 @@ contains
                   kmesh_info%nncell(2, nkp, bnum) = m
                   kmesh_info%nncell(3, nkp, bnum) = n
                   bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
-                endif
-              enddo
+                end if
+              end do
             end do
             if (nnx == sum(multi)) exit ok2
           end do
-        enddo ok2
+        end do ok2
       end do
     end if ! kmesh_shell_from_file
 
@@ -2190,34 +2191,9 @@ contains
       end do
     end if
 
-    !check b1
-    b1sat = .true.
-    if (.not. kmesh_input%skip_B1_tests) then
-      do loop_i = 1, 3
-        do loop_j = loop_i, 3
-          delta = 0.0_dp
-          do loop_s = 1, kmesh_input%num_shells
-            do loop_b = 1, multi(loop_s)
-              delta = delta + bweight(loop_s)*bvec_inp(loop_i, loop_b, loop_s)*bvec_inp(loop_j, loop_b, loop_s)
-            end do
-          end do
-          if (loop_i == loop_j) then
-            if (abs(delta - 1.0_dp) > kmesh_input%tol) b1sat = .false.
-          end if
-          if (loop_i /= loop_j) then
-            if (abs(delta) > kmesh_input%tol) b1sat = .false.
-          end if
-        end do
-      end do
-    end if
-
-    if (.not. b1sat) then
-      call set_error_fatal(error, 'kmesh_shell_from_file: B1 condition not satisfied', comm)
-      return
-    end if
+    ! note: B1 condition is not tested here; test follows this function call
 
     if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: shell_fixed', timer)
-
     return
 
 103 call set_error_input(error, 'Error: Problem (3) reading input file '//trim(seedname)//'.kshell', comm)

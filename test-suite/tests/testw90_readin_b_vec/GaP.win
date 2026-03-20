@@ -40,6 +40,3 @@ end kpoints
 
 kmesh_shell_from_file = T
 # devel_flag=kmesh_degen # to be used in version 3.1 and prior
-
-skip_b1_tests = T 
-
