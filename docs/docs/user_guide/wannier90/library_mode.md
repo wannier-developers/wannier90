@@ -59,6 +59,19 @@ $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}=\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle$
 projections (Ref. [@marzari-prb97], Eq. (62); Ref. [@souza-prb01], Eq. (22)).
 
+## Library Specific Keywords
+
+<!-- markdownlint-disable MD013 -->
+{{ read_csv('docs/parameters/w90-library-parameters.csv', colalign=('left', 'center', 'left')) }}
+<!-- markdownlint-enable MD013 -->
+
+- the `distk` array communicates to Wannier90 how k-points are distributed over
+MPI ranks.  In particular this affects the decomposition of the $M$-matrix.
+
+- `total_bands` is provided for convenience when working with `excluded_bands`
+when these determine the number of bands in the Wannier90 calculation instead
+of vice-versa.
+
 ## Using the Library
 
 ```fortran title="Fortran"
