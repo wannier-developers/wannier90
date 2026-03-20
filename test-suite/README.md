@@ -53,25 +53,29 @@ The code needs the `configparser` module, that can be installed e.g. via
      zero is useful for tests that can only run in serial (e.g. for the gamma-only
      runs).
 
-3. Put all needed input files in the folder (`.win`, `.amn`, `.mmn`, ...), making sure
+3. Enter the directory name to the "test_names" list found at the top fo CMakeLists.txt to
+   make the test visible to cmake.
+
+4. Put all needed input files in the folder (`.win`, `.amn`, `.mmn`, ...), making sure
    that the input file has the name you specified above in the `jobconfig` file.
    Add the files to the git repository.
    Also, add a `.gitignore` file in your test folder for those files that are dynamically
    created at runtime and should be ignored. The content of this file is also used by
    the `clean_tests` code (described later) to decide if a file can be safely deleted.
 
-4. Compile the code in its most recent version.
-5. Run the code (with the same parameters as defined in `jobconfig`)
+5. Compile the code in its most recent version.
+
+6. Run the code (with the same parameters as defined in `jobconfig`)
    in the test folder to create a reference output.
 
    `TODO: MAKE THIS AND THE NEXT POINT EASIER TO DO`
 
-6. Open the file in point 5 above, verify that it is the actual expected output,
+7. Open the file in point 5 above, verify that it is the actual expected output,
    and copy/move the output file to a file named `benchmark.out.default.inp=<inputfilename>`
    (or `benchmark.out.default.inp=<inputfilename>.args=<cmdline_args>` if you have
    some command line parameters in your `input_args`). Add this to the git repo.
 
-7. If you have chosen to use one of the existing "programs" already present in `userconfig`,
+8. If you have chosen to use one of the existing "programs" already present in `userconfig`,
    you are probably already ok: just run the test again to check that the test now passes
    without errors.
 
@@ -80,7 +84,7 @@ The code needs the `configparser` module, that can be installed e.g. via
    the tests actually fails if the value is unexpected. Remember to put back the correct
    value afterwards!
 
-8. If instead you need to parse a different file, or parse additional data:
+9. If instead you need to parse a different file, or parse additional data:
    * for an additional value, edit/improve the python parsing functions;
    * to parse a different file, create a new section in the `userconfig` file.
    In both cases, see the description below in the `userconfig` section.
