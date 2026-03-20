@@ -214,7 +214,7 @@ contains
     if (allocated(error)) return
   end subroutine w90_readwrite_read_total_bands
 
-  subroutine w90_readwrite_read_distk(settings, distk, nkin, error, comm)
+  subroutine w90_readwrite_read_distk(settings, distk, nkin, stdout, error, comm)
     !! Read MPI distribution of k-points
     !! The array to be read must have num_kpt entries, with each entry being
     !! the MPI rank to which each k-point is assigned
@@ -223,6 +223,7 @@ contains
 
     integer, allocatable, intent(inout) :: distk(:)
     integer, intent(in) :: nkin
+    integer, intent(in) :: stdout
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
@@ -235,6 +236,11 @@ contains
     call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .true., error, comm)
     if (allocated(error)) return
 
+    if (found .and. allocated(settings%in_data)) then ! distk is valid only in library mode, prevent .win abuse
+      call set_error_input(error, 'Error: distk is not a .win file input token', comm)
+      return
+    end if
+
     if (found) then
       if (nk /= nkin) then
         call set_error_input(error, 'Error: incorrect length of k-distribution (distk)', comm)
@@ -244,7 +250,8 @@ contains
       call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
       if (allocated(error)) return
     else
-      ! fixme JJ, some output might be helpful here
+      write (stdout, '(a)') 'Note: parallel distribution provided (option distk missing)'
+      write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
       allocate (distk(nkin))
       distk = 0 ! default to no distribution if not specified
     end if

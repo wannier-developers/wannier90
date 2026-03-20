@@ -126,7 +126,7 @@ contains
     call w90_readwrite_read_mp_grid(settings, .false., mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
+    call w90_readwrite_read_distk(settings, distk, num_kpts, stdout, error, comm)
     if (allocated(error)) return
 
     call w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
