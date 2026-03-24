@@ -300,7 +300,7 @@ contains
         write (stdout, '(a)') ' '
         write (stdout, '(a)') ' The problem may be caused by having accidentally degenerate shells of '
         write (stdout, '(a)') ' kpoints. The solution is then to rerun wannier90 specifying the b-vectors '
-        write (stdout, '(a)') ' in each shell.  Give devel_flag=kmesh_degen in the *.win file'
+        write (stdout, '(a)') ' in each shell.  Give kmesh_shell_from_file=T in the *.win file'
         write (stdout, '(a)') ' and create a *.kshell file:'
         write (stdout, '(a)') ' '
         write (stdout, '(a)') ' $>   cat hexagonal.kshell'
