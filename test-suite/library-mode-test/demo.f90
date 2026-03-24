@@ -82,7 +82,7 @@ program ok
   call w90_set_option(w90main, 'kpoints', kpt)
   call w90_set_option(w90main, 'mp_grid', nkabc)
   call w90_set_option(w90main, 'num_bands', nb)
-  call w90_set_option(w90main, 'num_kpts', nk)
+  !call w90_set_option(w90main, 'num_kpts', nk)
   call w90_set_option(w90main, 'num_wann', nw)
   call w90_set_option(w90main, 'unit_cell_cart', uccart)
 
