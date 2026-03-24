@@ -102,9 +102,9 @@ int main(int argc, char* argv[]) {
         w90_set_option_double2d(w90glob, "kpoints", &kpt[0][0], nk, 3);
         w90_set_option_int1d(w90glob, "mp_grid", nkabc, 3);
         w90_set_option_int(w90glob, "num_bands", nb);
-        w90_set_option_int(w90glob, "num_kpts", nk);
         w90_set_option_int(w90glob, "num_wann", nw);
         w90_set_option_double2d(w90glob, "unit_cell_cart", &uc[0][0], 3, 3);
+        w90_set_option_logical(w90glob, "dump_inputs", true);
 
         int ierr;
         w90_input_setopt(w90glob, (char*)root.c_str(), &ierr); // process necessary library options

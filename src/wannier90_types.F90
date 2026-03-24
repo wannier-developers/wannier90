@@ -69,6 +69,7 @@ module w90_wannier90_types
     logical :: write_tb = .false.
     logical :: write_xyz = .false. !wannierise and transport
     logical :: svd_omega = .false. !print svd omega invormation (if iprint >= 2)
+    logical :: write_win_ammats = .false. !write .win, .mmn, .amn
   end type output_file_type
 
   type real_space_ham_type

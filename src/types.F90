@@ -275,14 +275,14 @@ module w90_types
     ! integer data
     integer, allocatable :: i1d(:)
     integer, allocatable :: i2d(:, :)
-    integer :: idata
+    integer, allocatable :: idata
     ! logical data
     logical, allocatable :: l1d(:)
-    logical :: ldata
+    logical, allocatable :: ldata
     ! fp data
     real(kind=dp), allocatable :: r1d(:)
     real(kind=dp), allocatable :: r2d(:, :)
-    real(kind=dp) :: rdata
+    real(kind=dp), allocatable :: rdata
   end type settings_data
 
   type settings_type

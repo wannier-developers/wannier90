@@ -299,6 +299,7 @@ contains
     use w90_comms, only: w90_comm_type, valid_communicator
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
                                        w90_wannier90_readwrite_read_special
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -425,6 +426,10 @@ contains
       return
     end if
 
+    if (common_data%output_file%write_win_ammats) then
+      call w90_print_win(common_data, seedname, istdout, istderr, ierr)
+    end if
+
     ! clear settings container (from settings interface not .win file)
     deallocate (common_data%settings%entries, stat=ierr)
     if (ierr /= 0) then
@@ -433,6 +438,106 @@ contains
       return
     end if
   end subroutine w90_input_setopt
+
+  subroutine w90_print_win(common_data, seedname, istdout, istderr, ierr)
+    ! print win file
+
+#ifdef MPI08
+    use mpi_f08
+#endif
+#ifdef MPI90
+    use mpi
+#endif
+
+    use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_alloc, set_error_fatal, code_mpi
+    use w90_comms, only: w90_comm_type, valid_communicator
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), target, intent(in) :: common_data
+
+    ! local variables
+    integer :: i, j, l, fu
+    type(settings_data), pointer :: entry_ptr
+
+    open (newunit=fu, file=trim(seedname)//".win_dump")
+
+    do l = 1, size(common_data%settings%entries, 1)
+
+      entry_ptr => common_data%settings%entries(l)
+
+      if (allocated(entry_ptr%txtdata)) then
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%txtdata
+
+      else if (allocated(entry_ptr%idata)) then
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%idata
+
+      else if (allocated(entry_ptr%ldata)) then
+        if (entry_ptr%keyword == "dump_inputs") exit ! this is not valid .win input
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%ldata
+
+      else if (allocated(entry_ptr%rdata)) then
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%rdata
+
+      else if (allocated(entry_ptr%i1d)) then
+        if (entry_ptr%keyword == "distk") exit ! this is not valid .win input
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%i1d(:)
+      end if
+
+      nullify (entry_ptr)
+    end do
+
+    ! same again, to put the long lists (kpoints, etc?) last
+    ! 2d "block" data, integer or float
+    do l = 1, size(common_data%settings%entries, 1)
+
+      entry_ptr => common_data%settings%entries(l)
+
+      if (allocated(entry_ptr%i2d)) then
+        write (fu, *) "begin ", entry_ptr%keyword
+        do j = 1, size(entry_ptr%i2d, 2)
+          do i = 1, size(entry_ptr%i2d, 1)
+            write (fu, '(i4)', advance='no') entry_ptr%i2d(i, j)
+          end do
+          write (fu, *) '' ! EOL
+        end do
+        write (fu, *) "end ", entry_ptr%keyword
+
+      else if (allocated(entry_ptr%r2d)) then
+        write (fu, *) "begin ", entry_ptr%keyword
+        do j = 1, size(entry_ptr%r2d, 2)
+          do i = 1, size(entry_ptr%r2d, 1)
+            write (fu, '(f20.12)', advance='no') entry_ptr%r2d(i, j)
+          end do
+          write (fu, *) '' ! EOL
+        end do
+        write (fu, *) "end ", entry_ptr%keyword
+      end if
+
+      nullify (entry_ptr)
+    end do
+
+    close (fu)
+
+!     else
+!       write(*,'(a20,10l3)')entry_ptr%keyword,&
+!         allocated(entry_ptr%txtdata),&
+!         allocated(entry_ptr%c2d),&
+!         allocated(entry_ptr%i1d),&
+!         allocated(entry_ptr%i2d),&
+!         allocated(entry_ptr%idata),&
+!         allocated(entry_ptr%l1d),&
+!         allocated(entry_ptr%ldata),&
+!         allocated(entry_ptr%r1d),&
+!         allocated(entry_ptr%r2d),&
+!         allocated(entry_ptr%rdata)
+!     endif
+  end subroutine w90_print_win
 
   subroutine w90_input_reader(common_data, istdout, istderr, ierr)
     !! mechanism to act upon tokens read from the input ".win" file
@@ -523,6 +628,7 @@ contains
     use w90_disentangle_mod, only: dis_main, setup_m_loc
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -562,6 +668,13 @@ contains
       if (common_data%dis_manifold%froz_min == -huge(0.0_dp)) then
         common_data%dis_manifold%froz_min = minval(common_data%eigval(:, :))
       end if
+    end if
+
+    if (common_data%output_file%write_win_ammats) then
+      ! for writing input m,a matrices
+      call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
+                         common_data%eigval, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                         common_data%num_proj, common_data%seedname, error, common_data%comm)
     end if
 
     ! condition for disentanglement is number of bands > number of WF
@@ -667,6 +780,7 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_wannierise_mod, only: wann_main, wann_main_gamma
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -688,6 +802,13 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
+    end if
+
+    if (common_data%output_file%write_win_ammats .and. .not. common_data%have_disentangled) then
+      ! for writing input m,a matrices
+      call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
+                         common_data%eigval, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                         common_data%num_proj, common_data%seedname, error, common_data%comm)
     end if
 
     if (common_data%gamma_only) then
@@ -1150,7 +1271,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%txtdata = text
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1170,7 +1291,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%ldata = bool
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1190,7 +1311,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%i1d = arr ! this causes an automatic allocation
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1210,7 +1331,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%i2d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1230,7 +1351,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%idata = ival
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1250,7 +1371,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%r1d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1270,7 +1391,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%r2d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1290,7 +1411,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%c2d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1310,7 +1431,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%rdata = rval
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if

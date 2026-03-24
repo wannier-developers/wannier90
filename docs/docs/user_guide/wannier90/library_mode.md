@@ -72,6 +72,9 @@ MPI ranks.  In particular this affects the decomposition of the $M$-matrix.
 when these determine the number of bands in the Wannier90 calculation instead
 of vice-versa.
 
+- `dump_inputs` writes a minimal .win file and .mmn, .amn and .eig files for
+use by standalone executable
+
 ## Using the Library
 
 ```fortran title="Fortran"
