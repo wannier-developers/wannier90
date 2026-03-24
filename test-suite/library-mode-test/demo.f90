@@ -18,7 +18,7 @@ program ok
   integer :: nb, nk, nn, nw
   real(8), allocatable :: eval(:, :), kpt(:, :)
   real(8) :: uccart(3, 3) ! cartesian unit cell
-  type(lib_common_type), target :: w90main
+  type(lib_common_type) :: w90main
 
   ! collect data
   nb = 12
