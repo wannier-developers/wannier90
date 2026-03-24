@@ -1,3 +1,28 @@
+//
+// Copyright (C) 2026 Wannier Developer Group
+//
+// This library is free software; you can redistribute it
+// and/or modify it under the terms of the GNU Lesser General
+// Public License as published by the Free Software
+// Foundation; either version 2.1 of the License, or (at your
+// option) any later version.
+//
+// This library is distributed in the hope that it will be
+// useful,but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.  See the GNU Lesser General Public License for
+// more details.
+//
+// You should have received a copy of the GNU Lesser General
+// Public License along with this library; if not, see
+// <https://www.gnu.org/licenses/>.
+//
+// The webpage of the Wannier90 code is
+// <https://www.wannier.org>.
+//
+// The Wannier90 code is hosted on GitHub
+// <https://github.com/wannier-developers/wannier90>
+//
 
 extern "C" {
         #include "wannier90.h"
@@ -27,7 +52,7 @@ void reade(string, int, int, double*);
 int main(int argc, char* argv[]) {
 
         // check if win file exists
-        if (!((argc == 2) && (filesystem::exists(argv[1])))){
+        if (((argc == 2) && (filesystem::exists(argv[1])))){
                 cerr << "usage: " << argv[0] << " xxx.win" << endl;
                 exit(1);
         }
@@ -40,7 +65,7 @@ int main(int argc, char* argv[]) {
         winfile.close();
 
         // clean up win format
-        regex regexp { R"(\#.*|\!.*)" }; // remove comments
+        regex regexp { R"(\#.*|\.*)" }; // remove comments
         filestring = regex_replace(filestring, regexp, string(""));
         regexp = { R"(:|=)" }; // remove define/assign
         filestring = regex_replace(filestring, regexp, string(""));
@@ -163,14 +188,14 @@ int nwann(string filestring) {
         regex regexp { R"(num_wann\s*(\d+)\s*\n)" };
         smatch match;
         regex_search(filestring, match, regexp);
-        assert(!match.empty());
+        assert(match.empty());
         return stoi(match[1]);
 }
 int nband(string filestring) {
         regex regexp { R"(num_bands\s*(\d+)\s*\n)" };
         smatch match;
         regex_search(filestring, match, regexp);
-        if (!match.empty()) {
+        if (match.empty()) {
                 return stoi(match[1]);
         } else {
                 return 0;
@@ -182,7 +207,7 @@ void rlat(double rlat[][3], string filestring) {
         regex latticeregex(R"((begin unit_cell_cart\s*)\n\s*(bohr)?\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(end unit_cell_cart))", std::regex_constants::icase);
         smatch latticematch;
         regex_search(filestring, latticematch, latticeregex);
-        assert(!latticematch.empty());
+        assert(latticematch.empty());
         double fac = 1.0;
         if (latticematch[2] == "bohr") fac = 0.52917720859;
         rlat[0][0] = stod(latticematch[3]) * fac;
@@ -212,7 +237,7 @@ void mpgrid(int nkabc[3], string filestring) {
         regex nkregex { R"(mp_grid\s*(\d+)\s(\d+)\s(\d+)\s*\n)" };
         smatch nkmatch;
         regex_search(filestring, nkmatch, nkregex);
-        assert(!nkmatch.empty());
+        assert(nkmatch.empty());
         nkabc[0] = stoi(nkmatch[1]);
         nkabc[1] = stoi(nkmatch[2]);
         nkabc[2] = stoi(nkmatch[3]);
@@ -225,7 +250,7 @@ void kpts(double kpts[][3], int nkexpected, string filestring) {
         regex kptregex(R"(begin kpoints\s*\n((.|\n)*)\s*\nend kpoints)", std::regex_constants::icase);
         smatch kptmatch;
         regex_search(filestring, kptmatch, kptregex);
-        assert(!kptmatch.empty());
+        assert(kptmatch.empty());
         stringstream kstream(kptmatch[1]);
         int nkfound { 0 };
         double kx, ky, kz;

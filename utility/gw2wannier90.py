@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
 #
 # gw2wannier90 interface
+#------------------------------------------------------------
+# Copyright (C) 2026 Wannier Developer Group
 #
-# This file is distributed as part of the Wannier90 code and
-# under the terms of the
+# This library is free software; you can redistribute it
+# and/or modify it under the terms of the GNU Lesser General
+# Public License as published by the Free Software
+# Foundation; either version 2.1 of the License, or (at your
+# option) any later version.
 #
-#      GNU Lesser General Public License, version 2.1
+# This library is distributed in the hope that it will be
+# useful,but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU Lesser General Public License for
+# more details.
 #
-# see file `LICENSE' in the root directory of the Wannier90
-# distribution or https://www.gnu.org/licenses/lgpl-2.1.html
+# You should have received a copy of the GNU Lesser General
+# Public License along with this library; if not, see
+# <https://www.gnu.org/licenses/>.
 #
-# The webpage of the Wannier90 code is www.wannier.org
+# The webpage of the Wannier90 code is
+# <https://www.wannier.org>.
 #
 # The Wannier90 code is hosted on GitHub
-# https://github.com/wannier-developers/wannier90
+# <https://github.com/wannier-developers/wannier90>
+#------------------------------------------------------------
 #
 # Designed and tested with: Quantum Espresso and Yambo
 # This interface should work with any G0W0 code

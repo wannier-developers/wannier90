@@ -1,17 +1,28 @@
-#!--------------------------------------------------------------!
-#! This file is distributed as part of the Wannier90 code and   !
-#! under the terms of the                                       !
-#!                                                              !
-#!        GNU Lesser General Public License, version 2.1        !
-#!                                                              !
-#! see file `LICENSE' in the root directory of the Wannier90    !
-#! distribution, or https://www.gnu.org/licenses/lgpl-2.1.html  !
-#!                                                              !
-#! The webpage of the Wannier90 code is www.wannier.org         !
-#!                                                              !
-#! The Wannier90 code is hosted on GitHub                       !
-#! https://github.com/wannier-developers/wannier90              !
-#!--------------------------------------------------------------!
+#------------------------------------------------------------#
+# Copyright (C) 2026 Wannier Developer Group                 #
+#                                                            #
+# This library is free software; you can redistribute it     #
+# and/or modify it under the terms of the GNU Lesser General #
+# Public License as published by the Free Software           #
+# Foundation; either version 2.1 of the License, or (at your #
+# option) any later version.                                 #
+#                                                            #
+# This library is distributed in the hope that it will be    #
+# useful,but WITHOUT ANY WARRANTY; without even the implied  #
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    #
+# PURPOSE.  See the GNU Lesser General Public License for    #
+# more details.                                              #
+#                                                            #
+# You should have received a copy of the GNU Lesser General  #
+# Public License along with this library; if not, see        #
+# <https://www.gnu.org/licenses/>.                           #
+#                                                            #
+# The webpage of the Wannier90 code is                       #
+# <https://www.wannier.org>.                                 #
+#                                                            #
+# The Wannier90 code is hosted on GitHub                     #
+# <https://github.com/wannier-developers/wannier90>          #
+#------------------------------------------------------------#
 
 ## Source files definitions
 target_sources(Wannier90_lib PRIVATE
