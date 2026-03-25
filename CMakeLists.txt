@@ -25,6 +25,7 @@ endif ()
 ]=============================================================================]
 
 option(WANNIER90_MPI "Wannier90: Build with MPI support" OFF)
+option(WANNIER90_MPIH "Wannier90: Build MPI support using the mpi.h header" OFF)
 option(WANNIER90_SHARED_LIBS "Wannier90: Build library as a shared library" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_INSTALL "Wannier90: Install files" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_TEST "Wannier90: Build test-suite" ${PROJECT_IS_TOP_LEVEL})
@@ -37,6 +38,10 @@ if (NOT CMAKE_Fortran_MODULE_DIRECTORY)
 	set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran_mods)
 endif ()
 set(BUILD_SHARED_LIBS ${WANNIER90_SHARED_LIBS})
+
+if (WANNIER90_MPIH AND NOT WANNIER90_MPI)
+	message(FATAL_ERROR "WANNIER90_MPIH requires WANNIER90_MPI to be enabled")
+endif ()
 
 if (WANNIER90_INSTALL)
 	include(GNUInstallDirs)
@@ -67,6 +72,7 @@ endif ()
 ## Populate variables for FetchContent and sub-projects
 # All variables have to be consistent with CMakeExtraUtilsConfig.cmake
 set(Wannier90_MPI ${WANNIER90_WITH_MPI})
+set(Wannier90_MPIH ${WANNIER90_MPIH})
 
 #[=============================================================================[
 #                              External packages                              #
@@ -175,5 +181,6 @@ if (NOT PROJECT_IS_TOP_LEVEL)
 			Wannier90_VERSION_PATCH
 			Wannier90_VERSION_TWEAK
 			Wannier90_MPI
+			Wannier90_MPIH
 			)
 endif ()
