@@ -39,7 +39,7 @@ install: default
 	if [ -f "$(DYNLIBRARY)" ]; then install -m644 "$(DYNLIBRARY)" "$(DESTDIR)$(PREFIX)/lib/$(DYNLIBRARY)"; fi;
 	if [ -f "$(STATICLIBRARY)" ]; then $(MAKE) pkgconfig; fi;
 
-all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
+all: wannier libs post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
