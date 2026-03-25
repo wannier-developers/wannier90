@@ -1,6 +1,6 @@
 !-*- mode: F90 -*-!
 !------------------------------------------------------------!
-! Copyright (C) 2026 Wannier Developer Group                 !
+! Copyright (C) 2012 Daniel Aberg                            !
 !                                                            !
 ! This library is free software; you can redistribute it     !
 ! and/or modify it under the terms of the GNU Lesser General !

@@ -77,7 +77,7 @@ Licence
 +++++++
 
 The Wannier90 code is licensed under LGPLv2.1 or later.
-You can read the licence text in the LICENSE file in the root directory 
+You can read the licence text in the LICENSE file in the root directory
 of the Wannier90 distribution.
 
 FAQ

@@ -1,18 +1,39 @@
-!---------------------------------------------
-!               PL_assess.f90                !
-!---------------------------------------------
-!        Written by M.Shelley 09/09          !
-!         Imperial College, London           !
-!                                            !
-!    Copyright (c) 2009 Matthew Shelley      !
-!                                            !
-!---------------------------------------------
-!                                            !
-! Function: To assess principal layer size   !
-!           of a system from a single cell   !
-!           many k-point calculation.        !
-!                                            !
-!--------------------------------------------!
+!------------------------------------------------------------!
+!               PL_assess.f90                                !
+!------------------------------------------------------------!
+!        Written by M.Shelley 09/09                          !
+!         Imperial College, London                           !
+!                                                            !
+!    Copyright (c) 2009 Matthew Shelley                      !
+!------------------------------------------------------------!
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
+!                                                            !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
+!                                                            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
+!------------------------------------------------------------!
+!                                                            !
+! Function: To assess principal layer size                   !
+!           of a system from a single cell                   !
+!           many k-point calculation.                        !
+!                                                            !
+!------------------------------------------------------------!
 
 program PL_assessment
 
