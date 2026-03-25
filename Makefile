@@ -7,6 +7,14 @@ include make.inc
 
 REALMAKEFILE=../Makefile.2
 
+COMMS := $(strip $(COMMS))
+ifneq ($(filter mpi08 mpih mpi90 mpi,$(COMMS)),)
+  LIBSUFFIX = _mpi
+else
+  LIBSUFFIX =
+endif
+LIBRARYV2 = libwannier90$(LIBSUFFIX).a
+
 TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else echo tar; fi )
 
 .NOTPARALLEL:
@@ -31,6 +39,10 @@ install: default
 	install -d $(DESTDIR)$(PREFIX)/lib/
 	if [ -f "$(LIBRARYV2)" ]; then install -m644 "$(LIBRARYV2)" "$(DESTDIR)$(PREFIX)/lib/$(LIBRARYV2)"; fi;
 	if [ -f "$(LIBRARYV2)" ]; then $(MAKE) pkgconfig; fi;
+	install -d $(DESTDIR)$(PREFIX)/include/
+	for m in src/obj/w90_library.mod src/obj/w90_library_extra.mod; do \
+		if [ -f "$$m" ]; then install -m644 "$$m" "$(DESTDIR)$(PREFIX)/include/"; fi; \
+	done
 
 all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
 
@@ -64,17 +76,19 @@ libs: lib
 
 PKGCONFIG_FILENAME = wannier.pc
 pkgconfig:
-	$(file > $(PKGCONFIG_FILENAME),prefix=$(DESTDIR)$(PREFIX))
-	$(file >> $(PKGCONFIG_FILENAME),exec_prefix=$(DESTDIR)$(PREFIX)/bin)
-	$(file >> $(PKGCONFIG_FILENAME),libdir=$(DESTDIR)$(PREFIX)/lib)
-	$(file >> $(PKGCONFIG_FILENAME),includedir=$(DESTDIR)$(PREFIX)/include)
-	$(file >> $(PKGCONFIG_FILENAME),)
-	$(file >> $(PKGCONFIG_FILENAME),Name: wannier)
-	$(file >> $(PKGCONFIG_FILENAME),Description: Compute maximally-localised Wannier functions.)
-	$(file >> $(PKGCONFIG_FILENAME),Requires: )
-	$(file >> $(PKGCONFIG_FILENAME),Version: $(VERSION))
-	$(file >> $(PKGCONFIG_FILENAME),Libs: -L$${libdir} -lwannier)
-	$(file >> $(PKGCONFIG_FILENAME),Cflags: -I$${includedir})
+	{ \
+	  echo "prefix=$(DESTDIR)$(PREFIX)"; \
+	  echo "exec_prefix=$(DESTDIR)$(PREFIX)/bin"; \
+	  echo "libdir=$(DESTDIR)$(PREFIX)/lib"; \
+	  echo "includedir=$(DESTDIR)$(PREFIX)/include"; \
+	  echo ""; \
+	  echo "Name: wannier"; \
+	  echo "Description: Compute maximally-localised Wannier functions."; \
+	  echo "Requires: "; \
+	  echo "Version: $(VERSION)"; \
+	  echo 'Libs: -L$${libdir} -lwannier'; \
+	  echo 'Cflags: -I$${includedir}'; \
+	} > "$(PKGCONFIG_FILENAME)"
 	install -D -m644 "$(PKGCONFIG_FILENAME)" "$(DESTDIR)$(PREFIX)/lib/pkgconfig/$(PKGCONFIG_FILENAME)"
 	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
 
