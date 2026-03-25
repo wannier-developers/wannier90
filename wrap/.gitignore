@@ -1,0 +1,6 @@
+.f2py_f2cmap
+__pycache__/
+_wan90*.so
+cabort.o
+f90wrap_*.f90
+wan90mpi.py

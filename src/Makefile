@@ -1,3 +1,0 @@
-ROOTDIR=..
-
-include ../Makefile
