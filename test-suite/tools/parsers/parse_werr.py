@@ -27,12 +27,12 @@ def parse(fname):
         ###############################################################
         # Look for 'Exiting...', then take the text of the next line
         if "Exiting..." in l:
-            for l2 in lines[lno+1:]: 
+            for l2 in lines[lno+1:]:
                 # I store the stripped, lower-case string
                 retdict['warning_msg'].append(l2.strip().lower())
                 # For now, I just take one line and stop.
                 # I still do it in a for loop in case 'Exiting...' is on the
-                # last row, to avoid exceptions. Remove the next 'break' if 
+                # last row, to avoid exceptions. Remove the next 'break' if
                 # you want to get all lines
                 break
 

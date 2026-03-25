@@ -141,6 +141,8 @@ module w90_types
     integer :: higher_order_n = 1
     logical :: higher_order_nearest_shells = .false. ! experimental feature
     !! A simpler algorithm of determining bvectors
+    logical :: kmesh_shell_from_file = .false.
+    !! allow specifying b-vector shells from file (for complex cases where the automatic procedure fails)
     logical :: skip_B1_tests = .false.
     !! do not check the B1 condition
     integer, allocatable :: shell_list(:)

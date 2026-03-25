@@ -8,7 +8,7 @@ num_wann = 7
 dos_energy_max = 11.2
 dos_energy_min = 10.2
 dos = true
-kmesh = 20 
+kmesh = 20
 dos_energy_step = 0.1
 
 begin unit_cell_cart

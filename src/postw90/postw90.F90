@@ -46,11 +46,11 @@ program postw90
   use w90_kpath
   use w90_kslice
   use w90_postw90_common, only: pw90common_wanint_setup, pw90common_wanint_get_kpoint_file, &
-    pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
+                                pw90common_wanint_w90_wannier90_readwrite_dist, pw90common_wanint_data_dist
   use w90_postw90_readwrite
   use w90_postw90_types
   use w90_readwrite, only: w90_readwrite_read_chkpt, w90_readwrite_write_header, &
-    w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
+                           w90_readwrite_in_file, w90_readwrite_clean_infile, w90_readwrite_read_final_alloc
   use w90_spin
   use w90_types
 
@@ -220,7 +220,7 @@ program postw90
   if (ierr .ne. 0) then
     call set_error_fatal(error, 'MPI initialisation error', comm)
     if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
-  endif
+  end if
 #endif
 
   my_node_id = mpirank(comm)
@@ -261,7 +261,7 @@ program postw90
       stat = 'old'
     else
       stat = 'replace'
-    endif
+    end if
     pos = 'append'
 
     open (newunit=stdout, file=trim(seedname)//'.wpout', status=trim(stat), position=trim(pos))
@@ -317,11 +317,11 @@ program postw90
       ! the position operator in reciprocal space. Also need
       ! nnlist to compute the additional matrix elements entering
       ! the orbital magnetization
-    endif
-  endif ! on_root
+    end if
+  end if ! on_root
 
   call kmesh_get(kmesh_data, kmesh_info, verbose, kpt_latt, real_lattice, &
-                 num_kpts, gamma_only, stdout, timer, error, comm)
+                 num_kpts, gamma_only, seedname, stdout, timer, error, comm)
   if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
 
   if (on_root) then
@@ -346,12 +346,12 @@ program postw90
       write (stdout, *) '                       ==============================='
       close (stdout)
       close (stderr, status='delete') ! this should not be unit 0
-    endif
+    end if
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
     stop
-  endif
+  end if
 
   ! We now distribute a subset of the parameters to the other nodes
   ! surely this function name is toooo long? --JJ fixme
@@ -414,7 +414,7 @@ program postw90
   if (berry%wanint_kpoint_file) then
     call pw90common_wanint_get_kpoint_file(kpt_dist, error, comm)
     if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
-  endif
+  end if
 
   ! Setup a number of common variables for all interpolation tasks
 
@@ -427,7 +427,7 @@ program postw90
     time1 = io_time()
     write (stdout, '(/1x,a25,f11.3,a)') &
       'Time to read and process .chk    ', time1 - time2, ' (sec)'
-  endif
+  end if
 
   ! Now perform one or more of the following tasks
 
@@ -442,7 +442,7 @@ program postw90
                   mp_grid, num_bands, num_kpts, num_wann, effective_model, have_disentangled, &
                   pw90_calcs%spin_decomp, seedname, stdout, timer, error, comm)
     if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
-  endif
+  end if
 
 ! find_fermi_level commented for the moment in dos.F90
 !  if(dos .and. index(dos_task,'find_fermi_energy')>0) call find_fermi_level
@@ -522,7 +522,7 @@ program postw90
 
   if (on_root) then
     time1 = io_time()
-  endif
+  end if
 
   if (pw90_calcs%geninterp) then
     call geninterp_main(dis_window, geninterp, kpt_latt, pw90_ham, ws_region, verbose, wann_data, &
@@ -550,13 +550,13 @@ program postw90
                          num_wann, effective_model, have_disentangled, seedname, stdout, timer, &
                          error, comm)
     if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
-  endif
+  end if
 
   if (on_root .and. pw90_calcs%boltzwann) then
     time2 = io_time()
     write (stdout, '(/1x,a,f11.3,a)') &
       'Time for BoltzWann (Boltzmann transport) ', time2 - time1, ' (sec)'
-  endif
+  end if
 
   if (on_root) then
     write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time(), ' (sec)'
@@ -568,7 +568,7 @@ program postw90
 
     close (stdout)
     close (stderr, status='delete') ! this should not be unit 0
-  endif
+  end if
 
 #ifdef MPI
   call mpi_finalize(ierr)

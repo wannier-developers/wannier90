@@ -179,10 +179,10 @@ the actual $\mathbf{k+b}$ that we need.
 ### `exclude_bands` block
 
 ```vi title="Input file"
-begin exclude_bands 
-  8 
-  1 
-  2 
+begin exclude_bands
+  8
+  1
+  2
   .
   .
 end exclude_bands
@@ -223,8 +223,7 @@ projections that need to be generated automatically.
 The selected columns of the density matrix (SCDM)
 method [@LinLin-ArXiv2017] is one way of generating the initial
 $A_{mn}^{(\mathbf{k})}$ in an automatic way. This has been implemented
-in the `pw2wannier90` interface code (you need v6.3 with the files
-provided in the `pwscf` folder of Wannier90, or v6.4), see for instance
+in the `pw2wannier90` interface code (you need at least v6.4), see for instance
 Tutorial [27](../../tutorials/tutorial_27.md) in the `wannier90` tutorial
 that shows how to use it.
 
@@ -483,12 +482,6 @@ specified in the `pw2wannier90` input file:
     of Bloch functions by a factor of 8. Default is `.false.` (only
     relevant if `write_unk=.true.`)
 
-    !!! note
-        Note that there is a small bug with this feature in v3.2 (and
-        subsequent patches) of `quantum-espresso`. Please use a later
-        version (if available) or the CVS version of `pw2wannier90.f90`,
-        which has been fixed.
-
 - `wvfn_formatted` -- Set to `.true.` to write formatted
     wavefunctions. Default is `.false.` (only relevant if
     `write_unk=.true.`)
@@ -587,7 +580,7 @@ follows:
       R(1,1)   R(2,1)   R(3,1)
       R(1,2)   R(2,2)   R(3,2)
       R(1,3)   R(2,3)   R(3,3)
-       t(1)     t(2)     t(3)   
+       t(1)     t(2)     t(3)
 ```
 
 Here, $R$ is the rotational part of symmetry operations ($3\times3$

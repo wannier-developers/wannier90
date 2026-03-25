@@ -84,7 +84,7 @@ To make things easy, the tutorial treats Te without spin-orbit
     gyrotropic_box_b2=0.0 0.2 0.0
     gyrotropic_box_b3=0.0 0.0 0.2
     gyrotropic_box_center=0.33333 0.33333 0.5
-    gyrotropic_kmesh=50 50 50 
+    gyrotropic_kmesh=50 50 50
     ```
 
 7. Run `postw90`

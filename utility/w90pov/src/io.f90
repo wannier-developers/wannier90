@@ -73,7 +73,7 @@ contains
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
         if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-      endif
+      end if
 
     end do
 
@@ -144,7 +144,7 @@ contains
       if (found) then
         print *, 'Error: Found keyword ', trim(keyword), ' more than once in input file'
         stop
-      endif
+      end if
       found = .true.
       dummy = in_data(loop) (kl + 1:)
       in_data(loop) (1:maxlen) = ' '
@@ -165,8 +165,8 @@ contains
         else
           print *, 'Error: Problem reading logical keyword ', trim(keyword)
           stop
-        endif
-      endif
+        end if
+      end if
       if (present(i_value)) read (dummy, *, err=220, end=220) i_value
       if (present(r_value)) read (dummy, *, err=220, end=220) r_value
     end if
@@ -211,7 +211,7 @@ contains
       if (found) then
         print *, 'Error: Found keyword ', trim(keyword), ' more than once in input file'
         stop
-      endif
+      end if
       found = .true.
       dummy = in_data(loop) (kl + 1:)
       in_data(loop) (1:maxlen) = ' '
@@ -227,7 +227,7 @@ contains
       if (present(l_value)) then
         ! I don't think we need this. Maybe read into a dummy charater
         ! array and convert each element to logical
-      endif
+      end if
       if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
       if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
     end if
@@ -265,7 +265,7 @@ contains
       ilett = ichar(string(ipos:ipos))
       if ((ilett .ge. iA) .and. (ilett .le. iZ)) &
         utility_lowercase(ipos:ipos) = char(ilett - idiff)
-    enddo
+    end do
 
     utility_lowercase = trim(adjustl(utility_lowercase))
 

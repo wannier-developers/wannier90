@@ -235,8 +235,8 @@ contains
       do j = 1, mc
         do i = 1, nb
           tmp(i, j) = eigval(i)*tmp(i, j)
-        enddo
-      enddo
+        end do
+      end do
       ! prod2 = op(a).tmp
       call utility_zgemm_new(a, tmp, prod2, transa, 'N')
     end if
@@ -342,7 +342,7 @@ contains
     if (abs(volume) > eps5) then
       recip_lat = twopi*recip_lat/volume
       volume = abs(volume)
-    endif
+    end if
 
     return
 
@@ -426,12 +426,12 @@ contains
       do i = 1, j
         do l = 1, 3
           metric(i, j) = metric(i, j) + lattice(i, l)*lattice(j, l)
-        enddo
+        end do
         if (i .lt. j) then
           metric(j, i) = metric(i, j)
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
 
   end subroutine utility_metric
 
@@ -511,8 +511,8 @@ contains
       if (ilett .ne. ispc) then
         icount = icount + 1
         utility_strip(icount:icount) = string(ipos:ipos)
-      endif
-    enddo
+      end if
+    end do
 
     utility_strip = trim(utility_strip)
 
@@ -548,7 +548,7 @@ contains
       ilett = ichar(string(ipos:ipos))
       if ((ilett .ge. iA) .and. (ilett .le. iZ)) &
         utility_lowercase(ipos:ipos) = char(ilett - idiff)
-    enddo
+    end do
 
     utility_lowercase = trim(adjustl(utility_lowercase))
 
@@ -583,7 +583,7 @@ contains
     if (pos <= 0) then
       call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
       return
-    endif
+    end if
 
     ctemp2 = ctemp(1:pos - 1)
     read (ctemp2, *, err=100, end=100) outvec(1)
@@ -630,12 +630,12 @@ contains
       if (r_frac(ind) .lt. 0.0_dp) then
         shift = real(ceiling(abs(r_frac(ind))), kind=dp)
         r_frac(ind) = r_frac(ind) + shift
-      endif
+      end if
       if (r_frac(ind) .gt. 1.0_dp) then
         shift = -real(int(r_frac(ind)), kind=dp)
         r_frac(ind) = r_frac(ind) + shift
-      endif
-    enddo
+      end if
+    end do
     ! Fractional --> Cartesian
     call utility_frac_to_cart(r_frac, r_home, real_lat)
 
@@ -671,8 +671,8 @@ contains
     do j = 1, dim
       do i = 1, j
         mat_pack(i + ((j - 1)*j)/2) = mat(i, j)
-      enddo
-    enddo
+      end do
+    end do
     rot = cmplx_0; eig = 0.0_dp; cwork = cmplx_0; rwork = 0.0_dp; iwork = 0
     call ZHPEVX('V', 'A', 'U', dim, mat_pack, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
                 nfound, eig(1), rot, dim, cwork, rwork, iwork, ifail, info)
@@ -681,13 +681,13 @@ contains
         ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
       call set_error_fatal(error, errormsg, comm)
       return
-    endif
+    end if
     if (info > 0) then
       write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: ', info, &
         ' EIGENVECTORS FAILED TO CONVERGE'
       call set_error_fatal(error, errormsg, comm)
       return
-    endif
+    end if
 
   end subroutine utility_diagonalize
 
@@ -893,7 +893,7 @@ contains
     cdum = cmplx_0
     do i = 1, mydim
       cdum = cdum + mat(i, i)
-    enddo
+    end do
     utility_re_tr = aimag(cmplx_i*cdum)
 
   end function utility_re_tr
@@ -918,7 +918,7 @@ contains
     cdum = cmplx_0
     do i = 1, mydim
       cdum = cdum + mat(i, i)
-    enddo
+    end do
     utility_im_tr = aimag(cdum)
 
   end function utility_im_tr
@@ -969,10 +969,10 @@ contains
         utility_wgauss = 1.0_dp
       else
         utility_wgauss = 1.00_dp/(1.00_dp + exp(-x))
-      endif
+      end if
       return
 
-    endif
+    end if
     ! Cold smearing
     if (n .eq. -1) then
       xp = x - 1.00_dp/sqrt(2.00_dp)
@@ -981,7 +981,7 @@ contains
                                                                          arg) + 0.50_dp
       return
 
-    endif
+    end if
     ! Methfessel-Paxton
     utility_wgauss = gauss_freq(x*sqrt(2.00_dp))
     if (n .eq. 0) return
@@ -997,7 +997,7 @@ contains
       utility_wgauss = utility_wgauss - a*hd
       hp = 2.00_dp*x*hd - 2.00_dp*DBLE(ni)*hp
       ni = ni + 1
-    enddo
+    end do
     return
   end function utility_wgauss
 
@@ -1050,22 +1050,22 @@ contains
         ! in order to avoid problems for large values of x in the e
       else
         utility_w0gauss = 0.0_dp
-      endif
+      end if
       return
 
-    endif
+    end if
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
       arg = min(200.0_dp, (x - 1.00_dp/sqrt(2.00_dp))**2)
       utility_w0gauss = sqrtpm1*exp(-arg)*(2.00_dp - sqrt(2.00_dp)*x)
       return
 
-    endif
+    end if
 
     if (n .gt. 10 .or. n .lt. 0) then
       call set_error_input(error, 'utility_w0gauss higher order (n>10) smearing is untested and unstable', comm)
       return
-    endif
+    end if
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
@@ -1082,7 +1082,7 @@ contains
       hp = 2.00_dp*x*hd - 2.00_dp*DBLE(ni)*hp
       ni = ni + 1
       utility_w0gauss = utility_w0gauss + a*hp
-    enddo
+    end do
     return
   end function utility_w0gauss
 
@@ -1124,18 +1124,18 @@ contains
     if (n .eq. -99) then
       call set_error_input(error, 'utility_w0gauss_vec not implemented for n == 99', comm)
       return
-    endif
+    end if
 
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
       call set_error_input(error, 'utility_w0gauss_vec not implemented for n == -1', comm)
       return
-    endif
+    end if
 
     if (n .gt. 10 .or. n .lt. 0) then
       call set_error_input(error, 'utility_w0gauss higher order smearing is untested and unstable', comm)
       return
-    endif
+    end if
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
@@ -1146,7 +1146,7 @@ contains
     else
       call set_error_input(error, 'utility_w0gauss_vec not implemented for n >0 ', comm)
       return
-    endif
+    end if
   end function utility_w0gauss_vec
 
   function qe_erf(x)
@@ -1181,8 +1181,8 @@ contains
                  /(q1(1) + x2*(q1(2) + x2*(q1(3) + x2*q1(4))))
       else
         qe_erf = 1.0_dp - qe_erfc(x)
-      endif
-    endif
+      end if
+    end if
     !
     return
   end function qe_erf
@@ -1233,7 +1233,7 @@ contains
                 (q2(1) + ax*(q2(2) + ax*(q2(3) + ax*(q2(4) + ax*(q2(5) + ax*(q2(6) + ax*(q2(7) + ax*q2(8))))))))
     else
       qe_erfc = 1.0_dp - qe_erf(ax)
-    endif
+    end if
     !
     ! erf(-x)=-erf(x)  =>  erfc(-x) = 2-erfc(x)
     !

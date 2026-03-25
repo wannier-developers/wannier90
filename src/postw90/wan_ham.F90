@@ -35,7 +35,7 @@ module w90_wan_ham
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -137,7 +137,7 @@ contains
           D_h(n, m, i) = delHH_bar_i(n, m)/(eig(m) - eig(n))
         end do
       end do
-    enddo
+    end do
 
   end subroutine wham_get_D_h
 
@@ -188,7 +188,7 @@ contains
           D_h(n, m, i) = delHH_bar_i(n, m)*(deltaE/(deltaE**(2) + pw90_berry%sc_eta**(2)))
         end do
       end do
-    enddo
+    end do
 
   end subroutine wham_get_D_h_P_value
 
@@ -231,7 +231,7 @@ contains
     else
       nfermi_loc = 0
       if (allocated(fermi_energy_list)) nfermi_loc = size(fermi_energy_list)
-    endif
+    end if
 
     call utility_rotate_new(delHH, UU, num_wann)
     do ife = 1, nfermi_loc
@@ -253,10 +253,10 @@ contains
             else
               JJp_list(n, m, ife) = cmplx_0
               JJm_list(m, n, ife) = cmplx_0
-            endif
-          endif
-        enddo
-      enddo
+            end if
+          end if
+        end do
+      end do
       call utility_rotate_new(JJp_list(:, :, ife), UU, num_wann, reverse=.true.)
       call utility_rotate_new(JJm_list(:, :, ife), UU, num_wann, reverse=.true.)
     end do
@@ -302,7 +302,7 @@ contains
     else
       nfermi_loc = 0
       if (allocated(fermi_energy_list)) nfermi_loc = size(fermi_energy_list)
-    endif
+    end if
     allocate (occ_list(num_wann, nfermi_loc))
 
     if (present(occ) .and. present(eig)) then
@@ -312,15 +312,15 @@ contains
     elseif (.not. present(occ) .and. .not. present(eig)) then
       call set_error_input(error, 'either occ_list or eig must be passed as arguments to get_occ_mat_list', comm)
       return
-    endif
+    end if
 
     if (present(occ)) then
       occ_list(:, 1) = occ(:)
     else
       do if = 1, nfermi_loc
         call pw90common_get_occ(fermi_energy_list(if), eig, occ_list(:, if), num_wann)
-      enddo
-    endif
+      end do
+    end if
 
     f_list = cmplx_0
     do if = 1, nfermi_loc
@@ -329,12 +329,12 @@ contains
           do i = 1, num_wann
             f_list(n, m, if) = f_list(n, m, if) &
                                + UU(n, i)*occ_list(i, if)*conjg(UU(m, i))
-          enddo
+          end do
           g_list(n, m, if) = -f_list(n, m, if)
           if (m == n) g_list(n, n, if) = g_list(n, n, if) + cmplx_1
-        enddo
-      enddo
-    enddo
+        end do
+      end do
+    end do
 
   end subroutine wham_get_occ_mat_list
 
@@ -458,9 +458,9 @@ contains
     use w90_constants, only: dp, cmplx_0
     use w90_get_oper, only: get_HH_R
     use w90_types, only: dis_manifold_type, print_output_type, wannier_data_type, &
-      ws_region_type, ws_distance_type, timer_list_type
+                         ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
-      pw90common_fourier_R_to_k
+                                  pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize
 
     implicit none
@@ -601,11 +601,11 @@ contains
 
     use w90_constants, only: dp
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d, &
-      pw90common_fourier_R_to_k_new
+                                  pw90common_fourier_R_to_k_new
     use w90_get_oper, only: get_HH_R
     use w90_utility, only: utility_diagonalize
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, ws_distance_type, timer_list_type
+                         ws_region_type, ws_distance_type, timer_list_type
     use w90_comms, only: w90_comm_type, mpirank
     use w90_postw90_types, only: wigner_seitz_type
 
@@ -672,8 +672,8 @@ contains
       else
         call wham_get_JJp_JJm_list(delHH(:, :, i), UU, eig, JJp_list(:, :, :, i), &
                                    JJm_list(:, :, :, i), num_wann, fermi_energy_list)
-      endif
-    enddo
+      end if
+    end do
 
   end subroutine wham_get_eig_UU_HH_JJlist
 
@@ -697,7 +697,7 @@ contains
     use w90_get_oper, only: get_HH_R, get_AA_R_effective, get_AA_R
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new_second_d_TB_conv
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
+                         kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_utility, only: utility_diagonalize
     use w90_postw90_types, only: pw90_berry_mod_type, wigner_seitz_type
     use w90_comms, only: w90_comm_type, mpirank
@@ -752,7 +752,7 @@ contains
       call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, wannier_data, AA_R, &
                     v_matrix, eigval, wigner_seitz, ws_distance, ws_region, num_bands, num_kpts, &
                     num_wann, have_disentangled, seedname, stdout, timer, error, comm)
-    endif
+    end if
 
     if (allocated(error)) return
 
@@ -785,7 +785,7 @@ contains
     use w90_utility, only: utility_diagonalize
     use w90_comms, only: w90_comm_type, mpirank
     use w90_types, only: print_output_type, wannier_data_type, dis_manifold_type, &
-      ws_region_type, ws_distance_type, timer_list_type
+                         ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: wigner_seitz_type
 
     implicit none

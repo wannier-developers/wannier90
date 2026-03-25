@@ -35,7 +35,7 @@ module w90_wannierise_mod
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
   use w90_comms, only: w90_comm_type
 
   implicit none
@@ -72,9 +72,9 @@ contains
     use w90_constants, only: dp, cmplx_1, cmplx_0, twopi, cmplx_i
     use w90_io, only: io_wallclocktime, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: wann_control_type, w90_calculation_type, wann_omega_type, &
-      sitesym_type, ham_logical_type
+                                   sitesym_type, ham_logical_type
     use w90_types, only: kmesh_info_type, print_output_type, wannier_data_type, ws_region_type, &
-      timer_list_type
+                         timer_list_type
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
     use w90_comms, only: mpisize, mpirank, comms_allreduce, w90_comm_type
@@ -193,7 +193,7 @@ contains
 
     if (print_output%timing_level > 0 .and. print_output%iprint > 0) then
       call io_stopwatch_start('wann: main', timer)
-    endif
+    end if
 
     first_pass = .true.
 
@@ -202,7 +202,7 @@ contains
     if (nkrank < 0) then
       call set_error_fatal(error, 'kpt decomposition nonsensical in wann_main', comm)
       return
-    endif
+    end if
     allocate (global_k(nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating local kpoint distribution in wann_main', comm)
@@ -213,26 +213,26 @@ contains
       if (dist_k(i) == my_node_id) then
         global_k(loop_kpt) = i
         loop_kpt = loop_kpt + 1
-      endif
-    enddo
+      end if
+    end do
 
     ! Allocate stuff
     allocate (history(wann_control%conv_window), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating history in wann_main', comm)
       return
-    endif
+    end if
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main', comm)
       return
-    endif
+    end if
     if (wann_control%constrain%selective_loc) then
       allocate (rnr0n2(wann_control%constrain%slwf_num), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating rnr0n2 in wann_main', comm)
         return
-      endif
+      end if
     end if
 
     ! sub vars passed into other subs
@@ -240,37 +240,37 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating csheet in wann_main', comm)
       return
-    endif
+    end if
     allocate (cdodq(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdodq in wann_main', comm)
       return
-    endif
+    end if
     allocate (sheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sheet in wann_main', comm)
       return
-    endif
+    end if
     allocate (rave(3, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rave in wann_main', comm)
       return
-    endif
+    end if
     allocate (r2ave(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating r2ave in wann_main', comm)
       return
-    endif
+    end if
     allocate (rave2(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rave2 in wann_main', comm)
       return
-    endif
+    end if
     allocate (rguide(3, num_wann))
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rguide in wann_main', comm)
       return
-    endif
+    end if
 
     if (wann_control%precond) then
       call hamiltonian_setup(ham_logical, print_output, ws_region, w90_calculation, ham_k, ham_r, &
@@ -283,12 +283,12 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating cdodq_r in wann_main', comm)
         return
-      endif
+      end if
       allocate (cdodq_precond(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating cdodq_precond in wann_main', comm)
         return
-      endif
+      end if
 
       ! this method of computing the preconditioning is much more efficient, but requires more RAM
       if (optimisation >= 3) then
@@ -296,14 +296,14 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating k_to_r in wann_main', comm)
           return
-        endif
+        end if
 
         do irpt = 1, nrpts
           do loop_kpt = 1, num_kpts
             rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
             k_to_r(loop_kpt, irpt) = exp(-cmplx_i*rdotk)
-          enddo
-        enddo
+          end do
+        end do
       end if
     end if
 
@@ -315,42 +315,42 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cwshur1 in wann_main', comm)
       return
-    endif
+    end if
     allocate (cwschur3(num_wann), cwschur4(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cwshur3 in wann_main', comm)
       return
-    endif
+    end if
     allocate (cdq(num_wann, num_wann, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdq in wann_main', comm)
       return
-    endif
+    end if
     allocate (rnkb_loc(num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rnkb_loc in wann_main', comm)
       return
-    endif
+    end if
     if (wann_control%use_ss_functional) then
       allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, 1), stat=ierr)
     else
       allocate (ln_tmp_loc(num_wann, kmesh_info%nntot, nkrank), stat=ierr)
-    endif
+    end if
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp_loc in wann_main', comm)
       return
-    endif
+    end if
     allocate (u_matrix_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u_matrix_loc in wann_main', comm)
       return
-    endif
+    end if
     if (wann_control%precond) then
       allocate (cdodq_precond_loc(num_wann, num_wann, nkrank), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating cdodq_precond_loc in wann_main', comm)
         return
-      endif
+      end if
     end if
 
     ! initialize local u matrix with global one
@@ -364,59 +364,59 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdq_loc in wann_main', comm)
       return
-    endif
+    end if
     allocate (cdodq_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdodq_loc in wann_main', comm)
       return
-    endif
+    end if
     allocate (cdqkeep_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cdqkeep_loc in wann_main', comm)
       return
-    endif
+    end if
     if (optimisation > 0) then
       allocate (m0_loc(num_wann, num_wann, kmesh_info%nntot, nkrank), stat=ierr)
     end if
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m0_loc in wann_main', comm)
       return
-    endif
+    end if
     allocate (u0_loc(num_wann, num_wann, nkrank), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u0_loc in wann_main', comm)
       return
-    endif
+    end if
     allocate (cz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cz in wann_main', comm)
       return
-    endif
+    end if
     allocate (cmtmp(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cmtmp in wann_main', comm)
       return
-    endif
+    end if
     allocate (tmp_cdq(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating tmp_cdq in wann_main', comm)
       return
-    endif
+    end if
     allocate (evals(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating evals in wann_main', comm)
       return
-    endif
+    end if
     allocate (cwork(4*num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cwork in wann_main', comm)
       return
-    endif
+    end if
     allocate (rwork(3*num_wann - 2), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rwork in wann_main', comm)
       return
-    endif
+    end if
 
     cwschur1 = cmplx_0; cwschur2 = cmplx_0; cwschur3 = cmplx_0; cwschur4 = cmplx_0
     cdq = cmplx_0; cz = cmplx_0; cmtmp = cmplx_0; cdqkeep_loc = cmplx_0; cdq_loc = cmplx_0
@@ -427,7 +427,7 @@ contains
       do n = 1, num_wann
         call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
                                   real_lattice)
-      enddo
+      end do
     end if
 
     if (print_output%iprint > 0) then
@@ -438,10 +438,10 @@ contains
         write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV'
       else
         write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Bohr^2)     Time  |<-- CONV'
-      endif
+      end if
       write (stdout, '(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
       write (stdout, *)
-    endif
+    end if
 
     irguide = 0
     if (wann_control%guiding_centres%enable .and. (wann_control%guiding_centres%num_no_guide_iter .le. 0)) then
@@ -451,7 +451,7 @@ contains
       if (allocated(error)) return
 
       irguide = 1
-    endif
+    end if
 
     ! constrained centres part
     lambda_loc = 0.0_dp
@@ -529,7 +529,7 @@ contains
           ' O_TOT=', wann_spread%om_tot*print_output%lenconfac**2, ' <-- SPRD'
         write (stdout, '(1x,a78)') repeat('-', 78)
       end if
-    endif
+    end if
 
     lconverged = .false.
     lfirst = .true.
@@ -539,7 +539,7 @@ contains
 
     if (.not. wann_control%lfixstep .and. optimisation <= 0) then
       open (newunit=page_unit, status='scratch', form='unformatted')
-    endif
+    end if
 
     ! main iteration loop
     do iter = 1, wann_control%num_iter
@@ -563,7 +563,7 @@ contains
         if (allocated(error)) return
 
         irguide = 1
-      endif
+      end if
 
       ! calculate gradient of omega
       if (lsitesymmetry .or. wann_control%precond) then
@@ -582,7 +582,7 @@ contains
                          print_output%iprint)
         if (allocated(error)) return
 
-      endif
+      end if
 
       if (lprint .and. print_output%iprint > 2) &
         write (stdout, *) ' LINE --> Iteration                     :', iter
@@ -592,7 +592,7 @@ contains
         call precond_search_direction(cdodq, cdodq_r, cdodq_precond, cdodq_precond_loc, k_to_r, &
                                       wann_spread, num_wann, num_kpts, kpt_latt, real_lattice, &
                                       nrpts, irvec, ndegen, optimisation, timer)
-      endif
+      end if
       call internal_search_direction(cdodq_precond_loc, cdqkeep_loc, iter, lprint, lrandom, &
                                      noise_count, ncg, gcfac, gcnorm0, gcnorm1, doda0, &
                                      wann_control, num_wann, kmesh_info%wbtot, cdq_loc, cdodq_loc, &
@@ -601,7 +601,7 @@ contains
 
       if (lsitesymmetry) then
         call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann, error, comm)
-      endif
+      end if
 
       ! save search direction
       cdqkeep_loc(:, :, :) = cdq_loc(:, :, :)
@@ -625,7 +625,7 @@ contains
           rewind (page_unit)
         else
           m0_loc = m_matrix_loc
-        endif
+        end if
 
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
@@ -645,7 +645,7 @@ contains
         ! Calculate optimal step (alphamin)
         call internal_optimal_step(wann_spread, trial_spread, doda0, alphamin, falphamin, lquad, &
                                    lprint, wann_control%trial_step, stdout, timer)
-      endif
+      end if
 
       ! print line search information
       if (lprint .and. print_output%iprint > 2) then
@@ -664,12 +664,12 @@ contains
             write (stdout, *) ' LINE --> Optimal parabolic step length :', alphamin
             write (stdout, *) ' LINE --> Spread at predicted minimum   :', &
               falphamin*print_output%lenconfac**2
-          endif
+          end if
         else
           write (stdout, *) ' LINE --> Fixed step length             :', wann_control%fixed_step
-        endif
+        end if
         write (stdout, *) ' LINE --> CG coefficient                :', gcfac
-      endif
+      end if
 
       ! if taking a fixed step or if parabolic line search was successful
       if (wann_control%lfixstep .or. lquad) then
@@ -685,8 +685,8 @@ contains
             rewind (page_unit)
           else
             m_matrix_loc = m0_loc
-          endif
-        endif
+          end if
+        end if
 
         ! update U and M
         call internal_new_u_and_m(cdq, cmtmp, tmp_cdq, cwork, rwork, evals, cwschur1, cwschur2, &
@@ -711,7 +711,7 @@ contains
         call wann_spread_copy(wann_spread, old_spread)
         call wann_spread_copy(trial_spread, wann_spread)
 
-      endif
+      end if
 
       ! print the new centers and spreads
       if (lprint .and. print_output%iprint > 0) then
@@ -815,18 +815,18 @@ contains
                                        wann_control, error, comm)
         if (allocated(error)) return
 
-      endif
+      end if
 
       if (lconverged) then
         if (print_output%iprint > 0) then
           write (stdout, '(/13x,a,es10.3,a,i2,a)') '<<<     Delta <', wann_control%conv_tol, &
             '  over ', wann_control%conv_window, ' iterations     >>>'
           write (stdout, '(13x,a/)') '<<< Wannierisation convergence criteria satisfied >>>'
-        endif
+        end if
         exit
-      endif
+      end if
 
-    enddo
+    end do
     ! end of the minimization loop
 
     ! copy from local u matrix back to full matrix & reduce
@@ -834,7 +834,7 @@ contains
     do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
-    enddo
+    end do
     call comms_allreduce(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
     if (allocated(error)) return
 
@@ -890,14 +890,14 @@ contains
           '       Omega Total  = ', wann_spread%om_tot*print_output%lenconfac**2
         write (stdout, '(1x,a78)') repeat('-', 78)
       end if
-    endif
+    end if
 
     if (wann_control%guiding_centres%enable) then
       call wann_phases(csheet, sheet, rguide, irguide, num_wann, kmesh_info, num_kpts, &
                        wann_control%use_ss_functional, m_matrix_loc, print_output%timing_level, &
                        print_output%iprint, timer, nkrank, global_k, error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     ! check unitarity of u
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
@@ -909,100 +909,100 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rwork in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cwork, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cwork in wann_main', comm)
       return
-    endif
+    end if
     deallocate (evals, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating evals in wann_main', comm)
       return
-    endif
+    end if
     deallocate (tmp_cdq, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating tmp_cdq in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cmtmp, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cmtmp in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cz, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cz in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cdq, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cdq in wann_main', comm)
       return
-    endif
+    end if
     deallocate (ln_tmp_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ln_tmp_loc in wann_main', comm)
       return
-    endif
+    end if
     deallocate (rnkb_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rnkb_loc in wann_main', comm)
       return
-    endif
+    end if
     deallocate (u_matrix_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u_matrix_loc in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cdq_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cdq_loc in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cdodq_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cdodq_loc in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cdqkeep_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cdqkeep_loc in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cwschur3, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cwschur3 in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cwschur1, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cwschur1 in wann_main', comm)
       return
-    endif
+    end if
     if (wann_control%precond) then
       if (optimisation >= 3) then
         deallocate (k_to_r, stat=ierr)
         if (ierr /= 0) then
           call set_error_dealloc(error, 'Error in deallocating k_to_r in wann_main', comm)
           return
-        endif
+        end if
       end if
       deallocate (cdodq_r, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating cdodq_r in wann_main', comm)
         return
-      endif
+      end if
       deallocate (cdodq_precond, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating cdodq_precond in wann_main', comm)
         return
-      endif
+      end if
       deallocate (cdodq_precond_loc, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating cdodq_precond_loc in wann_main', comm)
         return
-      endif
+      end if
     end if
 
     ! deallocate sub vars passed into other subs
@@ -1010,65 +1010,65 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rguide in wann_main', comm)
       return
-    endif
+    end if
     deallocate (rave2, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rave2 in wann_main', comm)
       return
-    endif
+    end if
     deallocate (rave, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rave in wann_main', comm)
       return
-    endif
+    end if
     deallocate (sheet, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sheet in wann_main', comm)
       return
-    endif
+    end if
     deallocate (cdodq, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cdodq in wann_main', comm)
       return
-    endif
+    end if
     deallocate (csheet, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating csheet in wann_main', comm)
       return
-    endif
+    end if
     if (wann_control%constrain%selective_loc) then
       deallocate (rnr0n2, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating rnr0n2 in wann_main', comm)
         return
-      endif
+      end if
     end if
     deallocate (ln_tmp, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main', comm)
       return
-    endif
+    end if
     deallocate (u0_loc, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u0_loc in wann_main', comm)
       return
-    endif
+    end if
     if (optimisation > 0) then
       deallocate (m0_loc, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating m0_loc in wann_main', comm)
         return
-      endif
+      end if
     end if
     deallocate (history, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating history in wann_main', comm)
       return
-    endif
+    end if
 
     if (print_output%timing_level > 0 .and. print_output%iprint > 0) then
       call io_stopwatch_stop('wann: main', timer)
-    endif
+    end if
 
     return
 
@@ -1117,7 +1117,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating temp_hist in wann_main', comm)
         return
-      endif
+      end if
 
       delta_omega = wann_spread%om_tot - old_spread%om_tot
 
@@ -1126,7 +1126,7 @@ contains
       else
         temp_hist = eoshift(history, 1, delta_omega)
         history = temp_hist
-      endif
+      end if
 
       conv_count = conv_count + 1
 
@@ -1135,8 +1135,8 @@ contains
       else
         do j = 1, wann_control%conv_window
           if (abs(history(j)) .gt. wann_control%conv_tol) return
-        enddo
-      endif
+        end do
+      end if
 
       if ((wann_control%conv_noise_amp .gt. 0.0_dp) .and. &
           (noise_count .lt. wann_control%conv_noise_num)) then
@@ -1153,11 +1153,11 @@ contains
             save_spread = wann_spread%om_tot
             lrandom = .true.
             conv_count = 0
-          endif
-        endif
+          end if
+        end if
       else
         lconverged = .true.
-      endif
+      end if
 
       if (lrandom) noise_count = noise_count + 1
 
@@ -1165,7 +1165,7 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main', comm)
         return
-      endif
+      end if
 
       return
 
@@ -1200,17 +1200,17 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating noise_real in wann_main', comm)
         return
-      endif
+      end if
       allocate (noise_imag(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating noise_imag in wann_main', comm)
         return
-      endif
+      end if
       allocate (cnoise(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating cnoise in wann_main', comm)
         return
-      endif
+      end if
 
       ! Initialise
       cnoise = cmplx_0; noise_real = 0.0_dp; noise_imag = 0.0_dp
@@ -1224,37 +1224,37 @@ contains
           call random_number(noise_real(:, iw))
           call random_seed()
           call random_number(noise_imag(:, iw))
-        enddo
+        end do
         do jw = 1, num_wann
           do iw = 1, jw
             if (iw .eq. jw) then
               cnoise(iw, jw) = cmplx(0.0_dp, noise_imag(iw, jw), dp)
             else
               cnoise(iw, jw) = cmplx(noise_real(iw, jw), noise_imag(iw, jw), dp)
-            endif
+            end if
             cnoise(jw, iw) = -conjg(cnoise(iw, jw))
-          enddo
-        enddo
+          end do
+        end do
         ! Add noise to search direction
         cdq_loc(:, :, ikp) = cdq_loc(:, :, ikp) + conv_noise_amp*cnoise(:, :)
-      enddo
+      end do
 
       ! Deallocate
       deallocate (cnoise, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating cnoise in wann_main', comm)
         return
-      endif
+      end if
       deallocate (noise_imag, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating noise_imag in wann_main', comm)
         return
-      endif
+      end if
       deallocate (noise_real, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating noise_real in wann_main', comm)
         return
-      endif
+      end if
 
       return
 
@@ -1307,7 +1307,7 @@ contains
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_start('wann: main: search_direction', timer)
-      endif
+      end if
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       ! gcnorm1 = real(zdotc(num_kpts*num_wann*num_wann,cdodq,1,cdodq,1),dp)
@@ -1329,8 +1329,8 @@ contains
             rdotk = twopi*dot_product(kpt_latt(:, loop_kpt), real(irvec(:, irpt), dp))
             fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
             cdodq_r(:, :, irpt) = cdodq_r(:, :, irpt) + fac*cdodq(:, :, loop_kpt)
-          enddo
-        enddo
+          end do
+        end do
       end if
 
       ! filter cdodq_r in real space by 1/(1+R^2/alpha)
@@ -1364,13 +1364,13 @@ contains
             fac = exp(cmplx_i*rdotk)/real(ndegen(irpt), dp)
             cdodq_precond(:, :, loop_kpt) = cdodq_precond(:, :, loop_kpt) + &
                                             fac*cdodq_r(:, :, irpt)
-          enddo
-        enddo
+          end do
+        end do
       end if
       do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         cdodq_precond_loc(:, :, nkp_loc) = cdodq_precond(:, :, nkp)
-      enddo
+      end do
 
     end subroutine precond_search_direction
 
@@ -1427,7 +1427,7 @@ contains
 
       if ((.not. wann_control%precond) .and. print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_start('wann: main: search_direction', timer)
-      endif
+      end if
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
       if (wann_control%precond) then
@@ -1438,7 +1438,7 @@ contains
         ! compute (zdotc) cdodq_loc.cdodq_loc^c
         call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
         gcnorm1 = real(zres, dp)
-      endif
+      end if
       call comms_allreduce(gcnorm1, 1, 'SUM', error, comm)
       if (allocated(error)) return
 
@@ -1457,12 +1457,12 @@ contains
             ncg = 0
           else
             ncg = ncg + 1
-          endif
+          end if
         else
           gcfac = 0.0_dp
           ncg = 0
-        endif
-      endif
+        end if
+      end if
 
       ! save for next iteration
       gcnorm0 = gcnorm1
@@ -1472,7 +1472,7 @@ contains
         cdq_loc(:, :, :) = cdodq_precond_loc(:, :, :) + cdqkeep_loc(:, :, :)*gcfac !! JRY not MPI
       else
         cdq_loc(:, :, :) = cdodq_loc(:, :, :) + cdqkeep_loc(:, :, :)*gcfac
-      endif
+      end if
 
       ! add some random noise to search direction, if required
       if (lrandom) then
@@ -1480,7 +1480,7 @@ contains
           ' [ Adding random noise to search direction. Time ', noise_count, ' / ', &
           wann_control%conv_noise_num, ' ]'
         call internal_random_noise(wann_control%conv_noise_amp, num_wann, nkrank, cdq_loc)
-      endif
+      end if
 
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
@@ -1502,7 +1502,7 @@ contains
           cdq_loc(:, :, :) = cdodq_loc(:, :, :)
           if (lrandom) then
             call internal_random_noise(wann_control%conv_noise_amp, num_wann, nkrank, cdq_loc)
-          endif
+          end if
           ncg = 0
           gcfac = 0.0_dp
 
@@ -1521,19 +1521,19 @@ contains
               write (stdout, *) ' LINE --> Search direction still uphill: reversing'
             cdq_loc(:, :, :) = -cdq_loc(:, :, :)
             doda0 = -doda0
-          endif
+          end if
           ! if doing a SD step then reverse search direction
         else
           if (lprint .and. print_output%iprint > 2 .and. print_output%iprint > 0) &
             write (stdout, *) ' LINE --> Search direction uphill: reversing'
           cdq_loc(:, :, :) = -cdq_loc(:, :, :)
           doda0 = -doda0
-        endif
-      endif
+        end if
+      end if
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_stop('wann: main: search_direction', timer)
-      endif
+      end if
 
       lrandom = .false.
       return
@@ -1569,7 +1569,7 @@ contains
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_start('wann: main: optimal_step', timer)
-      endif
+      end if
 
       fac = trial_spread%om_tot - wann_spread%om_tot
       if (abs(fac) .gt. tiny(1.0_dp)) then
@@ -1578,7 +1578,7 @@ contains
       else
         fac = 1.0e6_dp
         shift = fac*trial_spread%om_tot - fac*wann_spread%om_tot
-      endif
+      end if
       eqb = fac*doda0
       eqa = shift - eqb*trial_step
       if (abs(eqa/(fac*wann_spread%om_tot)) .gt. epsilon(1.0_dp)) then
@@ -1592,7 +1592,7 @@ contains
         lquad = .false.
         alphamin = trial_step
         falphamin = trial_spread%om_tot
-      endif
+      end if
 
       if (doda0*alphamin .gt. 0.0_dp) then
         if (lprint .and. print_output%iprint > 2) write (stdout, *) &
@@ -1600,11 +1600,11 @@ contains
         lquad = .false.
         alphamin = trial_step
         falphamin = trial_spread%om_tot
-      endif
+      end if
 
       if (print_output%timing_level > 1 .and. print_output%iprint > 0) then
         call io_stopwatch_stop('wann: main: optimal_step', timer)
-      endif
+      end if
 
       return
 
@@ -1689,28 +1689,28 @@ contains
             if (print_output%iprint > 0) write (stdout, *) 'wann_main: SCHUR failed, info= ', info
             call set_error_fatal(error, 'wann_main: problem computing schur form 1', comm)
             return
-          endif
+          end if
           do i = 1, num_wann
             tmp_cdq(:, i) = cz(:, i)*exp(cwschur1(i))
-          enddo
+          end do
           ! cmtmp   = tmp_cdq . cz^{dagger}
           call utility_zgemm(cmtmp, tmp_cdq, 'N', cz, 'C', num_wann)
           cdq_loc(:, :, nkp_loc) = cmtmp(:, :)
         else
           do i = 1, num_wann
             cmtmp(:, i) = tmp_cdq(:, i)*exp(-cmplx_i*evals(i))
-          enddo
+          end do
           ! cdq(nkp)   = cmtmp . tmp_cdq^{dagger}
           call utility_zgemm(cdq_loc(:, :, nkp_loc), cmtmp, 'N', tmp_cdq, 'C', num_wann)
-        endif
-      enddo
+        end if
+      end do
 
       ! each process communicates its result to other processes
       cdq(:, :, :) = 0.0_dp
       do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
-      enddo
+      end do
       call comms_allreduce(cdq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
       if (allocated(error)) return
 
@@ -1737,8 +1737,8 @@ contains
         do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           cdq_loc(:, :, nkp_loc) = cdq(:, :, nkp)
-        enddo
-      endif
+        end do
+      end if
 
       ! the orbitals are rotated
       do nkp_loc = 1, nkrank
@@ -1746,7 +1746,7 @@ contains
         call utility_zgemm(cmtmp, u_matrix_loc(:, :, nkp_loc), 'N', cdq_loc(:, :, nkp_loc), 'N', &
                            num_wann)
         u_matrix_loc(:, :, nkp_loc) = cmtmp(:, :)
-      enddo
+      end do
 
       ! and the M_ij are updated
       do nkp_loc = 1, nkrank
@@ -1764,8 +1764,8 @@ contains
           call utility_zgemm(cmtmp, tmp_cdq, 'N', cdq(:, :, nkp2), 'N', num_wann)
           ! note striding
           m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc) = cmtmp(:, :)
-        enddo
-      enddo
+        end do
+      end do
 
       if (timing_level > 1) call io_stopwatch_stop('wann: main: u_and_m', timer)
     end subroutine internal_new_u_and_m
@@ -1837,8 +1837,8 @@ contains
             nkp = global_k(nkp_loc)
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) + m_matrix_loc(loop_wann, loop_wann, nn, nkp_loc)
-          enddo
-        enddo
+          end do
+        end do
       else
         do na = 1, kmesh_info%nnh
           csum(na) = cmplx_0
@@ -1847,8 +1847,8 @@ contains
             nn = kmesh_info%neigh(nkp, na)
             csum(na) = csum(na) &
                        + cmplx(m_w(loop_wann, loop_wann, 2*nn - 1), m_w(loop_wann, loop_wann, 2*nn), dp)
-          enddo
-        enddo
+          end do
+        end do
       end if ! m_w present
 
       call comms_allreduce(csum(1), kmesh_info%nnh, 'SUM', error, comm)
@@ -1894,21 +1894,21 @@ contains
           xx0 = 0.0_dp
           do j = 1, 3
             xx0 = xx0 + kmesh_info%bka(j, nn)*rguide(j, loop_wann)
-          enddo
+          end do
           ! xx0 is expected value for xx
           ! csumt = exp (ci * xx0)
           csumt = exp(cmplx_i*xx0)
           ! csumt has opposite of expected phase of csum(nn)
           xx(nn) = xx0 - aimag(log(csum(nn)*csumt))
-        endif
+        end if
 
         ! update smat and svec
         do j = 1, 3
           do i = 1, 3
             smat(j, i) = smat(j, i) + kmesh_info%bka(j, nn)*kmesh_info%bka(i, nn)
-          enddo
+          end do
           svec(j) = svec(j) + kmesh_info%bka(j, nn)*xx(nn)
-        enddo
+        end do
 
         if (nn .ge. 3) then
           ! determine rguide
@@ -1922,14 +1922,14 @@ contains
                 rguide(j, loop_wann) = 0.0_dp
                 do i = 1, 3
                   rguide(j, loop_wann) = rguide(j, loop_wann) + sinv(j, i)*svec(i)/det
-                enddo
-              enddo
-            endif
-          endif
-        endif
+                end do
+              end do
+            end if
+          end if
+        end if
 
-      enddo !nnh
-    enddo !loop_wann
+      end do !nnh
+    end do !loop_wann
 
     ! obtain branch cut choice guided by rguide
     sheet = 0.0_dp
@@ -1939,9 +1939,9 @@ contains
           do j = 1, 3
             sheet(loop_wann, nn, 1) = sheet(loop_wann, nn, 1) &
                                       + kmesh_info%bk(j, nn, 1)*rguide(j, loop_wann)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
     else
       do nkp = 1, num_kpts
         do nn = 1, kmesh_info%nntot
@@ -1949,11 +1949,11 @@ contains
             do j = 1, 3
               sheet(loop_wann, nn, nkp) = sheet(loop_wann, nn, nkp) &
                                           + kmesh_info%bk(j, nn, nkp)*rguide(j, loop_wann)
-            enddo
-          enddo
-        enddo
-      enddo
-    endif
+            end do
+          end do
+        end do
+      end do
+    end if
     csheet = exp(cmplx_i*sheet)
 
     ! now check that we picked the proper sheet for the log
@@ -2056,7 +2056,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating sum_mnn in wann_omega', comm)
         return
-      endif
+      end if
 
       sum_mnn = 0.0_dp
       ! JJ, maybe reorder loops?
@@ -2066,9 +2066,9 @@ contains
             nkp = global_k(nkp_loc)
             cnn = kmesh_info%nnord(nn, nkp) ! enforce uniform order of bk vectors
             sum_mnn(n, nn) = sum_mnn(n, nn) + csheet(n, nn, 1)*m_matrix_loc(n, n, cnn, nkp_loc)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       call comms_allreduce(sum_mnn(1, 1), num_wann*kmesh_info%nntot, 'SUM', error, comm)
       if (allocated(error)) return
@@ -2084,20 +2084,20 @@ contains
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, 1)* &
                             ln_tmp_loc(iw, nn, 1)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
       rave = -rave
 
       rave2 = 0.0_dp
       do iw = 1, num_wann
         rave2(iw) = sum(rave(:, iw)*rave(:, iw))
-      enddo
+      end do
 
       r2ave = 0.0_dp
       do nn = 1, kmesh_info%nntot
         r2ave(:) = r2ave(:) + kmesh_info%wb(nn)*(1.0_dp - abs(sum_mnn(:, nn))**2)
-      enddo
+      end do
 
       r2ave = r2ave + rave2
 
@@ -2105,7 +2105,7 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating sum_mnn in wann_omega', comm)
         return
-      endif
+      end if
 
     else ! not Stengel-Spalding
       do nkp_loc = 1, nkrank
@@ -2115,9 +2115,9 @@ contains
             ! Note that this ln_tmp is defined differently wrt the one in wann_domega
             ln_tmp_loc(n, nn, nkp_loc) = (aimag(log(csheet(n, nn, nkp) &
                                                     *m_matrix_loc(n, n, nn, nkp_loc))) - sheet(n, nn, nkp))
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       rave = 0.0_dp
       do iw = 1, num_wann
@@ -2127,10 +2127,10 @@ contains
             do nn = 1, kmesh_info%nntot
               rave(ind, iw) = rave(ind, iw) + kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
                               *ln_tmp_loc(iw, nn, nkp_loc)
-            enddo
-          enddo
-        enddo
-      enddo
+            end do
+          end do
+        end do
+      end do
 
       call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', error, comm)
       if (allocated(error)) return
@@ -2140,7 +2140,7 @@ contains
       rave2 = 0.0_dp
       do iw = 1, num_wann
         rave2(iw) = sum(rave(:, iw)*rave(:, iw))
-      enddo
+      end do
 
       r2ave = 0.0_dp
       do iw = 1, num_wann
@@ -2150,15 +2150,15 @@ contains
                         conjg(m_matrix_loc(iw, iw, nn, nkp_loc)), kind=dp)
             r2ave(iw) = r2ave(iw) + kmesh_info%wb(nn)* &
                         (1.0_dp - mnn2 + ln_tmp_loc(iw, nn, nkp_loc)**2)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       call comms_allreduce(r2ave(1), num_wann, 'SUM', error, comm)
       if (allocated(error)) return
 
       r2ave = r2ave/real(num_kpts, dp)
-    endif ! not Stengel-Spalding
+    end if ! not Stengel-Spalding
 
 !~    wann_spread%om_1 = 0.0_dp
 !~    do nkp = 1, num_kpts
@@ -2217,7 +2217,7 @@ contains
       if (use_ss_functional) then
         call set_error_alloc(error, 'finish ss_functional and selective_loc combination', comm)
         return
-      endif
+      end if
 
       wann_spread%om_iod = 0.0_dp
       do nkp_loc = 1, nkrank
@@ -2230,11 +2230,11 @@ contains
               !! Centre constraint contribution. Zero if slwf_constrain=false
               summ = summ - lambda_loc*ln_tmp_loc(n, nn, nkp_loc)**2
             end if
-          enddo
+          end do
           wann_spread%om_iod = wann_spread%om_iod + kmesh_info%wb(nn)* &
                                (real(wann_slwf%slwf_num, dp) - summ)
-        enddo
-      enddo
+        end do
+      end do
 
       call comms_allreduce(wann_spread%om_iod, 1, 'SUM', error, comm)
       if (allocated(error)) return
@@ -2250,16 +2250,16 @@ contains
             ! if SS, only nkp_loc = 1 nonzero
             wann_spread%om_d = wann_spread%om_d + (1.0_dp - lambda_loc)*kmesh_info%wb(nn) &
                                *(ln_tmp_loc(n, nn, nkp_loc) + brn)**2
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       call comms_allreduce(wann_spread%om_d, 1, 'SUM', error, comm)
       if (allocated(error)) return
 
       if (.not. use_ss_functional) then !JJ
         wann_spread%om_d = wann_spread%om_d/real(num_kpts, dp)
-      endif
+      end if
 
       wann_spread%om_nu = 0.0_dp
       !! Contribution from constrains on centres
@@ -2271,9 +2271,9 @@ contains
               wann_spread%om_nu = wann_spread%om_nu + 2.0_dp*kmesh_info%wb(nn)* &
                                   ln_tmp_loc(n, nn, nkp_loc)*lambda_loc* &
                                   sum(kmesh_info%bk(:, nn, nkp)*wann_slwf%centres(n, :))
-            enddo
-          enddo
-        enddo
+            end do
+          end do
+        end do
 
         call comms_allreduce(wann_spread%om_nu, 1, 'SUM', error, comm)
         if (allocated(error)) return
@@ -2301,12 +2301,12 @@ contains
                 summ = summ &
                        + real(m_matrix_loc(n, m, nn, nkp_loc) &
                               *conjg(m_matrix_loc(n, m, nn, nkp_loc)), kind=dp)
-              enddo
-            enddo
+              end do
+            end do
             wann_spread%om_i = wann_spread%om_i &
                                + kmesh_info%wb(nn)*(real(num_wann, dp) - summ)
-          enddo
-        enddo
+          end do
+        end do
 
         call comms_allreduce(wann_spread%om_i, 1, 'SUM', error, comm)
         if (allocated(error)) return
@@ -2315,7 +2315,7 @@ contains
         first_pass = .false.
       else
         wann_spread%om_i = omega_invariant
-      endif
+      end if
 
       wann_spread%om_od = 0.0_dp
       do nkp_loc = 1, nkrank
@@ -2325,10 +2325,10 @@ contains
               if (m .ne. n) wann_spread%om_od = wann_spread%om_od &
                                                 + kmesh_info%wb(nn)*real(m_matrix_loc(n, m, nn, nkp_loc) &
                                                                          *conjg(m_matrix_loc(n, m, nn, nkp_loc)), kind=dp)
-            enddo
-          enddo
-        enddo
-      enddo
+            end do
+          end do
+        end do
+      end do
 
       call comms_allreduce(wann_spread%om_od, 1, 'SUM', error, comm)
       if (allocated(error)) return
@@ -2346,7 +2346,7 @@ contains
               nkp = global_k(nkp_loc)
               cnn = kmesh_info%nnord(nn, nkp) ! enforce uniform order of bk vectors
               summ = summ + m_matrix_loc(n, n, cnn, nkp_loc)
-            enddo
+            end do
 
             call comms_allreduce(summ, 1, 'SUM', error, comm)
             if (allocated(error)) return
@@ -2359,7 +2359,7 @@ contains
               nkp = global_k(nkp_loc)
               cnn = kmesh_info%nnord(nn, nkp) ! enforce uniform order of bk vectors
               summ = summ + abs(m_matrix_loc(n, n, cnn, nkp_loc))**2
-            enddo
+            end do
 
             call comms_allreduce(summ, 1, 'SUM', error, comm)
             if (allocated(error)) return
@@ -2367,8 +2367,8 @@ contains
             summ = summ/real(num_kpts, dp)
 
             wann_spread%om_d = wann_spread%om_d + kmesh_info%wb(nn)*summ
-          enddo
-        enddo
+          end do
+        end do
       else ! not Stengel-Spalding
         wann_spread%om_d = 0.0_dp
         do nkp_loc = 1, nkrank
@@ -2378,15 +2378,15 @@ contains
               brn = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
               wann_spread%om_d = wann_spread%om_d + kmesh_info%wb(nn) &
                                  *(ln_tmp_loc(n, nn, nkp_loc) + brn)**2
-            enddo
-          enddo
-        enddo
+            end do
+          end do
+        end do
 
         call comms_allreduce(wann_spread%om_d, 1, 'SUM', error, comm)
         if (allocated(error)) return
 
         wann_spread%om_d = wann_spread%om_d/real(num_kpts, dp)
-      endif
+      end if
 
       wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
     end if
@@ -2464,18 +2464,18 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cr in wann_domega', comm)
       return
-    endif
+    end if
     allocate (crt(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating crt in wann_domega', comm)
       return
-    endif
+    end if
     if (wann_slwf%selective_loc .and. wann_slwf%constrain) then
       allocate (r0kb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating r0kb in wann_domega', comm)
         return
-      endif
+      end if
     end if
 
     if (use_ss_functional) then
@@ -2483,7 +2483,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating sum_mnn in wann_omega', comm)
         return
-      endif
+      end if
 
       sum_mnn = 0.0_dp
       do nkp_loc = 1, nkrank
@@ -2492,9 +2492,9 @@ contains
           cnn = kmesh_info%nnord(nn, nkp) ! enforce uniform order of bk vectors
           do n = 1, num_wann
             sum_mnn(n, nn) = sum_mnn(n, nn) + csheet(n, nn, 1)*m_matrix_loc(n, n, cnn, nkp_loc)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       call comms_allreduce(sum_mnn(1, 1), num_wann*kmesh_info%nntot, 'SUM', error, comm)
       if (allocated(error)) return
@@ -2504,16 +2504,16 @@ contains
       ! k-index is always 1 in SS method (k summation alread accomplished)
       do nn = 1, kmesh_info%nntot
         ln_tmp_loc(:, nn, 1) = kmesh_info%wb(nn)*(aimag(log(sum_mnn(:, nn))) - sheet(:, nn, 1))
-      enddo
+      end do
 
       rave = 0.0_dp
       do iw = 1, num_wann
         do ind = 1, 3
           do nn = 1, kmesh_info%nntot
             rave(ind, iw) = rave(ind, iw) + kmesh_info%bk(ind, nn, 1)*ln_tmp_loc(iw, nn, 1)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       rave = -rave
 
@@ -2522,9 +2522,9 @@ contains
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             rnkb_loc(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, 1)*rave(:, n))
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       cdodq_loc = cmplx_0
       do nkp_loc = 1, nkrank
@@ -2547,10 +2547,10 @@ contains
               cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc) + &
                                          kmesh_info%wb(nn)*m_matrix_loc(m, n, cnn2, nkp_loc)* &
                                          sum_mnn(n, nn)/csheet(n, nn, 1)
-            enddo
-          enddo
-        enddo
-      enddo
+            end do
+          end do
+        end do
+      end do
       cdodq_loc = cdodq_loc/real(num_kpts, dp)
 
       if (present(cdodq)) then
@@ -2559,10 +2559,10 @@ contains
         do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
-        enddo
+        end do
         call comms_allreduce(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
         if (allocated(error)) return
-      endif
+      end if
 
       deallocate (sum_mnn) !fixme check error status
 
@@ -2588,10 +2588,10 @@ contains
             do nn = 1, kmesh_info%nntot
               rave(ind, iw) = rave(ind, iw) + kmesh_info%bk(ind, nn, nkp) &
                               *ln_tmp_loc(iw, nn, nkp_loc)
-            enddo
-          enddo
-        enddo
-      enddo
+            end do
+          end do
+        end do
+      end do
       rave = -rave/real(num_kpts, dp)
 
       call comms_allreduce(rave(1, 1), num_wann*3, 'SUM', error, comm)
@@ -2606,10 +2606,10 @@ contains
             do n = 1, num_wann
               r0kb(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp) &
                                          *wann_slwf%centres(n, :))
-            enddo
-          enddo
-        enddo
-      endif
+            end do
+          end do
+        end do
+      end if
 
       rnkb_loc = 0.0_dp
       do nkp_loc = 1, nkrank
@@ -2617,9 +2617,9 @@ contains
         do nn = 1, kmesh_info%nntot
           do n = 1, num_wann
             rnkb_loc(n, nn, nkp_loc) = sum(kmesh_info%bk(:, nn, nkp)*rave(:, n))
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 
       ! cd0dq(m,n,nkp) is calculated
       cdodq_loc = cmplx_0
@@ -2632,7 +2632,7 @@ contains
             mnn = m_matrix_loc(n, n, nn, nkp_loc)
             crt(:, n) = m_matrix_loc(1:num_wann, n, nn, nkp_loc)/mnn !JJ potential for division by zero
             cr(:, n) = m_matrix_loc(1:num_wann, n, nn, nkp_loc)*conjg(mnn)
-          enddo
+          end do
           if (wann_slwf%selective_loc) then
             do n = 1, num_wann
               do m = 1, num_wann
@@ -2710,8 +2710,8 @@ contains
                 else
                   cdodq_loc(m, n, nkp_loc) = cdodq_loc(m, n, nkp_loc)
                 end if
-              enddo
-            enddo
+              end do
+            end do
           else
             do n = 1, num_wann
               do m = 1, num_wann
@@ -2728,11 +2728,11 @@ contains
                                            *(crt(m, n)*rnkb_loc(n, nn, nkp_loc) &
                                              + conjg(crt(n, m)*rnkb_loc(m, nn, nkp_loc))) &
                                            *cmplx(0.0_dp, -0.5_dp, kind=dp)
-              enddo
-            enddo
-          endif
-        enddo
-      enddo
+              end do
+            end do
+          end if
+        end do
+      end do
       cdodq_loc = cdodq_loc/real(num_kpts, dp)*4.0_dp
 
       if (present(cdodq)) then
@@ -2741,7 +2741,7 @@ contains
         do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
           cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
-        enddo
+        end do
         call comms_allreduce(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
         if (allocated(error)) return
 
@@ -2752,21 +2752,21 @@ contains
           do nkp_loc = 1, nkrank
             nkp = global_k(nkp_loc)
             cdodq_loc(:, :, nkp_loc) = cdodq(:, :, nkp)
-          enddo
-        endif
-      endif
-    endif
+          end do
+        end if
+      end if
+    end if
 
     deallocate (cr, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cr in wann_domega', comm)
       return
-    endif
+    end if
     deallocate (crt, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating crt in wann_domega', comm)
       return
-    endif
+    end if
 
     if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: domega', timer)
 
@@ -2829,36 +2829,36 @@ contains
           do m = 1, num_wann
             ctmp1 = ctmp1 + u_matrix(i, m, nkp)*conjg(u_matrix(j, m, nkp))
             ctmp2 = ctmp2 + u_matrix(m, j, nkp)*conjg(u_matrix(m, i, nkp))
-          enddo
+          end do
           if ((i .eq. j) .and. (abs(ctmp1 - cmplx_1) .gt. eps5)) &
             then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
             call set_error_fatal(error, 'wann_check_unitarity: error 1', comm)
             return
-          endif
+          end if
           if ((i .eq. j) .and. (abs(ctmp2 - cmplx_1) .gt. eps5)) &
             then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
             call set_error_fatal(error, 'wann_check_unitarity: error 2', comm)
             return
-          endif
+          end if
           if ((i .ne. j) .and. (abs(ctmp1) .gt. eps5)) then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp1
             call set_error_fatal(error, 'wann_check_unitarity: error 3', comm)
             return
-          endif
+          end if
           if ((i .ne. j) .and. (abs(ctmp2) .gt. eps5)) then
             if (iprint > 0) write (stdout, *) ' ERROR: unitariety of final U', nkp, i, j, &
               ctmp2
             call set_error_fatal(error, 'wann_check_unitarity: error 4', comm)
             return
-          endif
-        enddo
-      enddo
-    enddo
+          end if
+        end do
+      end do
+    end do
 
     if (timing_level > 1 .and. iprint > 0) call io_stopwatch_stop('wann: check_unitarity', timer)
 
@@ -2881,7 +2881,7 @@ contains
     use w90_io, only: io_time, io_stopwatch_start, io_stopwatch_stop
     use w90_wannier90_types, only: wann_control_type, wann_omega_type
     use w90_types, only: kmesh_info_type, print_output_type, &
-      wannier_data_type, timer_list_type
+                         wannier_data_type, timer_list_type
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_write_chkpt
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_comms, only: w90_comm_type, mpirank
@@ -2950,7 +2950,7 @@ contains
       call set_error_alloc(error, &
                            'wann_main_gamma called by non-root rank (but the algorithm is serial)', comm)
       return
-    endif
+    end if
 
     if (print_output%timing_level > 0) call io_stopwatch_start('wann: main_gamma', timer)
 
@@ -2960,17 +2960,17 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating history in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (rnkb(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rnkb in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main_gamma', comm)
       return
-    endif
+    end if
 
     rnkb = 0.0_dp
     tnntot = 2*kmesh_info%nntot
@@ -2979,37 +2979,37 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m_w in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (csheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating csheet in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (sheet(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sheet in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (rave(3, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rave in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (r2ave(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating r2ave in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (rave2(num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rave2 in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (rguide(3, num_wann))
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rguide in wann_main_gamma', comm)
       return
-    endif
+    end if
 
     csheet = cmplx_1
     sheet = 0.0_dp; rave = 0.0_dp; r2ave = 0.0_dp; rave2 = 0.0_dp; rguide = 0.0_dp
@@ -3018,22 +3018,22 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating u0 in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (uc_rot(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating uc_rot in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (ur_rot(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ur_rot in wann_main_gamma', comm)
       return
-    endif
+    end if
     allocate (cz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating cz in wann_main_gamma', comm)
       return
-    endif
+    end if
 
     cz = cmplx_0
 
@@ -3059,8 +3059,8 @@ contains
       do n = 1, num_wann
         call utility_frac_to_cart(wann_control%guiding_centres%centres(:, n), rguide(:, n), &
                                   real_lattice)
-      enddo
-    endif
+      end do
+    end if
 
     write (stdout, *)
     write (stdout, '(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
@@ -3069,7 +3069,7 @@ contains
       write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV'
     else
       write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Bohr^2)     Time  |<-- CONV'
-    endif
+    end if
     write (stdout, '(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
     write (stdout, *)
 
@@ -3080,7 +3080,7 @@ contains
                        print_output%iprint, timer, num_kpts, global_k, error, comm) ! no plellisation so num_kpts_local = num_kpts
       if (allocated(error)) return
       irguide = 1
-    endif
+    end if
 
     ! weight m_matrix first to reduce number of operations
     ! m_w : weighted real matrix
@@ -3155,7 +3155,7 @@ contains
                          print_output%iprint, timer, num_kpts, global_k, error, comm, m_w) ! num_kpts_loc == num_kpts here
         if (allocated(error)) return
         irguide = 1
-      endif
+      end if
 
       call internal_new_u_and_m_gamma(m_w, ur_rot, tnntot, num_wann, print_output%timing_level, &
                                       timer)
@@ -3215,7 +3215,7 @@ contains
         call internal_test_convergence_gamma(wann_spread, old_spread, history, &
                                              iter, lconverged, wann_control%conv_window, &
                                              wann_control%conv_tol)
-      endif
+      end if
 
       if (lconverged) then
         write (stdout, '(/13x,a,es10.3,a,i2,a)') &
@@ -3223,9 +3223,9 @@ contains
           '  over ', wann_control%conv_window, ' iterations     >>>'
         write (stdout, '(13x,a/)') '<<< Wannierisation convergence criteria satisfied >>>'
         exit
-      endif
+      end if
 
-    enddo
+    end do
     ! end of the minimization loop
 
     ! update M
@@ -3261,7 +3261,7 @@ contains
                        wann_control%use_ss_functional, m_matrix, print_output%timing_level, &
                        print_output%iprint, timer, num_kpts, global_k, error, comm) ! num_kpts_loc == num_kpts here
       if (allocated(error)) return
-    endif
+    end if
 
     ! unitarity is checked
     call wann_check_unitarity(num_kpts, num_wann, u_matrix, print_output%timing_level, &
@@ -3273,66 +3273,66 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating cz in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (ur_rot, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ur_rot in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (uc_rot, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating uc_rot in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (u0, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating u0 in wann_main_gamma', comm)
       return
-    endif
+    end if
 
     ! deallocate sub vars passed into other subs
     deallocate (rguide, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rguide in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (rave2, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rave2 in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (rave, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating rave in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (sheet, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sheet in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (csheet, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating csheet in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (m_w, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating m_w in wann_main_gamma', comm)
       return
-    endif
+    end if
 
     ! deallocate module data
     deallocate (ln_tmp, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main_gamma', comm)
       return
-    endif
+    end if
     deallocate (history, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating history in wann_main_gamma', comm)
       return
-    endif
+    end if
 
     if (print_output%timing_level > 0) call io_stopwatch_stop('wann: main_gamma', timer)
 
@@ -3389,7 +3389,7 @@ contains
           theta = 0.0_dp
         else
           theta = pifour
-        endif
+        end if
         cc = cos(theta)
         ss = sin(theta)
 
@@ -3456,7 +3456,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating temp_hist in wann_main', comm)
         return
-      endif
+      end if
 
       delta_omega = wann_spread%om_tot - old_spread%om_tot
 
@@ -3465,7 +3465,7 @@ contains
       else
         temp_hist = eoshift(history, 1, delta_omega)
         history = temp_hist
-      endif
+      end if
 
       lconverged = .false.
 
@@ -3473,14 +3473,14 @@ contains
         do j = 1, conv_window
           if (abs(history(j)) .gt. conv_tol) exit
           lconverged = .true.
-        enddo
-      endif
+        end do
+      end if
 
       deallocate (temp_hist, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main_gamma', comm)
         return
-      endif
+      end if
 
       return
 
@@ -3539,7 +3539,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating m_w_nn2 in wann_omega_gamma', comm)
       return
-    endif
+    end if
 
     if (nntot .eq. 3) then
       do nn = 1, nntot
@@ -3558,7 +3558,7 @@ contains
                              - sheet(n, nn, 1)
         end do
       end do
-    endif
+    end if
 
     rave = 0.0_dp
     do iw = 1, num_wann
@@ -3566,14 +3566,14 @@ contains
         do nn = 1, nntot
           rave(ind, iw) = rave(ind, iw) - wb(nn)*bk(ind, nn, 1) &
                           *ln_tmp(iw, nn, 1)
-        enddo
-      enddo
-    enddo
+        end do
+      end do
+    end do
 
     rave2 = 0.0_dp
     do iw = 1, num_wann
       rave2(iw) = sum(rave(:, iw)*rave(:, iw))
-    enddo
+    end do
 
     m_w_nn2 = 0.0_dp
     r2ave = wbtot
@@ -3583,9 +3583,9 @@ contains
         cn = 2*nn
         m_w_nn2(iw) = m_w_nn2(iw) + m_w(iw, iw, rn)**2 + m_w(iw, iw, cn)**2
         r2ave(iw) = r2ave(iw) + wb(nn)*ln_tmp(iw, nn, 1)**2
-      enddo
+      end do
       r2ave(iw) = r2ave(iw) - m_w_nn2(iw)
-    enddo
+    end do
 
     if (first_pass) then
       summ = 0.0_dp
@@ -3595,14 +3595,14 @@ contains
         do m = 1, num_wann
           do n = 1, num_wann
             summ = summ + m_w(n, m, rn)**2 + m_w(n, m, cn)**2
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
       wann_spread%om_i = wbtot*real(num_wann, dp) - summ
       first_pass = .false.
     else
       wann_spread%om_i = omega_invariant
-    endif
+    end if
 
     wann_spread%om_od = wbtot*real(num_wann, dp) - sum(m_w_nn2(:)) - wann_spread%om_i
 
@@ -3614,8 +3614,8 @@ contains
         do n = 1, num_wann
           brn = sum(bk(:, nn, 1)*rave(:, n))
           wann_spread%om_d = wann_spread%om_d + wb(nn)*(ln_tmp(n, nn, 1) + brn)**2
-        enddo
-      enddo
+        end do
+      end do
     end if
 
     wann_spread%om_tot = wann_spread%om_i + wann_spread%om_d + wann_spread%om_od
@@ -3624,7 +3624,7 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating m_w_nn2 in wann_omega_gamma', comm)
       return
-    endif
+    end if
 
     if (timing_level > 1) call io_stopwatch_stop('wann: omega_gamma', timer)
 

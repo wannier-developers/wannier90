@@ -59,6 +59,19 @@ $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}=\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle$
 projections (Ref. [@marzari-prb97], Eq. (62); Ref. [@souza-prb01], Eq. (22)).
 
+## Library Specific Keywords
+
+<!-- markdownlint-disable MD013 -->
+{{ read_csv('docs/parameters/w90-library-parameters.csv', colalign=('left', 'center', 'left')) }}
+<!-- markdownlint-enable MD013 -->
+
+- the `distk` array communicates to Wannier90 how k-points are distributed over
+MPI ranks.  In particular this affects the decomposition of the $M$-matrix.
+
+- `total_bands` is provided for convenience when working with `excluded_bands`
+when these determine the number of bands in the Wannier90 calculation instead
+of vice-versa.
+
 ## Using the Library
 
 ```fortran title="Fortran"
@@ -183,7 +196,7 @@ w90_input_setopt must be called after the last call to w90_set_option.
     CALL w90_set_option(w90main, 'kpoints', kpt_latt)   ! rank-2 real array
     CALL w90_set_option(w90main, 'mp_grid', mp_grid)    ! rank-1 integer array
     CALL w90_set_option(w90main, 'num_iter', num_iter)  ! integer scalar
-    CALL w90_set_option(w90main, 'spinors', noncolin)   ! logical 
+    CALL w90_set_option(w90main, 'spinors', noncolin)   ! logical
     CALL w90_set_option(w90main, 'dis_froz_max', dis_froz_max) ! real scalar
 ```
 
@@ -400,8 +413,7 @@ This must follow w90_input_setopt.
 Pass a pointer to a preexisting double precision complex array of
 dimension(nbands, nbands, num_wannier, nklocal), where nklocal is the number of
 kpoints associated with this rank.  In serial, nklocal equals num_kpoints.
-
-The distribution of M across k-points is fixme
+The distribution of M across k-points is described by the `distk` array.
 
 This must be accomplished before calling w90_disentangle or w90_wannierise.
 
@@ -420,7 +432,7 @@ Pass a pointer to a preexisting double precision complex array of
 dimension(num_wannier, num_wannier, nklocal), where nklocal is the number of
 kpoints associated with this rank.  In serial, nklocal equals num_kpoints.
 
-The distribution of U across k-points is fixme/checkme
+The U matrix is duplicated on all ranks.
 
 This must be accomplished before calling w90_disentangle or w90_wannierise.
 
@@ -462,11 +474,51 @@ optimisation returns ierr zero.
     type(lib_common_type), intent(inout) :: common_data
 ```
 
-### input_print_details
-
 ## Compiling and Linking
 
+Depending on whether a serial or MPI compilation has happened, different
+library files are produced:
+
+| filename              | description               |
+|-----------------------|---------------------------|
+| libwannier90.a        | static library, serial    |
+| libwannier90_mpi.a    | static library, parallel  |
+| libwannier90.so.4     | dynamic library, serial   |
+| libwannier90_mpi.so.4 | dynamic library, parallel |
+| w90_library.mod       | fortran module            |
+| wannier90.h           | C header (compile with WANNIER90_WITH_C=ON) |
+
+MPI operations are only supported by "libwannier90_mpi".
+
+To generate dynamic libraries using GNU make, you need to build the target
+"dynlib"
+
+```bash
+    make dynlib
+```
+
+The directory containing the libraries must be added to your link line
+and library search path.
+
+You need to "use" the library fortran module to have access to the type and
+function definitions in your code: the directory containing the module file
+must be added to your "include" path.
+
+The library should be compiled with the same compiler as the calling code.
+
 ## Examples
+
+See directory: test-suite/library-mode-test/
+
+## C Interface
+
+A C interface is provided using fortran 2003's iso_c_binding; the functions
+available are described in the header file "wannier90.h" and follow the
+fortran interface except for the passing of multi-dimensional arrays as options,
+where different functions must be called for 1-d and 2-d data.
+
+An example that re-implements the main wannier90 executable is given in
+directory test-suite/library-mode-test-C-interface/
 
 ## Python interface
 
@@ -500,21 +552,11 @@ imports.
 
 example-dos.py tests one of the DOS examples with the draft postw90 interface.
 
-## C Interface
-
 ## Frequently Asked Questions
 
 ### Can symmetry adapted WF be calculated using the library?
 
 Not yet.
-
-### No change in WF spread between Wannierisation iterations
-
-This happens when using some BLAS (including OpenBLAS) libraries when compiling
-with Intel's ifx or ifort compilers.  A workaround is to use MKL BLAS instead.
-
-The cause is inconsistent handling of complex types which breaks zdotc() calls
-in wannierise.  For more information, see QE link:
 
 ### C-interface is not built
 

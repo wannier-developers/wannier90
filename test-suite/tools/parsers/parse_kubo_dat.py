@@ -24,7 +24,7 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         if l.strip().startswith('#'):
             # Skip headers
             continue
@@ -35,7 +35,7 @@ def parse(fname):
             # skip blank line
             continue
 
-        if len(pieces) == 3 : 
+        if len(pieces) == 3 :
             retdict['energy'].append(float(pieces[0]))
             retdict['recond'].append(float(pieces[1]))
             retdict['imcond'].append(float(pieces[2]))

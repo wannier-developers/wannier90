@@ -36,7 +36,7 @@ module w90_postw90_common
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -80,7 +80,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: ws_region_type, ws_distance_type, wannier_data_type, &
-      print_output_type, timer_list_type
+                         print_output_type, timer_list_type
     use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_postw90_types, only: wigner_seitz_type
     use w90_ws_distance, only: ws_translate_dist
@@ -118,36 +118,36 @@ contains
           call set_error_fatal(error, 'Inconsistent values of num_wann in '//trim(seedname) &
                                //'_HH_R.dat and '//trim(seedname)//'.win', comm)
           return
-        endif
+        end if
         read (file_unit, *) wigner_seitz%nrpts
         close (file_unit)
-      endif
+      end if
       call comms_bcast(wigner_seitz%nrpts, 1, error, comm)
       if (allocated(error)) return
     else
       call wignerseitz(print_output, real_lattice, mp_grid, ws_region, wigner_seitz, stdout, &
                        .true., timer, error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     ! Now can allocate several arrays
     allocate (wigner_seitz%irvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating irvec in pw90common_wanint_setup', comm)
       return
-    endif
+    end if
     wigner_seitz%irvec = 0
     allocate (wigner_seitz%crvec(3, wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating crvec in pw90common_wanint_setup', comm)
       return
-    endif
+    end if
     wigner_seitz%crvec = 0.0_dp
     allocate (wigner_seitz%ndegen(wigner_seitz%nrpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ndegen in pw90common_wanint_setup', comm)
       return
-    endif
+    end if
     wigner_seitz%ndegen = 0
 
     ! Also rpt_origin, so that when effective_model=.true it is not
@@ -174,12 +174,12 @@ contains
         call ws_translate_dist(ws_distance, ws_region, num_wann, wannier_data%centres, real_lattice, &
                                mp_grid, wigner_seitz%nrpts, wigner_seitz%irvec, error, comm)
         if (allocated(error)) return
-      endif
+      end if
 
       call wigner_seitz_opt_setup(ws_distance, ws_region, wigner_seitz, num_wann, real_lattice, &
                                   wigner_seitz%nrpts, error, comm)
 
-    endif
+    end if
 
     return
 
@@ -237,13 +237,13 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating max_int_kpts_on_node in w90_wannier90_readwrite_read_um', comm)
       return
-    endif
+    end if
     kpoint_dist%int_kpts = 0.0_dp
     allocate (kpoint_dist%weight(kpoint_dist%max_int_kpts_on_node), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating weight in w90_wannier90_readwrite_read_um', comm)
       return
-    endif
+    end if
     kpoint_dist%weight = 0.0_dp
 
     !sum = 0.0_dp
@@ -254,8 +254,8 @@ contains
     if (on_root) then
       do ik = 1, nk
         read (k_unit, *) (kt(i, ik), i=1, 3), wt(ik)
-      enddo
-    endif
+      end do
+    end if
     call comms_bcast(kt(1, 1), 3*nk, error, comm)
     if (allocated(error)) return
     call comms_bcast(wt(1), nk, error, comm)
@@ -265,7 +265,7 @@ contains
     off = 1
     do ir = 0, my_node_id - 1
       off = off + kpoint_dist%num_int_kpts_on_node(ir)
-    enddo
+    end do
     call dcopy(3*nkloc, kt(1, off), 1, kpoint_dist%int_kpts, 1)
     call dcopy(nkloc, wt(off), 1, kpoint_dist%weight, 1)
     deallocate (kt)
@@ -325,9 +325,9 @@ contains
     use w90_comms, only: mpirank, w90_comm_type, comms_bcast
     use w90_types
     use w90_postw90_types, only: pw90_calculation_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
-      pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
-      pw90_boltzwann_type
+                                 pw90_band_deriv_degen_type, pw90_kpath_mod_type, pw90_kslice_mod_type, pw90_dos_mod_type, &
+                                 pw90_berry_mod_type, pw90_spin_hall_type, pw90_gyrotropic_type, pw90_geninterp_mod_type, &
+                                 pw90_boltzwann_type
 
     type(print_output_type), intent(inout) :: print_output
     type(ws_region_type), intent(inout) :: ws_region
@@ -379,7 +379,7 @@ contains
       if (allocated(error)) return
       call comms_bcast(num_bands, 1, error, comm)
       if (allocated(error)) return
-    endif
+    end if
     call comms_bcast(num_wann, 1, error, comm)
     if (allocated(error)) return
     call comms_bcast(print_output%timing_level, 1, error, comm)
@@ -507,7 +507,7 @@ contains
     fermi_n = 0
     if (on_root) then
       if (allocated(fermi_energy_list)) fermi_n = size(fermi_energy_list)
-    endif
+    end if
     call comms_bcast(fermi_n, 1, error, comm)
     if (allocated(error)) return
     call comms_bcast(pw90_dos%energy_min, 1, error, comm)
@@ -663,47 +663,47 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating fermi_energy_read in postw90_w90_wannier90_readwrite_dist', comm)
         return
-      endif
+      end if
       allocate (pw90_berry%kubo_freq_list(pw90_berry%kubo_nfreq), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kubo_freq_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
-      endif
+      end if
       allocate (pw90_gyrotropic%band_list(pw90_gyrotropic%num_bands), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating gyrotropic_band_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
-      endif
+      end if
       allocate (pw90_gyrotropic%freq_list(pw90_gyrotropic%nfreq), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating gyrotropic_freq_list in postw90_w90_wannier90_readwrite_dist', comm)
         return
-      endif
+      end if
       allocate (pw90_dos%project(pw90_dos%num_project), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating dos_project in postw90_w90_wannier90_readwrite_dist', comm)
         return
-      endif
+      end if
       if (.not. effective_model) then
         if (eig_found) then
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) then
             call set_error_alloc(error, 'Error allocating eigval in postw90_w90_wannier90_readwrite_dist', comm)
             return
-          endif
+          end if
         end if
         allocate (kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating kpt_latt in postw90_w90_wannier90_readwrite_dist', comm)
           return
-        endif
-      endif
+        end if
+      end if
     end if
 
     kdotp_nbands = 0
     if (on_root) then
       if (allocated(pw90_berry%kdotp_bands)) kdotp_nbands = size(pw90_berry%kdotp_bands)
-    endif
+    end if
     call comms_bcast(kdotp_nbands, 1, error, comm)
     if (kdotp_nbands > 0) then
       if (.not. on_root) then
@@ -711,15 +711,15 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating kdotp_bands in postw90_param_dist', comm)
           return
-        endif
-      endif
+        end if
+      end if
       call comms_bcast(pw90_berry%kdotp_bands(1), kdotp_nbands, error, comm)
-    endif
+    end if
 
     if (fermi_n > 0) then
       call comms_bcast(fermi_energy_list(1), fermi_n, error, comm)
       if (allocated(error)) return
-    endif
+    end if
     call comms_bcast(pw90_gyrotropic%freq_list(1), pw90_gyrotropic%nfreq, error, comm)
     if (allocated(error)) return
     call comms_bcast(pw90_gyrotropic%band_list(1), pw90_gyrotropic%num_bands, error, comm)
@@ -735,7 +735,7 @@ contains
       end if
       call comms_bcast(kpt_latt(1, 1), 3*num_kpts, error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     ! kmesh: only nntot,wb, and bk are needed to evaluate the WF matrix
     ! elements of the position operator in reciprocal space. For the
@@ -754,32 +754,32 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating nnlist in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
-        endif
+        end if
         allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating neigh in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
-        endif
+        end if
         allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating nncell in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
-        endif
+        end if
         allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating wb in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
-        endif
+        end if
         allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating bka in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
-        endif
+        end if
         allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error in allocating bk in pw90common_wanint_w90_wannier90_readwrite_dist', comm)
           return
-        endif
+        end if
       end if
 
       call comms_bcast(kmesh_info%nnlist(1, 1), num_kpts*kmesh_info%nntot, error, comm)
@@ -795,7 +795,7 @@ contains
       call comms_bcast(kmesh_info%bk(1, 1, 1), 3*kmesh_info%nntot*num_kpts, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
 
   end subroutine pw90common_wanint_w90_wannier90_readwrite_dist
 
@@ -859,7 +859,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating v_matrix in pw90common_wanint_data_dist', comm)
       return
-    endif
+    end if
     ! u_matrix and u_matrix_opt are stored on root only
     if (on_root) then
       if (.not. have_disentangled) then
@@ -872,16 +872,16 @@ contains
               do i = 1, num_wann
                 v_matrix(m, j, loop_kpt) = v_matrix(m, j, loop_kpt) &
                                            + u_matrix_opt(m, i, loop_kpt)*u_matrix(i, j, loop_kpt)
-              enddo
-            enddo
-          enddo
-        enddo
-      endif
+              end do
+            end do
+          end do
+        end do
+      end if
       if (allocated(u_matrix_opt)) deallocate (u_matrix_opt)
       if (.not. (num_valence_bands > 0 .and. abs(scissors_shift) > 1.0e-7_dp)) then
         if (allocated(u_matrix)) deallocate (u_matrix)
-      endif
-    endif
+      end if
+    end if
     call comms_bcast(v_matrix(1, 1, 1), num_bands*num_wann*num_kpts, error, comm)
     if (allocated(error)) return
 
@@ -891,10 +891,10 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating u_matrix in pw90common_wanint_data_dist', comm)
         return
-      endif
-    endif
+      end if
+    end if
     call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, error, comm)
-    endif
+    end if
 
     call comms_bcast(have_disentangled, 1, error, comm)
     if (allocated(error)) return
@@ -907,16 +907,16 @@ contains
           if (ierr /= 0) then
             call set_error_alloc(error, 'Error allocating lwindow in pw90common_wanint_data_dist', comm)
             return
-          endif
-        endif
+          end if
+        end if
 
         if (.not. allocated(dis_manifold%ndimwin)) then
           allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
           if (ierr /= 0) then
             call set_error_alloc(error, 'Error allocating ndimwin in pw90common_wanint_data_dist', comm)
             return
-          endif
-        endif
+          end if
+        end if
 
       end if
 
@@ -1078,9 +1078,9 @@ contains
                    cmplx_i*wigner_seitz%crvec_pw90(alpha, ir)*phase_fac*OO_R(:, :, ir)
       else
         stop 'wrong value of alpha in pw90common_fourier_R_to_k'
-      endif
+      end if
 
-    enddo
+    end do
 
   end subroutine pw90common_fourier_R_to_k
 
@@ -1145,7 +1145,7 @@ contains
                                         cmplx_i*wigner_seitz%crvec_pw90(2, ir)*phase_fac*OO_R(:, :, ir)
       if (present(OO_dz)) OO_dz(:, :) = OO_dz(:, :) + &
                                         cmplx_i*wigner_seitz%crvec_pw90(3, ir)*phase_fac*OO_R(:, :, ir)
-    enddo
+    end do
 
   end subroutine pw90common_fourier_R_to_k_new
 
@@ -1208,18 +1208,18 @@ contains
         do a = 1, 3
           OO_da(:, :, a) = OO_da(:, :, a) + cmplx_i*wigner_seitz%crvec_pw90(a, ir)*phase_fac &
                            *OO_R(:, :, ir)
-        enddo
-      endif
+        end do
+      end if
       if (present(OO_dadb)) then
         do a = 1, 3
           do b = 1, 3
             OO_dadb(:, :, a, b) = OO_dadb(:, :, a, b) - &
                                   wigner_seitz%crvec_pw90(a, ir)*wigner_seitz%crvec_pw90(b, ir)*phase_fac &
                                   *OO_R(:, :, ir)
-          enddo
-        enddo
+          end do
+        end do
       end if
-    enddo
+    end do
 
   end subroutine pw90common_fourier_R_to_k_new_second_d
 
@@ -1287,7 +1287,7 @@ contains
     do ir = 1, num_wann
       call utility_cart_to_frac(wigner_seitz%wannier_centres_from_AA_R(:, ir), &
                                 wannier_centres_frac(:, ir), inv_lattice)
-    enddo
+    end do
 
     if (present(OO)) OO = cmplx_0
     if (present(OO_da)) OO_da = cmplx_0
@@ -1306,8 +1306,8 @@ contains
               OO_da(i, j, a) = OO_da(i, j, a) + cmplx_i* &
                                (wigner_seitz%crvec_pw90(a, ir) + wigner_seitz%wannier_centres_from_AA_R(a, j) - &
                                 wigner_seitz%wannier_centres_from_AA_R(a, i))*phase_fac*OO_R(i, j, ir)
-            enddo
-          endif
+            end do
+          end if
           if (present(OO_dadb)) then
             do a = 1, 3
               do b = 1, 3
@@ -1318,12 +1318,12 @@ contains
                                                                   wigner_seitz%wannier_centres_from_AA_R(b, j) - &
                                                                   wigner_seitz%wannier_centres_from_AA_R(b, i))* &
                   phase_fac*OO_R(i, j, ir)
-              enddo
-            enddo
+              end do
+            end do
           end if
-        enddo
-      enddo
-    enddo
+        end do
+      end do
+    end do
 
   end subroutine pw90common_fourier_R_to_k_new_second_d_TB_conv
 
@@ -1378,7 +1378,7 @@ contains
         OO_true(:, :, 1) = OO_true(:, :, 1) + phase_fac*OO_R(:, :, ir, 1)
         OO_true(:, :, 2) = OO_true(:, :, 2) + phase_fac*OO_R(:, :, ir, 2)
         OO_true(:, :, 3) = OO_true(:, :, 3) + phase_fac*OO_R(:, :, ir, 3)
-      endif
+      end if
       if (present(OO_pseudo)) then
         OO_pseudo(:, :, 1) = OO_pseudo(:, :, 1) &
                              + cmplx_i*wigner_seitz%crvec_pw90(2, ir)*phase_fac*OO_R(:, :, ir, 3) &
@@ -1389,8 +1389,8 @@ contains
         OO_pseudo(:, :, 3) = OO_pseudo(:, :, 3) &
                              + cmplx_i*wigner_seitz%crvec_pw90(1, ir)*phase_fac*OO_R(:, :, ir, 2) &
                              - cmplx_i*wigner_seitz%crvec_pw90(2, ir)*phase_fac*OO_R(:, :, ir, 1)
-      endif
-    enddo
+      end if
+    end do
 
   end subroutine pw90common_fourier_R_to_k_vec
 
@@ -1448,16 +1448,16 @@ contains
         OO_da(:, :, 1) = OO_da(:, :, 1) + phase_fac*OO_R(:, :, ir, 1)
         OO_da(:, :, 2) = OO_da(:, :, 2) + phase_fac*OO_R(:, :, ir, 2)
         OO_da(:, :, 3) = OO_da(:, :, 3) + phase_fac*OO_R(:, :, ir, 3)
-      endif
+      end if
       if (present(OO_dadb)) then
         do a = 1, 3
           do b = 1, 3
             OO_dadb(:, :, a, b) = OO_dadb(:, :, a, b) &
                                   + cmplx_i*wigner_seitz%crvec_pw90(b, ir)*phase_fac*OO_R(:, :, ir, a)
-          enddo
-        enddo
-      endif
-    enddo
+          end do
+        end do
+      end if
+    end do
 
   end subroutine pw90common_fourier_R_to_k_vec_dadb
 
@@ -1525,7 +1525,7 @@ contains
     do ir = 1, num_wann
       call utility_cart_to_frac(wigner_seitz%wannier_centres_from_AA_R(:, ir), &
                                 wannier_centres_frac(:, ir), inv_lattice)
-    enddo
+    end do
 
 !    print *, 'wannier_centres_frac'
 !    do ir = 1,num_wann
@@ -1572,8 +1572,8 @@ contains
             OO_da(i, j, 1) = OO_da(i, j, 1) + phase_fac*OO_R(i, j, ir, 1)
             OO_da(i, j, 2) = OO_da(i, j, 2) + phase_fac*OO_R(i, j, ir, 2)
             OO_da(i, j, 3) = OO_da(i, j, 3) + phase_fac*OO_R(i, j, ir, 3)
-          endif
-        endif
+          end if
+        end if
         if (present(OO_dadb)) then
           ! same skip as before
           if ((wigner_seitz%irvec_pw90(1, ir) .eq. 0) .and. (wigner_seitz%irvec_pw90(2, ir) .eq. 0) .and. &
@@ -1585,8 +1585,8 @@ contains
                                                wigner_seitz%wannier_centres_from_AA_R(b, j) &
                                                - wigner_seitz%wannier_centres_from_AA_R(b, i))*phase_fac* &
                                       (OO_R(i, j, ir, a) - wigner_seitz%wannier_centres_from_AA_R(a, j))
-              enddo
-            enddo
+              end do
+            end do
 !           cycle
           else
             do a = 1, 3
@@ -1596,13 +1596,13 @@ contains
                                                wigner_seitz%wannier_centres_from_AA_R(b, j) &
                                                - wigner_seitz%wannier_centres_from_AA_R(b, i))* &
                                       phase_fac*OO_R(i, j, ir, a)
-              enddo
-            enddo
-          endif
-        endif
-      enddo
-      enddo
-    enddo
+              end do
+            end do
+          end if
+        end if
+      end do
+      end do
+    end do
 
   end subroutine pw90common_fourier_R_to_k_vec_dadb_TB_conv
 
@@ -1670,7 +1670,7 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating dist in wigner_seitz', comm)
       return
-    endif
+    end if
 
     ! The Wannier functions live in a periodic supercell of the real space unit
     ! cell. This supercell is mp_grid(i) unit cells long along each primitive
@@ -1712,11 +1712,11 @@ contains
                   do j = 1, 3
                     dist(icnt) = dist(icnt) + &
                                  real(ndiff(i), dp)*real_metric(i, j)*real(ndiff(j), dp)
-                  enddo
-                enddo
-              enddo
-            enddo
-          enddo
+                  end do
+                end do
+              end do
+            end do
+          end do
           dist_min = minval(dist)
           if (abs(dist((dist_dim + 1)/2) - dist_min) .lt. ws_region%ws_distance_tol**2) then
             wigner_seitz%nrpts = wigner_seitz%nrpts + 1
@@ -1734,15 +1734,15 @@ contains
               ! Remember which grid point r is at the origin
 
               if (n1 == 0 .and. n2 == 0 .and. n3 == 0) wigner_seitz%rpt_origin = wigner_seitz%nrpts
-            endif
+            end if
           end if
 
           !n3
-        enddo
+        end do
         !n2
-      enddo
+      end do
       !n1
-    enddo
+    end do
     !
     deallocate (dist, stat=ierr)
     if (ierr /= 0) then
@@ -1763,10 +1763,10 @@ contains
         write (stdout, '(4x,a,3(i3,1x),a,i2)') '  vector ', wigner_seitz%irvec(1, ir), &
           wigner_seitz%irvec(2, ir), wigner_seitz%irvec(3, ir), '  degeneracy: ', &
           wigner_seitz%ndegen(ir)
-      enddo
+      end do
       write (stdout, '(1x,a,f12.3)') ' tot = ', tot
       write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
-    endif
+    end if
     ! Check the "sum rule"
     tot = 0.0_dp
     do ir = 1, wigner_seitz%nrpts
@@ -1775,11 +1775,11 @@ contains
       ! W-S supercell
       !
       tot = tot + 1.0_dp/real(wigner_seitz%ndegen(ir), dp)
-    enddo
+    end do
     if (abs(tot - real(mp_grid(1)*mp_grid(2)*mp_grid(3), dp)) > eps8) then
       call set_error_fatal(error, 'ERROR in wigner_seitz: error in finding Wigner-Seitz points', comm)
       return
-    endif
+    end if
     if (print_output%timing_level > 1 .and. on_root) &
       call io_stopwatch_stop('postw90_common: wigner_seitz', timer)
     return
@@ -1824,7 +1824,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating ir_ind_ws_to_pw90 in wigner_seitz_opt_setup', comm)
         return
-      endif
+      end if
       wigner_seitz%ir_ind_ws_to_pw90 = -1
 
       ! find the set of R vectors from irdist_ws, removing duplicates
@@ -1841,7 +1841,7 @@ contains
                 if (ierr /= 0) then
                   call set_error_alloc(error, 'Error in allocating irvec_found in wigner_seitz_opt_setup', comm)
                   return
-                endif
+                end if
                 irvec_found(:, 1) = ivdum
 
                 wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir) = 1
@@ -1854,8 +1854,8 @@ contains
                     wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir) = jr
                     found = .true.
                     exit
-                  endif
-                enddo
+                  end if
+                end do
 
                 ! if not found, add ivdum to irvec_found
                 if (.not. found) then
@@ -1865,38 +1865,38 @@ contains
                   if (ierr /= 0) then
                     call set_error_alloc(error, 'Error in allocating irvec_temp in wigner_seitz_opt_setup', comm)
                     return
-                  endif
+                  end if
                   irvec_temp = irvec_found
                   deallocate (irvec_found, stat=ierr)
                   if (ierr /= 0) then
                     call set_error_dealloc(error, 'Error in deallocating irvec_found in wigner_seitz_opt_setup', comm)
                     return
-                  endif
+                  end if
 
                   allocate (irvec_found(3, nrpts_found + 1), stat=ierr)
                   if (ierr /= 0) then
                     call set_error_alloc(error, 'Error in allocating irvec_found in wigner_seitz_opt_setup', comm)
                     return
-                  endif
+                  end if
                   irvec_found(:, 1:nrpts_found) = irvec_temp
                   irvec_found(:, nrpts_found + 1) = ivdum
                   deallocate (irvec_temp, stat=ierr)
                   if (ierr /= 0) then
                     call set_error_dealloc(error, 'Error in deallocating irvec_temp in wigner_seitz_opt_setup', comm)
                     return
-                  endif
+                  end if
 
                   nrpts_found = nrpts_found + 1
 
                   wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir) = nrpts_found
 
-                endif ! found
-              endif ! nrpts_found == 0
+                end if ! found
+              end if ! nrpts_found == 0
 
-            enddo
-          enddo
-        enddo
-      enddo
+            end do
+          end do
+        end do
+      end do
 
       wigner_seitz%nrpts_pw90 = nrpts_found
 
@@ -1904,40 +1904,40 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating irvec_pw90 in wigner_seitz_opt_setup', comm)
         return
-      endif
+      end if
       allocate (wigner_seitz%crvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating crvec_pw90 in wigner_seitz_opt_setup', comm)
         return
-      endif
+      end if
 
       wigner_seitz%irvec_pw90 = irvec_found
       do ir = 1, wigner_seitz%nrpts_pw90
         wigner_seitz%crvec_pw90(:, ir) = matmul(transpose(real_lattice), real(wigner_seitz%irvec_pw90(:, ir), dp))
-      enddo
+      end do
 
     else ! .not. use_ws_distance
       allocate (wigner_seitz%irvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating irvec_pw90 in wigner_seitz_opt_setup', comm)
         return
-      endif
+      end if
       allocate (wigner_seitz%crvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating crvec_pw90 in wigner_seitz_opt_setup', comm)
         return
-      endif
+      end if
 
       wigner_seitz%irvec_pw90 = wigner_seitz%irvec
       wigner_seitz%crvec_pw90 = wigner_seitz%crvec
       wigner_seitz%nrpts_pw90 = wigner_seitz%nrpts
-    endif ! use_ws_distance
+    end if ! use_ws_distance
 
     ! Check degeneracy factor ndegen for R = 0 is 1
     if (wigner_seitz%ndegen(wigner_seitz%rpt_origin) /= 1) then
       call set_error_fatal(error, 'ndegen for R=0 is not 1.', comm)
       return
-    endif
+    end if
 
     ! Check degeneracy factor ws_distance%ndeg for a Wannier function with itself,
     ! i.e. R = 0 and i = j, is 1.
@@ -1950,12 +1950,12 @@ contains
               if (ws_distance%ndeg(i, i, ir) /= 1) then
                 call set_error_fatal(error, 'ws_distance%ndeg for R=0 and i=j is not 1.', comm)
                 return
-              endif
-            endif
-          enddo
-        enddo
-      enddo
-    endif
+              end if
+            end if
+          end do
+        end do
+      end do
+    end if
 
   end subroutine wigner_seitz_opt_setup
 

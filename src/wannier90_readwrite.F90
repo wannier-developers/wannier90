@@ -132,14 +132,14 @@ contains
     else
       call w90_readwrite_read_num_bands(settings, .false., num_bands, num_wann, error, comm)
       if (allocated(error)) return
-    endif
+    end if
 
     disentanglement = (num_bands > num_wann)
 
     call w90_readwrite_read_mp_grid(settings, .false., mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
+    call w90_readwrite_read_distk(settings, distk, num_kpts, stdout, error, comm)
     if (allocated(error)) return
 
     call w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
@@ -170,8 +170,8 @@ contains
       allocate (wann_control%guiding_centres%centres(3, num_proj))
       do ip = 1, num_proj
         wann_control%guiding_centres%centres(:, ip) = proj(ip)%site(:)
-      enddo
-    endif
+      end do
+    end if
 
   end subroutine w90_wannier90_readwrite_read_special
 
@@ -298,7 +298,7 @@ contains
 
       if (has_kpath .and. has_explicit_kpath) then
         call set_error_input(error, 'Error: cannot specify both kpath and explicit_kpath', comm)
-      endif
+      end if
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_plot_info(settings, wvfn_read, error, comm)
@@ -326,7 +326,7 @@ contains
                                                  gamma_only, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
 
     call w90_wannier90_readwrite_read_one_dim(settings, w90_calculation, band_plot, real_space_ham, &
                                               tran%read_ht, error, comm)
@@ -356,8 +356,8 @@ contains
                                                               num_wann, print_output%iprint, &
                                                               stdout, error, comm)
         if (allocated(error)) return
-      endif
-    endif
+      end if
+    end if
 
   end subroutine w90_wannier90_readwrite_read
 
@@ -515,48 +515,48 @@ contains
       if ((index(tran%mode, 'bulk') .eq. 0) .and. (index(tran%mode, 'lcr') .eq. 0)) then
         call set_error_input(error, 'Error: transport_mode not recognised', comm)
         return
-      endif
+      end if
       if (tran%num_bb < 0) then
         call set_error_input(error, 'Error: tran_num_bb < 0', comm)
         return
-      endif
+      end if
       if (tran%num_ll < 0) then
         call set_error_input(error, 'Error: tran_num_ll < 0', comm)
         return
-      endif
+      end if
       if (tran%num_rr < 0) then
         call set_error_input(error, 'Error: tran_num_rr < 0', comm)
         return
-      endif
+      end if
       if (tran%num_cc < 0) then
         call set_error_input(error, 'Error: tran_num_cc < 0', comm)
         return
-      endif
+      end if
       if (tran%num_lc < 0) then
         call set_error_input(error, 'Error: tran_num_lc < 0', comm)
         return
-      endif
+      end if
       if (tran%num_cr < 0) then
         call set_error_input(error, 'Error: tran_num_cr < 0', comm)
         return
-      endif
+      end if
       if (tran%num_bandc < 0) then
         call set_error_input(error, 'Error: tran_num_bandc < 0', comm)
         return
-      endif
+      end if
       if (tran%num_cell_ll < 0) then
         call set_error_input(error, 'Error: tran_num_cell_ll < 0', comm)
         return
-      endif
+      end if
       if (tran%num_cell_rr < 0) then
         call set_error_input(error, 'Error: tran_num_cell_rr < 0', comm)
         return
-      endif
+      end if
       if (tran%group_threshold < 0.0_dp) then
         call set_error_input(error, 'Error: tran_group_threshold < 0', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
   end subroutine w90_wannier90_readwrite_read_transport
 
@@ -581,7 +581,7 @@ contains
         .and. (index(real_space_ham%dist_cutoff_mode, 'one_dim') .eq. 0)) then
       call set_error_input(error, 'Error: dist_cutoff_mode not recognised', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'dist_cutoff', found, error, comm, &
                                    r_value=real_space_ham%dist_cutoff)
@@ -630,7 +630,7 @@ contains
     if (wann_control%num_dump_cycles < 0) then
       call set_error_input(error, 'Error: num_dump_cycles must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'num_print_cycles', found, error, comm, &
                                    i_value=wann_control%num_print_cycles)
@@ -639,7 +639,7 @@ contains
     if (wann_control%num_print_cycles < 0) then
       call set_error_input(error, 'Error: num_print_cycles must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'num_iter', found, error, comm, &
                                    i_value=wann_control%num_iter)
@@ -648,7 +648,7 @@ contains
     if (wann_control%num_iter < 0) then
       call set_error_input(error, 'Error: num_iter must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'num_cg_steps', found, error, comm, &
                                    i_value=wann_control%num_cg_steps)
@@ -657,7 +657,7 @@ contains
     if (wann_control%num_cg_steps < 0) then
       call set_error_input(error, 'Error: num_cg_steps must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
                                    r_value=wann_control%conv_tol)
@@ -666,7 +666,7 @@ contains
     if (wann_control%conv_tol < 0.0_dp) then
       call set_error_input(error, 'Error: conv_tol must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm, &
                                    r_value=wann_control%conv_noise_amp)
@@ -686,7 +686,7 @@ contains
     if (wann_control%conv_noise_num < 0) then
       call set_error_input(error, 'Error: conv_noise_num must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'guiding_centres', found, error, comm, &
                                    l_value=wann_control%guiding_centres%enable)
@@ -703,7 +703,7 @@ contains
     if (wann_control%guiding_centres%num_guide_cycles < 0) then
       call set_error_input(error, 'Error: num_guide_cycles must be >= 0', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'num_no_guide_iter', found, error, comm, &
                                    i_value=wann_control%guiding_centres%num_no_guide_iter)
@@ -712,7 +712,7 @@ contains
     if (wann_control%guiding_centres%num_no_guide_iter < 0) then
       call set_error_input(error, 'Error: num_no_guide_iter must be >= 0', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'fixed_step', found, error, comm, &
                                    r_value=wann_control%fixed_step)
@@ -721,7 +721,7 @@ contains
     if (found .and. (wann_control%fixed_step < 0.0_dp)) then
       call set_error_input(error, 'Error: fixed_step must be > 0', comm)
       return
-    endif
+    end if
     if (wann_control%fixed_step > 0.0_dp) wann_control%lfixstep = .true.
 
     call w90_readwrite_get_keyword(settings, 'trial_step', found, error, comm, &
@@ -731,7 +731,7 @@ contains
     if (found .and. wann_control%lfixstep) then
       call set_error_input(error, 'Error: cannot specify both fixed_step and trial_step', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'precond', found, error, comm, &
                                    l_value=wann_control%precond)
@@ -762,7 +762,7 @@ contains
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating ccentres_cart in w90_readwrite_get_centre_constraints', comm)
           return
-        endif
+        end if
       else
         write (stdout, *) ' No selective localisation requested. Ignoring constraints on centres'
         wann_control%constrain%constrain = .false.
@@ -777,8 +777,8 @@ contains
       if (wann_control%constrain%lambda < 0.0_dp) then
         call set_error_input(error, 'Error: slwf_lambda  must be positive.', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_wannier90_readwrite_read_wannierise
 
   !================================================!
@@ -805,7 +805,7 @@ contains
     if (dis_control%num_iter < 0) then
       call set_error_input(error, 'Error: dis_num_iter must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'dis_mix_ratio', found, error, comm, &
                                    r_value=dis_control%mix_ratio)
@@ -813,7 +813,7 @@ contains
     if (dis_control%mix_ratio <= 0.0_dp .or. dis_control%mix_ratio > 1.0_dp) then
       call set_error_input(error, 'Error: dis_mix_ratio must be greater than 0.0 but not greater than 1.0', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm, &
                                    r_value=dis_control%conv_tol)
@@ -821,7 +821,7 @@ contains
     if (dis_control%conv_tol < 0.0_dp) then
       call set_error_input(error, 'Error: dis_conv_tol must be positive', comm)
       return
-    endif
+    end if
 
     call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm, &
                                    i_value=dis_control%conv_window)
@@ -829,7 +829,7 @@ contains
     if (dis_control%conv_window < 0) then
       call set_error_input(error, 'Error: dis_conv_window must be positive', comm)
       return
-    endif
+    end if
 
     ! GS-start
     call w90_readwrite_get_keyword(settings, 'dis_spheres_first_wann', found, error, comm, &
@@ -838,38 +838,38 @@ contains
     if (dis_spheres%first_wann < 1) then
       call set_error_input(error, 'Error: dis_spheres_first_wann must be greater than 0', comm)
       return
-    endif
+    end if
     if (dis_spheres%first_wann > num_bands - num_wann + 1) then
       call set_error_input(error, 'Error: dis_spheres_first_wann is larger than num_bands-num_wann+1', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'dis_spheres_num', found, error, comm, &
                                    i_value=dis_spheres%num)
     if (allocated(error)) return
     if (dis_spheres%num < 0) then
       call set_error_input(error, 'Error: dis_spheres_num cannot be negative', comm)
       return
-    endif
+    end if
     if (dis_spheres%num > 0) then
       allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating dis_spheres in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_keyword_block(settings, 'dis_spheres', found, dis_spheres%num, 4, &
                                            bohr, error, comm, r_value=dis_spheres%spheres)
       if (allocated(error)) return
       if (.not. found) then
         call set_error_input(error, 'Error: Did not find dis_spheres in the input file', comm)
         return
-      endif
+      end if
       do nkp = 1, dis_spheres%num
         if (dis_spheres%spheres(4, nkp) < 1.0e-15_dp) then
           call set_error_input(error, 'Error: radius for dis_spheres must be > 0', comm)
           return
-        endif
-      enddo
-    endif
+        end if
+      end do
+    end if
     ! GS-end
   end subroutine w90_wannier90_readwrite_read_disentangle
 
@@ -927,9 +927,9 @@ contains
         if (.not. chk_found) then
           call set_error_file(error, 'Error: restart requested but '//trim(seedname)//'.chk file not found', comm)
           return
-        endif
-      endif
-    endif
+        end if
+      end if
+    end if
     !post processing takes priority (user is not warned of this)
     if (w90_calculation%postproc_setup) w90_calculation%restart = ' '
   end subroutine w90_wannier90_readwrite_read_restart
@@ -974,7 +974,7 @@ contains
     if (found) then
       call set_error_input(error, 'Input parameter hr_plot is no longer used. Please use write_hr instead.', comm)
       return
-    endif
+    end if
     call w90_readwrite_get_keyword(settings, 'write_hr', found, error, comm, &
                                    l_value=output_file%write_hr)
     if (allocated(error)) return
@@ -999,12 +999,12 @@ contains
       if ((.not. gamma_only) .or. (num_kpts .ne. 1)) then
         call set_error_input(error, 'Error: write_vdw_data may only be used with a single k-point at Gamma', comm)
         return
-      endif
+      end if
       if (disentanglement .and. num_valence_bands <= 0) then
         call set_error_input(error, 'If writing vdw data and disentangling then num_valence_bands must be defined', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'write_u_matrices', found, error, comm, &
                                    l_value=output_file%write_u_matrices)
@@ -1086,27 +1086,27 @@ contains
       if (num_project < 1) then
         call set_error_input(error, 'Error: problem reading bands_plot_project', comm)
         return
-      endif
+      end if
       if (allocated(band_plot%project)) deallocate (band_plot%project)
       allocate (band_plot%project(num_project), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating bands_plot_project in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, &
                                           num_project, .false., error, comm, band_plot%project)
       if (allocated(error)) return
       if (any(band_plot%project < 1) .or. any(band_plot%project > num_wann)) then
         call set_error_input(error, 'Error: bands_plot_project asks for a non-valid wannier function to be projected', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     if ((.not. has_kpath) .and. (.not. has_explicit_kpath) .and. bands_plot) then
       call set_error_input(error, &
                            'A bandstructure plot has been requested but there is no kpoint_path or explicit_kpath block', comm)
       return
-    endif
+    end if
 
     ! checks
     if (bands_plot) then
@@ -1114,12 +1114,12 @@ contains
           (index(band_plot%format, 'xmgr') .eq. 0)) then
         call set_error_input(error, 'Error: bands_plot_format not recognised', comm)
         return
-      endif
+      end if
       if ((index(band_plot%mode, 's-k') .eq. 0) .and. (index(band_plot%mode, 'cut') .eq. 0)) then
         call set_error_input(error, 'Error: bands_plot_mode not recognised', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
   end subroutine w90_wannier90_readwrite_read_band_plot
 
@@ -1168,7 +1168,7 @@ contains
       if (any(wann_plot%supercell <= 0)) then
         call set_error_input(error, 'Error: wannier_plot_supercell elements must be greater than zero', comm)
         return
-      endif
+      end if
     end if
 
     call w90_readwrite_get_keyword(settings, 'wannier_plot_format', found, error, comm, c_value=wann_plot%format)
@@ -1191,20 +1191,20 @@ contains
       if (wann_plot_num < 1) then
         call set_error_input(error, 'Error: problem reading wannier_plot_list', comm)
         return
-      endif
+      end if
       if (allocated(wann_plot%list)) deallocate (wann_plot%list)
       allocate (wann_plot%list(wann_plot_num), stat=ierr)
       if (ierr /= 0) then
         call set_error_input(error, 'Error allocating wannier_plot_list in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, wann_plot_num, .false., &
                                           error, comm, wann_plot%list)
       if (allocated(error)) return
       if (any(wann_plot%list < 1) .or. any(wann_plot%list > num_wann)) then
         call set_error_input(error, 'Error: wannier_plot_list asks for a non-valid wannier function to be plotted', comm)
         return
-      endif
+      end if
     else
       ! we plot all wannier functions
       wann_plot_num = num_wann
@@ -1213,7 +1213,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating wannier_plot_list in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       do loop = 1, num_wann
         wann_plot%list(loop) = loop
       end do
@@ -1230,26 +1230,26 @@ contains
       if ((index(wann_plot%format, 'xcrys') .eq. 0) .and. (index(wann_plot%format, 'cub') .eq. 0)) then
         call set_error_input(error, 'Error: wannier_plot_format not recognised', comm)
         return
-      endif
+      end if
       if ((index(wann_plot%mode, 'crys') .eq. 0) .and. (index(wann_plot%mode, 'mol') .eq. 0)) then
         call set_error_input(error, 'Error: wannier_plot_mode not recognised', comm)
         return
-      endif
+      end if
       if ((index(wann_plot%spinor_mode, 'total') .eq. 0) &
           .and. (index(wann_plot%spinor_mode, 'up') .eq. 0) &
           .and. (index(wann_plot%spinor_mode, 'down') .eq. 0)) then
         call set_error_input(error, 'Error: wannier_plot_spinor_mode not recognised', comm)
         return
-      endif
+      end if
       if (wann_plot%radius < 0.0_dp) then
         call set_error_input(error, 'Error: wannier_plot_radius must be positive', comm)
         return
-      endif
+      end if
       if (wann_plot%scale < 0.0_dp) then
         call set_error_input(error, 'Error: wannier_plot_scale must be positive', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
   end subroutine w90_wannier90_readwrite_read_wann_plot
 
@@ -1280,12 +1280,12 @@ contains
       if ((index(fermi_surface_data%plot_format, 'xcrys') .eq. 0)) then
         call set_error_input(error, 'Error: fermi_surface_plot_format not recognised', comm)
         return
-      endif
+      end if
       if (fermi_surface_data%num_points < 0) then
         call set_error_input(error, 'Error: fermi_surface_num_points must be positive', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_wannier90_readwrite_read_fermi_surface
 
   !================================================!
@@ -1316,14 +1316,14 @@ contains
         (real_space_ham%one_dim_dir .eq. 0)) then
       call set_error_input(error, 'Error: one_dim_axis not recognised', comm)
       return
-    endif
+    end if
     if (w90_calculation%bands_plot .and. (index(band_plot%mode, 'cut') .ne. 0) .and. &
         ((real_space_ham%system_dim .ne. 3) .or. &
          (index(real_space_ham%dist_cutoff_mode, 'three_dim') .eq. 0)) .and. &
         (real_space_ham%one_dim_dir .eq. 0)) then
       call set_error_input(error, 'Error: one_dim_axis not recognised', comm)
       return
-    endif
+    end if
   end subroutine w90_wannier90_readwrite_read_one_dim
 
   !================================================!
@@ -1350,7 +1350,7 @@ contains
     if (found) then
       hamiltonian%translation_centre_frac = rv_temp
       hamiltonian%automatic_translation = .false.
-    endif
+    end if
   end subroutine w90_wannier90_readwrite_read_hamil
 
   !================================================!
@@ -1373,7 +1373,7 @@ contains
     if (disentanglement .and. use_bloch_phases) then
       call set_error_input(error, 'Error: Cannot use bloch phases for disentanglement', comm)
       return
-    endif
+    end if
   end subroutine w90_wannier90_readwrite_read_bloch_phase
 
   !================================================!
@@ -1416,7 +1416,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nnkpts_block in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_keyword_block(settings, 'nnkpts', found, rows, 5, bohr, error, comm, &
                                            i_value=nnkpts_block)
       if (allocated(error)) return
@@ -1425,7 +1425,7 @@ contains
       if (.not. w90_calculation%postproc_setup) then
         call set_error_input(error, 'Input parameter nnkpts_block is allowed only if postproc_setup = .true.', comm)
         return
-      endif
+      end if
 
       ! assign the values in nnkpts_block to nnlist and nncell
       ! this keeps track of how many neighbours have been seen for each k-point
@@ -1434,7 +1434,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nnkpts_idx in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       nnkpts_idx = 1
       ! allocating "global" nnlist & nncell
       ! These are deallocated in kmesh_dealloc
@@ -1443,13 +1443,13 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nnlist in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       if (allocated(kmesh_info%nncell)) deallocate (kmesh_info%nncell)
       allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nncell in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       do i = 1, num_kpts*kmesh_info%nntot
         k = nnkpts_block(1, i)
         kmesh_info%nnlist(k, nnkpts_idx(k)) = nnkpts_block(2, i)
@@ -1465,12 +1465,12 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating nnkpts_idx in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       deallocate (nnkpts_block, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating nnkpts_block in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
     end if
 
   end subroutine w90_wannier90_readwrite_read_explicit_kpts
@@ -1527,7 +1527,7 @@ contains
       if (select_proj%auto_projections) then
         call set_error_input(error, 'Error: Cannot specify both auto_projections and projections block', comm)
         return
-      endif
+      end if
       lhasproj = .true.
       call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
                                          recip_lattice, .true., spinors, bohr, stdout, error, comm)
@@ -1537,7 +1537,7 @@ contains
       if (guiding_centres .and. .not. (gamma_only .and. use_bloch_phases)) then
         call set_error_input(error, 'w90_wannier90_readwrite_read: Guiding centres requested, but no projection block found', comm)
         return
-      endif
+      end if
       lhasproj = .false.
       num_proj = num_wann
     end if
@@ -1547,7 +1547,7 @@ contains
       if (found) then
         call set_error_input(error, 'w90_wannier90_readwrite_read: attempting to read .win file with unspent lib options', comm)
         return
-      endif
+      end if
 
       if (atom_data%num_species > 0) then
         ! only read projections if atom positions are known
@@ -1555,8 +1555,8 @@ contains
                                            recip_lattice, .false., spinors, bohr, stdout, error, comm)
         if (allocated(error)) return
         lhasproj = .true.
-      endif
-    endif
+      end if
+    end if
 
     num_select_projections = num_proj !num proj is the size of proj_input
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, num_select_projections, &
@@ -1567,13 +1567,13 @@ contains
       if (num_select_projections < 1) then
         call set_error_input(error, 'Error: problem reading select_projections', comm)
         return
-      endif
+      end if
       if (allocated(select_projections)) deallocate (select_projections)
       allocate (select_projections(num_select_projections), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating select_projections in w90_wannier90_readwrite_read', comm)
         return
-      endif
+      end if
       call w90_readwrite_get_range_vector(settings, 'select_projections', found, num_select_projections, &
                                           .false., error, comm, select_projections)
       if (allocated(error)) return
@@ -1581,23 +1581,23 @@ contains
       if (any(select_projections < 1)) then
         call set_error_input(error, 'Error: select_projections must contain positive numbers', comm)
         return
-      endif
+      end if
       if (num_select_projections < num_wann) then
         call set_error_input(error, 'Error: too few projections selected', comm)
         return
-      endif
+      end if
       if (num_select_projections > num_wann) then
         call set_error_input(error, 'Error: too many projections selected', comm)
         return
-      endif
+      end if
       if (.not. lhasproj) then
         call set_error_input(error, 'Error: select_projections cannot be used without defining the projections', comm)
         return
-      endif
+      end if
       if (maxval(select_projections(:)) > num_proj) then
         call set_error_input(error, 'Error: select_projections contains a number greater than num_proj', comm)
         return
-      endif
+      end if
       select_proj%lselproj = .true.
     end if ! found 'select_projections'
 
@@ -1606,20 +1606,20 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating proj2wann_map in w90_wannier90_readwrite_read', comm)
       return
-    endif
+    end if
     select_proj%proj2wann_map = -1
 
     if (select_proj%lselproj) then
       do i = 1, num_proj
         do j = 1, num_select_projections
           if (select_projections(j) == i) select_proj%proj2wann_map(i) = j
-        enddo
-      enddo
+        end do
+      end do
     else
       do i = 1, num_wann
         select_proj%proj2wann_map(i) = i
-      enddo
-    endif
+      end do
+    end if
 
     if (lhasproj) then
       call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
@@ -1630,17 +1630,17 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating proj in w90_readwrite_get_projections', comm)
         return
-      endif
+      end if
       do loop = 1, num_proj
         imap = select_proj%proj2wann_map(loop)
         if (imap < 0) cycle
         if (imap > num_proj) then
           write (*, *) "logic error, imapping"
           stop
-        endif
+        end if
         proj(imap) = proj_input(loop)
-      enddo
-    endif !lhasproj
+      end do
+    end if !lhasproj
 
   end subroutine w90_wannier90_readwrite_read_projections
 
@@ -1702,9 +1702,9 @@ contains
         if (iprint > 0) then
           write (stdout, '(a)') ' Warning: No <slwf_centres> block found, but slwf_constrain set to true. &
           & Desired centres for SLWF same as projection centres.'
-        endif
-      endif
-    endif
+        end if
+      end if
+    end if
   end subroutine w90_wannier90_readwrite_read_constrained_centres
 
   !================================================!
@@ -1723,7 +1723,7 @@ contains
     !
     !================================================
     use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat, utility_cart_to_frac, &
-      utility_frac_to_cart
+                           utility_frac_to_cart
 
     implicit none
 
@@ -1796,7 +1796,7 @@ contains
         write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
       else
         write (stdout, '(28x,a22)') 'Lattice Vectors (Bohr)'
-      endif
+      end if
       write (stdout, 101) 'a_1', (real_lattice(1, I)*print_output%lenconfac, i=1, 3)
       write (stdout, 101) 'a_2', (real_lattice(2, I)*print_output%lenconfac, i=1, 3)
       write (stdout, 101) 'a_3', (real_lattice(3, I)*print_output%lenconfac, i=1, 3)
@@ -1810,13 +1810,13 @@ contains
         write (stdout, '(2x,a7)') '(Ang^3)'
       else
         write (stdout, '(2x,a8)') '(Bohr^3)'
-      endif
+      end if
       write (stdout, *)
       if (print_output%lenconfac .eq. 1.0_dp) then
         write (stdout, '(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
       else
         write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
-      endif
+      end if
       call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
       write (stdout, 101) 'b_1', (recip_lattice(1, I)/print_output%lenconfac, i=1, 3)
       write (stdout, 101) 'b_2', (recip_lattice(2, I)/print_output%lenconfac, i=1, 3)
@@ -1829,7 +1829,7 @@ contains
           write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
         else
           write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
-        endif
+        end if
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         do nsp = 1, atom_data%num_species
           do nat = 1, atom_data%species_num(nsp)
@@ -1918,7 +1918,7 @@ contains
           write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
         else
           write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'
-        endif
+        end if
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         do nkp = 1, num_kpts
           call utility_frac_to_cart(kpt_latt(:, nkp), kpt_cart, recip_lattice)
@@ -1946,7 +1946,7 @@ contains
       if (lsitesymmetry) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using symmetry-adapted WF mode            :', lsitesymmetry, '|'
         write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Tolerance for symmetry condition on U     :', symmetrize_eps, '|'
-      endif
+      end if
 
       if (cp_pp .or. print_output%iprint > 2) &
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  CP code post-processing                   :', &
@@ -1956,13 +1956,13 @@ contains
           write (stdout, '(1x,a46,9x,a9,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'formatted', '|'
         else
           write (stdout, '(1x,a46,7x,a11,13x,a1)') '|  Wavefunction (UNK) file-type              :', 'unformatted', '|'
-        endif
+        end if
         if (wvfn_read%spin_channel == 1) then
           write (stdout, '(1x,a46,16x,a2,13x,a1)') '|  Wavefunction spin channel                 :', 'up', '|'
         else
           write (stdout, '(1x,a46,14x,a4,13x,a1)') '|  Wavefunction spin channel                 :', 'down', '|'
-        endif
-      endif
+        end if
+      end if
 
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
 
@@ -1978,7 +1978,7 @@ contains
       else
         write (stdout, '(1x,a46,10x,f8.3,13x,a1)') '|  Trial step length for line search         :', &
           wann_control%trial_step, '|'
-      endif
+      end if
       write (stdout, '(1x,a46,8x,E10.3,13x,a1)') '|  Convergence tolerence                     :', &
         wann_control%conv_tol, '|'
       write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Convergence window                        :', &
@@ -2031,10 +2031,10 @@ contains
           do nkp = 1, dis_spheres%num
             write (stdout, '(1x,a13,I4,a2,2x,3F8.3,a15,F8.3,9x,a1)') &
               '|   center n.', nkp, ' :', dis_spheres%spheres(1:3, nkp), ',    radius   =', dis_spheres%spheres(4, nkp), '|'
-          enddo
+          end do
           write (stdout, '(1x,a46,10x,I8,13x,a1)') '|  Index of first Wannier band               :', &
             dis_spheres%first_wann, '|'
-        endif
+        end if
         ! GS-end
         write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       end if
@@ -2073,7 +2073,7 @@ contains
               wann_plot%radius, '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :', &
               wann_plot%scale, '|'
-          endif
+          end if
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
         end if
         !
@@ -2118,7 +2118,7 @@ contains
               real_space_ham%dist_cutoff, '|'
             write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian cut-off distance mode        :', &
               trim(real_space_ham%dist_cutoff_mode), '|'
-          endif
+          end if
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
           if (kpoint_path%bands_kpt_explicit) then
             write (stdout, '(1x,a78)') '|   K-space path high symmetry points:                                       |'
@@ -2147,15 +2147,15 @@ contains
         if (output_file%write_hr .or. print_output%iprint > 2) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', output_file%write_hr, '|'
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-        endif
+        end if
         if (output_file%write_vdw_data .or. print_output%iprint > 2) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
             output_file%write_vdw_data, '|'
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
-        endif
+        end if
         !
-      endif
-    endif !iprint > 0 and not (transport && read_ht)
+      end if
+    end if !iprint > 0 and not (transport && read_ht)
 
     !
     ! Transport
@@ -2193,7 +2193,7 @@ contains
       !
       write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
       !
-    endif
+    end if
 
 101 format(20x, a3, 2x, 3F11.6)
 
@@ -2243,50 +2243,50 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating wannier_plot_list in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(band_plot%project)) then
       deallocate (band_plot%project, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating bands_plot_project in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(wann_control%guiding_centres%centres)) then
       deallocate (wann_control%guiding_centres%centres, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating wannier proj_site in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(wann_control%constrain%centres)) then
       deallocate (wann_control%constrain%centres, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating ccentres_cart in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(proj)) then
       deallocate (proj, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating proj in w90_readwrite_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(dis_spheres%spheres)) then
       deallocate (dis_spheres%spheres, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating dis_spheres in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(select_proj%proj2wann_map)) then
       deallocate (select_proj%proj2wann_map, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating select_projections in w90_readwrite_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_wannier90_readwrite_w90_dealloc
 
   !================================================!
@@ -2354,7 +2354,7 @@ contains
       num_exclude_bands = size(exclude_bands)
     else
       num_exclude_bands = 0
-    endif
+    end if
     write (chk_unit) num_exclude_bands         ! Number of excluded bands
     write (chk_unit) (exclude_bands(i), i=1, num_exclude_bands) ! Excluded bands
     write (chk_unit) ((real_lattice(i, j), i=1, 3), j=1, 3)        ! Real lattice
@@ -2374,7 +2374,7 @@ contains
       write (chk_unit) ((dis_manifold%lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
       write (chk_unit) (dis_manifold%ndimwin(nkp), nkp=1, num_kpts)
       write (chk_unit) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
-    endif
+    end if
     write (chk_unit) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)               ! U_matrix
     write (chk_unit) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts) ! M_matrix
     write (chk_unit) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
@@ -2440,7 +2440,7 @@ contains
 
     if (disentanglement) then
       mem_param = mem_param + num_bands*num_wann*num_kpts*size_cmplx             ! u_matrix_opt
-    endif
+    end if
 
     if (allocated(atom_data%species_num)) then
       mem_param = mem_param + (atom_data%num_species)*size_int                               !atoms_species_num
@@ -2448,7 +2448,7 @@ contains
       mem_param = mem_param + (atom_data%num_species)*size_real                              !atoms_symbol
       !mem_param = mem_param + (3*maxval(atom_data%species_num)*atom_data%num_species)*size_real  !atoms_pos_frac
       mem_param = mem_param + (3*maxval(atom_data%species_num)*atom_data%num_species)*size_real  !atoms_pos_cart
-    endif
+    end if
 
     if (allocated(proj_input)) then
       mem_param = mem_param + (3*num_proj)*size_real              !input_proj_site
@@ -2458,7 +2458,7 @@ contains
       mem_param = mem_param + (3*num_proj)*size_real             !input_proj_x
       mem_param = mem_param + (num_proj)*size_real                !input_proj_radial
       mem_param = mem_param + (num_proj)*size_real                !input_proj_zona
-    endif
+    end if
 
     if (allocated(wann_control%guiding_centres%centres)) then
       mem_param = mem_param + (3*num_wann)*size_real              !proj_site
@@ -2468,7 +2468,7 @@ contains
       mem_param = mem_param + (3*num_wann)*size_real             !proj_x
       mem_param = mem_param + (num_wann)*size_real                !proj_radial
       mem_param = mem_param + (num_wann)*size_real                !proj_zona
-    endif
+    end if
 
     mem_param = mem_param + num_kpts*kmesh_info%nntot*size_int    !nnlist
     mem_param = mem_param + num_kpts*kmesh_info%nntot/2*size_int  !neigh
@@ -2483,7 +2483,7 @@ contains
     if (disentanglement) then
       mem_param = mem_param + num_kpts*size_int                     !ndimwin
       mem_param = mem_param + num_bands*num_kpts*size_log           !lwindow
-    endif
+    end if
     mem_param = mem_param + 3*num_wann*size_real                     !wannier_centres
     mem_param = mem_param + num_wann*size_real                       !wannier_spreads
 
@@ -2523,19 +2523,19 @@ contains
         mem_dis = mem_dis + mem_dis1
       else
         mem_dis = mem_dis + max(mem_dis1, mem_dis2)
-      endif
+      end if
 
       mem_dis = mem_dis + num_bands*num_bands*kmesh_info%nntot*num_kpts*size_cmplx      ! m_matrix_orig
       mem_dis = mem_dis + num_bands*num_wann*num_kpts*size_cmplx             ! a_matrix
 
-    endif
+    end if
 
     !Wannierise
 
     mem_wan1 = mem_wan1 + (num_wann*num_wann*kmesh_info%nntot*num_kpts)*size_cmplx     !  'm0'
     if (optimisation > 0) then
       mem_wan = mem_wan + mem_wan1
-    endif
+    end if
     mem_wan = mem_wan + (num_wann*num_wann*num_kpts)*size_cmplx           !  'u0'
     mem_wan = mem_wan + (num_wann*kmesh_info%nntot*num_kpts)*size_real    !  'rnkb'
     mem_wan = mem_wan + (num_wann*kmesh_info%nntot*num_kpts)*size_real     !  'ln_tmp'
@@ -2598,12 +2598,12 @@ contains
             (mem_param + mem_wan - mem_wan1)/(1024**2), ' Mb'
         end if
         write (stdout, '(1x,a)') '|   However, this will result in more i/o and slow down the calculation      |'
-      endif
+      end if
 
       write (stdout, '(1x,"|",24x,a15,f16.2,a,18x,"|")') 'plot_wannier:', (mem_param + mem_wan)/(1024**2), ' Mb'
       write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       write (stdout, *) ' '
-    endif
+    end if
 
 !    if(w90_calculation%disentanglement) then
 !       write(*,'(a12,f12.4,a)') 'Disentangle',(mem_param+mem_dis)/(1024**2),' Mb'

@@ -1,5 +1,5 @@
 #=====
-#pgf90 
+#pgf90
 #=====
 
 F90 = pgf90
@@ -12,8 +12,7 @@ FCOPTS = -O2 -fast -I/home/farm2/local/pgi_1507/linux86-64/15.7/mpi/mpich/includ
 LDOPTS = -O2
 
 # Debug options
-#FCOPTS  = -g -Mbounds -Mchkptr -Minform=warn -Mstandard 
+#FCOPTS  = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
 #LDOPTS = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
 LIBDIR =  /home/farm2/local/pgi_1507/linux86-64/15.7/mpi/mpich/lib
 LIBS   = -llapack -lblas  -L$(LIBDIR) -lmpi
-

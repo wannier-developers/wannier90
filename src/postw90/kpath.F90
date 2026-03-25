@@ -45,7 +45,7 @@ module w90_kpath
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -73,15 +73,15 @@ contains
     !================================================!
 
     use w90_comms, only: w90_comm_type, mpirank, mpisize, comms_array_split, comms_scatterv, &
-      comms_gatherv, comms_bcast
+                         comms_gatherv, comms_bcast
     use w90_constants, only: dp, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R_effective, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_time
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_types, only: kpoint_path_type, print_output_type, wannier_data_type, &
-      dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
+                         dis_manifold_type, kmesh_info_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, pw90_kpath_mod_type, &
-      pw90_spin_mod_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type
+                                 pw90_spin_mod_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
@@ -184,7 +184,7 @@ contains
         if (pw90_berry%kubo_smearing%use_adaptive) then
           call set_error_input(error, 'Error: Must use fixed smearing when plotting spin Hall conductivity', comm)
           return
-        endif
+        end if
       end if
       if (plot_shc) then
         if (fermi_n == 0) then
@@ -218,10 +218,10 @@ contains
         call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, wannier_data, AA_R, &
                       v_matrix, eigval, wigner_seitz, ws_distance, ws_region, num_bands, num_kpts, &
                       num_wann, have_disentangled, seedname, stdout, timer, error, comm)
-      endif
+      end if
       if (allocated(error)) return
 
-    endif
+    end if
     if (plot_morb) then
 
       call get_BB_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, HH_R, BB_R, v_matrix, &
@@ -235,7 +235,7 @@ contains
                     timer, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
 
     if (plot_shc .or. (plot_bands .and. pw90_kpath%bands_colour == 'shc')) then
 
@@ -246,7 +246,7 @@ contains
         call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, wannier_data, AA_R, &
                       v_matrix, eigval, wigner_seitz, ws_distance, ws_region, num_bands, num_kpts, &
                       num_wann, have_disentangled, seedname, stdout, timer, error, comm)
-      endif
+      end if
       if (allocated(error)) return
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
@@ -260,7 +260,7 @@ contains
                      num_valence_bands, have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
 
     if (plot_bands .and. pw90_kpath%bands_colour == 'spin') then
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
@@ -1190,11 +1190,11 @@ contains
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
         else if (berry_curv_unit == 'bohr2') then
           write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
-        endif
+        end if
         if (fermi_n /= 1) then
           call set_error_input(error, 'Must specify one Fermi level when kpath_task=curv', comm)
           return
-        endif
+        end if
       end if
       if (plot_morb) then
         write (stdout, '(/,3x,a)') &
@@ -1202,7 +1202,7 @@ contains
         if (fermi_n /= 1) then
           call set_error_input(error, 'Must specify one Fermi level when kpath_task=morb', comm)
           return
-        endif
+        end if
       end if
       if (plot_shc) then
         if (berry_curv_unit == 'ang2') then
@@ -1215,7 +1215,7 @@ contains
         if (fermi_n /= 1) then
           call set_error_input(error, 'Must specify one Fermi level when kpath_task=shc', comm)
           return
-        endif
+        end if
       end if
     end if ! on_root
 
@@ -1257,7 +1257,7 @@ contains
       num_paths = size(kpoint_path%labels)/2
     else
       num_paths = 0
-    endif
+    end if
     allocate (kpath_pts(num_paths))
     allocate (kpath_len(num_paths))
     do loop_path = 1, num_paths

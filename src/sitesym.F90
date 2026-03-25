@@ -80,17 +80,17 @@ contains
         if (lwindow_in(i, ik)) then
           j = j + 1
           nindx(j) = i
-        endif
-      enddo
+        end if
+      end do
       nb = j
       do j = 1, nb
         i = nindx(j)
         sitesym%d_matrix_band(1:nb, j, :, ir) = sitesym%d_matrix_band(nindx(1:nb), i, :, ir)
         if (nb .lt. num_bands) then
           sitesym%d_matrix_band(nb + 1:, j, :, ir) = 0
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
 
     return
   end subroutine sitesym_slim_d_matrix_band
@@ -156,13 +156,13 @@ contains
     if (present(lwindow_in) .and. (ndim .ne. num_bands)) then
       call set_error_fatal(error, 'ndim!=num_bands', comm)
       return
-    endif
+    end if
     if (.not. present(lwindow_in)) then
       if (ndim .ne. num_wann) then
         call set_error_fatal(error, 'ndim!=num_wann', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     ldone = .false.
     do ir = 1, sitesym%nkptirr
@@ -172,14 +172,14 @@ contains
         n = count(lwindow_in(:, ik))
       else
         n = ndim
-      endif
+      end if
       if (present(lwindow_in)) then
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
                               error, comm, n)
       else
         call symmetrize_ukirr(num_wann, num_bands, ir, ndim, umat(:, :, ik), sitesym, stdout, &
                               error, comm)
-      endif
+      end if
       if (allocated(error)) return
 
       do isym = 2, sitesym%nsymmetry
@@ -194,12 +194,12 @@ contains
         ! umat(Rk) = cmat*D^{+}(R,k) = d(R,k) * U(k) * D^{+}(R,k)
         call zgemm('N', 'C', n, num_wann, num_wann, cmplx_1, cmat, ndim, &
                    sitesym%d_matrix_wann(:, :, isym, ir), num_wann, cmplx_0, umat(:, :, irk), ndim)
-      enddo
-    enddo
+      end do
+    end do
     if (any(.not. ldone)) then
       call set_error_fatal(error, 'error in sitesym_symmetrize_u_matrix', comm)
       return
-    endif
+    end if
 
     return
   end subroutine sitesym_symmetrize_u_matrix
@@ -247,12 +247,12 @@ contains
           call utility_zgemm(cmat2, sitesym%d_matrix_wann(:, :, isym, ir), 'C', grad(:, :, irk), 'N', num_wann)
           call utility_zgemm(cmat1, cmat2, 'N', sitesym%d_matrix_wann(:, :, isym, ir), 'N', num_wann)
           grad_total = grad_total + cmat1
-        enddo
+        end do
         grad(:, :, ik) = grad_total
-      enddo
+      end do
       do ik = 1, num_kpts
         if (sitesym%ir2ik(sitesym%ik2ir(ik)) .ne. ik) grad(:, :, ik) = 0
-      enddo
+      end do
     elseif (imode .eq. 2) then
       ! JJ, 20 July 2022, note:
       ! previously the following algorithm was *also applied* after the above for "mode 1"
@@ -280,13 +280,13 @@ contains
           ! step 2: cmat1 = D^{+}(R,k) * cmat2
           call utility_zgemm(cmat1, sitesym%d_matrix_wann(:, :, isym, ir), 'C', cmat2, 'N', num_wann)
           grad_total = grad_total + cmat1
-        enddo
+        end do
         grad(:, :, ik) = grad_total/ngk
-      enddo
+      end do
     else
       call set_error_fatal(error, 'unknown mode argument in sitesym_symmetrize_gradient', comm)
       return
-    endif
+    end if
     return
   end subroutine sitesym_symmetrize_gradient
 
@@ -330,12 +330,12 @@ contains
         call utility_zgemm(cmat1, sitesym%d_matrix_wann(:, :, isym, ir), 'N', &
                            cmat2, 'N', num_wann)
         urot(:, :, irk) = cmat1(:, :)
-      enddo
-    enddo
+      end do
+    end do
     if (any(.not. ldone)) then
       call set_error_fatal(error, 'error in sitesym_symmetrize_rotation', comm)
       return
-    endif
+    end if
 
     return
   end subroutine sitesym_symmetrize_rotation
@@ -384,7 +384,7 @@ contains
         call zgemm('C', 'N', nd, nd, nd, cmplx_1, sitesym%d_matrix_band(:, :, isym, ir), &
                    num_bands, cmat1, num_bands, cmplx_0, cmat2, num_bands)
         czmat(:, :, ik) = czmat(:, :, ik) + cmat2(:, :)
-      enddo
+      end do
 
       cztmp(:, :) = czmat(:, :, ik)
       do isym = 2, sitesym%nsymmetry
@@ -396,9 +396,9 @@ contains
         call zgemm('C', 'N', nd, nd, nd, cmplx_1, sitesym%d_matrix_band(:, :, isym, ir), &
                    num_bands, cmat1, num_bands, cmplx_0, cmat2, num_bands)
         czmat(:, :, ik) = czmat(:, :, ik) + cmat2(:, :)
-      enddo
+      end do
       czmat(:, :, ik) = czmat(:, :, ik)/count(sitesym%kptsym(:, ir) .eq. ik)
-    enddo
+    end do
 
     return
   end subroutine sitesym_symmetrize_zmatrix
@@ -445,28 +445,28 @@ contains
       if (ndim .ne. num_bands) then
         call set_error_fatal(error, 'ndim!=num_bands', comm)
         return
-      endif
+      end if
       ntmp = n
     else
       if (ndim .ne. num_wann) then
         call set_error_fatal(error, 'ndim!=num_wann', comm)
         return
-      endif
+      end if
       ntmp = ndim
-    endif
+    end if
 
     ngk = count(sitesym%kptsym(:, ir) .eq. sitesym%ir2ik(ir))
     if (ngk .eq. 1) then
       call orthogonalize_u(ndim, num_wann, umat, ntmp, error, comm)
       return
-    endif
+    end if
 
     do iter = 1, niter
       usum(:, :) = 0
       cmat2(:, :) = 0
       do i = 1, num_wann
         cmat2(i, i) = cmat2(i, i) + ngk
-      enddo
+      end do
       do isym = 1, sitesym%nsymmetry
         if (sitesym%kptsym(isym, ir) .ne. sitesym%ir2ik(ir)) cycle
         !
@@ -484,7 +484,7 @@ contains
         ! check
         cmat2(:, :) = cmat2(:, :) - &
                       matmul(conjg(transpose(umat(:ntmp, :))), cmat(:ntmp, :))
-      enddo ! isym
+      end do ! isym
       diff = sum(abs(cmat2))
       if (diff .lt. sitesym%symmetrize_eps) exit
       if (iter .eq. niter) then
@@ -494,13 +494,13 @@ contains
         write (stdout, "(a,2e20.10)") 'diff,eps=', diff, sitesym%symmetrize_eps
         call set_error_unconv(error, 'symmetrize_ukirr: not converged', comm)
         return
-      endif
+      end if
       usum = usum/ngk
       call orthogonalize_u(ndim, num_wann, usum, ntmp, error, comm)
       if (allocated(error)) return
 
       umat(:, :) = usum
-    enddo ! iter
+    end do ! iter
 
     return
   end subroutine symmetrize_ukirr
@@ -528,7 +528,7 @@ contains
     if (n .lt. m) then
       call set_error_fatal(error, 'n<m', comm)
       return
-    endif
+    end if
     allocate (smat(n, m)); smat(1:n, 1:m) = u(1:n, 1:m)
     allocate (evecl(n, n), evecr(m, m))
     allocate (eig(min(m, n)))
@@ -542,7 +542,7 @@ contains
     if (info .ne. 0) then
       call set_error_fatal(error, ' ERROR: IN ZGESVD IN orthogonalize_u', comm)
       return
-    endif
+    end if
     deallocate (smat, eig, WORK, RWORK)
     ! u_matrix is the initial guess for the unitary rotation of the
     ! basis states given by the subroutine extract
@@ -551,9 +551,9 @@ contains
     do l = 1, m
       do i = 1, n
         u(i, j) = u(i, j) + evecl(i, l)*evecr(l, j)
-      enddo
-    enddo
-    enddo
+      end do
+    end do
+    end do
     deallocate (evecl, evecr)
 
     return
@@ -606,25 +606,25 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating umatnew in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     allocate (ZU(num_bands, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ZU in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     allocate (deltaU(num_bands, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating deltaU in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     allocate (carr(num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating carr in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     do iter = 1, niter
       !  Z*U
@@ -653,7 +653,7 @@ contains
         if (abs(sp3) .lt. 1e-10) then
           umatnew(:, i) = umat(:, i)
           cycle
-        endif
+        end if
         call ZHPGVX(1, 'V', 'A', 'U', 2, HP, SP, 0.0_dp, 0.0_dp, 0, 0, &
                     -1.0_dp, m, W, V, 2, CWORK, RWORK, IWORK, IFAIL, INFO)
         if (INFO .ne. 0) then
@@ -665,44 +665,44 @@ contains
             else
               write (stdout, *) ' S is not positive definite'
               write (stdout, *) 'sp3=', sp3
-            endif
+            end if
             call set_error_fatal(error, 'error at sitesym_dis_extract_symmetry', comm)
             return
-          endif
-        endif
+          end if
+        end if
         ! choose the larger eigenstate
         umatnew(:, i) = V(1, 2)*umat(:, i) + V(2, 2)*deltaU(:, i)
-      enddo ! i
+      end do ! i
       call symmetrize_ukirr(num_wann, num_bands, sitesym%ik2ir(ik), num_bands, umatnew, sitesym, &
                             stdout, error, comm, n)
       if (allocated(error)) return
 
       umat(:, :) = umatnew(:, :)
-    enddo ! iter
+    end do ! iter
 
     deallocate (umatnew, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating umatnew in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     deallocate (ZU, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ZU in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     deallocate (deltaU, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating deltaU in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     deallocate (carr, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating carr in sitesym_dis_extract_symmetry', comm)
       return
-    endif
+    end if
 
     return
   end subroutine sitesym_dis_extract_symmetry
@@ -735,37 +735,37 @@ contains
     if (ibnum .ne. num_bands) then
       call set_error_file(error, "Error: Number of bands is not correct (sitesym_read)", comm)
       return
-    endif
+    end if
     if (iknum .ne. num_kpts) then
       call set_error_file(error, "Error: Number of k-points is not correct (sitesym_read)", comm)
       return
-    endif
+    end if
 
     allocate (sitesym%ik2ir(num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sitesym%ik2ir in sitesym_read', comm)
       return
-    endif
+    end if
     allocate (sitesym%ir2ik(sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sitesym%ir2ik in sitesym_read', comm)
       return
-    endif
+    end if
     allocate (sitesym%kptsym(sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sitesym%kptsym in sitesym_read', comm)
       return
-    endif
+    end if
     allocate (sitesym%d_matrix_band(num_bands, num_bands, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_band in sitesym_read', comm)
       return
-    endif
+    end if
     allocate (sitesym%d_matrix_wann(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_wann in sitesym_read', comm)
       return
-    endif
+    end if
 
     read (iu, *) sitesym%ik2ir
     read (iu, *) sitesym%ir2ik
@@ -795,27 +795,27 @@ contains
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sitesym%ik2ir in sitesym_dealloc', comm)
       return
-    endif
+    end if
     deallocate (sitesym%ir2ik, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sitesym%ir2ik in sitesym_dealloc', comm)
       return
-    endif
+    end if
     deallocate (sitesym%kptsym, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sitesym%kptsym in sitesym_dealloc', comm)
       return
-    endif
+    end if
     deallocate (sitesym%d_matrix_band, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_band in sitesym_dealloc', comm)
       return
-    endif
+    end if
     deallocate (sitesym%d_matrix_wann, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_wann in sitesym_dealloc', comm)
       return
-    endif
+    end if
 
     return
   end subroutine sitesym_dealloc

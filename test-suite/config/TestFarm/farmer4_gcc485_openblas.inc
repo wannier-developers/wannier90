@@ -27,4 +27,3 @@ LIBS = -L$(LIBDIR)  -llapack -lblas
 #=======================
 #LIBDIR = /rscratch/jry20/LIB/gfortran
 #LIBS = -L$(LIBDIR)  -llapack -lblas
-

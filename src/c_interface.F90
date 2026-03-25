@@ -29,16 +29,16 @@ module w90_library_c
 !Fortran 2018: Assumed-length character dummy argument ‘keyword’ at (1) of procedure ‘cset_option_int’ with BIND(C) attribute
   use iso_c_binding
   use w90_library, only: w90_disentangle_f => w90_disentangle, &
-    w90_get_centres_f => w90_get_centres, w90_get_gkpb_f => w90_get_gkpb, &
-    w90_get_nn_f => w90_get_nn, w90_get_nnkp_f => w90_get_nnkp, &
-    w90_get_spreads_f => w90_get_spreads, w90_input_setopt_ff => w90_input_setopt, &
-    w90_input_reader_f => w90_input_reader, &
-    w90_project_overlap_f => w90_project_overlap, &
-    w90_set_eigval_f => w90_set_eigval, w90_set_m_local_f => w90_set_m_local, &
-    w90_set_u_matrix_f => w90_set_u_matrix, w90_set_u_opt_f => w90_set_u_opt, &
-    w90_wannierise_f => w90_wannierise, w90_set_option, &
-    w90_set_comm_f => w90_set_comm, lib_common_type, &
-    w90_get_fortran_stderr, w90_get_fortran_stdout
+                         w90_get_centres_f => w90_get_centres, w90_get_gkpb_f => w90_get_gkpb, &
+                         w90_get_nn_f => w90_get_nn, w90_get_nnkp_f => w90_get_nnkp, &
+                         w90_get_spreads_f => w90_get_spreads, w90_input_setopt_ff => w90_input_setopt, &
+                         w90_input_reader_f => w90_input_reader, &
+                         w90_project_overlap_f => w90_project_overlap, &
+                         w90_set_eigval_f => w90_set_eigval, w90_set_m_local_f => w90_set_m_local, &
+                         w90_set_u_matrix_f => w90_set_u_matrix, w90_set_u_opt_f => w90_set_u_opt, &
+                         w90_wannierise_f => w90_wannierise, w90_set_option, &
+                         w90_set_comm_f => w90_set_comm, lib_common_type, &
+                         w90_get_fortran_stderr, w90_get_fortran_stdout
   implicit none
 
   public

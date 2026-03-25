@@ -298,7 +298,7 @@ contains
     use w90_error, only: set_error_alloc, set_error_fatal, code_mpi
     use w90_comms, only: w90_comm_type, valid_communicator
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
-      w90_wannier90_readwrite_read_special
+                                       w90_wannier90_readwrite_read_special
 
     implicit none
 
@@ -320,7 +320,7 @@ contains
       write (istderr, *) ' Error: parallel Wannier90 library invoked with invalid communicator, exiting.  Use w90_set_comm()!'
       ierr = code_mpi
       return
-    endif
+    end if
 
     if (allocated(common_data%settings%in_data)) then
       call set_error_fatal(error, &
@@ -335,7 +335,7 @@ contains
       !  call set_error_fatal(error, ' input_setopt called but distk unallocated', common_data%comm)
       !  call prterr(error, ierr, istdout, istderr, common_data%comm)
       !  return
-    endif
+    end if
 
     common_data%seedname = seedname ! set seedname for input/output files
 
@@ -359,7 +359,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! condition for disentanglement is number of bands > number of WF
     if (common_data%num_bands > common_data%num_wann) then
@@ -368,27 +368,27 @@ contains
         call set_error_alloc(error, 'Error allocating ndimwin in w90_input_setopt() library call', common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
       allocate (common_data%dis_manifold%nfirstwin(common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nfirstwin in w90_input_setopt() library call', common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
       allocate (common_data%dis_manifold%lwindow(common_data%num_bands, common_data%num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating lwindow in w90_input_setopt() library call', common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     allocate (common_data%wannier_data%centres(3, common_data%num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating wannier_centres in w90_input_setopt() library call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     common_data%wannier_data%centres = 0.0_dp
 
     allocate (common_data%wannier_data%spreads(common_data%num_wann), stat=ierr)
@@ -396,7 +396,7 @@ contains
       call set_error_alloc(error, 'Error in allocating wannier_spreads in w90_input_setopt() library call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     common_data%wannier_data%spreads = 0.0_dp
 
     ! read all other variables; mostly simple variables can be set and/or reset
@@ -419,7 +419,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! clear settings container (from settings interface not .win file)
     deallocate (common_data%settings%entries, stat=ierr)
@@ -427,7 +427,7 @@ contains
       call set_error_alloc(error, 'Error in deallocating entries data in w90_input_setopt() library call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine w90_input_setopt
 
   subroutine w90_input_reader(common_data, istdout, istderr, ierr)
@@ -462,7 +462,7 @@ contains
       write (istderr, *) ' Error: parallel Wannier90 library invoked with invalid communicator, exiting.  Use w90_set_comm()!'
       ierr = code_mpi
       return
-    endif
+    end if
 
     if (allocated(common_data%settings%entries)) then
       call set_error_fatal(error, &
@@ -470,14 +470,14 @@ contains
                            common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! read data from .win file to internal string array
     call w90_readwrite_in_file(common_data%settings, common_data%seedname, error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! set options corresponding to string array from .win file
     call w90_wannier90_readwrite_read(common_data%settings, common_data%band_plot, &
@@ -499,7 +499,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! remove any remaining acceptable keywords; anything that remains is an input error
     call w90_readwrite_clean_infile(common_data%settings, istdout, common_data%seedname, error, &
@@ -507,7 +507,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     if (allocated(common_data%settings%in_data)) deallocate (common_data%settings%in_data)
   end subroutine w90_input_reader
@@ -549,7 +549,7 @@ contains
       call set_error_fatal(error, 'Error: eigval not associated for w90_disentangle() call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ! if not already initialised, set disentanglement window to limits of spectrum
     if (common_data%dis_manifold%win_min == -huge(0.0_dp)) common_data%dis_manifold%win_min = minval(common_data%eigval)
@@ -557,8 +557,8 @@ contains
     if (common_data%dis_manifold%frozen_states) then
       if (common_data%dis_manifold%froz_min == -huge(0.0_dp)) then
         common_data%dis_manifold%froz_min = minval(common_data%eigval(:, :))
-      endif
-    endif
+      end if
+    end if
 
     ! condition for disentanglement is number of bands > number of WF
     if (common_data%num_bands > common_data%num_wann) then
@@ -572,7 +572,7 @@ contains
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
 
       call setup_m_loc(common_data%kmesh_info, common_data%print_output, common_data%m_matrix_local, &
                        common_data%m_matrix_local, common_data%u_matrix, common_data%num_bands, &
@@ -581,10 +581,10 @@ contains
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
 
       common_data%have_disentangled = .true.
-    endif
+    end if
   end subroutine w90_disentangle
 
   subroutine w90_project_overlap(common_data, istdout, istderr, ierr)
@@ -617,7 +617,7 @@ contains
       call set_error_fatal(error, 'u_matrixt not set for w90_project_overlap call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     if (.not. common_data%have_disentangled) then
       if (common_data%num_wann /= common_data%num_bands) then
@@ -625,7 +625,7 @@ contains
                              common_data%comm)
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
 
       ! fixme, document!
       common_data%u_matrix(:, :, :) = common_data%u_matrix_opt(:, :, :) ! u_matrix_opt contains initial projections
@@ -633,8 +633,8 @@ contains
       do ik = 1, common_data%num_kpts
         do iw = 1, common_data%num_wann
           common_data%u_matrix_opt(iw, iw, ik) = 1.d0
-        enddo
-      enddo
+        end do
+      end do
 
       if (common_data%gamma_only) then
         call overlap_project_gamma(common_data%m_matrix_local, common_data%u_matrix, &
@@ -648,12 +648,12 @@ contains
                              common_data%print_output%timing_level, common_data%lsitesymmetry, &
                              istdout, common_data%timer, common_data%dist_kpoints, error, &
                              common_data%comm)
-      endif
+      end if
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
-    endif
+      end if
+    end if
   end subroutine w90_project_overlap
 
   subroutine w90_wannierise(common_data, istdout, istderr, ierr)
@@ -680,11 +680,11 @@ contains
       call set_error_fatal(error, 'Error: m_matrix_local not set for call to w90_wannierise()', common_data%comm)
     else if (.not. associated(common_data%u_matrix)) then
       call set_error_fatal(error, 'Error: u_matrix not set for w90_wannierise()', common_data%comm)
-    endif
+    end if
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     if (common_data%gamma_only) then
       if (mpirank(common_data%comm) == 0) then
@@ -696,13 +696,13 @@ contains
         if (allocated(error)) then
           call prterr(error, ierr, istdout, istderr, common_data%comm)
           return
-        endif
-      endif
+        end if
+      end if
       call comms_sync_error(common_data%comm, error, 0) ! this is necessary after root's excursion alone
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
-      endif
+      end if
     else
       call wann_main(common_data%ham_logical, common_data%kmesh_info, common_data%kpt_latt, &
                      common_data%wann_control, common_data%omega, common_data%sitesym, &
@@ -715,11 +715,11 @@ contains
                      common_data%optimisation, common_data%rpt_origin, common_data%band_plot%mode, &
                      common_data%tran%mode, common_data%lsitesymmetry, istdout, common_data%timer, &
                      common_data%dist_kpoints, error, common_data%comm)
-    endif
+    end if
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine w90_wannierise
 
   subroutine w90_plot(common_data, istdout, istderr, ierr)
@@ -760,7 +760,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine w90_plot
 
   subroutine w90_transport(common_data, istdout, istderr, ierr)
@@ -799,12 +799,12 @@ contains
                      common_data%band_plot%mode, common_data%have_disentangled, &
                      common_data%lsitesymmetry, common_data%seedname, istdout, common_data%timer, &
                      error, common_data%comm)
-    endif
+    end if
     call comms_sync_error(common_data%comm, error, 0) ! this is necessary after root's excursion alone
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine w90_transport
 
   subroutine w90_set_m_local(common_data, m_matrix_local) ! m_matrix_local_orig
@@ -874,11 +874,12 @@ contains
 
     call kmesh_get(common_data%kmesh_input, common_data%kmesh_info, common_data%print_output, &
                    common_data%kpt_latt, common_data%real_lattice, common_data%num_kpts, &
-                   common_data%gamma_only, istdout, common_data%timer, error, common_data%comm)
+                   common_data%gamma_only, common_data%seedname, istdout, common_data%timer, &
+                   error, common_data%comm)
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     common_data%setup_complete = .true.
   end subroutine w90_create_kmesh
@@ -898,7 +899,7 @@ contains
       call w90_create_kmesh(common_data, istdout, istderr, ierr)
       !! setup k-mesh (b vectors) if not already done (sets setup_complete)
       if (ierr > 0) return
-    endif
+    end if
 
     nn = common_data%kmesh_info%nntot
   end subroutine w90_get_nn
@@ -917,7 +918,7 @@ contains
       call w90_create_kmesh(common_data, istdout, istderr, ierr)
       !! setup k-mesh (b vectors) if not already done (sets setup_complete)
       if (ierr > 0) return
-    endif
+    end if
 
     nnkp = common_data%kmesh_info%nnlist
   end subroutine w90_get_nnkp
@@ -936,7 +937,7 @@ contains
       call w90_create_kmesh(common_data, istdout, istderr, ierr)
       !! setup k-mesh (b vectors) if not already done (sets setup_complete)
       if (ierr > 0) return
-    endif
+    end if
 
     gkpb = common_data%kmesh_info%nncell
   end subroutine w90_get_gkpb
@@ -951,7 +952,7 @@ contains
     !! library data object
 
     centres = common_data%wannier_data%centres
-  endsubroutine w90_get_centres
+  end subroutine w90_get_centres
 
   subroutine w90_get_spreads(common_data, spreads)
     !! probes w90 library for (current) wannier spreads
@@ -963,7 +964,7 @@ contains
     !! library data object
 
     spreads = common_data%wannier_data%spreads
-  endsubroutine w90_get_spreads
+  end subroutine w90_get_spreads
 
   subroutine w90_get_proj(common_data, n, site, l, m, s, rad, x, z, sqa, zona, istdout, istderr, ierr)
     !! probes library data object and returns arrays describing a list of projections
@@ -998,7 +999,7 @@ contains
                            'Error: projectors are not setup in Wannier90 library when requested via get_proj()', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     n = size(common_data%proj_input)
 
@@ -1039,12 +1040,12 @@ contains
       call set_error_fatal(error, 'Error: array argument rad in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
     if (size(zona) < n) then
       call set_error_fatal(error, 'Error: array argument zona in get_proj() call is insufficiently sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     do ip = 1, n
       proj => common_data%proj_input(ip)
@@ -1057,7 +1058,7 @@ contains
       x(1:3, ip) = proj%x(1:3)
       rad(ip) = proj%radial
       zona(ip) = proj%zona
-    enddo
+    end do
   end subroutine w90_get_proj
 
   subroutine w90_set_comm(common_data, comm)
@@ -1100,7 +1101,7 @@ contains
                                       common_data%physics%constants_version_str1, &
                                       common_data%physics%constants_version_str2, &
                                       mpi_size, istdout)
-    endif
+    end if
 
     ! write simulation details
     call w90_wannier90_readwrite_write(common_data%atom_data, common_data%band_plot, &
@@ -1124,7 +1125,7 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
   end subroutine w90_print_info
 
   subroutine w90_set_option_text(common_data, keyword, text)
@@ -1143,8 +1144,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_text
+    end if
+  end subroutine w90_set_option_text
 
   subroutine w90_set_option_logical(common_data, keyword, bool)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1163,8 +1164,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_logical
+    end if
+  end subroutine w90_set_option_logical
 
   subroutine w90_set_option_i1d(common_data, keyword, arr)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1183,8 +1184,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_i1d
+    end if
+  end subroutine w90_set_option_i1d
 
   subroutine w90_set_option_i2d(common_data, keyword, arr)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1203,8 +1204,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_i2d
+    end if
+  end subroutine w90_set_option_i2d
 
   subroutine w90_set_option_int(common_data, keyword, ival)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1223,8 +1224,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_int
+    end if
+  end subroutine w90_set_option_int
 
   subroutine w90_set_option_r1d(common_data, keyword, arr)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1243,8 +1244,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_r1d
+    end if
+  end subroutine w90_set_option_r1d
 
   subroutine w90_set_option_r2d(common_data, keyword, arr)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1263,8 +1264,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_r2d
+    end if
+  end subroutine w90_set_option_r2d
 
   subroutine w90_set_option_c2d(common_data, keyword, arr)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1283,8 +1284,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_c2d
+    end if
+  end subroutine w90_set_option_c2d
 
   subroutine w90_set_option_real(common_data, keyword, rval)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1303,8 +1304,8 @@ contains
     common_data%settings%num_entries = i + 1
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
-    endif
-  endsubroutine w90_set_option_real
+    end if
+  end subroutine w90_set_option_real
 
   subroutine w90_distribute_kpts(common_data, num_kpts, mpi_size, dist_k, istdout, istderr, ierr)
     !! provide a distribution of num_kpts k-points across mpi_size MPI ranks
@@ -1345,11 +1346,11 @@ contains
       call set_error_fatal(error, 'Error: dist_k not allocated in w90_distribute_kpts call.', common_data%comm)
     elseif (size(dist_k) < num_kpts) then
       call set_error_fatal(error, 'Error: size(dist_k) < num_kpts in w90_distribute_kpts call.', common_data%comm)
-    endif
+    end if
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    endif
+    end if
 
     ctr = 0
     do i = 0, mpi_size - 1
@@ -1358,8 +1359,8 @@ contains
       if (nkl > 0) then
         dist_k(ctr + 1:ctr + nkl) = i
         ctr = ctr + nkl
-      endif
-    enddo
+      end if
+    end do
   end subroutine w90_distribute_kpts
 
 end module w90_library

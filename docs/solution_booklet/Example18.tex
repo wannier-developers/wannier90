@@ -6,7 +6,7 @@
 \end{itemize}
 
 \begin{itemize}
-	\item[1-6] {\it Compute the MLWFs and compute the energy eigenvalues and spin expectation values.} 
+	\item[1-6] {\it Compute the MLWFs and compute the energy eigenvalues and spin expectation values.}
 
 	These are the same six steps of Ex.~\ref{sec17:IronSO} and therefore the results are not going to be showed here again.
 \end{itemize}
@@ -25,7 +25,7 @@ with
 \begin{equation}
 \Omega_{n,\alpha\beta} = \varepsilon_{\alpha\beta\gamma}\Omega_{n,\gamma} = -2\;\mathrm{Im}\braket{\nabla_{k_\alpha}\unk \vert \nabla_{k_\beta}\unk},
 \end{equation}
-where the Greek letters indicate Cartesian coordinates, $\varepsilon_{\alpha\beta\gamma}$ is the Levi-Civita antisymmetric tensor, and $\ket{u_{n\bfk}}$s 
+where the Greek letters indicate Cartesian coordinates, $\varepsilon_{\alpha\beta\gamma}$ is the Levi-Civita antisymmetric tensor, and $\ket{u_{n\bfk}}$s
 are the cell-periodic Bloch functions.
 \end{itemize}
 
@@ -62,7 +62,7 @@ with this plane are shown.}\label{fig18.3}
 	\item {\it AHC converges rather slowly with k-point sampling, and a $25 \times 25 \times 25$ does not yield a well-converged value.
 	Compare the converged AHC value with those obtained in Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92}.}
 
-	The {\it x,y,z}-components of the AHC for a $25\times25\times25$ BZ mesh are shown in the snippet below. The converged result reported in Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92} for the \textit{z}-component is 756.76 ($(\Omega \mathrm{cm})^{-1}$). Hence, a $25\times25\times25$ BZ mesh clearly gives a very inaccurate value ($\sim 36.4\%$ error). Even with adaptive refinement the error is still very large ($\sim 31.7\%$). It is worth to note that the adaptive refinement slightly breaks the symmetry and gives non-zero values for the \textit{x}-component and \textit{y}-component, although these are opposite in sign.  
+	The {\it x,y,z}-components of the AHC for a $25\times25\times25$ BZ mesh are shown in the snippet below. The converged result reported in Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92} for the \textit{z}-component is 756.76 ($(\Omega \mathrm{cm})^{-1}$). Hence, a $25\times25\times25$ BZ mesh clearly gives a very inaccurate value ($\sim 36.4\%$ error). Even with adaptive refinement the error is still very large ($\sim 31.7\%$). It is worth to note that the adaptive refinement slightly breaks the symmetry and gives non-zero values for the \textit{x}-component and \textit{y}-component, although these are opposite in sign.
 
 \begin{tcolorbox}[title=Without adaptive refinement,sharp corners,boxrule=0.5pt]
 {\small
@@ -71,7 +71,7 @@ with this plane are shown.}\label{fig18.3}
  ------------------------------------------
 
    * Anomalous Hall conductivity
-  
+
  Interpolation grid: 25 25 25
 
  Fermi energy (ev):   12.6283
@@ -93,7 +93,7 @@ with this plane are shown.}\label{fig18.3}
  ------------------------------------------
 
    * Anomalous Hall conductivity
-  
+
  Regular interpolation grid: 25 25 25
    Adaptive refinement grid: 5 5 5
        Refinement threshold: Berry curvature >100.00 bohr^2
@@ -107,7 +107,7 @@ with this plane are shown.}\label{fig18.3}
 }
 \end{tcolorbox}
 
-Since these are quite demanding calculations, we only report the value of the AHC for a $125\times125\times125$ BZ mesh with a $5\times5\times5$ adaptive refinement grid (see snippet below). The value for the \textit{z}-component is 729.8276 $(\Omega \mathrm{cm})^{-1}$, which is in much closer agreement with the converged result from Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92}. Also, the magnitude of \textit{x,y}-component is greatly reduced as expected. 
+Since these are quite demanding calculations, we only report the value of the AHC for a $125\times125\times125$ BZ mesh with a $5\times5\times5$ adaptive refinement grid (see snippet below). The value for the \textit{z}-component is 729.8276 $(\Omega \mathrm{cm})^{-1}$, which is in much closer agreement with the converged result from Refs.~\onlinecite{PhysRevB74} and \onlinecite{PhysRevLett92}. Also, the magnitude of \textit{x,y}-component is greatly reduced as expected.
 
 \begin{tcolorbox}[title={$125\times125\times125$ BZ mesh with a $5\times5\times5$ adaptive refinement grid}]
 {\small
@@ -116,7 +116,7 @@ Since these are quite demanding calculations, we only report the value of the AH
  ------------------------------------------
 
    * Anomalous Hall conductivity
-  
+
  Regular interpolation grid: 125 125 125
    Adaptive refinement grid: 5 5 5
        Refinement threshold: Berry curvature >100.00 Ang^2
@@ -128,7 +128,7 @@ Since these are quite demanding calculations, we only report the value of the AH
  ==========    -0.2775     0.2775   729.8276
 \end{verbatim}
 }
-\end{tcolorbox} 
+\end{tcolorbox}
 \end{itemize}
 
 \begin{itemize}
@@ -136,14 +136,14 @@ Since these are quite demanding calculations, we only report the value of the AH
 
 From Ref.~\onlinecite{PhysRevB74}
 \begin{equation}
--2\;\mathrm{Im} G_{\alpha\beta} = J0 + J1 + J2, 
+-2\;\mathrm{Im} G_{\alpha\beta} = J0 + J1 + J2,
 \end{equation}
-where 
+where
 \begin{equation}
 G_{\alpha\beta} = Tr[(\partial_\alpha \hat{P})\hat{Q}\hat{H}\hat{Q}(\partial_\beta\hat{P})]
 \end{equation}
 
-The three components $J0, J1$ and $J2$ for the $k$-point sampling of $125\times125\times125$ and a $5\times5\times5$ adaptive refinement grid are shown in the snippet below 
+The three components $J0, J1$ and $J2$ for the $k$-point sampling of $125\times125\times125$ and a $5\times5\times5$ adaptive refinement grid are shown in the snippet below
 \end{itemize}
 \begin{tcolorbox}[sharp corners,boxrule=0.5pt]
 {\small
@@ -160,12 +160,12 @@ The three components $J0, J1$ and $J2$ for the $k$-point sampling of $125\times1
 \begin{itemize}
 	\item {\it The optical conductivity tensor of bcc Fe with magnetization along $\hat{\mathbf{z}}$ has the form }
 \begin{equation}
-\boldsymbol{\sigma} = \boldsymbol{\sigma}_\mathrm{S} + \boldsymbol{\sigma}_{\mathrm{A}} = 
-\begin{pmatrix} 
-\sigma_{xx} & 0                       & 0 \\ 
- 0          & \sigma_{yy}=\sigma_{xx}  & 0 \\ 
- 0          &  0                     & \sigma_{zz} 
-\end{pmatrix} + \begin{pmatrix} 0 & \sigma_{xy} & 0 \\ -\sigma_{yx} & 0 & 0 \\ 0 & 0 & 0 \end{pmatrix} 
+\boldsymbol{\sigma} = \boldsymbol{\sigma}_\mathrm{S} + \boldsymbol{\sigma}_{\mathrm{A}} =
+\begin{pmatrix}
+\sigma_{xx} & 0                       & 0 \\
+ 0          & \sigma_{yy}=\sigma_{xx}  & 0 \\
+ 0          &  0                     & \sigma_{zz}
+\end{pmatrix} + \begin{pmatrix} 0 & \sigma_{xy} & 0 \\ -\sigma_{yx} & 0 & 0 \\ 0 & 0 & 0 \end{pmatrix}
 \end{equation}
 
 	\item {\it
@@ -176,7 +176,7 @@ Compute the complex optical conductivity for $\hbar\omega$ up to $7$ eV
 
 The plot for the ac AHC is shown in \Fig{fig18.4}.
 
-\end{itemize} 
+\end{itemize}
 \begin{figure}[t!]
 \centering
 \includegraphics[width=0.7\columnwidth]{figure/example18/Fe-kubo_A_xy_125.pdf}
@@ -225,7 +225,7 @@ Below there is the extract from the output file {\tt Fe.wpout}. The result obtai
  ------------------------------------------
 
    * Anomalous Hall conductivity
-  
+
  Regular interpolation grid: 25 25 25
    Adaptive refinement grid: 5 5 5
        Refinement threshold: Berry curvature >100.00 bohr^2

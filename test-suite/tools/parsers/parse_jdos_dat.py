@@ -22,7 +22,7 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         if l.strip().startswith('#'):
             # Skip headers
             continue
@@ -33,7 +33,7 @@ def parse(fname):
             # skip blank line
             continue
 
-        if len(pieces) == 2 : 
+        if len(pieces) == 2 :
             retdict['energy'].append(float(pieces[0]))
             retdict['jdos'].append(float(pieces[1]))
         else:

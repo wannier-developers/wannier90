@@ -115,17 +115,17 @@ program wannier
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: mpi_init() returned an error!'
     stop
-  endif
+  end if
   call mpi_comm_rank(mpi_comm_world, rank, ierr) ! the type of comm_world depends on interface used
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: mpi_comm_rank() returned an error!'
     stop
-  endif
+  end if
   call mpi_comm_size(mpi_comm_world, mpisize, ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: mpi_comm_size() returned an error!'
     stop
-  endif
+  end if
   call w90_set_comm(common_data, mpi_comm_world)
 #else
   rank = 0
@@ -166,7 +166,7 @@ program wannier
     call mpi_finalize(ierr)
 #endif
     stop
-  endif
+  end if
 
   ! test mpi error handling using "unlucky" input token
   if (rank == -common_data%print_output%timing_level) then
@@ -174,14 +174,14 @@ program wannier
   else
     ! this is necessary since non-root may never enter an mpi collective if root has exited here
     call comms_sync_error(common_data%comm, error, 0)
-  endif
+  end if
   if (allocated(error)) then ! applies (is t) for all ranks now
     call prterr(error, ierr, stdout, stderr, common_data%comm)
 #ifdef MPI
     call mpi_finalize(ierr) ! let's be nice
 #endif
     stop
-  endif
+  end if
   ! end unlucky code
 
   ! setup kpoint distribution
@@ -189,7 +189,7 @@ program wannier
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate dist_k array!'
     stop
-  endif
+  end if
   ! get a basic k-point/rank distribution
   call w90_distribute_kpts(common_data, nk, mpisize, dist_k, stdout, stderr, ierr)
   if (ierr /= 0) stop
@@ -205,8 +205,8 @@ program wannier
       write (stderr, *) 'Wannier90: failed to setup symmetry!'
       deallocate (error)
       stop
-    endif
-  endif
+    end if
+  end if
 
   call w90_get_nn(common_data, nn, stdout, stderr, ierr)
   nkl = count(dist_k == rank) ! number of kpoints this rank
@@ -216,21 +216,21 @@ program wannier
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate m_matrix_loc!'
     stop
-  endif
+  end if
   call w90_set_m_local(common_data, m_matrix_loc)  ! we don't need global m
 
   allocate (u_matrix(nw, nw, nk), stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate u_matrix!'
     stop
-  endif
+  end if
   call w90_set_u_matrix(common_data, u_matrix)
 
   allocate (u_matrix_opt(nb, nw, nk), stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate u_matrix_opt!'
     stop
-  endif
+  end if
   call w90_set_u_opt(common_data, u_matrix_opt)
 
 ! restart system
@@ -270,8 +270,8 @@ program wannier
       ltran = .true.
       !else
       ! illegitimate restart choice, should declaim the acceptable choices
-    endif
-  endif
+    end if
+  end if
   ltran = (ltran .or. common_data%w90_calculation%transport)
   ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
 
@@ -288,25 +288,25 @@ program wannier
     if (ierr /= 0) then
       write (stderr, *) 'Wannier90: failed to allocate eigval array!'
       stop
-    endif
+    end if
     call read_eigvals(common_data, eigval, stdout, stderr, ierr)
     if (ierr /= 0) stop
     call w90_set_eigval(common_data, eigval)
-  endif
+  end if
 
   ! ends setup
 
   if (lovlp) then
     call overlaps(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-  endif
+  end if
 
   if (ldsnt) then
     call w90_disentangle(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
     call write_chkpt(common_data, 'postdis', stdout, stderr, ierr)
     if (ierr /= 0) stop
-  endif
+  end if
 
   if (lwann) then
     call w90_project_overlap(common_data, stdout, stderr, ierr)
@@ -315,17 +315,17 @@ program wannier
     if (ierr /= 0) stop
     call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
     if (ierr /= 0) stop
-  endif
+  end if
 
   if (lplot) then
     call w90_plot(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-  endif
+  end if
 
   if (ltran) then
     call w90_transport(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
-  endif
+  end if
 
   ! cleanup
 
@@ -334,28 +334,28 @@ program wannier
     if (ierr /= 0) then
       write (stderr, *) 'Wannier90: failed to deallocate eigval array!'
       stop
-    endif
-  endif
+    end if
+  end if
   deallocate (dist_k, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate dist_k array!'
     stop
-  endif
+  end if
   deallocate (m_matrix_loc, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate m_matrix_loc!'
     stop
-  endif
+  end if
   deallocate (u_matrix, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate u_matrix!'
     stop
-  endif
+  end if
   deallocate (u_matrix_opt, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate u_matrix_opt!'
     stop
-  endif
+  end if
 
   call print_times(common_data, stdout)
 
@@ -363,7 +363,7 @@ program wannier
     close (unit=stderr, status='delete')
     write (stdout, '(1x,a)') 'All done: wannier90 exiting'
     close (unit=stdout)
-  endif
+  end if
 
 #ifdef MPI
   call mpi_finalize(ierr)

@@ -42,7 +42,7 @@ module w90_kmesh
   use w90_constants, only: dp
   use w90_types, only: max_shells, num_nnmax ! used for dimensioning
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_file
+                       set_error_input, set_error_file
   use w90_comms, only: w90_comm_type
 
   implicit none
@@ -72,7 +72,7 @@ contains
 
   !================================================
   subroutine kmesh_get(kmesh_input, kmesh_info, print_output, kpt_latt, real_lattice, num_kpts, &
-                       gamma_only, stdout, timer, error, comm)
+                       gamma_only, seedname, stdout, timer, error, comm)
     !================================================
     !
     !! Main routine to calculate the b-vectors
@@ -81,7 +81,7 @@ contains
 
     use w90_constants, only: eps6
     use w90_utility, only: utility_compar, utility_recip_lattice, utility_frac_to_cart, &
-      utility_cart_to_frac, utility_inverse_mat
+                           utility_cart_to_frac, utility_inverse_mat
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_info_type, kmesh_input_type, print_output_type, timer_list_type
 
@@ -95,6 +95,7 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
+    character(len=*), intent(in)  :: seedname
     integer, intent(in) :: num_kpts
     integer, intent(in) :: stdout
     real(kind=dp), intent(in) :: real_lattice(3, 3)
@@ -102,14 +103,15 @@ contains
     logical, intent(in) :: gamma_only
 
     ! local variables
-    real(kind=dp), allocatable :: bvec_tmp(:, :)
+    real(kind=dp), allocatable :: bvec_tmp(:, :), bvec_inp(:, :, :) ! bvec_inp is allocated in kmesh_shell_from_file()
     real(kind=dp), allocatable :: kpt_cart(:, :)
     real(kind=dp), allocatable :: bk_local(:, :, :)
     real(kind=dp), parameter :: eta = 99999999.0_dp    ! eta = very large
     real(kind=dp) :: dist, dnn0, dnn1, bb1, bbn, ddelta
     real(kind=dp) :: dnn(max(kmesh_input%search_shells, 6*kmesh_input%higher_order_n))
     real(kind=dp) :: recip_lattice(3, 3), volume
-    real(kind=dp) :: vkpp(3), vkpp2(3)
+    real(kind=dp) :: vkpp(3), vkpp2(3), kpbvec(3)
+    integer :: bnum, nbvec ! context of kmesh_input%kmesh_shell_from_file
 
     ! higher-order finite-difference
     integer, allocatable :: lmn(:, :) ! Order in which to search the cells (ordered in dist from origin)
@@ -133,19 +135,19 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating bk_local in kmesh_get', comm)
       return
-    endif
+    end if
 
     allocate (lmn(3, (2*kmesh_input%search_supcell_size + 1)**3), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating lmn in kmesh_get', comm)
       return
-    endif
+    end if
 
     allocate (nnshell(num_kpts, max(kmesh_input%search_shells, 6*kmesh_input%higher_order_n)), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating nnshell in kmesh_get', comm)
       return
-    endif
+    end if
 
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
     call utility_inverse_mat(recip_lattice, inv_lattice)
@@ -159,10 +161,10 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating kpt_cart in kmesh_get', comm)
       return
-    endif
+    end if
     do nkp = 1, num_kpts
       call utility_frac_to_cart(kpt_latt(:, nkp), kpt_cart(:, nkp), recip_lattice)
-    enddo
+    end do
 
     ! find the distance between k-point 1 and its nearest-neighbour shells
     ! if we have only one k-point, the n-neighbours are its periodic images
@@ -187,14 +189,14 @@ contains
               counter = counter + 1 ! count the multiplicity of the shell
             end if
           end if
-        enddo
-      enddo
+        end do
+      end do
       if (dnn1 .lt. eta - kmesh_input%tol) ndnntot = ndnntot + 1
       dnn(nlist) = dnn1
       multi(nlist) = counter
       dnn0 = dnn1
       dnn1 = eta
-    enddo
+    end do
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
@@ -206,13 +208,13 @@ contains
       else
         write (stdout, '(1x,a)') '|          Shell             Distance (Bohr^-1)         Multiplicity         |'
         write (stdout, '(1x,a)') '|          -----             ------------------         ------------         |'
-      endif
+      end if
       do ndnn = 1, ndnntot
         write (stdout, '(1x,a,11x,i3,17x,f10.6,19x,i4,12x,a)') '|', ndnn, &
           dnn(ndnn)/print_output%lenconfac, multi(ndnn), '|'
-      enddo
+      end do
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
-    endif
+    end if
 
     if (print_output%iprint >= 4) then
       ! Write out all the bvectors
@@ -221,13 +223,13 @@ contains
         write (stdout, '(1x,a)') '|         Complete list of b-vectors and their lengths                       |'
         write (stdout, '(1x,"|",76(" "),"|")')
         write (stdout, '(1x,"+",76("-"),"+")')
-      endif
+      end if
 
       allocate (bvec_tmp(3, maxval(multi)), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating bvec_tmp in kmesh_get', comm)
         return
-      endif
+      end if
       bvec_tmp = 0.0_dp
       counter = 0
       do shell = 1, kmesh_input%search_shells
@@ -246,17 +248,20 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating bvec_tmp in kmesh_get', comm)
         return
-      endif
+      end if
       if (print_output%iprint > 0) write (stdout, '(1x,"|",76(" "),"|")')
       if (print_output%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
     end if
 
     ! Get the shell weights to satisfy the B1 condition
-    !if (index(print_output%devel_flag, 'kmesh_degen') > 0) then
-    !  call kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
-    !                             recip_lattice, lmn, multi, num_kpts, seedname, stdout)
-    !else
-    if (kmesh_input%num_shells == 0) then
+    if (kmesh_input%kmesh_shell_from_file) then
+      ! note: B1 condition is not tested in kmesh_shell_from_file(); test occurs below
+      call kmesh_shell_from_file(kmesh_input, print_output, bvec_inp, bweight, dnn, kpt_cart, &
+                                 recip_lattice, lmn, multi, num_kpts, seedname, stdout, timer, &
+                                 error, comm)
+      if (allocated(error)) return
+
+    elseif (kmesh_input%num_shells == 0) then
       call kmesh_shell_automatic(kmesh_input, print_output, bweight, dnn, kpt_cart, recip_lattice, &
                                  lmn, multi, num_kpts, stdout, timer, error, comm)
       if (allocated(error)) return
@@ -274,22 +279,22 @@ contains
         write (stdout, '(1x,a)', advance='no') '| The following shells and their multiples are used: '
       else
         write (stdout, '(1x,a)', advance='no') '| The following shells are used:                     '
-      endif
+      end if
       do ndnn = 1, kmesh_input%num_shells
         if (ndnn .eq. kmesh_input%num_shells) then
           write (stdout, '(i3,1x)', advance='no') kmesh_input%shell_list(ndnn)
         else
           write (stdout, '(i3,",")', advance='no') kmesh_input%shell_list(ndnn)
-        endif
-      enddo
+        end if
+      end do
       do l = 1, 6 - kmesh_input%num_shells
         write (stdout, '(4x)', advance='no')
-      enddo
+      end do
       if (kmesh_input%higher_order_nearest_shells) then
         write (stdout, '(20x)', advance='no')
-      endif
+      end if
       write (stdout, '("|")')
-    endif
+    end if
     !end if
 
     kmesh_info%nntot = 0
@@ -308,7 +313,7 @@ contains
         write (stdout, '(a)') ' '
         write (stdout, '(a)') ' The problem may be caused by having accidentally degenerate shells of '
         write (stdout, '(a)') ' kpoints. The solution is then to rerun wannier90 specifying the b-vectors '
-        write (stdout, '(a)') ' in each shell.  Give devel_flag=kmesh_degen in the *.win file'
+        write (stdout, '(a)') ' in each shell.  Give kmesh_shell_from_file=T in the *.win file'
         write (stdout, '(a)') ' and create a *.kshell file:'
         write (stdout, '(a)') ' '
         write (stdout, '(a)') ' $>   cat hexagonal.kshell'
@@ -319,13 +324,13 @@ contains
         write (stdout, '(a)') ' The elements are the bvectors labelled according to the following '
         write (stdout, '(a)') ' list (last column is distance)'
         write (stdout, '(a)') ' '
-      endif
+      end if
 
       allocate (bvec_tmp(3, maxval(multi)), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating bvec_tmp in kmesh_get', comm)
         return
-      endif
+      end if
       bvec_tmp = 0.0_dp
       counter = 0
       do shell = 1, kmesh_input%search_shells
@@ -344,52 +349,52 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating bvec_tmp in kmesh_get', comm)
         return
-      endif
+      end if
 
       call set_error_fatal(error, 'kmesh_get: something wrong, found too many nearest neighbours', comm)
       return
     end if
 
     ! higher-order algorithm: include 2b, 3b, ..., Nb shells, and modify bweights
+    ! jj fixmeare these branches really separate?
     if (kmesh_input%higher_order_nearest_shells) then
       write (stdout, '(a)') ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
         ' | not been extensively tested.                                               |'
     else
       ! update nntot
       kmesh_info%nntot = kmesh_info%nntot*kmesh_input%higher_order_n
-    endif
+    end if
 
     allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating nnlist in kmesh_get', comm)
       return
-    endif
+    end if
     allocate (kmesh_info%neigh(num_kpts, kmesh_info%nntot/2), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating neigh in kmesh_get', comm)
       return
-    endif
+    end if
     allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating nncell in kmesh_get', comm)
       return
-    endif
-
+    end if
     allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating wb in kmesh_get', comm)
       return
-    endif
+    end if
     allocate (kmesh_info%bka(3, kmesh_info%nntot/2), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating bka in kmesh_get', comm)
       return
-    endif
+    end if
     allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating bk in kmesh_get', comm)
       return
-    endif
+    end if
 
     nnx = 0
     do loop_s = 1, kmesh_input%num_shells
@@ -410,7 +415,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
       write (stdout, '(1x,a)') '|                        -----   --------------------                        |'
-    endif
+    end if
     !if (index(print_output%devel_flag, 'kmesh_degen') == 0) then
     !
     ! Standard routine
@@ -435,11 +440,11 @@ contains
               kmesh_info%nncell(2, nkp, nnx) = m
               kmesh_info%nncell(3, nkp, nnx) = n
               bk_local(:, nnx, nkp) = vkpp(:) - kpt_cart(:, nkp)
-            endif
+            end if
             !if we have the right number of neighbours we can exit
             if (nnshell(nkp, ndnn) == multi(ndnn)) cycle ok
-          enddo
-        enddo
+          end do
+        end do
         ! check to see if too few neighbours here
       end do ok
     end do
@@ -497,20 +502,20 @@ contains
                   kmesh_info%nncell(1, nkp, nnx2) = lmn_temp(1)
                   kmesh_info%nncell(2, nkp, nnx2) = lmn_temp(2)
                   kmesh_info%nncell(3, nkp, nnx2) = lmn_temp(3)
-                endif
-              enddo
+                end if
+              end do
               if (counter == 0) then
                 call set_error_fatal(error, 'Could not find Nb vectors', comm)
-              endif
+              end if
               if (counter >= 2) then
                 call set_error_fatal(error, 'Error in kmesh_get, try to modify tolerance in utility_compar', comm)
-              endif
-            enddo
+              end if
+            end do
             multi_cumulative = multi_cumulative + multi(ndnn)
-          enddo
-        enddo
-      enddo
-    endif
+          end do
+        end do
+      end do
+    end if
     nnx = 0
     do loop_s = 1, kmesh_input%num_shells
       do loop_b = 1, multi(kmesh_input%shell_list(loop_s))
@@ -519,67 +524,63 @@ contains
       end do
     end do
 
-    !else
-    !
-    ! incase we set the bvectors explicitly
-    !
-    !nnshell = 0
-    !do nkp = 1, num_kpts
-    !  nnx = 0
-    !  ok2: do loop = 1, (2*kmesh_input%search_supcell_size + 1)**3
-    !    l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
-    !    vkpp2 = matmul(lmn(:, loop), recip_lattice)
-    !    do nkp2 = 1, num_kpts
-    !      vkpp = vkpp2 + kpt_cart(:, nkp2)
-    !      bnum = 0
-    !      do ndnnx = 1, kmesh_input%num_shells
-    !        do nbvec = 1, multi(ndnnx)
-    !          bnum = bnum + 1
-    !          kpbvec = kpt_cart(:, nkp) + bvec_inp(:, nbvec, ndnnx)
-    !          dist = sqrt((kpbvec(1) - vkpp(1))**2 &
-    !                      + (kpbvec(2) - vkpp(2))**2 + (kpbvec(3) - vkpp(3))**2)
-    !          if (abs(dist) < kmesh_input%tol) then
-    !            nnx = nnx + 1
-    !            nnshell(nkp, ndnnx) = nnshell(nkp, ndnnx) + 1
-    !            kmesh_info%nnlist(nkp, bnum) = nkp2
-    !            kmesh_info%nncell(1, nkp, bnum) = l
-    !            kmesh_info%nncell(2, nkp, bnum) = m
-    !            kmesh_info%nncell(3, nkp, bnum) = n
-    !            bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
-    !          endif
-    !        enddo
-    !      end do
-    !      if (nnx == sum(multi)) exit ok2
-    !    end do
-    !  enddo ok2
-    ! check to see if too few neighbours here
-    !end do
-
-    !end if
+    if (kmesh_input%kmesh_shell_from_file) then
+      ! JJ fixme, this set of actions should be moved to the kmesh_shell_from_file function and clean up
+      nnshell = 0
+      do nkp = 1, num_kpts
+        nnx = 0
+        ok2: do loop = 1, (2*kmesh_input%search_supcell_size + 1)**3
+          l = lmn(1, loop); m = lmn(2, loop); n = lmn(3, loop)
+          vkpp2 = matmul(lmn(:, loop), recip_lattice)
+          do nkp2 = 1, num_kpts
+            vkpp = vkpp2 + kpt_cart(:, nkp2)
+            bnum = 0
+            do ndnnx = 1, kmesh_input%num_shells
+              do nbvec = 1, multi(ndnnx)
+                bnum = bnum + 1
+                kpbvec = kpt_cart(:, nkp) + bvec_inp(:, nbvec, ndnnx)
+                dist = sqrt((kpbvec(1) - vkpp(1))**2 &
+                            + (kpbvec(2) - vkpp(2))**2 + (kpbvec(3) - vkpp(3))**2)
+                if (abs(dist) < kmesh_input%tol) then
+                  nnx = nnx + 1
+                  nnshell(nkp, ndnnx) = nnshell(nkp, ndnnx) + 1
+                  kmesh_info%nnlist(nkp, bnum) = nkp2
+                  kmesh_info%nncell(1, nkp, bnum) = l
+                  kmesh_info%nncell(2, nkp, bnum) = m
+                  kmesh_info%nncell(3, nkp, bnum) = n
+                  bk_local(:, bnum, nkp) = bvec_inp(:, nbvec, ndnnx)
+                end if
+              end do
+            end do
+            if (nnx == sum(multi)) exit ok2
+          end do
+        end do ok2
+      end do
+    end if ! kmesh_shell_from_file
 
     if (kmesh_input%higher_order_n .eq. 1 .or. kmesh_input%higher_order_nearest_shells) then
       do ndnnx = 1, kmesh_input%num_shells
         ndnn = kmesh_input%shell_list(ndnnx)
         if (print_output%iprint > 0) then
           write (stdout, '(1x,a,24x,i3,13x,i3,33x,a)') '|', ndnn, nnshell(1, ndnn), '|'
-        endif
+        end if
       end do
     else
       do ndnnx = 1, num_first_shells
         ndnn = kmesh_input%shell_list(ndnnx)
         if (print_output%iprint > 0) then
           write (stdout, '(1x,a,24x,i3,13x,i3,33x,a)') '|', ndnn, nnshell(1, ndnn), '|'
-        endif
+        end if
       end do
       do i = 2, kmesh_input%higher_order_n
         do ndnnx = 1, num_first_shells
           ndnn = kmesh_input%shell_list(ndnnx)
           if (print_output%iprint > 0) then
             write (stdout, '(1x,a,20x,i3,a,i2,13x,i3,33x,a)') '|', i, ' x', ndnn, nnshell(1, ndnn), '|'
-          endif
+          end if
         end do
       end do
-    endif
+    end if
     if (print_output%iprint > 0) write (stdout, '(1x,"+",76("-"),"+")')
 
     do nkp = 1, num_kpts
@@ -593,15 +594,15 @@ contains
           do i = 1, 3
             bb1 = bb1 + bk_local(i, nnx, 1)*bk_local(i, nnx, 1)
             bbn = bbn + bk_local(i, nnx, nkp)*bk_local(i, nnx, nkp)
-          enddo
+          end do
           if (abs(sqrt(bb1) - sqrt(bbn)) .gt. kmesh_input%tol) then
             if (print_output%iprint > 0) write (stdout, '(1x,2f10.6)') bb1, bbn
             call set_error_fatal(error, 'Non-symmetric k-point neighbours!', comm)
             return
-          endif
-        enddo
-      enddo
-    enddo
+          end if
+        end do
+      end do
+    end do
 
     ! now check that the completeness relation is satisfied for every kpoint
     ! We know it is true for kpt=1; but we check the rest to be safe.
@@ -625,8 +626,8 @@ contains
                   .and. (2*i + 1)*(l + 1) - (l + 1)*l/2 > j - 1) then
                 num_z(j) = l
                 exit
-              endif
-            enddo
+              end if
+            end do
             num_y(j) = j - 1 - ((2*i + 1)*num_z(j) - num_z(j)*(num_z(j) - 1)/2)
             num_x(j) = 2*i - num_y(j) - num_z(j)
             ddelta = 0.0_dp
@@ -637,31 +638,31 @@ contains
                 nnx = nnx + 1
                 ddelta = ddelta + wb_local(nnx)*(bk_local(1, nnx, nkp)**num_x(j)) &
                          *(bk_local(2, nnx, nkp)**num_y(j))*(bk_local(3, nnx, nkp)**num_z(j))
-              enddo
-            enddo
+              end do
+            end do
             if (i .eq. 1 .and. (j .eq. 1 .or. j .eq. 3 .or. j .eq. 6)) then
               if (abs(ddelta - 1.0_dp) .gt. kmesh_input%tol) then
                 if (print_output%iprint > 0) write (stdout, '(1x,3i3,f12.8)') num_x(j), num_y(j), num_z(j), ddelta
                 call set_error_fatal(error, 'Eq. (B1) not satisfied in kmesh_get (1)', comm)
-              endif
+              end if
             else
               if (abs(ddelta) .gt. kmesh_input%tol) then
                 if (print_output%iprint > 0) write (stdout, '(1x,3i3,f12.8)') num_x(j), num_y(j), num_z(j), ddelta
                 call set_error_fatal(error, 'Eq. (B1) not satisfied in kmesh_get (2)', comm)
-              endif
+              end if
             end if
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
     end if
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '| Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |'
       if ((kmesh_input%higher_order_nearest_shells) .and. (kmesh_input%higher_order_n .gt. 1)) then
         write (stdout, '(1x,a)') '| Completeness relations for higher-order are fully satisfied                |'
-      endif
+      end if
       write (stdout, '(1x,"+",76("-"),"+")')
-    endif
+    end if
 
     !
     kmesh_info%wbtot = 0.0_dp
@@ -671,8 +672,8 @@ contains
       do nnsh = 1, nnshell(1, ndnn)
         nnx = nnx + 1
         kmesh_info%wbtot = kmesh_info%wbtot + wb_local(nnx)
-      enddo
-    enddo
+      end do
+    end do
 
     kmesh_info%nnh = kmesh_info%nntot/2
     ! make list of bka vectors from neighbours of first k-point
@@ -684,20 +685,20 @@ contains
         do nap = 1, na
           call utility_compar(kmesh_info%bka(1, nap), bk_local(1, nn, 1), ifpos, ifneg)
           if (ifneg .eq. 1) ifound = 1
-        enddo
-      endif
+        end do
+      end if
       if (ifound .eq. 0) then
         !         found new vector to add to set
         na = na + 1
         kmesh_info%bka(1, na) = bk_local(1, nn, 1)
         kmesh_info%bka(2, na) = bk_local(2, nn, 1)
         kmesh_info%bka(3, na) = bk_local(3, nn, 1)
-      endif
-    enddo
+      end if
+    end do
     if (na .ne. kmesh_info%nnh) then
       call set_error_fatal(error, 'Did not find right number of bk directions', comm)
       return
-    endif
+    end if
 
     if (print_output%iprint > 0) then
       if (print_output%lenconfac .eq. 1.0_dp) then
@@ -706,13 +707,13 @@ contains
       else
         write (stdout, '(1x,a)') '|                 b_k Vectors (Bohr^-1) and Weights (Bohr^2)                 |'
         write (stdout, '(1x,a)') '|                 ------------------------------------------                 |'
-      endif
+      end if
       write (stdout, '(1x,a)') '|            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |'
       write (stdout, '(1x,a)') '|            ---        --------------------------------     --------        |'
       do i = 1, kmesh_info%nntot
         write (stdout, '(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') &
           i, (bk_local(j, i, 1)/print_output%lenconfac, j=1, 3), wb_local(i)*print_output%lenconfac**2
-      enddo
+      end do
       write (stdout, '(1x,"+",76("-"),"+")')
       if (print_output%lenconfac .eq. 1.0_dp) then
         write (stdout, '(1x,a)') '|                           b_k Directions (Ang^-1)                          |'
@@ -720,15 +721,15 @@ contains
       else
         write (stdout, '(1x,a)') '|                           b_k Directions (Bohr^-1)                         |'
         write (stdout, '(1x,a)') '|                           ------------------------                         |'
-      endif
+      end if
       write (stdout, '(1x,a)') '|            No.           x           y           z                         |'
       write (stdout, '(1x,a)') '|            ---        --------------------------------                     |'
       do i = 1, kmesh_info%nnh
         write (stdout, '(1x,"|",11x,i3,5x,3f12.6,21x,"|")') i, (kmesh_info%bka(j, i)/print_output%lenconfac, j=1, 3)
-      enddo
+      end do
       write (stdout, '(1x,"+",76("-"),"+")')
       write (stdout, *) ' '
-    endif
+    end if
 
     ! find index array
     do nkp = 1, num_kpts
@@ -739,15 +740,15 @@ contains
         do nn = 1, kmesh_info%nntot
           call utility_compar(kmesh_info%bka(1, na), bk_local(1, nn, nkp), ifpos, ifneg)
           if (ifpos .eq. 1) kmesh_info%neigh(nkp, na) = nn
-        enddo
+        end do
         ! check found
         if (kmesh_info%neigh(nkp, na) .eq. 0) then
           if (print_output%iprint > 0) write (stdout, *) ' nkp,na=', nkp, na
           call set_error_fatal(error, 'kmesh_get: failed to find neighbours for this kpoint', comm)
           return
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
 
     !fill in the global arrays from the local ones
 
@@ -768,19 +769,19 @@ contains
       if (num_kpts .ne. 1) then
         call set_error_input(error, 'Error in kmesh_get: wrong choice of gamma_only option', comm)
         return
-      endif
+      end if
 
       ! reassign nnlist, nncell, wb, bk
       allocate (nnlist_tmp(num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating nnlist_tmp in kmesh_get', comm)
         return
-      endif
+      end if
       allocate (nncell_tmp(3, num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating nncell_tmp in kmesh_get', comm)
         return
-      endif
+      end if
 
       nnlist_tmp(:, :) = kmesh_info%nnlist(:, :)
       nncell_tmp(:, :, :) = kmesh_info%nncell(:, :, :)
@@ -789,22 +790,22 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating nnlist in kmesh_get', comm)
         return
-      endif
+      end if
       deallocate (kmesh_info%nncell, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating nncell in kmesh_get', comm)
         return
-      endif
+      end if
       deallocate (kmesh_info%wb, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating wb in kmesh_get', comm)
         return
-      endif
+      end if
       deallocate (kmesh_info%bk, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating bk in kmesh_get', comm)
         return
-      endif
+      end if
 
       kmesh_info%nntot = kmesh_info%nntot/2
 
@@ -812,22 +813,22 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating nnlist in kmesh_get', comm)
         return
-      endif
+      end if
       allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating nncell in kmesh_get', comm)
         return
-      endif
+      end if
       allocate (kmesh_info%wb(kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating wb in kmesh_get', comm)
         return
-      endif
+      end if
       allocate (kmesh_info%bk(3, kmesh_info%nntot, num_kpts), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating bk in kmesh_get', comm)
         return
-      endif
+      end if
 
       na = 0
       do nn = 1, 2*kmesh_info%nntot
@@ -836,8 +837,8 @@ contains
           do nap = 1, na
             call utility_compar(kmesh_info%bk(1, nap, 1), bk_local(1, nn, 1), ifpos, ifneg)
             if (ifneg .eq. 1) ifound = 1
-          enddo
-        endif
+          end do
+        end if
         if (ifound .eq. 0) then
           !         found new vector to add to set
           na = na + 1
@@ -855,14 +856,14 @@ contains
           if (ifpos .ne. 1) then
             call set_error_input(error, 'Error in kmesh_get: bk is not identical to bka in gamma_only option', comm)
             return
-          endif
-        endif
-      enddo
+          end if
+        end if
+      end do
 
       if (na .ne. kmesh_info%nnh) then
         call set_error_fatal(error, 'Did not find right number of b-vectors in gamma_only option', comm)
         return
-      endif
+      end if
 
       if (print_output%iprint > 0) then
         write (stdout, '(1x,"+",76("-"),"+")')
@@ -874,29 +875,29 @@ contains
         else
           write (stdout, '(1x,a)') '|                 b_k Vectors (Bohr^-1) and Weights (Bohr^2)                 |'
           write (stdout, '(1x,a)') '|                 ------------------------------------------                 |'
-        endif
+        end if
         write (stdout, '(1x,a)') '|            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |'
         write (stdout, '(1x,a)') '|            ---        --------------------------------     --------        |'
         do i = 1, kmesh_info%nntot
           write (stdout, '(1x,"|",11x,i3,5x,3f12.6,3x,f10.6,8x,"|")') &
             i, (kmesh_info%bk(j, i, 1)/print_output%lenconfac, j=1, 3), kmesh_info%wb(i)*print_output%lenconfac**2
-        enddo
+        end do
         write (stdout, '(1x,"+",76("-"),"+")')
         write (stdout, *) ' '
-      endif
+      end if
 
       deallocate (nnlist_tmp, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating nnlist_tmp in kmesh_get', comm)
         return
-      endif
+      end if
       deallocate (nncell_tmp, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating nncell_tmp in kmesh_get', comm)
         return
-      endif
+      end if
 
-    endif
+    end if
 ![ysl-e]
 
     ! JJ, is use_ss_functional necessarily defined here, or must it be moved to "special"
@@ -909,31 +910,31 @@ contains
       call kmesh_bvectors_perm(kmesh_info%bk(:, :, :), kmesh_info%bk(:, :, 1), num_kpts, &
                                kmesh_info%nntot, kmesh_info%nnord, kmesh_info%nninv, &
                                kmesh_info%nnrev, error, comm)
-    endif
+    end if
 
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error deallocating kpt_cart in kmesh_get', comm)
       return
-    endif
+    end if
 
     deallocate (bk_local, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating bk_local in kmesh_get', comm)
       return
-    endif
+    end if
 
     deallocate (lmn, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating lmn in kmesh_get', comm)
       return
-    endif
+    end if
 
     deallocate (nnshell, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating nnshell in kmesh_get', comm)
       return
-    endif
+    end if
 
     if (print_output%timing_level > 0) call io_stopwatch_stop('kmesh: get', timer)
 
@@ -976,7 +977,7 @@ contains
     use w90_io, only: io_date, io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_recip_lattice_base
     use w90_types, only: kmesh_info_type, kmesh_input_type, &
-      proj_type, print_output_type, timer_list_type
+                         proj_type, print_output_type, timer_list_type
 
     implicit none
 
@@ -1029,7 +1030,7 @@ contains
     write (nnkpout, '(i6)') num_kpts
     do nkp = 1, num_kpts
       write (nnkpout, '(3f14.8)') (kpt_latt(i, nkp), i=1, 3)
-    enddo
+    end do
     write (nnkpout, '(a/)') 'end kpoints'
 
     if (spinors) then
@@ -1048,7 +1049,7 @@ contains
           write (nnkpout, '(2x,1i3,1x,3f11.7)') &
             proj(i)%s, &
             proj(i)%s_qaxis(1), proj(i)%s_qaxis(2), proj(i)%s_qaxis(3)
-        enddo
+        end do
       else
         ! No projections
         write (nnkpout, '(i6)') 0
@@ -1067,13 +1068,13 @@ contains
             proj(i)%z(1), proj(i)%z(2), proj(i)%z(3), &
             proj(i)%x(1), proj(i)%x(2), proj(i)%x(3), &
             proj(i)%zona
-        enddo
+        end do
       else
         ! No projections
         write (nnkpout, '(i6)') 0
       end if
       write (nnkpout, '(a/)') 'end projections'
-    endif
+    end if
 
     ! Info for automatic generation of projections
     if (lauto_proj) then
@@ -1103,7 +1104,7 @@ contains
       do i = 1, num_exclude_bands
         write (nnkpout, '(i4)') exclude_bands(i)
       end do
-    endif
+    end if
     write (nnkpout, '(a)') 'end exclude_bands'
 
     close (nnkpout)
@@ -1138,21 +1139,21 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating bk in kmesh_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(kmesh_info%bka)) then
       deallocate (kmesh_info%bka, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating bka in kmesh_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(kmesh_info%wb)) then
       deallocate (kmesh_info%wb, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
         return
-      endif
+      end if
     end if
 
     ! Deallocate integer arrays that are public
@@ -1161,22 +1162,22 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating neigh in kmesh_dealloc', comm)
         return
-      endif
+      end if
     end if
     if (allocated(kmesh_info%nncell)) then
       deallocate (kmesh_info%nncell, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating nncell in kmesh_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
     if (allocated(kmesh_info%nnlist)) then
       deallocate (kmesh_info%nnlist, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating nnlist in kmesh_dealloc', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
     return
 
@@ -1288,16 +1289,16 @@ contains
         if ((dist .ge. shell_dist*(1.0_dp - kmesh_input%tol)) .and. dist .le. shell_dist*(1.0_dp + kmesh_input%tol)) then
           num_bvec = num_bvec + 1
           bvector(:, num_bvec) = vkpp(:) - kpt_cart(:, kpt)
-        endif
+        end if
         !if we have the right number of neighbours we can exit
         if (num_bvec == multi) cycle ok
-      enddo
-    enddo ok
+      end do
+    end do ok
 
     if (num_bvec < multi) then
       call set_error_fatal(error, 'kmesh_get_bvector: Not enough bvectors found', comm)
       return
-    endif
+    end if
 
     if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: get_bvectors', timer)
 
@@ -1360,7 +1361,7 @@ contains
       higher_order_n_local = kmesh_input%higher_order_n
     else
       higher_order_n_local = 1 !find 1st-order b and weights first in this subroutine
-    endif
+    end if
     target = 0.0_dp; target(1) = 1.0_dp; target(3) = 1.0_dp; target(6) = 1.0_dp
 
     if (print_output%timing_level > 1) call io_stopwatch_start('kmesh: shell_automatic', timer)
@@ -1368,12 +1369,12 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating bvector in kmesh_shell_automatic', comm)
       return
-    endif
+    end if
     bvector = 0.0_dp; bweight = 0.0_dp
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are chosen automatically                                     |'
-    endif
+    end if
 
     ! note allocation of kmesh_input%shell list in subroutine w90_readwrite_read_kmesh_data()
     ! kmesh_input%num_shells = 0 in same place
@@ -1427,47 +1428,47 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (tmp1(kmesh_input%max_shells_aux), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (tmp2(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (tmp3(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (amat(kmesh_input%max_shells_aux, kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (umat(kmesh_input%max_shells_aux, kmesh_input%max_shells_aux), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating umat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (vmat(kmesh_input%num_shells, kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating vmat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (smat(kmesh_input%num_shells, kmesh_input%max_shells_aux), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating smat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       allocate (singv(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating singv in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       amat(:, :) = 0.0_dp; umat(:, :) = 0.0_dp; vmat(:, :) = 0.0_dp; smat(:, :) = 0.0_dp; singv(:) = 0.0_dp
 
       num_of_eqs = (1 + higher_order_n_local)*(1 + 2*higher_order_n_local)
@@ -1483,7 +1484,7 @@ contains
       do loop_order = 1, higher_order_n_local
         call kmesh_get_amat(kmesh_input, amat, bvector, multi, loop_order, &
                             num_x(loop_order, :), num_y(loop_order, :), num_z(loop_order, :))
-      enddo
+      end do
 
       info = 0
       call dgesvd('A', 'A', kmesh_input%max_shells_aux, kmesh_input%num_shells, amat, &
@@ -1493,7 +1494,7 @@ contains
         if (print_output%iprint > 0) then
           write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_automatic: Argument', abs(info), &
             'of dgesvd is incorrect'
-        endif
+        end if
         call set_error_fatal(error, 'kmesh_shell_automatic: Problem with Singular Value Decomposition', comm)
         return
       else if (info > 0) then
@@ -1509,7 +1510,7 @@ contains
         else
           if (print_output%iprint > 0) then
             write (stdout, '(1x,a)') '| SVD found small singular value, Rejecting this shell and trying the next   |'
-          endif
+          end if
           bsat = .false.
           kmesh_input%num_shells = kmesh_input%num_shells - 1
           goto 200
@@ -1572,63 +1573,63 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (tmp1, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (tmp2, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (tmp3, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (amat, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating amat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (umat, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating umat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (vmat, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating vmat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (smat, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating smat in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (singv, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating singv in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
 
       deallocate (num_x, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating num_x in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (num_y, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating num_y in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
       deallocate (num_z, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating num_z in kmesh_shell_automatic', comm)
         return
-      endif
+      end if
 
       if (bsat) exit
 
@@ -1681,14 +1682,14 @@ contains
       temp_multi(shell) = multi(kmesh_input%shell_list(shell))
       temp_nnshell(:, shell) = nnshell(:, kmesh_input%shell_list(shell))
       temp_dnn(shell) = dnn(kmesh_input%shell_list(shell))
-    enddo
+    end do
 
     do shell = 1, kmesh_input%num_shells
       kmesh_input%shell_list(shell) = shell
       multi(shell) = temp_multi(shell)
       nnshell(:, shell) = temp_nnshell(:, shell)
       dnn(shell) = temp_dnn(shell)
-    enddo
+    end do
 
     do order = 2, kmesh_input%higher_order_n
       do shell = 1, kmesh_input%num_shells
@@ -1697,8 +1698,8 @@ contains
         multi((order - 1)*kmesh_input%num_shells + shell) = multi(shell)
         nnshell(:, (order - 1)*kmesh_input%num_shells + shell) = nnshell(:, shell)
         dnn((order - 1)*kmesh_input%num_shells + shell) = dnn(shell)*order
-      enddo
-    enddo
+      end do
+    end do
 
     ! calculate new bweights w_b, w_2b, ..., w_Nb
     do shell = 1, kmesh_input%num_shells
@@ -1708,10 +1709,10 @@ contains
         do loop_j = 1, kmesh_input%higher_order_n
           if (loop_j == order) cycle
           fact = (fact*REAL(loop_j**2, DP))/REAL(loop_j**2 - order**2, DP)
-        enddo
+        end do
         bweight(kmesh_input%num_shells*(order - 1) + shell) = bweight_temp*fact
-      enddo
-    enddo
+      end do
+    end do
 
     kmesh_input%num_shells = kmesh_input%num_shells*kmesh_input%higher_order_n
 
@@ -1758,8 +1759,8 @@ contains
               .and. (2*loop_order + 1)*(loop_j + 1) - (loop_j + 1)*loop_j/2 > loop_i - 1) then
             num_z(loop_i) = loop_j
             exit
-          endif
-        enddo
+          end if
+        end do
         ! find the number of x and y components
         num_y(loop_i) = loop_i - 1 - ((2*loop_order + 1)*num_z(loop_i) - num_z(loop_i) &
                                       *(num_z(loop_i) - 1)/2)
@@ -1770,9 +1771,9 @@ contains
                                                    + (bvector(1, loop_b, loop_s)**num_x(loop_i)) &
                                                    *(bvector(2, loop_b, loop_s)**num_y(loop_i)) &
                                                    *(bvector(3, loop_b, loop_s)**num_z(loop_i))
-        enddo
-      enddo
-    enddo
+        end do
+      end do
+    end do
   end subroutine kmesh_get_amat
 
   !================================================
@@ -1817,8 +1818,8 @@ contains
         if (abs(delta - 1.0_dp) > kmesh_input%tol) bsat = .false.
       else
         if (abs(delta) > kmesh_input%tol) bsat = .false.
-      endif
-    enddo
+      end if
+    end do
 
   end subroutine kmesh_check_condition
 
@@ -1877,13 +1878,13 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating bvector in kmesh_shell_fixed', comm)
       return
-    endif
+    end if
     bvector = 0.0_dp; bweight = 0.0_dp
     amat = 0.0_dp; umat = 0.0_dp; vmat = 0.0_dp; smat = 0.0_dp; singv = 0.0_dp
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are set in the win file                                      |'
-    endif
+    end if
 
     do shell = 1, kmesh_input%num_shells
       ! get the b vectors for this shell
@@ -1923,7 +1924,7 @@ contains
       if (print_output%iprint > 0) then
         write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), &
           'of dgesvd is incorrect'
-      endif
+      end if
       call set_error_fatal(error, 'kmesh_shell_fixed: Problem with Singular Value Decomposition', comm)
       return
     else if (info > 0) then
@@ -1934,7 +1935,7 @@ contains
     if (any(abs(singv) < eps7)) then
       call set_error_fatal(error, 'kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value', comm)
       return
-    endif
+    end if
 
     smat = 0.0_dp
     do loop_s = 1, kmesh_input%num_shells
@@ -1974,7 +1975,7 @@ contains
     if (.not. b1sat) then
       call set_error_fatal(error, 'kmesh_shell_fixed: B1 condition not satisfied', comm)
       return
-    endif
+    end if
 
     if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: shell_fixed', timer)
 
@@ -1988,8 +1989,8 @@ contains
                                    error, comm)
     !================================================
     !!  Find the B1 weights for a set of b-vectors given in a file.
-    !!  This routine is only activated via a devel_flag and is not
-    !!  intended for regular use.
+    !!  This routine is activated via kmesh_shell_from_file = T
+    !!  It is not intended for regular use.
     !
     !================================================
 
@@ -2012,14 +2013,14 @@ contains
 
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     real(kind=dp), intent(in) ::kpt_cart(:, :)
-    real(kind=dp), intent(inout) :: bvec_inp(:, :, :)
+    real(kind=dp), allocatable, intent(inout) :: bvec_inp(:, :, :)
     real(kind=dp), intent(in) :: dnn(kmesh_input%search_shells)  ! the bvectors
     real(kind=dp), intent(out) :: bweight(max_shells)
 
     character(len=50), intent(in)  :: seedname
 
     ! local variables
-    real(kind=dp), allocatable     :: bvector(:, :)
+    real(kind=dp), allocatable :: bvector(:, :)
 
     real(kind=dp), dimension(:), allocatable :: singv
     real(kind=dp), dimension(:, :), allocatable :: amat, umat, vmat, smat
@@ -2041,12 +2042,12 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating bvector in kmesh_shell_fixed', comm)
       return
-    endif
+    end if
     bvector = 0.0_dp; bweight = 0.0_dp
 
     if (print_output%iprint > 0) then
       write (stdout, '(1x,a)') '| The b-vectors are defined in the kshell file                               |'
-    endif
+    end if
 
     counter = 1
     do shell = 1, kmesh_input%search_shells
@@ -2064,7 +2065,7 @@ contains
     if (ierr /= 0) then
       call set_error_file(error, 'Error: Problem (1) opening input file '//trim(seedname)//'.kshell', comm)
       return
-    endif
+    end if
 
     num_lines = 0; tot_num_lines = 0
     do
@@ -2074,7 +2075,7 @@ contains
         tot_num_lines = tot_num_lines + 1
         if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
           if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-        endif
+        end if
       else if (ierr > 0) then !error case
         call set_error_input(error, 'Error: Problem (2) reading input file '//trim(seedname)//'.kshell', comm)
         return
@@ -2106,12 +2107,14 @@ contains
           length = length + 1
         else
           exit
-        endif
+        end if
 
       end do
       multi(counter) = length
       read (dummy2, *, err=230, end=230) (bvec_list(i, loop), i=1, length)
     end do
+
+    allocate (bvec_inp(3, maxval(multi), kmesh_input%num_shells))
 
     bvec_inp = 0.0_dp
     do loop = 1, kmesh_input%num_shells
@@ -2134,27 +2137,27 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating amat in kmesh_shell_from_file', comm)
       return
-    endif
+    end if
     allocate (umat(max_shells, max_shells), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating umat in kmesh_shell_from_file', comm)
       return
-    endif
+    end if
     allocate (vmat(kmesh_input%num_shells, kmesh_input%num_shells), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating vmat in kmesh_shell_from_file', comm)
       return
-    endif
+    end if
     allocate (smat(kmesh_input%num_shells, max_shells), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating smat in kmesh_shell_from_file', comm)
       return
-    endif
+    end if
     allocate (singv(kmesh_input%num_shells), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating singv in kmesh_shell_from_file', comm)
       return
-    endif
+    end if
     amat = 0.0_dp; umat = 0.0_dp; vmat = 0.0_dp; smat = 0.0_dp; singv = 0.0_dp
 
     do loop_s = 1, kmesh_input%num_shells
@@ -2175,7 +2178,7 @@ contains
       if (print_output%iprint > 0) then
         write (stdout, '(1x,a,1x,I1,1x,a)') 'kmesh_shell_fixed: Argument', abs(info), &
           'of dgesvd is incorrect'
-      endif
+      end if
       call set_error_fatal(error, 'kmesh_shell_fixed: Problem with Singular Value Decomposition', comm)
       return
     else if (info > 0) then
@@ -2186,7 +2189,7 @@ contains
     if (any(abs(singv) < eps7)) then
       call set_error_fatal(error, 'kmesh_shell_fixed: Singular Value Decomposition has found a very small singular value', comm)
       return
-    endif
+    end if
 
     smat = 0.0_dp
     do loop_s = 1, kmesh_input%num_shells
@@ -2201,34 +2204,9 @@ contains
       end do
     end if
 
-    !check b1
-    b1sat = .true.
-    if (.not. kmesh_input%skip_B1_tests) then
-      do loop_i = 1, 3
-        do loop_j = loop_i, 3
-          delta = 0.0_dp
-          do loop_s = 1, kmesh_input%num_shells
-            do loop_b = 1, multi(loop_s)
-              delta = delta + bweight(loop_s)*bvec_inp(loop_i, loop_b, loop_s)*bvec_inp(loop_j, loop_b, loop_s)
-            end do
-          end do
-          if (loop_i == loop_j) then
-            if (abs(delta - 1.0_dp) > kmesh_input%tol) b1sat = .false.
-          end if
-          if (loop_i /= loop_j) then
-            if (abs(delta) > kmesh_input%tol) b1sat = .false.
-          end if
-        end do
-      end do
-    end if
-
-    if (.not. b1sat) then
-      call set_error_fatal(error, 'kmesh_shell_fixed: B1 condition not satisfied', comm)
-      return
-    endif
+    ! note: B1 condition is not tested here; test follows this function call
 
     if (print_output%timing_level > 1) call io_stopwatch_stop('kmesh: shell_fixed', timer)
-
     return
 
 103 call set_error_input(error, 'Error: Problem (3) reading input file '//trim(seedname)//'.kshell', comm)
@@ -2268,7 +2246,7 @@ contains
       if (abs(dist(loop) - dist(guess(1))) < eps8) then
         counter = counter + 1
         list(counter) = loop
-      endif
+      end if
     end do
     ! and always return the lowest index
     internal_maxloc = minval(list(1:counter))
@@ -2309,19 +2287,21 @@ contains
             perm(n, ik) = m
             invperm(m, ik) = n ! inverse mapping, used in postw90
             cycle
-          endif
+          end if
           if (all(abs(bvec(:, m, ik) + bref(:, n)) < tol)) then
             found2 = .true.
             revind(n, ik) = m
             cycle
-          endif
-        enddo
+          end if
+        end do
         if (.not. found .or. .not. found2) then
-      call set_error_fatal(error, 'Unable to identify bk-vector permutation (kmesh_bvector_perm); consider k-point precision', comm)
+          call set_error_fatal(error, &
+                               'Unable to identify bk-vector permutation (kmesh_bvector_perm); consider k-point precision', &
+                               comm)
           return
-        endif
-      enddo
-    enddo
+        end if
+      end do
+    end do
 
   end subroutine kmesh_bvectors_perm
 

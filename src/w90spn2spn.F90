@@ -284,7 +284,7 @@ contains
           spn_o(m, n, ik, 3) = conjg(spn_o(n, m, ik, 3))
         end do
       end do
-    enddo
+    end do
 
     close (spn_unit)
 
@@ -375,9 +375,9 @@ contains
         do n = 1, m
           do s = 1, 3
             write (spn_unit, '(2es26.16)') spn_o(n, m, ik, s)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
     end do
 
     close (spn_unit)

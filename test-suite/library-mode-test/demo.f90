@@ -45,7 +45,7 @@ program ok
   integer :: nb, nk, nn, nw
   real(8), allocatable :: eval(:, :), kpt(:, :)
   real(8) :: uccart(3, 3) ! cartesian unit cell
-  type(lib_common_type), target :: w90main
+  type(lib_common_type) :: w90main
 
   ! collect data
   nb = 12
@@ -69,8 +69,8 @@ program ok
   do ik = 1, nk
   do ib = 1, nb
     read (iu, *) i, i, eval(ib, ik)
-  enddo
-  enddo
+  end do
+  end do
   close (iu)
 
   ! kpoint vectors in w90 order
@@ -80,12 +80,12 @@ program ok
     do ikb = 0, nkabc(2) - 1
       do ikc = 0, nkabc(3) - 1
         i = i + 1
-        kpt(1, i) = dble(ika)/dble(nkabc(1)); 
-        kpt(2, i) = dble(ikb)/dble(nkabc(2)); 
-        kpt(3, i) = dble(ikc)/dble(nkabc(3)); 
-      enddo
-    enddo
-  enddo
+        kpt(1, i) = dble(ika)/dble(nkabc(1))
+        kpt(2, i) = dble(ikb)/dble(nkabc(2))
+        kpt(3, i) = dble(ikc)/dble(nkabc(3))
+      end do
+    end do
+  end do
 
   ! setup MPI
   call mpi_init(ierr)
@@ -98,7 +98,7 @@ program ok
   if (mod(nk, mpisize) > 0) nkl = nkl + 1
   do i = 1, nk
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
-  enddo
+  end do
 
   ! wannier interface starts
   ! stdout/err
@@ -109,7 +109,7 @@ program ok
   call w90_set_option(w90main, 'kpoints', kpt)
   call w90_set_option(w90main, 'mp_grid', nkabc)
   call w90_set_option(w90main, 'num_bands', nb)
-  call w90_set_option(w90main, 'num_kpts', nk)
+  !call w90_set_option(w90main, 'num_kpts', nk)
   call w90_set_option(w90main, 'num_wann', nw)
   call w90_set_option(w90main, 'unit_cell_cart', uccart)
 
@@ -129,9 +129,9 @@ program ok
   call w90_set_comm(w90main, mpi_comm_world)
   call w90_input_setopt(w90main, 'gaas', stdout, stderr, ierr) ! apply settings
 
-  call w90_get_nn(w90main, nn, stdout, stderr, ierr); 
+  call w90_get_nn(w90main, nn, stdout, stderr, ierr)
   allocate (nnkp(nk, nn))
-  call w90_get_nnkp(w90main, nnkp, stdout, stderr, ierr); 
+  call w90_get_nnkp(w90main, nnkp, stdout, stderr, ierr)
   allocate (m_matrix(nb, nb, nn, nk))
   allocate (u_matrix_opt(nb, nw, nk))
   call w90_set_m_local(w90main, m_matrix) ! m_matrix_local_orig
@@ -155,7 +155,7 @@ program ok
   if (mpirank == 0) then
     do ib = 1, nw
       write (stdout, '(4f20.10)') (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
-    enddo
-  endif
+    end do
+  end if
   call mpi_finalize(ierr)
 end program

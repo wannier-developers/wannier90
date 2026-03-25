@@ -35,7 +35,7 @@ module w90_spin
 
   use w90_constants, only: dp
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -66,9 +66,9 @@ contains
     use w90_constants, only: dp, pi
     use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
     use w90_postw90_types, only: pw90_spin_mod_type, pw90_oper_read_type, wigner_seitz_type, &
-      kpoint_dist_type
+                                 kpoint_dist_type
     use w90_types, only: print_output_type, wannier_data_type, &
-      dis_manifold_type, ws_region_type, ws_distance_type, timer_list_type
+                         dis_manifold_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_get_oper, only: get_HH_R, get_SS_R
 
     implicit none
@@ -122,7 +122,7 @@ contains
     if (fermi_n > 1) then
       call set_error_input(error, 'Routine spin_get_moment requires nfermi=1', comm)
       return
-    endif
+    end if
 
     call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
                   eigval, real_lattice, scissors_shift, num_bands, num_kpts, num_wann, &
@@ -235,7 +235,7 @@ contains
     use w90_constants, only: dp, pi
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
-      ws_distance_type
+                         ws_distance_type
     use w90_postw90_types, only: pw90_spin_mod_type, wigner_seitz_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_comms, only: w90_comm_type
@@ -287,7 +287,7 @@ contains
                                      SS(:, :, is), SS_R(:, :, :, is), kpt, real_lattice, mp_grid, &
                                      0, num_wann, error, comm)
       if (allocated(error)) return
-    enddo
+    end do
 
     ! Unit vector along the magnetization direction
 
@@ -318,7 +318,7 @@ contains
     use w90_constants, only: dp, cmplx_i
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
-      ws_distance_type
+                         ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k, pw90common_get_occ
     use w90_postw90_types, only: wigner_seitz_type
     use w90_comms, only: w90_comm_type
@@ -379,7 +379,7 @@ contains
       do i = 1, num_wann
         spn_k(is) = spn_k(is) + occ(i)*spn_nk(i, is)
       end do
-    enddo
+    end do
 
   end subroutine spin_get_moment_k
 
@@ -396,7 +396,7 @@ contains
     use w90_constants, only: dp
     use w90_utility, only: utility_diagonalize, utility_rotate_diag
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
-      ws_distance_type
+                         ws_distance_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_postw90_types, only: wigner_seitz_type
     use w90_comms, only: w90_comm_type
@@ -447,7 +447,7 @@ contains
       if (allocated(error)) return
 
       S(:, i) = real(utility_rotate_diag(SS(:, :, i), UU, num_wann), dp)
-    enddo
+    end do
 
   end subroutine spin_get_S
 

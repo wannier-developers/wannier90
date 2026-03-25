@@ -78,7 +78,7 @@ post-processing code of `yambo`.
     grid)
 
     ```bash title="Terminal"
-    yambo 
+    yambo
     ```
 
 7. Run `pwscf` to obtain the Bloch states on a uniform

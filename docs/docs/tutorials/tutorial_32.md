@@ -138,7 +138,7 @@
 
     scdm_proj = .true.
 
-    scdm_sigma = 6.6529 
+    scdm_sigma = 6.6529
     ```
 
 8. Run `pw2wannier90` to compute the overlaps between Bloch states and

@@ -46,7 +46,7 @@ module w90_kslice
   !!    pw90_kslice_b1(1:3) and pw90_kslice_b2(1:3) are the vectors subtending the slice
 
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -74,14 +74,14 @@ contains
     !================================================!
 
     use w90_postw90_types, only: pw90_kslice_mod_type, pw90_berry_mod_type, pw90_spin_mod_type, &
-      pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type, wigner_seitz_type
+                                 pw90_band_deriv_degen_type, pw90_oper_read_type, pw90_spin_hall_type, wigner_seitz_type
     use w90_berry, only: berry_get_imf_klist, berry_get_imfgh_klist, berry_get_shc_klist
     use w90_comms, only: comms_bcast, w90_comm_type, mpirank, mpisize, comms_gatherv, comms_array_split
     use w90_constants, only: dp, twopi, eps8
     use w90_get_oper, only: get_HH_R, get_AA_R_effective, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R
     use w90_io, only: io_time
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, &
-      wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
+                         wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_spin, only: spin_get_nk
     use w90_utility, only: utility_diagonalize, utility_recip_lattice, utility_recip_lattice_base
@@ -217,10 +217,10 @@ contains
         call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, wannier_data, AA_R, &
                       v_matrix, eigval, wigner_seitz, ws_distance, ws_region, num_bands, num_kpts, &
                       num_wann, have_disentangled, seedname, stdout, timer, error, comm)
-      endif
+      end if
       if (allocated(error)) return
 
-    endif
+    end if
     if (plot_morb) then
       call get_BB_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, HH_R, BB_R, v_matrix, &
                     eigval, scissors_shift, wigner_seitz, ws_distance, ws_region, num_bands, num_kpts, &
@@ -233,7 +233,7 @@ contains
                     timer, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
 
     if (plot_shc) then
       if (effective_model) then
@@ -243,7 +243,7 @@ contains
         call get_AA_R(pw90_berry, dis_manifold, kmesh_info, kpt_latt, print_output, wannier_data, AA_R, &
                       v_matrix, eigval, wigner_seitz, ws_distance, ws_region, num_bands, num_kpts, &
                       num_wann, have_disentangled, seedname, stdout, timer, error, comm)
-      endif
+      end if
       if (allocated(error)) return
 
       call get_SS_R(dis_manifold, kpt_latt, print_output, pw90_oper_read, SS_R, v_matrix, eigval, &
@@ -265,7 +265,7 @@ contains
                     have_disentangled, seedname, stdout, timer, error, comm)
       if (allocated(error)) return
 
-    endif
+    end if
     call utility_recip_lattice_base(real_lattice, recip_lattice, volume)
     ! Set Cartesian components of the vectors (b1,b2) spanning the slice
 
@@ -285,7 +285,7 @@ contains
       call set_error_fatal(error, 'Error in kslice: Vectors pw90_kslice_b1 and pw90_kslice_b2 ' &
                            //'not linearly independent', comm)
       return
-    endif
+    end if
     ! This is the unit vector zvec/|zvec| which completes the triad
     ! in the 2D case
     bvec(3, :) = zvec(:)/areab1b2
@@ -330,8 +330,8 @@ contains
         my_spnmask = .false.
       else
         allocate (my_bandsdata(num_wann, my_nkpts))
-      endif
-    endif
+      end if
+    end if
 
     ! Loop over local portion of uniform mesh of k-points covering the slice,
     ! including all four borders
@@ -369,8 +369,8 @@ contains
               spn_k(n) = 1.0_dp - eps8
             elseif (spn_k(n) < -1.0_dp + eps8) then
               spn_k(n) = -1.0_dp + eps8
-            endif
-          enddo
+            end if
+          end do
 
           call wham_get_eig_deleig(dis_manifold, kpt_latt, pw90_band_deriv_degen, ws_region, &
                                    print_output, wannier_data, ws_distance, wigner_seitz, delHH, &
@@ -389,7 +389,7 @@ contains
           call utility_diagonalize(HH, num_wann, eig, UU, error, comm)
           if (allocated(error)) return
 
-        endif
+        end if
 
         if (allocated(my_bandsdata)) then
           my_bandsdata(:, iloc) = eig(:)
@@ -539,8 +539,8 @@ contains
             call write_coords_file(stdout, filename, '(3E16.8)', coords, &
                                    reshape(bandsdata(n, :), [1, 1, nkpts]), &
                                    blocklen=pw90_kslice%kmesh2d(1) + 1)
-          enddo
-        endif
+          end do
+        end if
       end if
 
       if (allocated(spndata)) then
@@ -558,7 +558,7 @@ contains
             filename = trim(seedname)//'-kslice-curv.dat'
           elseif (plot_shc) then
             filename = trim(seedname)//'-kslice-shc.dat'
-          endif
+          end if
           write (stdout, '(/,3x,a)') filename
           open (newunit=dataunit, file=filename, form='formatted')
           if (plot_shc) then
@@ -574,7 +574,7 @@ contains
           write (dataunit, *) ' '
           close (dataunit)
         end if
-      endif
+      end if
 
       if (plot_fermi_lines .and. .not. fermi_lines_color .and. .not. heatmap) then
         !
@@ -598,7 +598,7 @@ contains
           write (scriptunit, '(a)') "splot '"//trim(seedname)//"-bnd_" &
             //achar(48 + n1)//achar(48 + n2)//achar(48 + n3)//".dat'"
           write (scriptunit, '(a)') "unset table"
-        enddo
+        end do
         write (scriptunit, '(a)') &
           "#Uncomment next two lines to create postscript"
         write (scriptunit, '(a)') "#set term post eps enh"
@@ -616,7 +616,7 @@ contains
         else
           write (scriptunit, '(a)') &
             "plot 'bnd_001.dat' using 1:2 w lines ls 1,"//achar(92)
-        endif
+        end if
         do n = 2, num_wann - 1
           n1 = n/100
           n2 = (n - n1*100)/10
@@ -624,7 +624,7 @@ contains
           write (scriptunit, '(a)') "     'bnd_" &
             //achar(48 + n1)//achar(48 + n2)//achar(48 + n3) &
             //".dat' using 1:2 w lines ls 1,"//achar(92)
-        enddo
+        end do
         n = num_wann
         n1 = n/100
         n2 = (n - n1*100)/10
@@ -656,7 +656,7 @@ contains
         write (scriptunit, '(a)') "pl.savefig(outfile,bbox_inches='tight')"
         write (scriptunit, '(a)') "pl.show()"
         close (scriptunit)
-      endif !plot_fermi_lines .and. .not.fermi_lines_color .and. .not.heatmap
+      end if !plot_fermi_lines .and. .not.fermi_lines_color .and. .not.heatmap
 
       if (plot_fermi_lines .and. fermi_lines_color .and. .not. heatmap) then
         !
@@ -716,7 +716,7 @@ contains
           "-kslice-fermi_lines.pdf',bbox_inches='tight')"
         write (scriptunit, '(a)') "pl.show()"
         close (scriptunit)
-      endif ! plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap
+      end if ! plot_fermi_lines .and. fermi_lines_color .and. .not.heatmap
 
       if (heatmap .and. (.not. plot_shc)) then
         !
@@ -742,7 +742,7 @@ contains
                        '+fermi_lines.py'
             write (stdout, '(/,3x,a)') filename
             open (newunit=scriptunit, file=filename, form='formatted')
-          endif
+          end if
           call script_common(scriptunit, areab1b2, square, seedname)
           if (plot_fermi_lines) call script_fermi_lines(scriptunit, seedname, fermi_energy_list)
 
@@ -815,7 +815,7 @@ contains
               //"extent=(min(xint),max(xint),min(yint),max(yint)))"
             write (scriptunit, '(a)') "cbar=pl.colorbar()"
 
-          endif
+          end if
 
           write (scriptunit, '(a)') " "
           write (scriptunit, '(a)') "ax = pl.gca()"
@@ -827,9 +827,9 @@ contains
 
           close (scriptunit)
 
-        enddo !i
+        end do !i
 
-      endif !heatmap
+      end if !heatmap
 
       if (heatmap .and. plot_shc) then
         if (.not. plot_fermi_lines) then
@@ -840,7 +840,7 @@ contains
           filename = trim(seedname)//'-kslice-shc'//'+fermi_lines.py'
           write (stdout, '(/,3x,a)') filename
           open (scriptunit, file=filename, form='formatted')
-        endif
+        end if
         write (scriptunit, '(a)') "# uncomment these two lines if you are " &
           //"running in non-GUI environment"
         write (scriptunit, '(a)') "#import matplotlib"
@@ -1003,7 +1003,7 @@ contains
         call set_error_input(error, 'Must specify one Fermi level when kslice_task=fermi_lines', &
                              comm)
         return
-      endif
+      end if
       select case (fermi_lines_color)
       case (.false.)
         write (stdout, '(/,3x,a)') '* Fermi lines'
@@ -1012,24 +1012,24 @@ contains
       end select
       write (stdout, '(/,7x,a,f10.4,1x,a)') &
         '(Fermi level: ', fermi_energy_list(1), 'eV)'
-    endif
+    end if
 
     if (plot_curv) then
       if (pw90_berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Ang^2'
       elseif (pw90_berry%curv_unit == 'bohr2') then
         write (stdout, '(/,3x,a)') '* Negative Berry curvature in Bohr^2'
-      endif
+      end if
       if (fermi_n /= 1) then
         call set_error_input(error, 'Must specify one Fermi level when kslice_task=curv', comm)
         return
-      endif
+      end if
     elseif (plot_morb) then
       write (stdout, '(/,3x,a)') '* Orbital magnetization k-space integrand in eV.Ang^2'
       if (fermi_n /= 1) then
         call set_error_input(error, 'Must specify one Fermi level when kslice_task=morb', comm)
         return
-      endif
+      end if
     elseif (plot_shc) then
       if (pw90_berry%curv_unit == 'ang2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
@@ -1037,12 +1037,12 @@ contains
       elseif (pw90_berry%curv_unit == 'bohr2') then
         write (stdout, '(/,3x,a)') '* Berry curvature-like term ' &
           //'of spin Hall conductivity in Bohr^2'
-      endif
+      end if
       if (fermi_n /= 1) then
         call set_error_input(error, 'Must specify one Fermi level when kslice_task=shc', comm)
         return
-      endif
-    endif
+      end if
+    end if
 
   end subroutine kslice_print_info
 

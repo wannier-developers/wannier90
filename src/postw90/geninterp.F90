@@ -38,7 +38,7 @@ module w90_geninterp
   !! June, 2012
 
   use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
-    set_error_input, set_error_fatal, set_error_file
+                       set_error_input, set_error_fatal, set_error_file
 
   implicit none
 
@@ -100,16 +100,16 @@ contains
 
     use w90_constants, only: dp, pi
     use w90_postw90_types, only: pw90_geninterp_mod_type, &
-      pw90_band_deriv_degen_type, wigner_seitz_type
+                                 pw90_band_deriv_degen_type, wigner_seitz_type
     use w90_types, only: dis_manifold_type, print_output_type, &
-      wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
+                         wannier_data_type, ws_region_type, ws_distance_type, timer_list_type
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_postw90_common, only: pw90common_fourier_R_to_k
     use w90_utility, only: utility_diagonalize, utility_recip_lattice_base
     use w90_wan_ham, only: wham_get_eig_deleig
     use w90_get_oper, only: get_HH_R
     use w90_comms, only: mpirank, mpisize, comms_bcast, comms_array_split, comms_scatterv, &
-      comms_gatherv, w90_comm_type
+                         comms_gatherv, w90_comm_type
 
     ! arguments
     type(dis_manifold_type), intent(in)          :: dis_manifold
@@ -208,18 +208,18 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating HH in calcTDF', comm)
       return
-    endif
+    end if
     allocate (UU(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating UU in calcTDF', comm)
       return
-    endif
+    end if
     if (pw90_geninterp%alsofirstder) then
       allocate (delHH(num_wann, num_wann, 3), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating delHH in calcTDF', comm)
         return
-      endif
+      end if
     end if
 
     ! I call once the routine to calculate the Hamiltonian in real-space <0n|H|Rm>
@@ -234,23 +234,23 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.', comm)
         return
-      endif
+      end if
       allocate (kpoints(3, nkinterp), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.', comm)
         return
-      endif
+      end if
       if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, nkinterp), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.', comm)
           return
-        endif
+        end if
         allocate (globaldeleig(num_wann, 3, nkinterp), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.', comm)
           return
-        endif
+        end if
       end if
     else
       ! On the other nodes, I still allocate them with size 1 to avoid
@@ -259,23 +259,23 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kpointidx in geinterp_main.', comm)
         return
-      endif
+      end if
       allocate (kpoints(1, 1), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating kpoints in geinterp_main.', comm)
         return
-      endif
+      end if
       if (pw90_geninterp%single_file) then
         allocate (globaleig(num_wann, 1), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating globaleig in geinterp_main.', comm)
           return
-        endif
+        end if
         allocate (globaldeleig(num_wann, 3, 1), stat=ierr)
         if (ierr /= 0) then
           call set_error_alloc(error, 'Error allocating globaldeleig in geinterp_main.', comm)
           return
-        endif
+        end if
       end if
     end if
 
@@ -286,17 +286,17 @@ contains
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating localkpoints in geinterp_main.', comm)
       return
-    endif
+    end if
     allocate (localeig(num_wann, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating localeig in geinterp_main.', comm)
       return
-    endif
+    end if
     allocate (localdeleig(num_wann, 3, max(1, counts(my_node_id))), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error allocating localdeleig in geinterp_main.', comm)
       return
-    endif
+    end if
 
     ! On root, I read numpoints_thischunk points
     if (on_root) then
@@ -329,7 +329,7 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating localkpointidx in geinterp_main.', comm)
         return
-      endif
+      end if
       call comms_scatterv(localkpointidx, counts(my_node_id), kpointidx, counts, displs, error, comm)
       if (allocated(error)) return
     end if
@@ -347,7 +347,7 @@ contains
         write (outdat_filename, '(a,a,I0,a)') trim(seedname), '_geninterp_', my_node_id, '.dat'
       else
         write (outdat_filename, '(a,a,I5.5,a)') trim(seedname), '_geninterp_', my_node_id, '.dat'
-      endif
+      end if
       open (newunit=outdat_unit, file=trim(outdat_filename), form='formatted', err=107)
 
       call comms_bcast(commentline, len(commentline), error, comm)
