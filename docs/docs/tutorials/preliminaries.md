@@ -74,15 +74,7 @@ calculation. We have provided input files for the
 the `quantum-espresso` package, namely `pw.x` and `pw2wannier90.x`, in
 order to run these tutorials. Please visit
 <http://www.quantum-espresso.org> to download the package, and for
-installation instructions. The tutorials work with
-`pwscf v5.1.x` and `v6.0.x`. The exception are the tutorials on
-symmetry adapted Wannier functions which require v6.0.x together with
-the very latest version of `pw2wannier90.f90`. This can be found in the
-directory `pwscf/v6.0` in the wannier distribution. It should be moved
-to `PP/src` in the `pwscf` distribution and compiled using
-`make pp`. Later versions v6.x.x should have the most up-to-date version
-of pw2wannier90.f90 already included in the Quantum ESPRESSO
-distribution.
+installation instructions.
 
 There are interfaces to a number of other electronic structure codes
 including abinit (<http://www.abinit.org>), fleur

@@ -161,9 +161,6 @@ dist-legacy:
 		./examples/example2[1-2]/*/*.sym \
 		./examples/example2[1-2]/*/*.pw2wan \
 		./pseudo/*.UPF \
-		./pwscf/README \
-		./pwscf/v*/*.f90 \
-		./pwscf/v*/README \
 		./config/make.inc* \
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
