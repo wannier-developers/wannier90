@@ -13,7 +13,15 @@ repos:
         docs/mkdocs.yml
       )$
   - id: trailing-whitespace
+    exclude: (?x)^(
+        LICENSE
+      | .cla/.*
+      )$
   - id: end-of-file-fixer
+    exclude: (?x)^(
+        LICENSE
+      | .cla/.*
+      )$
 - repo: https://github.com/fortran-lang/fprettify
   rev: v0.3.7
   hooks:
