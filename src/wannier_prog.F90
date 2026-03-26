@@ -82,6 +82,10 @@ program wannier
 
   implicit none
 
+#ifdef MPIH
+  include 'mpif.h'
+#endif
+
   integer, parameter :: dp = kind(0.d0)
 
   character(len=:), allocatable :: seedname, progname, cpstatus

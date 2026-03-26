@@ -116,7 +116,7 @@
    make wannier    build the wannier90.x executable
    make post       build the postw90.x executable
    make default    (default) build wannier90.x and postw90.x
-   make lib        build the wannier90 library
+   make libs       build the wannier90 library (both static and dynamic version)
    make w90chk2chk build the w90chk2chk.x utility (see 'Utility' section of
                    the user guide)
    make w90vdw     build the van der Waals code
