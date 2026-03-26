@@ -323,7 +323,6 @@ current (ac) SHC which will be introduced in the next tutorial.
     kslice_b2
     kslice_2dkmesh
 
-    kslice_fermi_level
     kslice_fermi_lines_colour
     ```
 

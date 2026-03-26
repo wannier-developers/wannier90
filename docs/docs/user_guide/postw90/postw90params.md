@@ -299,7 +299,7 @@ axis.
 
 The default value is `gauss`.
 
-### `logical :: smr_fixed_en_width`
+### `real(kind=dp) :: smr_fixed_en_width`
 
 Energy width for the smearing function for the DOS. Used only if
 `adpt_smr` is `false`.
@@ -593,7 +593,7 @@ Sec. [Global variables](#global-variables)).
 Overrides the `adpt_smr_max` global variable (see
 Sec. [Global variables](#global-variables)).
 
-### `logical :: dos_smr_fixed_en_width`
+### `real(kind=dp) :: dos_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
 Sec. [Global variables](#global-variables)).
@@ -1041,7 +1041,7 @@ Sec. [Global variables](#global-variables)).
 Overrides the `adpt_smr_max` global variable (see
 Sec. [Global variables](#global-variables)).
 
-### `logical :: kubo_smr_fixed_en_width`
+### `real(kind=dp) :: kubo_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
 Sec. [Global variables](#global-variables)).
@@ -1332,7 +1332,7 @@ If an inner energy window was specified, the default value is the upper
 bound of the inner energy window plus 0.6667. Otherwise it is the
 maximum energy eigenvalue stored in `seedname.eig` plus 0.6667.
 
-### `logical :: gyrotropic_smr_fixed_en_width`
+### `real(kind=dp) :: gyrotropic_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
 Sec. [Global variables](#global-variables)).
@@ -1342,7 +1342,7 @@ Sec. [Global variables](#global-variables)).
 Overrides the `smr_type` global variable (see
 Sec. [Global variables](#global-variables)).
 
-### `character(len=120) :: gyrotropic_degen_thresh`
+### `real(kind=dp) :: gyrotropic_degen_thresh`
 
 The threshould to eliminate degenerate bands from the calculation in
 order to avoid divergences.
@@ -1533,7 +1533,7 @@ Sec. [Global variables](#global-variables)).
 Overrides the `adpt_smr_max` global variable (see
 Sec. [Global variables](#global-variables)).
 
-### `logical :: boltz_dos_smr_fixed_en_width`
+### `real(kind=dp) :: boltz_dos_smr_fixed_en_width`
 
 Overrides the `smr_fixed_en_width` global variable (see
 Sec. [Global variables](#global-variables)).
