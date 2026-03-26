@@ -21,9 +21,13 @@ The latest news about `wannier90` can be followed on our website
 
 ### Is `wannier90` free?
 
-Yes! `wannier90` is available for use free-of-charge under the GNU
-General Public Licence. See the file `LICENSE` that comes with the
-`wannier90` distribution or the GNU hopepage at <http://www.gnu.org>.
+Yes! 
+
+Versions 4.0.0 and later versions of `wannier90` are released under the terms of the GNU Lesser General Public Licence version 2.1 or later. 
+
+Versions 3.1.0 and earlier versions of `wannier90` are released under the terms of the GNU General Public License version 2 or later. 
+
+For details, see the file `LICENSE` that comes with the relevant `wannier90` distribution or find the relevant license at https://www.gnu.org/licenses/.
 
 ## Getting Help
 

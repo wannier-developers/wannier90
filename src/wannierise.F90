@@ -25,7 +25,7 @@
 ! <https://github.com/wannier-developers/wannier90>          !
 !------------------------------------------------------------!
 !                                                            !
-!  w90_wannierise: MLFW algorithm                            !
+!  w90_wannierise: MLWF algorithm                            !
 !                                                            !
 !------------------------------------------------------------!
 
