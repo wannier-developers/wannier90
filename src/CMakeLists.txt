@@ -44,6 +44,7 @@ target_sources(Wannier90_lib PRIVATE
 		transport.F90
 		types.F90
 		utility.F90
+		wannier90.c
 		wannier90_readwrite.F90
 		wannier90_types.F90
 		wannierise.F90
