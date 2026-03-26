@@ -5,7 +5,8 @@ endif
 # include make.inc to determine if (last) build was serial or parallel via def/undef COMMS
 include make.inc
 
-REALMAKEFILE=../Makefile.2
+# Contains definition of OBJS, OBJS_POST, LIBRARY, DYNLIBRARY, ...
+include Makefile.header
 
 TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else echo tar; fi )
 
@@ -28,74 +29,86 @@ install: default
 	done
 	if [ -f "utility/w90pov/w90pov" ]; then install -m755 "utility/w90pov/w90pov" "$(DESTDIR)$(PREFIX)/bin/w90pov"; fi;
 	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -m755 "utility/w90vdw/w90vdw.x" "$(DESTDIR)$(PREFIX)/bin/w90vdw.x"; fi;
-	install -d $(DESTDIR)$(PREFIX)/lib/
-	if [ -f "$(LIBRARYV2)" ]; then install -m644 "$(LIBRARYV2)" "$(DESTDIR)$(PREFIX)/lib/$(LIBRARYV2)"; fi;
-	if [ -f "$(LIBRARYV2)" ]; then $(MAKE) pkgconfig; fi;
 
-all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
+	install -d $(DESTDIR)$(PREFIX)/include/
+	for m in src/obj/w90_library.mod src/obj/w90_library_extra.mod; do \
+		if [ -f "$$m" ]; then install -m644 "$$m" "$(DESTDIR)$(PREFIX)/include/"; fi; \
+	done
+	install -d $(DESTDIR)$(PREFIX)/lib/
+	if [ -f "$(STATICLIBRARY)" ]; then install -m644 "$(STATICLIBRARY)" "$(DESTDIR)$(PREFIX)/lib/$(STATICLIBRARY)"; fi;
+	if [ -f "$(DYNLIBRARY)" ]; then install -m644 "$(DYNLIBRARY)" "$(DESTDIR)$(PREFIX)/lib/$(DYNLIBRARY)"; fi;
+	if [ -f "$(STATICLIBRARY)" ]; then $(MAKE) pkgconfig; fi;
+
+all: wannier libs post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
-w90chk2chk: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
+w90chk2chk:
+	$(MAKE) -C src/obj w90chk2chk
 
-w90spn2spn: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90spn2spn)
+w90spn2spn:
+	$(MAKE) -C src/obj w90spn2spn
 
-wannier: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
+wannier:
+	$(MAKE) -C src/obj wannier
 
-lib: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
+# General rule to make the wannier90.x, postw90.x, w90chk2chk.x and w90spn2spn.x executables
+# Internally it uses ../$@ because in the src/ directory, the executable is created one level up
+# (i.e. in the root directory)
+%.x:
+	$(MAKE) -C src/obj ../$@
 
-dynlib: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) dynlibs)
+staticlib:
+	$(MAKE) -C src/obj
+
+dynlib:
+	$(MAKE) -C src/obj dynlib
 
 w90pov:
-	(cd $(ROOTDIR)/utility/w90pov && $(MAKE) )
+	$(MAKE) -C $(ROOTDIR)/utility/w90pov
 
 w90vdw:
-	(cd $(ROOTDIR)/utility/w90vdw && $(MAKE) )
+	$(MAKE) -C $(ROOTDIR)/utility/w90vdw
 
-w90py: dynlib
-	(cd $(ROOTDIR)/wrap && $(MAKE) )
+w90py: libs
+	$(MAKE) -C $(ROOTDIR)/wrap
 
-libs: lib
+libs: staticlib dynlib
 
-PKGCONFIG_FILENAME = wannier.pc
+PKGCONFIG_FILENAME = $(DYNLIBBASE).pc
 pkgconfig:
-	$(file > $(PKGCONFIG_FILENAME),prefix=$(DESTDIR)$(PREFIX))
-	$(file >> $(PKGCONFIG_FILENAME),exec_prefix=$(DESTDIR)$(PREFIX)/bin)
-	$(file >> $(PKGCONFIG_FILENAME),libdir=$(DESTDIR)$(PREFIX)/lib)
-	$(file >> $(PKGCONFIG_FILENAME),includedir=$(DESTDIR)$(PREFIX)/include)
-	$(file >> $(PKGCONFIG_FILENAME),)
-	$(file >> $(PKGCONFIG_FILENAME),Name: wannier)
-	$(file >> $(PKGCONFIG_FILENAME),Description: Compute maximally-localised Wannier functions.)
-	$(file >> $(PKGCONFIG_FILENAME),Requires: )
-	$(file >> $(PKGCONFIG_FILENAME),Version: $(VERSION))
-	$(file >> $(PKGCONFIG_FILENAME),Libs: -L$${libdir} -lwannier)
-	$(file >> $(PKGCONFIG_FILENAME),Cflags: -I$${includedir})
+	{ \
+	  echo "prefix=$(DESTDIR)$(PREFIX)"; \
+	  echo "exec_prefix=$(DESTDIR)$(PREFIX)/bin"; \
+	  echo "libdir=$(DESTDIR)$(PREFIX)/lib"; \
+	  echo "includedir=$(DESTDIR)$(PREFIX)/include"; \
+	  echo ""; \
+	  echo "Name: $(DYNLIBBASE)"; \
+	  echo "Description: $(LIBDESCRIPTION)."; \
+	  echo "Requires: "; \
+	  echo "Version: $(VERSION)"; \
+	  echo 'Libs: -L$${libdir} -l'"$(DYNLIBBASE)"; \
+	  echo 'Cflags: -I$${includedir}'; \
+	} > "$(PKGCONFIG_FILENAME)"
+	install -d $(DESTDIR)$(PREFIX)/lib/pkgconfig/
 	install -D -m644 "$(PKGCONFIG_FILENAME)" "$(DESTDIR)$(PREFIX)/lib/pkgconfig/$(PKGCONFIG_FILENAME)"
 	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
 
-post: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) post)
+post:
+	$(MAKE) -C src/obj post
 
 clean:
 	cd $(ROOTDIR) && rm -f *~
 	cd $(ROOTDIR) && rm -f src/*~
 	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
-	@( cd $(ROOTDIR) && if [ -d src/obj ] ; \
-		then cd src/obj && \
-		$(MAKE) -f $(REALMAKEFILE) clean && \
-		cd ../ && rm -rf obj ; \
-	fi )
+	cd $(ROOTDIR) && $(MAKE) -C src/obj clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
 	cd $(ROOTDIR)/test-suite && ./clean_tests
 
+# Note: .x.dSYM are directories (hence the -r option to rm) and are only created on macOS (when compiling with certain flags, e.g. debug), so they are not always present
 veryclean: clean
-	cd $(ROOTDIR) && rm -f wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90_mpi.{a,so.4} *.{gcda,gcno}
+	cd $(ROOTDIR) && rm -rf wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90_mpi.{a,so.4} *.{gcda,gcno} *.x.dSYM
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
@@ -227,9 +240,4 @@ dist-lite:
 		./CHANGE.log \
 	)
 
-objdir:
-	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
-		then mkdir src/obj ; \
-	fi ) ;
-
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp tests w90spn2spn install pkgconfig
+.PHONY: wannier default all doc libs staticlib dynlib post clean veryclean thedoc dist test-serial test-parallel dist-lite tests w90spn2spn install pkgconfig
