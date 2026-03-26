@@ -297,6 +297,7 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_alloc, set_error_fatal, code_mpi
     use w90_comms, only: w90_comm_type, valid_communicator, mpisize, mpirank
+    use w90_readwrite, only: w90_readwrite_write_win
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
                                        w90_wannier90_readwrite_read_special
     use w90_overlap, only: overlap_write
@@ -428,7 +429,7 @@ contains
 
     if (common_data%output_file%write_win_ammats) then
       if (mpirank(common_data%comm) == 0) then
-        call w90_readwrite_write_win(common_data%settings, seedname, error)
+        call w90_readwrite_write_win(common_data%settings, seedname, error, common_data%comm)
       end if
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
@@ -1183,20 +1184,20 @@ contains
     end if
   end subroutine w90_set_option_text
 
-  subroutine w90_set_option_logical(common_data, keyword, bool)
+  subroutine w90_set_option_logical(common_data, keyword, boolarg)
     use w90_readwrite, only: init_settings, expand_settings
 
     implicit none
 
     character(*), intent(in) :: keyword
-    logical, intent(in) :: bool
+    logical, intent(in) :: boolarg
     type(lib_common_type), intent(inout) :: common_data
     integer :: i
 
     if (.not. allocated(common_data%settings%entries)) call init_settings(common_data%settings)
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
-    common_data%settings%entries(i)%ldata = bool
+    common_data%settings%entries(i)%ldata = boolarg
     common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
