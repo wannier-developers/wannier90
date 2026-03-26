@@ -405,6 +405,7 @@ contains
     if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)
 
     return
+
 101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn', comm)
     return
 102 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.amn', comm)
@@ -450,7 +451,7 @@ contains
     if (mpirank(comm) == 0) then
 
       ! dump overlap ("M") matrix
-      open (newunit=fu, file=trim(seedname)//'.mmn_dump') ! check error
+      open (newunit=fu, file=trim(seedname)//'.mmn_dump', err=201)
 
       write (fu, '(a)') "header" !header='Created on '//cdate//' at '//ctime
       write (fu, '(3i5)') num_bands, num_kpts, kmesh_info%nntot
@@ -469,7 +470,7 @@ contains
       close (fu)
 
       ! dump projections
-      open (newunit=fu, file=trim(seedname)//'.amn_dump') ! check error
+      open (newunit=fu, file=trim(seedname)//'.amn_dump', err=202)
 
       write (fu, '(a)') "header" !header='Created on '//cdate//' at '//ctime
       write (fu, '(3i5)') num_bands, num_kpts, num_proj ! number of projections (select_proj ignored here)
@@ -485,7 +486,7 @@ contains
       close (fu)
 
       ! dump evals
-      open (newunit=fu, file=trim(seedname)//'.eig_dump') ! check error
+      open (newunit=fu, file=trim(seedname)//'.eig_dump', err=203)
 
       if (num_bands > num_wann) then ! disentanglement condition
       do ik = 1, num_kpts
@@ -496,7 +497,16 @@ contains
       end if
 
       close (fu)
+
     end if ! on root
+    return
+
+201 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.mmn_dump', comm)
+    return
+202 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.amn_dump', comm)
+    return
+203 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.eig_dump', comm)
+    return
   end subroutine overlap_write
 
 !~[aam]
