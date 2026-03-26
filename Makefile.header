@@ -1,8 +1,7 @@
 # Do this before Makefile.header so we can annotate dynlib with COMMS
+# COMMS undefined for serial case
 ifdef COMMS
 COMMS := $(strip $(COMMS))
-else
-COMMS = serial
 endif
 
 POSTDIR = postw90/
