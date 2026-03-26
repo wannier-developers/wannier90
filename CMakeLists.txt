@@ -30,6 +30,11 @@ option(WANNIER90_SHARED_LIBS "Wannier90: Build library as a shared library" ${PR
 option(WANNIER90_INSTALL "Wannier90: Install files" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_TEST "Wannier90: Build test-suite" ${PROJECT_IS_TOP_LEVEL})
 
+set(WANNIER90_LIBRARY_NAME wannier90)
+if (WANNIER90_MPI)
+	set(WANNIER90_LIBRARY_NAME wannier90_mpi)
+endif ()
+
 #[=============================================================================[
 #                            Project configuration                            #
 ]=============================================================================]
@@ -71,7 +76,7 @@ endif ()
 
 ## Populate variables for FetchContent and sub-projects
 # All variables have to be consistent with CMakeExtraUtilsConfig.cmake
-set(Wannier90_MPI ${WANNIER90_WITH_MPI})
+set(Wannier90_MPI ${WANNIER90_MPI})
 set(Wannier90_MPIH ${WANNIER90_MPIH})
 
 #[=============================================================================[
@@ -110,7 +115,7 @@ set_target_properties(Wannier90_post PROPERTIES
 add_executable(Wannier90::post ALIAS Wannier90_post)
 add_library(Wannier90_lib)
 set_target_properties(Wannier90_lib PROPERTIES
-		OUTPUT_NAME wannier90
+		OUTPUT_NAME ${WANNIER90_LIBRARY_NAME}
 		EXPORT_NAME wannier90
 		VERSION ${PROJECT_VERSION}
 		SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -139,8 +144,9 @@ endif ()
 
 ## Installs
 if (WANNIER90_INSTALL)
-	configure_file(cmake/wannier90.pc.in wannier90.pc)
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/wannier90.pc
+	set(WANNIER90_PKGCONFIG_FILE "${WANNIER90_LIBRARY_NAME}.pc")
+	configure_file(cmake/wannier90.pc.in ${WANNIER90_PKGCONFIG_FILE} @ONLY)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${WANNIER90_PKGCONFIG_FILE}
 			DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 			COMPONENT Wannier90_Development
 	)
