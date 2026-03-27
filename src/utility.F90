@@ -191,7 +191,7 @@ contains
     complex(kind=dp), intent(out), optional :: prod1(:, :), prod2(:, :)
 
     complex(kind=dp), allocatable :: tmp(:, :)
-    integer :: nb, mc, i, j
+    integer :: nb, mc, i, j,ierr
 
     ! query matrix sizes
     ! naming convention:
@@ -209,7 +209,13 @@ contains
     end if
 
     ! tmp = op(b).op(c)
-    allocate (tmp(nb, mc))
+    allocate (tmp(nb, mc), stat=ierr)
+ ! only called in postw90 - should propagate the errors
+ !   if (ierr /= 0) then
+ !     call set_error_alloc(error, 'Error in allocating tmp in utility_zgemmm', comm)
+ !     return
+ !   end if
+
     call utility_zgemm_new(b, c, tmp, transb, transc)
 
     ! prod1 = op(a).tmp
@@ -1087,7 +1093,7 @@ contains
     !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
     !
     use w90_constants, only: dp, pi
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
 
     implicit none
 
@@ -1100,12 +1106,23 @@ contains
     integer :: n
     !! input: the order of the smearing function
     type(w90_comm_type), intent(in) :: comm
+    integer :: ierr
+
 
     ! local variables
     real(kind=dp) :: sqrtpm1
 
-    allocate (res(size(x)))
-    allocate (arg(size(x)))
+    allocate (res(size(x)), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating res in utility_w0gauss_vec', comm)
+      return
+    end if
+    allocate (arg(size(x)), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating arg in utility_w0gauss_vec', comm)
+      return
+    end if
+
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then

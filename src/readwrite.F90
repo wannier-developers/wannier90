@@ -228,7 +228,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer :: nk
+    integer :: nk, ierr
     logical :: found
 
     found = .false.
@@ -246,13 +246,21 @@ contains
         call set_error_input(error, 'Error: incorrect length of k-distribution (distk)', comm)
         return
       end if
-      allocate (distk(nkin))
+      allocate (distk(nkin), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
+        return
+      end if
       call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
       if (allocated(error)) return
     else
       write (stdout, '(a)') 'Note: parallel distribution provided (option distk missing)'
       write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
-      allocate (distk(nkin))
+      allocate (distk(nkin), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
+        return
+      end if
       distk = 0 ! default to no distribution if not specified
     end if
   end subroutine w90_readwrite_read_distk
@@ -476,13 +484,13 @@ contains
       if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating labels in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating labels in w90_readwrite_read_kpath', comm)
         return
       end if
       if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating points in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating points in w90_readwrite_read_kpath', comm)
         return
       end if
       call w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
@@ -524,13 +532,13 @@ contains
       if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating explicit_kpath labels in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating explicit_kpath labels in w90_readwrite_read_explicit_kpath', comm)
         return
       end if
       if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating explicit kpoint labels in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating explicit kpoint labels in w90_readwrite_read_explicit_kpath', comm)
         return
       end if
       call w90_readwrite_get_keyword_explicit_kpath(settings, kpoint_path, error, comm)
@@ -894,7 +902,7 @@ contains
       end if
       allocate (kmesh_input%shell_list(kmesh_input%num_shells), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating shell_list in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating shell_list in w90_readwrite_read_kmesh_data', comm)
         return
       end if
       call w90_readwrite_get_range_vector(settings, 'shell_list', found, kmesh_input%num_shells, &
@@ -1024,13 +1032,13 @@ contains
 
     allocate (kpt_latt(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_explicit_kpath', comm)
+      call set_error_alloc(error, 'Error allocating kpt_latt in w90_readwrite_read_explicit_kpath_points', comm)
       return
     end if
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
+      call set_error_alloc(error, 'Error allocating kpt_cart in w90_readwrite_read_explicit_kpath_points', comm)
       return
     end if
 
@@ -1045,7 +1053,7 @@ contains
 
     deallocate (kpt_cart, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_explicit_kpath', comm)
+      call set_error_dealloc(error, 'Error deallocating kpt_cart in w90_readwrite_read_explicit_kpath_points', comm)
       return
     end if
   end subroutine w90_readwrite_read_explicit_kpath_points
@@ -1073,7 +1081,7 @@ contains
   end subroutine w90_readwrite_read_lattice
 
   subroutine w90_readwrite_read_atoms(settings, atom_data, real_lattice, bohr, error, comm)
-    use w90_error, only: w90_error_type, set_error_input
+    use w90_error, only: w90_error_type, set_error_input, set_error_dealloc, set_error_alloc
     use w90_utility, only: utility_cart_to_frac
 
     implicit none
@@ -1088,7 +1096,7 @@ contains
 
     ! local variables
     character(len=maxlen), allocatable :: atoms_label_tmp(:)
-    integer :: i_temp, i_temp2, loop, nsymb
+    integer :: i_temp, i_temp2, loop, nsymb, ierr
     logical :: found, found2, found3, lunits
     real(kind=dp), allocatable :: atoms_pos_cart_tmp(:, :)
     real(kind=dp), allocatable :: atoms_pos_frac_tmp(:, :)
@@ -1117,8 +1125,17 @@ contains
 
       if (found) atom_data%num_atoms = nsymb ! shape of symbols is n, i_temp returns n
 
-      allocate (atoms_label_tmp(atom_data%num_atoms))
-      allocate (atoms_pos_cart_tmp(3, atom_data%num_atoms))
+      allocate (atoms_label_tmp(atom_data%num_atoms), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating atoms_label_tmp in w90_readwrite_read_atoms', comm)
+        return
+      end if
+      allocate (atoms_pos_cart_tmp(3, atom_data%num_atoms), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating atoms_pos_cart_tmp in w90_readwrite_read_atoms', comm)
+        return
+      end if
+
 
       ! get symbols list
       if (found) then
@@ -1134,7 +1151,12 @@ contains
       end if
 
       if (found3) then
-        allocate (atoms_pos_frac_tmp(3, atom_data%num_atoms))
+        allocate (atoms_pos_frac_tmp(3, atom_data%num_atoms), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating atoms_pos_frac_tmp in w90_readwrite_read_atoms', comm)
+          return
+        end if
+
         call w90_readwrite_get_keyword_vector(settings, 'atoms_frac', found, i_temp, error, comm, &
                                               r2_value=atoms_pos_frac_tmp)
         if (allocated(error)) return
@@ -1143,14 +1165,28 @@ contains
           call utility_cart_to_frac(atoms_pos_frac_tmp(:, loop), &
                                     atoms_pos_cart_tmp(:, loop), transpose(real_lattice))
         end do
-        deallocate (atoms_pos_frac_tmp)
+        deallocate (atoms_pos_frac_tmp, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error in deallocating atoms_pos_frac_tmp in w90_readwrite_read_atoms', comm)
+          return
+        end if
+
       end if
 
       call w90_readwrite_set_atoms(atom_data, atoms_label_tmp, atoms_pos_cart_tmp, error, comm)
       if (allocated(error)) return
 
-      deallocate (atoms_label_tmp)
-      deallocate (atoms_pos_cart_tmp)
+      deallocate (atoms_label_tmp, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_label_tmp in w90_readwrite_read_atoms', comm)
+        return
+      end if
+      deallocate (atoms_pos_cart_tmp, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating atoms_pos_cart_tmp in w90_readwrite_read_atoms', comm)
+        return
+      end if
+
 
       return ! no futher action in library mode
     end if
@@ -1198,7 +1234,7 @@ contains
     ! (for _vector: just specify zero length)
     ! (for _block: small modification to skip checking/failure when rows=0 )
     !use w90_io, only: io_error
-    use w90_error, only: w90_error_type
+    use w90_error, only: w90_error_type, set_error_dealloc, set_error_alloc
 
     implicit none
 
@@ -1209,7 +1245,7 @@ contains
     type(w90_error_type), allocatable :: error
 
     logical :: found
-    integer :: lx
+    integer :: lx,ierr
     integer, allocatable :: lxa(:)
 
     ! keywords for wannier.x
@@ -1349,19 +1385,74 @@ contains
     call w90_readwrite_get_keyword_vector(settings, 'wannier_plot_supercell', found, 0, error, comm)
     call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 0, error, comm)
     call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if 
     call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+        if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+        if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+        if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .false., error, comm, lxa)
 
     !call w90_readwrite_read_exclude_bands(settings, lxa, lx, error, comm)
@@ -1488,17 +1579,61 @@ contains
     call w90_readwrite_get_keyword_vector(settings, 'kslice_corner', found, 0, error, comm)
     call w90_readwrite_get_keyword_vector(settings, 'spin_kmesh', found, 0, error, comm)
     call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .true., error, comm)
-    if (allocated(lxa)) deallocate (lxa); allocate (lxa(lx))
+    if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
     call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .false., error, comm, lxa)
-    deallocate (lxa)
+    deallocate (lxa, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+      return
+    end if
     ! ends list of postw90 keywords
-    if (allocated(error)) deallocate (error)
+    if (allocated(error)) then
+      deallocate (error, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating error in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
+
   end subroutine w90_readwrite_clear_keywords
 
   subroutine w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
@@ -1595,14 +1730,14 @@ contains
     if (allocated(wannier_data%centres)) deallocate (wannier_data%centres)
     allocate (wannier_data%centres(3, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating wannier_centres in w90_wannier90_readwrite_read', comm)
+      call set_error_alloc(error, 'Error allocating wannier_centres in w90_readwrite_read_final_alloc', comm)
       return
     end if
     wannier_data%centres = 0.0_dp
     if (allocated(wannier_data%spreads)) deallocate (wannier_data%spreads)
     allocate (wannier_data%spreads(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating wannier_spreads in w90_wannier90_readwrite_read', comm)
+      call set_error_alloc(error, 'Error in allocating wannier_spreads in w90_readwrite_read_final_alloc', comm)
       return
     end if
     wannier_data%spreads = 0.0_dp
@@ -2313,7 +2448,7 @@ contains
       if (.not. allocated(dis_manifold%lwindow)) then
         allocate (dis_manifold%lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_read_chkpt', comm)
+          call set_error_alloc(error, 'Error allocating lwindow in w90_readwrite_read_chkpt_matrices', comm)
           return
         end if
       end if
@@ -2323,7 +2458,7 @@ contains
       if (.not. allocated(dis_manifold%ndimwin)) then
         allocate (dis_manifold%ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_read_chkpt', comm)
+          call set_error_alloc(error, 'Error allocating ndimwin in w90_readwrite_read_chkpt_matrices', comm)
           return
         end if
       end if
@@ -2355,19 +2490,26 @@ contains
 
     return
 
-122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+122 call set_error_file(error, 'Error reading lwindow from '//trim(seedname)//'.chk in  &
+     & w90_readwrite_read_chkpt_matrices', comm)
     return
-123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+123 call set_error_file(error, 'Error reading ndimwin from '//trim(seedname)//'.chk in &
+     & w90_readwrite_read_chkpt_matrices', comm)
     return
-124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+124 call set_error_file(error, 'Error reading u_matrix_opt from '//trim(seedname)//'.chk in &
+    & w90_readwrite_read_chkpt_matrices', comm)
     return
-125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+125 call set_error_file(error, 'Error reading u_matrix from '//trim(seedname)//'.chk in &
+    & w90_readwrite_read_chkpt_matrices', comm)
     return
-126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+126 call set_error_file(error, 'Error reading m_matrix from '//trim(seedname)//'.chk in &
+    & w90_readwrite_read_chkpt_matrices', comm)
     return
-127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+127 call set_error_file(error, 'Error reading wannier_centres from '//trim(seedname)//'.chk in &
+    & w90_readwrite_read_chkpt_matrices', comm)
     return
-128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in w90_readwrite_read_chkpt', comm)
+128 call set_error_file(error, 'Error reading wannier_spreads from '//trim(seedname)//'.chk in &
+    & w90_readwrite_read_chkpt_matrices', comm)
     return
   end subroutine w90_readwrite_read_chkpt_matrices
 
@@ -3395,17 +3537,17 @@ contains
 
     allocate (atom_data%species_num(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating atoms_species_num in w90_readwrite_lib_set_atoms', comm)
+      call set_error_alloc(error, 'Error allocating atoms_species_num in w90_readwrite_set_atoms', comm)
       return
     end if
     allocate (atom_data%label(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating atoms_label in w90_readwrite_lib_set_atoms', comm)
+      call set_error_alloc(error, 'Error allocating atoms_label in w90_readwrite__set_atoms', comm)
       return
     end if
     allocate (atom_data%symbol(atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating atoms_symbol in w90_readwrite_lib_set_atoms', comm)
+      call set_error_alloc(error, 'Error allocating atoms_symbol in w90_readwrite_set_atoms', comm)
       return
     end if
 
@@ -3423,7 +3565,7 @@ contains
     max_sites = maxval(atom_data%species_num)
     allocate (atom_data%pos_cart(3, max_sites, atom_data%num_species), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating atoms_pos_cart in w90_readwrite_lib_set_atoms', comm)
+      call set_error_alloc(error, 'Error allocating atoms_pos_cart in w90_readwrite_set_atoms', comm)
       return
     end if
 

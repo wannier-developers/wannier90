@@ -211,7 +211,11 @@ contains
     if (my_node_id == 0) then
       on_root = .true.
     end if
-    allocate (map_kpts(num_kpts))
+    allocate (map_kpts(num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating map_kpts in overlap_read', comm)
+      return
+    end if
     nkp_loc = 1
     do nkp = 1, num_kpts
       if (dist_k(nkp) == my_node_id) then
@@ -379,7 +383,11 @@ contains
                                    timing_level, timer, error, comm)
     if (allocated(error)) return
 
-    deallocate (map_kpts)
+    deallocate (map_kpts, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating map_kpts in overlap_read', comm)
+      return
+    end if
     if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)
 
     return

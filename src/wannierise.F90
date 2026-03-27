@@ -253,7 +253,7 @@ contains
       call set_error_alloc(error, 'Error in allocating rave2 in wann_main', comm)
       return
     end if
-    allocate (rguide(3, num_wann))
+    allocate (rguide(3, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rguide in wann_main', comm)
       return
@@ -1102,7 +1102,7 @@ contains
 
       allocate (temp_hist(wann_control%conv_window), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating temp_hist in wann_main', comm)
+        call set_error_alloc(error, 'Error allocating temp_hist in wann_main: test_convergence', comm)
         return
       end if
 
@@ -1150,7 +1150,7 @@ contains
 
       deallocate (temp_hist, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main', comm)
+        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main: test_convergence', comm)
         return
       end if
 
@@ -1185,17 +1185,17 @@ contains
       ! Allocate
       allocate (noise_real(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating noise_real in wann_main', comm)
+        call set_error_alloc(error, 'Error allocating noise_real in wann_main: random_noise', comm)
         return
       end if
       allocate (noise_imag(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating noise_imag in wann_main', comm)
+        call set_error_alloc(error, 'Error allocating noise_imag in wann_main: random_noise', comm)
         return
       end if
       allocate (cnoise(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating cnoise in wann_main', comm)
+        call set_error_alloc(error, 'Error allocating cnoise in wann_main: random_noise', comm)
         return
       end if
 
@@ -1229,17 +1229,17 @@ contains
       ! Deallocate
       deallocate (cnoise, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating cnoise in wann_main', comm)
+        call set_error_dealloc(error, 'Error deallocating cnoise in wann_main: random_noise', comm)
         return
       end if
       deallocate (noise_imag, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating noise_imag in wann_main', comm)
+        call set_error_dealloc(error, 'Error deallocating noise_imag in wann_main: random_noise', comm)
         return
       end if
       deallocate (noise_real, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating noise_real in wann_main', comm)
+        call set_error_dealloc(error, 'Error deallocating noise_real in wann_main: random_noise', comm)
         return
       end if
 
@@ -2468,7 +2468,7 @@ contains
     if (use_ss_functional) then
       allocate (sum_mnn(num_wann, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating sum_mnn in wann_omega', comm)
+        call set_error_alloc(error, 'Error in allocating sum_mnn in wann_domega', comm)
         return
       end if
 
@@ -2551,7 +2551,11 @@ contains
         if (allocated(error)) return
       end if
 
-      deallocate (sum_mnn) !fixme check error status
+      deallocate (sum_mnn, stat=ierr) 
+      if (ierr /= 0) then
+         call set_error_dealloc(error, 'Error in deallocating sum_mnn in wann_domega', comm)
+         return
+      end if
 
     else ! not Stengel-Spalding
 
@@ -2992,7 +2996,7 @@ contains
       call set_error_alloc(error, 'Error in allocating rave2 in wann_main_gamma', comm)
       return
     end if
-    allocate (rguide(3, num_wann))
+    allocate (rguide(3, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating rguide in wann_main_gamma', comm)
       return
@@ -3441,7 +3445,7 @@ contains
 
       allocate (temp_hist(conv_window), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating temp_hist in wann_main', comm)
+        call set_error_alloc(error, 'Error allocating temp_hist in wann_main: test_convergence_gamma', comm)
         return
       end if
 
@@ -3465,7 +3469,7 @@ contains
 
       deallocate (temp_hist, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main_gamma', comm)
+        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main_gamma: test_convergence_gamma', comm)
         return
       end if
 

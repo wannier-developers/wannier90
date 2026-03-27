@@ -249,7 +249,8 @@ contains
 
       if (output_file%write_u_matrices) then
         call plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, have_disentangled, &
-                             num_wann, num_kpts, num_bands, seedname)
+                             num_wann, num_kpts, num_bands, seedname, error, comm)
+        if (allocated(error)) return
       end if
 
       if (output_file%write_vdw_data) then
@@ -418,8 +419,16 @@ contains
     on_root = .false.
     if (my_node_id == 0) on_root = .true.
 
-    allocate (counts(0:num_nodes - 1))
-    allocate (displs(0:num_nodes - 1))
+    allocate (counts(0:num_nodes - 1), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating counts in plot_interpolate_bands', comm)
+      return
+    end if
+    allocate (displs(0:num_nodes - 1), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating displs in plot_interpolate_bands', comm)
+      return
+    end if
     !
     if (on_root) then
       if (print_output%timing_level > 1) then
@@ -1658,7 +1667,6 @@ contains
       ngrid = ngx*ngy*ngz
 
       allocate (wann_func(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, wann_plot_num), stat=ierr)
-
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier', comm)
         return
@@ -2002,7 +2010,7 @@ contains
           call internal_cube_format(atom_data, wannier_data, real_lattice, bohr, error)
           if (allocated(error)) return
         else
-          call set_error_warn(error, 'wannier_plot_format not recognised in wannier_plot', comm)
+          call set_error_warn(error, 'wannier_plot_format not recognised in plot_wannier', comm)
           return
         end if
 
@@ -2011,12 +2019,41 @@ contains
 
     end associate
 
-    if (allocated(c_wvfn)) deallocate (c_wvfn)
-    if (allocated(c_wvfn_nc)) deallocate (c_wvfn_nc)
-    if (allocated(phase_x)) deallocate (phase_x)
-    if (allocated(phase_y)) deallocate (phase_y)
-    if (allocated(phase_z)) deallocate (phase_z)
-
+    if (allocated(c_wvfn)) then
+      deallocate (c_wvfn, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating c_wvfn in plot_wannier', comm)
+        return
+      end if
+    end if
+    if (allocated(c_wvfn_nc)) then
+      deallocate (c_wvfn_nc, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating c_wvfn_nc in plot_wannier', comm)
+        return
+      end if
+    end if
+    if (allocated(phase_x)) then
+      deallocate (phase_x, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating phase_x in plot_wannier', comm)
+        return
+      end if
+    end if
+    if (allocated(phase_y)) then
+      deallocate (phase_y, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating phase_y in plot_wannier', comm)
+        return
+      end if
+    end if
+    if (allocated(phase_z)) then
+      deallocate (phase_z, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating phase_z in plot_wannier', comm)
+        return
+       end if
+    end if
     return
 
   contains
@@ -2074,7 +2111,7 @@ contains
 
         allocate (atomic_Z(atom_data%num_species), stat=ierr)
         if (ierr .ne. 0) then
-          call set_error_alloc(error, 'Error: allocating atomic_Z in wannier_plot', comm)
+          call set_error_alloc(error, 'Error: allocating atomic_Z in plot_wannier: cube_format', comm)
           return
         end if
 
@@ -2175,7 +2212,7 @@ contains
 
           allocate (wann_cube(1:ilength(1), 1:ilength(2), 1:ilength(3)), stat=ierr)
           if (ierr .ne. 0) then
-            call set_error_alloc(error, 'Error: allocating wann_cube in wannier_plot', comm)
+            call set_error_alloc(error, 'Error: allocating wann_cube in plot_wannier: cube_format', comm)
             return
           end if
 
@@ -2336,7 +2373,7 @@ contains
 
           deallocate (wann_cube, stat=ierr)
           if (ierr .ne. 0) then
-            call set_error_dealloc(error, 'Error: deallocating wann_cube in wannier_plot', comm)
+            call set_error_dealloc(error, 'Error: deallocating wann_cube in plot_wannier: cube_format', comm)
             return
           end if
 
@@ -2344,7 +2381,7 @@ contains
 
         deallocate (atomic_Z, stat=ierr)
         if (ierr .ne. 0) then
-          call set_error_dealloc(error, 'Error: deallocating atomic_Z in wannier_plot', comm)
+          call set_error_dealloc(error, 'Error: deallocating atomic_Z in plot_wannier: cube_format', comm)
           return
         end if
 
@@ -2436,7 +2473,7 @@ contains
 
   !================================================!
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, &
-                             have_disentangled, num_wann, num_kpts, num_bands, seedname)
+                have_disentangled, num_wann, num_kpts, num_bands, seedname, error, comm)
     !================================================!
     !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
@@ -2446,6 +2483,7 @@ contains
     use w90_constants, only: dp
     use w90_io, only: io_time, io_date
     use w90_types, only: dis_manifold_type
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -2458,11 +2496,13 @@ contains
     logical, intent(in) :: have_disentangled
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(in) :: dis_manifold
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
     complex(kind=dp), allocatable :: utmp(:, :) ! re-indexed u_matrix_opt for printout
-    integer :: matunit, i, j, nkp, ioff, nbw
+    integer :: matunit, i, j, nkp, ioff, nbw, ierr
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
@@ -2480,7 +2520,11 @@ contains
     close (matunit)
 
     if (have_disentangled) then
-      allocate (utmp(num_bands, num_wann))
+      allocate (utmp(num_bands, num_wann), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating utmp in plot_u_matrices', comm)
+        return
+      end if
 
       open (newunit=matunit, file=trim(seedname)//'_u_dis.mat', form='formatted')
       write (matunit, *) header
@@ -2496,7 +2540,11 @@ contains
         write (matunit, '(f15.10,sp,f15.10)') ((utmp(i, j), i=1, num_bands), j=1, num_wann)
       end do
       close (matunit)
-      deallocate (utmp)
+      deallocate (utmp, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating utmp in plot_u_matrices', comm)
+      return
+      end if
     end if
 
   end subroutine plot_u_matrices
