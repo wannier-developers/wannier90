@@ -1560,7 +1560,7 @@ contains
                          timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
     use w90_comms, only: w90_comm_type
-    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_file, &
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_file, &
                          set_error_warn
 
     implicit none
