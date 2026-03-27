@@ -1606,6 +1606,12 @@ contains
 
       if (atom_data%num_species > 0) then
         ! only read projections if atom positions are known
+        ! Count pass first: num_proj may exceed num_wann when there are more initial
+        ! projections than target Wannier functions (valid for disentanglement).
+        ! Without this, input_proj is allocated at size num_wann and overflows.
+        call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
+                                           recip_lattice, .true., spinors, bohr, stdout, error, comm)
+        if (allocated(error)) return
         call w90_readwrite_get_projections(settings, num_proj, atom_data, num_wann, proj_input, &
                                            recip_lattice, .false., spinors, bohr, stdout, error, comm)
         if (allocated(error)) return
