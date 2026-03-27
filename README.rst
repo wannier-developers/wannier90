@@ -109,7 +109,7 @@ In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.4
 Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Minsu Ghim,
 Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik Jochym,
 Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm,
-Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin. 
+Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin.
 
 In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
 

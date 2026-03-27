@@ -61,11 +61,19 @@ and
 
 The Wannier90 Developer Group includes Giovanni Pizzi (Paul Scherrer Institute,
 CH), Valerio Vitale (University of Trieste, IT), David Vanderbilt (Rutgers
-University, US), Nicola Marzari (EPFL, CH and University of Cambridge, GB), Ivo Souza (Universidad del Pais Vasco, ES), Arash A. Mostofi (Imperial College London, GB), and Jonathan R. Yates (University of Oxford, GB).
+University, US), Nicola Marzari (EPFL, CH and University of Cambridge, GB),
+Ivo Souza (Universidad del Pais Vasco, ES), Arash A. Mostofi (Imperial College
+London, GB), and Jonathan R. Yates (University of Oxford, GB).
 
-`wannier90` Version 4.x was written by the Wannier90 Developer Group together with Jerome Jackson (STFC Daresbury Laboratory, GB), Leon Petit (STFC Daresbury Laboratory, GB) and Barry G. Searle (STFC Daresbury Laboratory, GB).
+`wannier90` Version 4.x was written by the Wannier90 Developer Group together
+with Jerome Jackson (STFC Daresbury Laboratory, GB), Leon Petit (STFC
+Daresbury Laboratory, GB) and Barry G. Searle (STFC Daresbury Laboratory, GB).
 
-Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Minsu Ghim, Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik Jochym, Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm, Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin.
+Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Minsu Ghim,
+Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik
+Jochym, Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo
+Lihm, Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and
+Stepan Tsirkin.
 
 `wannier90` Version 3.x was written by the Wannier90
 Developer Group together with Ryotaro Arita (Riken and U. Tokyo, JP),
@@ -119,18 +127,18 @@ contributors
 
 ## Licence
 
-Version 4.0.0 and later versions of Wannier90 are released under the 
+Version 4.0.0 and later versions of Wannier90 are released under the
 terms of the GNU Lesser General Public License version 2.1 or later.
 
-Version 3.1.0 and earlier versions of Wannier90 are released under the 
+Version 3.1.0 and earlier versions of Wannier90 are released under the
 terms of the GNU General Public License version 2 or later.
 
 All the material in this distribution is free software; you can
 redistribute it and/or modify it under the terms of the relevant
-license as published by the Free Software Foundation 
-(see https://www.gnu.org/licenses/).
+license as published by the Free Software Foundation
+(see <https://www.gnu.org/licenses/>).
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the relevant 
-license for more details (https://www.gnu.org/licenses/).
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the relevant
+license for more details (<https://www.gnu.org/licenses/>).
