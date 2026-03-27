@@ -12,7 +12,7 @@ As the community of developers grows, it is important to maintain a degree of co
   - contain the `IMPLICIT NONE` statement
   - depend on as few other modules as possible
   - be declared `PRIVATE` and have a minimal set of public entities
-  - start with the GPL header that is common to all module files
+  - start with the Lesser-GPL (LGPL) header that is common to all module files
   - be properly annotated with Fortran Documenter (FORD) comments
 * Subroutines that are public should be named with a common prefix associated with the module in which they sit. E.g., the names of public subroutines in `wannierise_mod.F90` start with `wann_`, etc.
 * Variable, parameter, function, subroutine and module names should be informative and, in so far as possible, maintain consistency of style with existing names

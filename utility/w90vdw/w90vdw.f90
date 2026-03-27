@@ -1,5 +1,5 @@
 !-*- mode: F90 -*-!
-!                                                            !
+!------------------------------------------------------------!
 ! Copyright (C) 2012 Lampros Andrinopoulos, Nicholas Hine,   !
 !                    and Arash A Mostofi                     !
 !                                                            !
@@ -11,11 +11,27 @@
 ! The methodology coded here is based on the original work   !
 ! of PL Silvestrelli, Phys Rev Lett 100, 053002 (2008)       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
+!                                                            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
 !------------------------------------------------------------!
 ! Code to calculate vdW energies from MLWFs                  !
 !------------------------------------------------------------!
