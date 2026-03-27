@@ -137,7 +137,7 @@ contains
     end if
 
     call utility_recip_lattice(real_lattice, recip_lattice, volume, error, comm)
-    if(allocated(error)) return
+    if (allocated(error)) return
     call utility_inverse_mat(recip_lattice, inv_lattice)
     if (print_output%iprint > 0) write (stdout, '(/1x,a)') &
       '*---------------------------------- K-MESH ----------------------------------*'
@@ -905,11 +905,11 @@ contains
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating kmesh_info%nnrev in kmesh_get', comm)
         return
-      end if 
+      end if
       call kmesh_bvectors_perm(kmesh_info%bk(:, :, :), kmesh_info%bk(:, :, 1), num_kpts, &
                                kmesh_info%nntot, kmesh_info%nnord, kmesh_info%nninv, &
                                kmesh_info%nnrev, error, comm)
-      if(allocated(error)) return
+      if (allocated(error)) return
     end if
 
     deallocate (kpt_cart, stat=ierr)
@@ -1474,18 +1474,18 @@ contains
       num_of_eqs = (1 + higher_order_n_local)*(1 + 2*higher_order_n_local)
       allocate (num_x(higher_order_n_local, num_of_eqs), stat=ierr)
       if (ierr /= 0) then
-         call set_error_alloc(error, 'Error allocating num_x in kmesh_shell_automatic', comm)
-         return
+        call set_error_alloc(error, 'Error allocating num_x in kmesh_shell_automatic', comm)
+        return
       end if
       allocate (num_y(higher_order_n_local, num_of_eqs), stat=ierr)
       if (ierr /= 0) then
-         call set_error_alloc(error, 'Error allocating num_y in kmesh_shell_automatic', comm)
-         return
+        call set_error_alloc(error, 'Error allocating num_y in kmesh_shell_automatic', comm)
+        return
       end if
       allocate (num_z(higher_order_n_local, num_of_eqs), stat=ierr)
       if (ierr /= 0) then
-         call set_error_alloc(error, 'Error allocating num_z in kmesh_shell_automatic', comm)
-         return
+        call set_error_alloc(error, 'Error allocating num_z in kmesh_shell_automatic', comm)
+        return
       end if
 
       !find higher finite-diff weights

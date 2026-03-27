@@ -2551,10 +2551,10 @@ contains
         if (allocated(error)) return
       end if
 
-      deallocate (sum_mnn, stat=ierr) 
+      deallocate (sum_mnn, stat=ierr)
       if (ierr /= 0) then
-         call set_error_dealloc(error, 'Error in deallocating sum_mnn in wann_domega', comm)
-         return
+        call set_error_dealloc(error, 'Error in deallocating sum_mnn in wann_domega', comm)
+        return
       end if
 
     else ! not Stengel-Spalding
