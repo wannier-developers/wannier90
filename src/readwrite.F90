@@ -1392,11 +1392,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .true., error, comm)
@@ -1406,11 +1406,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
@@ -1420,11 +1420,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .true., error, comm)
@@ -1434,11 +1434,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .true., error, comm)
@@ -1448,11 +1448,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .false., error, comm, lxa)
 
@@ -1586,11 +1586,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .true., error, comm)
@@ -1600,11 +1600,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .true., error, comm)
@@ -1614,11 +1614,11 @@ contains
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-      allocate (lxa(lx), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
     end if
     call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .false., error, comm, lxa)
     deallocate (lxa, stat=ierr)
@@ -1627,13 +1627,7 @@ contains
       return
     end if
     ! ends list of postw90 keywords
-    if (allocated(error)) then
-      deallocate (error, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating error in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
+    if (allocated(error)) deallocate (error)
 
   end subroutine w90_readwrite_clear_keywords
 
@@ -3696,6 +3690,10 @@ contains
       read (c_num1, *, err=101, end=101) num1
       dummy = adjustl(dummy(i_punc:))
       !look for range
+      write (77, *) trim(keyword)
+      write (77, *) 'here'
+      write (77, *) dummy
+      write (77, *) 'here 2'
       if (scan(dummy, c_range) == 1) then
         i_digit = scan(dummy, c_digit)
         dummy = adjustl(dummy(i_digit:))
