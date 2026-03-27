@@ -1136,7 +1136,6 @@ contains
         return
       end if
 
-
       ! get symbols list
       if (found) then
         call w90_readwrite_get_keyword_vector(settings, 'symbols', found, i_temp, error, comm, &
@@ -1186,7 +1185,6 @@ contains
         call set_error_dealloc(error, 'Error in deallocating atoms_pos_cart_tmp in w90_readwrite_read_atoms', comm)
         return
       end if
-
 
       return ! no futher action in library mode
     end if
@@ -1245,7 +1243,7 @@ contains
     type(w90_error_type), allocatable :: error
 
     logical :: found
-    integer :: lx,ierr
+    integer :: lx, ierr
     integer, allocatable :: lxa(:)
 
     ! keywords for wannier.x
@@ -1396,10 +1394,10 @@ contains
         call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
         return
       end if
-    end if 
+    end if
     call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .true., error, comm)
-        if (allocated(lxa)) then
+    if (allocated(lxa)) then
       deallocate (lxa, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
@@ -1427,7 +1425,7 @@ contains
     end if
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .true., error, comm)
-        if (allocated(lxa)) then
+    if (allocated(lxa)) then
       deallocate (lxa, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
@@ -1441,7 +1439,7 @@ contains
     end if
     call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .true., error, comm)
-        if (allocated(lxa)) then
+    if (allocated(lxa)) then
       deallocate (lxa, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)

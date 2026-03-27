@@ -2052,7 +2052,7 @@ contains
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating phase_z in plot_wannier', comm)
         return
-       end if
+      end if
     end if
     return
 
@@ -2473,7 +2473,7 @@ contains
 
   !================================================!
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, &
-                have_disentangled, num_wann, num_kpts, num_bands, seedname, error, comm)
+                             have_disentangled, num_wann, num_kpts, num_bands, seedname, error, comm)
     !================================================!
     !
     !! Plot u_matrix and u_matrix_opt to textfiles in readable format
@@ -2543,7 +2543,7 @@ contains
       deallocate (utmp, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error in deallocating utmp in plot_u_matrices', comm)
-      return
+        return
       end if
     end if
 

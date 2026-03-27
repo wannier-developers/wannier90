@@ -191,7 +191,7 @@ contains
     complex(kind=dp), intent(out), optional :: prod1(:, :), prod2(:, :)
 
     complex(kind=dp), allocatable :: tmp(:, :)
-    integer :: nb, mc, i, j,ierr
+    integer :: nb, mc, i, j, ierr
 
     ! query matrix sizes
     ! naming convention:
@@ -210,11 +210,11 @@ contains
 
     ! tmp = op(b).op(c)
     allocate (tmp(nb, mc), stat=ierr)
- ! only called in postw90 - should propagate the errors
- !   if (ierr /= 0) then
- !     call set_error_alloc(error, 'Error in allocating tmp in utility_zgemmm', comm)
- !     return
- !   end if
+    ! only called in postw90 - should propagate the errors
+    !   if (ierr /= 0) then
+    !     call set_error_alloc(error, 'Error in allocating tmp in utility_zgemmm', comm)
+    !     return
+    !   end if
 
     call utility_zgemm_new(b, c, tmp, transb, transc)
 
@@ -1107,7 +1107,6 @@ contains
     !! input: the order of the smearing function
     type(w90_comm_type), intent(in) :: comm
     integer :: ierr
-
 
     ! local variables
     real(kind=dp) :: sqrtpm1

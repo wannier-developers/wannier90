@@ -1424,7 +1424,7 @@ contains
       end if
       kmesh_info%nntot = rows/num_kpts
 
-      if (allocated(nnkpts_block)) then 
+      if (allocated(nnkpts_block)) then
         deallocate (nnkpts_block, stat=ierr)
         if (ierr /= 0) then
           call set_error_dealloc(error, 'Error deallocating nnkpts_block in &
@@ -1464,14 +1464,14 @@ contains
       nnkpts_idx = 1
       ! allocating "global" nnlist & nncell
       ! These are deallocated in kmesh_dealloc
-      if (allocated(kmesh_info%nnlist)) then 
+      if (allocated(kmesh_info%nnlist)) then
         deallocate (kmesh_info%nnlist, stat=ierr)
         if (ierr /= 0) then
           call set_error_dealloc(error, 'Error deallocating nnlist in w90_wannier90_readwrite_read_explicit_kpts', comm)
           return
-        end if 
+        end if
       end if
-     allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
+      allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating nnlist in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
@@ -1607,14 +1607,14 @@ contains
         return
       end if
       if (allocated(select_projections)) then
-         deallocate (select_projections, stat=ierr)
-         if (ierr /= 0) then
-           call set_error_dealloc(error, 'Error deallocating select_projections &
-           & in w90_wannier90_readwrite_read_projections', comm)
+        deallocate (select_projections, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating select_projections &
+          & in w90_wannier90_readwrite_read_projections', comm)
           return
-        end if 
+        end if
       end if
-      allocate(select_projections(num_select_projections), stat=ierr)
+      allocate (select_projections(num_select_projections), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating select_projections in w90_wannier90_readwrite_read_projections', comm)
         return
@@ -1647,10 +1647,10 @@ contains
     end if ! found 'select_projections'
 
     if (allocated(select_proj%proj2wann_map)) then
-       deallocate (select_proj%proj2wann_map, stat=ierr)
-       if (ierr /= 0) then
-         call set_error_dealloc(error, 'Error deallocating proj2wann_map in w90_wannier90_readwrite_read_projections', comm)
-         return
+      deallocate (select_proj%proj2wann_map, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating proj2wann_map in w90_wannier90_readwrite_read_projections', comm)
+        return
       end if
     end if
     allocate (select_proj%proj2wann_map(num_proj), stat=ierr)
