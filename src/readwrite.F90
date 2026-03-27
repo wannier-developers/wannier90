@@ -219,6 +219,7 @@ contains
     !! The array to be read must have num_kpt entries, with each entry being
     !! the MPI rank to which each k-point is assigned
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc
+    use w90_comms, only: mpirank
     implicit none
 
     integer, allocatable, intent(inout) :: distk(:)
@@ -254,14 +255,16 @@ contains
       call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
       if (allocated(error)) return
     else
-      write (stdout, '(a)') 'Note: parallel distribution provided (option distk missing)'
-      write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
-      allocate (distk(nkin), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
-        return
+      if (mpirank(comm) == 0) then !only print on root rank
+        write (stdout, '(a)') 'Note: no parallel distribution provided (option distk missing)'
+        write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
+        allocate (distk(nkin), stat=ierr)
+        if (ierr /= 0) then                                    
+          call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
+          return                                               
+        end if
+        distk = 0 ! default to no distribution if not specified
       end if
-      distk = 0 ! default to no distribution if not specified
     end if
   end subroutine w90_readwrite_read_distk
 
@@ -1231,7 +1234,6 @@ contains
     !
     ! (for _vector: just specify zero length)
     ! (for _block: small modification to skip checking/failure when rows=0 )
-    !use w90_io, only: io_error
     use w90_error, only: w90_error_type, set_error_dealloc, set_error_alloc
 
     implicit none
