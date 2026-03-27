@@ -2201,29 +2201,29 @@ contains
 
     allocate (signatures(20, num_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating signatures in tran_find_sigs_unkg_int', comm)
+      call set_error_alloc(error, 'Error in allocating signatures in tran_find_integral_signatures', comm)
       return
     end if
     allocate (unkg(num_G, num_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating unkg in tran_find_sigs_unkg_int', comm)
+      call set_error_alloc(error, 'Error in allocating unkg in tran_find_integral_signatures', comm)
       return
     end if
     allocate (g_abc(num_G, 3), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating g_abc in tran_find_sigs_unkg_int', comm)
+      call set_error_alloc(error, 'Error in allocating g_abc in tran_find_integral_signatures', comm)
       return
     end if
     if (have_disentangled) then
       allocate (tran_u_matrix(num_bands, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', comm)
+        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_integral_signatures', comm)
         return
       end if
     else
       allocate (tran_u_matrix(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_sigs_unkg_int', comm)
+        call set_error_alloc(error, 'Error in allocating tran_u_matrix in tran_find_integral_signatures', comm)
         return
       end if
     end if
@@ -2233,7 +2233,7 @@ contains
       do i = 1, num_G
         read (file_unit, *) ibnd, ig, a, b, c, r_unkg, i_unkg
         if ((ig .ne. i) .OR. (ibnd .ne. m)) then
-          call set_error_file(error, 'tran_find_sigs_unkg_int: Incorrect bands or g vectors', comm)
+          call set_error_file(error, 'tran_find_integral_signatures: Incorrect bands or g vectors', comm)
           return
         end if
         unkg(i, m) = cmplx(r_unkg, i_unkg, kind=dp)
@@ -2412,17 +2412,17 @@ contains
 
     deallocate (tran_u_matrix, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating tran_u_matrix in tran_find_signatures', comm)
+      call set_error_dealloc(error, 'Error deallocating tran_u_matrix in tran_find_integral_signatures', comm)
       return
     end if
     deallocate (g_abc, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating g_abc in tran_find_signatures', comm)
+      call set_error_dealloc(error, 'Error deallocating g_abc in tran_find_integral_signatures', comm)
       return
     end if
     deallocate (unkg, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating unkg in tran_find_signatures', comm)
+      call set_error_dealloc(error, 'Error deallocating unkg in tran_find_integral_signatures', comm)
       return
     end if
 
@@ -4356,7 +4356,7 @@ contains
       write (stdout, *) 'Applying dist_cutoff_hc to Hamiltonian for construction of hC'
       deallocate (hr_one_dim, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_sort', comm)
+        call set_error_dealloc(error, 'Error deallocating hr_one_dim in tran_lcr_2c2_build_ham', comm)
         return
       end if
       call tran_reduce_hr(real_space_ham, ham_r, hr_one_dim, real_lattice, irvec, mp_grid, &

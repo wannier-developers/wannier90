@@ -109,7 +109,7 @@ contains
     ! local variables
     logical :: disentanglement
     real(kind=dp) :: inv_lattice(3, 3)
-    integer :: ip
+    integer :: ip, ierr
     integer :: num_exclude_bands, total_bands
 
     call w90_readwrite_read_lattice(settings, real_lattice, bohr, error, comm)
@@ -167,7 +167,12 @@ contains
     if (allocated(error)) return
 
     if (allocated(proj)) then
-      allocate (wann_control%guiding_centres%centres(3, num_proj))
+      allocate (wann_control%guiding_centres%centres(3, num_proj), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating ann_control%guiding_centres%centres &
+        & in w90_wannier90_readwrite_read_special', comm)
+        return
+      end if
       do ip = 1, num_proj
         wann_control%guiding_centres%centres(:, ip) = proj(ip)%site(:)
       end do
@@ -760,7 +765,8 @@ contains
       if (wann_control%constrain%selective_loc) then
         allocate (wann_control%constrain%centres(num_wann, 3), stat=ierr)
         if (ierr /= 0) then
-          call set_error_alloc(error, 'Error allocating ccentres_cart in w90_readwrite_get_centre_constraints', comm)
+          call set_error_alloc(error, 'Error allocating wann_control%constrain%centres &
+          & w90_wannier90_readwrite_read_wannierise', comm)
           return
         end if
       else
@@ -853,7 +859,7 @@ contains
     if (dis_spheres%num > 0) then
       allocate (dis_spheres%spheres(4, dis_spheres%num), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating dis_spheres in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating dis_spheres in w90_wannier90_readwrite_read_disentangle', comm)
         return
       end if
       call w90_readwrite_get_keyword_block(settings, 'dis_spheres', found, dis_spheres%num, 4, &
@@ -1087,10 +1093,17 @@ contains
         call set_error_input(error, 'Error: problem reading bands_plot_project', comm)
         return
       end if
-      if (allocated(band_plot%project)) deallocate (band_plot%project)
+      if (allocated(band_plot%project)) then
+        deallocate (band_plot%project, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating bands_plot%project in &
+          & w90_wannier90_readwrite_read_band_plot', comm)
+          return
+        end if
+      end if
       allocate (band_plot%project(num_project), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating bands_plot_project in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating bands_plot%project in w90_wannier90_readwrite_read_band_plot', comm)
         return
       end if
       call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, &
@@ -1192,10 +1205,16 @@ contains
         call set_error_input(error, 'Error: problem reading wannier_plot_list', comm)
         return
       end if
-      if (allocated(wann_plot%list)) deallocate (wann_plot%list)
+      if (allocated(wann_plot%list)) then
+        deallocate (wann_plot%list, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating wannier_plot%list in w90_wannier90_readwrite_read', comm)
+          return
+        end if
+      end if
       allocate (wann_plot%list(wann_plot_num), stat=ierr)
       if (ierr /= 0) then
-        call set_error_input(error, 'Error allocating wannier_plot_list in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating wannier_plot%list in w90_wannier90_readwrite_read', comm)
         return
       end if
       call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, wann_plot_num, .false., &
@@ -1208,10 +1227,17 @@ contains
     else
       ! we plot all wannier functions
       wann_plot_num = num_wann
-      if (allocated(wann_plot%list)) deallocate (wann_plot%list)
+      if (allocated(wann_plot%list)) then
+        deallocate (wann_plot%list)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating wannier_plot%list &
+          & in w90_wannier90_readwrite_read_wann_plot', comm)
+          return
+        end if
+      end if
       allocate (wann_plot%list(wann_plot_num), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating wannier_plot_list in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating wannier_plot%list in w90_wannier90_readwrite_read_wann_plot', comm)
         return
       end if
       do loop = 1, num_wann
@@ -1411,10 +1437,17 @@ contains
       end if
       kmesh_info%nntot = rows/num_kpts
 
-      if (allocated(nnkpts_block)) deallocate (nnkpts_block)
+      if (allocated(nnkpts_block)) then
+        deallocate (nnkpts_block, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating nnkpts_block in &
+          & w90_wannier90_readwrite_read_explicit_kpts', comm)
+          return
+        end if
+      end if
       allocate (nnkpts_block(5, rows), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating nnkpts_block in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating nnkpts_block in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
       end if
       call w90_readwrite_get_keyword_block(settings, 'nnkpts', found, rows, 5, bohr, error, comm, &
@@ -1429,25 +1462,43 @@ contains
 
       ! assign the values in nnkpts_block to nnlist and nncell
       ! this keeps track of how many neighbours have been seen for each k-point
-      if (allocated(nnkpts_idx)) deallocate (nnkpts_idx)
+      if (allocated(nnkpts_idx)) then
+        deallocate (nnkpts_idx, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating nnkpts_idx in w90_wannier90_readwrite_read_explicit_kpts', comm)
+          return
+        end if
+      end if
       allocate (nnkpts_idx(num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating nnkpts_idx in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating nnkpts_idx in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
       end if
       nnkpts_idx = 1
       ! allocating "global" nnlist & nncell
       ! These are deallocated in kmesh_dealloc
-      if (allocated(kmesh_info%nnlist)) deallocate (kmesh_info%nnlist)
+      if (allocated(kmesh_info%nnlist)) then
+        deallocate (kmesh_info%nnlist, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating nnlist in w90_wannier90_readwrite_read_explicit_kpts', comm)
+          return
+        end if
+      end if
       allocate (kmesh_info%nnlist(num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating nnlist in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating nnlist in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
       end if
-      if (allocated(kmesh_info%nncell)) deallocate (kmesh_info%nncell)
+      if (allocated(kmesh_info%nncell)) then
+        deallocate (kmesh_info%nncell, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating nncell in w90_wannier90_readwrite_read_explicit_kpts', comm)
+          return
+        end if
+      end if
       allocate (kmesh_info%nncell(3, num_kpts, kmesh_info%nntot), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating nncell in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating nncell in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
       end if
       do i = 1, num_kpts*kmesh_info%nntot
@@ -1463,12 +1514,12 @@ contains
       end if
       deallocate (nnkpts_idx, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating nnkpts_idx in w90_wannier90_readwrite_read', comm)
+        call set_error_dealloc(error, 'Error deallocating nnkpts_idx in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
       end if
       deallocate (nnkpts_block, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating nnkpts_block in w90_wannier90_readwrite_read', comm)
+        call set_error_dealloc(error, 'Error deallocating nnkpts_block in w90_wannier90_readwrite_read_explicit_kpts', comm)
         return
       end if
     end if
@@ -1568,10 +1619,17 @@ contains
         call set_error_input(error, 'Error: problem reading select_projections', comm)
         return
       end if
-      if (allocated(select_projections)) deallocate (select_projections)
+      if (allocated(select_projections)) then
+        deallocate (select_projections, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating select_projections &
+          & in w90_wannier90_readwrite_read_projections', comm)
+          return
+        end if
+      end if
       allocate (select_projections(num_select_projections), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating select_projections in w90_wannier90_readwrite_read', comm)
+        call set_error_alloc(error, 'Error allocating select_projections in w90_wannier90_readwrite_read_projections', comm)
         return
       end if
       call w90_readwrite_get_range_vector(settings, 'select_projections', found, num_select_projections, &
@@ -1601,10 +1659,16 @@ contains
       select_proj%lselproj = .true.
     end if ! found 'select_projections'
 
-    if (allocated(select_proj%proj2wann_map)) deallocate (select_proj%proj2wann_map)
+    if (allocated(select_proj%proj2wann_map)) then
+      deallocate (select_proj%proj2wann_map, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating proj2wann_map in w90_wannier90_readwrite_read_projections', comm)
+        return
+      end if
+    end if
     allocate (select_proj%proj2wann_map(num_proj), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating proj2wann_map in w90_wannier90_readwrite_read', comm)
+      call set_error_alloc(error, 'Error allocating proj2wann_map in w90_wannier90_readwrite_read_projections', comm)
       return
     end if
     select_proj%proj2wann_map = -1
@@ -1628,7 +1692,7 @@ contains
 
       allocate (proj(num_proj), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating proj in w90_readwrite_get_projections', comm)
+        call set_error_alloc(error, 'Error allocating proj in w90_wannier90_readwrite_read_projections', comm)
         return
       end if
       do loop = 1, num_proj
@@ -2241,49 +2305,54 @@ contains
     if (allocated(wann_plot%list)) then
       deallocate (wann_plot%list, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating wannier_plot_list in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating wann_plot%list in w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if
     if (allocated(band_plot%project)) then
       deallocate (band_plot%project, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating bands_plot_project in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating band_plot%project in &
+        & w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if
     if (allocated(wann_control%guiding_centres%centres)) then
       deallocate (wann_control%guiding_centres%centres, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating wannier proj_site in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating wann_control%guiding_centres%centres &
+        & in w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if
     if (allocated(wann_control%constrain%centres)) then
       deallocate (wann_control%constrain%centres, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating ccentres_cart in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error deallocating wann_control%constrain%centres &
+        & in w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if
     if (allocated(proj)) then
       deallocate (proj, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating proj in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating proj in w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if
     if (allocated(dis_spheres%spheres)) then
       deallocate (dis_spheres%spheres, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating dis_spheres in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating dis_spheres%spheres &
+        &  in w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if
     if (allocated(select_proj%proj2wann_map)) then
       deallocate (select_proj%proj2wann_map, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating select_projections in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating select_proj%proj2wann_map &
+        & in w90_wannier90_readwrite_w90_dealloc', comm)
         return
       end if
     end if

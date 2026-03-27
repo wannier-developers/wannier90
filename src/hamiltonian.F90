@@ -220,7 +220,7 @@ contains
     if (allocated(wannier_centres_translated)) then
       deallocate (wannier_centres_translated, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating wannier_centres_translated in w90_readwrite_dealloc', comm)
+        call set_error_dealloc(error, 'Error in deallocating wannier_centres_translated in hamiltonian_dealloc', comm)
         return
       end if
     end if

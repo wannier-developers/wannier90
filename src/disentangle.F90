@@ -341,14 +341,14 @@ contains
     integer, allocatable :: global_k(:)
     integer :: ikg, ikl, my_node_id
 
-    if (print_output%timing_level > 1) call io_stopwatch_start('dis: splitm', timer)
+    if (print_output%timing_level > 1) call io_stopwatch_start('dis: setup_m_loc', timer)
 
     ! local-global k index mapping
     my_node_id = mpirank(comm)
     nkrank = count(dist_k == my_node_id)
     allocate (global_k(nkrank), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating global_k in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating global_k in setup_m_loc', comm)
       return
     end if
     global_k = huge(1); ikl = 1
@@ -361,12 +361,12 @@ contains
 
     allocate (cwb(num_wann, num_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cwb in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating cwb in setup_m_loc', comm)
       return
     end if
     allocate (cww(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cww in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating cww in setup_m_loc', comm)
       return
     end if
 
@@ -384,10 +384,22 @@ contains
       end do
     end do
 
-    deallocate (cwb)
-    deallocate (cww)
-    deallocate (global_k)
-    if (print_output%timing_level > 1) call io_stopwatch_stop('dis: splitm', timer)
+    deallocate (cwb, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cwb in setup_m_loc', comm)
+      return
+    end if
+    deallocate (cww, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating cww in setup_m_loc', comm)
+      return
+    end if
+    deallocate (global_k, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating global_k in setup_m_loc', comm)
+      return
+    end if
+    if (print_output%timing_level > 1) call io_stopwatch_stop('dis: setup_m_loc', timer)
     return
     !================================================!
   end subroutine setup_m_loc
@@ -449,7 +461,7 @@ contains
                 write (stdout, '(1x,a)') &
                   'The trial orbitals for disentanglement are not orthonormal'
               end if
-              call set_error_fatal(error, 'Error in dis_main: orthonormal error 1', comm)
+              call set_error_fatal(error, 'Error in dis_main: check_orthonorm: orthonormal error 1', comm)
               return
             end if
           else
@@ -459,7 +471,7 @@ contains
                 write (stdout, '(1x,a)') &
                   'The trial orbitals for disentanglement are not orthonormal'
               end if
-              call set_error_fatal(error, 'Error in dis_main: orthonormal error 2', comm)
+              call set_error_fatal(error, 'Error in dis_main: check_orthonorm: orthonormal error 2', comm)
               return
             end if
           end if
@@ -516,7 +528,7 @@ contains
 
     allocate (cmtmp(num_bands, num_bands), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cmtmp in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating cmtmp in dis_main: slim_m', comm)
       return
     end if
     do nkp = 1, nkrank
@@ -541,7 +553,7 @@ contains
 
     deallocate (cmtmp, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating cmtmp in dis_main', comm)
+      call set_error_dealloc(error, 'Error deallocating cmtmp in dis_main: slim_m', comm)
       return
     end if
 
@@ -617,32 +629,32 @@ contains
       ! Allocate arrays needed for ZGESVD
       allocate (svals(num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating svals in dis_main', comm)
+        call set_error_alloc(error, 'Error in allocating svals in dis_main: find_u', comm)
         return
       end if
       allocate (rwork(5*num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating rwork in dis_main', comm)
+        call set_error_alloc(error, 'Error in allocating rwork in dis_main: find_u', comm)
         return
       end if
       allocate (cv(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating cv in dis_main', comm)
+        call set_error_alloc(error, 'Error in allocating cv in dis_main: find_u', comm)
         return
       end if
       allocate (cz(num_wann, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating cz in dis_main', comm)
+        call set_error_alloc(error, 'Error in allocating cz in dis_main: find_u', comm)
         return
       end if
       allocate (cwork(4*num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating cwork in dis_main', comm)
+        call set_error_alloc(error, 'Error in allocating cwork in dis_main: find_u', comm)
         return
       end if
       allocate (caa(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating caa in dis_main', comm)
+        call set_error_alloc(error, 'Error in allocating caa in dis_main: find_u', comm)
         return
       end if
 
@@ -661,7 +673,7 @@ contains
           if (info .lt. 0) then
             if (on_root) write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
           end if
-          call set_error_fatal(error, 'dis_main: problem in ZGESVD 1', comm)
+          call set_error_fatal(error, 'dis_main: find_u problem in ZGESVD 1', comm)
           return
         end if
         ! u_matrix is the initial guess for the unitary rotation of the
@@ -678,32 +690,32 @@ contains
       ! Deallocate arrays for ZGESVD
       deallocate (caa, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating caa in dis_main', comm)
+        call set_error_dealloc(error, 'Error deallocating caa in dis_main: find_u', comm)
         return
       end if
       deallocate (cwork, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating cwork in dis_main', comm)
+        call set_error_dealloc(error, 'Error deallocating cwork in dis_main: find_u', comm)
         return
       end if
       deallocate (cz, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating cz in dis_main', comm)
+        call set_error_dealloc(error, 'Error deallocating cz in dis_main: find_u', comm)
         return
       end if
       deallocate (cv, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating cv in dis_main', comm)
+        call set_error_dealloc(error, 'Error deallocating cv in dis_main: find_u', comm)
         return
       end if
       deallocate (rwork, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating rwork in dis_main', comm)
+        call set_error_dealloc(error, 'Error deallocating rwork in dis_main: find_u', comm)
         return
       end if
       deallocate (svals, stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating svals in dis_main', comm)
+        call set_error_dealloc(error, 'Error deallocating svals in dis_main: find_u', comm)
         return
       end if
     end if
@@ -765,39 +777,39 @@ contains
     ! Allocate arrays needed for getting a_matrix_r
     allocate (u_opt_r(ndimwin(1), num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating u_opt_r in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating u_opt_r in dis_main: find_u_gamma', comm)
       return
     end if
     allocate (a_matrix_r(ndimwin(1), num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating a_matrix_r in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating a_matrix_r in dis_main: find_u_gamma', comm)
       return
     end if
 
     ! Allocate arrays needed for dgesvd
     allocate (svals(num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating svals in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating svals in dis_main: find_u_gamma', comm)
       return
     end if
     allocate (work(5*num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating rwork in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating rwork in dis_main: find_u_gamma', comm)
       return
     end if
     allocate (rv(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cv in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating cv in dis_main: find_u_gamma', comm)
       return
     end if
     allocate (rz(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating cz in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating cz in dis_main: find_u_gamma', comm)
       return
     end if
     allocate (raa(num_wann, num_wann), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating raa in dis_main', comm)
+      call set_error_alloc(error, 'Error in allocating raa in dis_main: find_u_gamma', comm)
       return
     end if
 
@@ -816,7 +828,7 @@ contains
       if (info .lt. 0) then
         write (stdout, *) 'THE ', -info, '-TH ARGUMENT HAD ILLEGAL VALUE'
       end if
-      call set_error_fatal(error, 'dis_main: problem in DGESVD 1', comm)
+      call set_error_fatal(error, 'dis_main: find_u_gamma: problem in DGESVD 1', comm)
       return
     end if
     ! u_matrix is the initial guess for the unitary rotation of the
@@ -829,43 +841,43 @@ contains
     ! Deallocate arrays for DGESVD
     deallocate (raa, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating raa in dis_main', comm)
+      call set_error_dealloc(error, 'Error deallocating raa in dis_main: find_u_gamma', comm)
       return
     end if
     deallocate (rz, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating rz in dis_main', comm)
+      call set_error_dealloc(error, 'Error deallocating rz in dis_main: find_u_gamma', comm)
       return
     end if
     deallocate (rv, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating rv in dis_main', comm)
+      call set_error_dealloc(error, 'Error deallocating rv in dis_main: find_u_gamma', comm)
       return
     end if
     deallocate (work, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating work in dis_main', comm)
+      call set_error_dealloc(error, 'Error deallocating work in dis_main: find_u_gamma', comm)
       return
     end if
     deallocate (svals, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating svals in dis_main', comm)
+      call set_error_dealloc(error, 'Error deallocating svals in dis_main: find_u_gamma', comm)
       return
     end if
 
     ! Deallocate arrays for a_matrix_r
     deallocate (a_matrix_r, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating a_matrix_r in dis_main', comm)
+      call set_error_dealloc(error, 'Error in deallocating a_matrix_r in dis_main: find_u_gamma', comm)
       return
     end if
     deallocate (u_opt_r, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating u_opt_r in dis_main', comm)
+      call set_error_dealloc(error, 'Error in deallocating u_opt_r in dis_main: find_u_gamma', comm)
       return
     end if
 
-    if (timing_level > 1) call io_stopwatch_stop('dis: main: find_u_gamma', timer)
+    if (timing_level > 1) call io_stopwatch_stop('dis: main: find_u_gamma: find_u_gamma', timer)
 
     return
     !================================================!
@@ -2071,12 +2083,12 @@ contains
         if (info .lt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
           if (on_root) write (stdout, *) ' THE ', -info, ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-          call set_error_fatal(error, 'dis_proj_frozen: error', comm)
+          call set_error_fatal(error, 'dis_proj_froz: error', comm)
           return
         elseif (info .gt. 0) then
           if (on_root) write (stdout, *) ' *** ERROR *** ZHPEVX WHILE DIAGONALIZING CQPQ MATRIX'
           if (on_root) write (stdout, *) info, 'EIGENVECTORS FAILED TO CONVERGE'
-          call set_error_fatal(error, 'dis_proj_frozen: error', comm)
+          call set_error_fatal(error, 'dis_proj_froz: error', comm)
           return
         end if
         ! ENDDEBUG
@@ -2086,7 +2098,7 @@ contains
           if (on_root) write (stdout, *) ' *** ERROR *** in dis_proj_froz'
           if (on_root) write (stdout, *) ' Number of eigenvalues/vectors obtained is', &
             m, ' not equal to the number asked,', ndimwin(nkp)
-          call set_error_fatal(error, 'dis_proj_frozen: error', comm)
+          call set_error_fatal(error, 'dis_proj_froz: error', comm)
           return
         end if
         ! ENDDEBUG
@@ -2102,7 +2114,7 @@ contains
           if (iprint > 2 .and. on_root) write (stdout, '(a,i3,a,f16.12)') '  lambda(', j, ')=', w(j)
 !~[aam]        if ( (w(j).lt.eps8).or.(w(j).gt.1.0_dp + eps8) ) then
           if ((w(j) .lt. -eps8) .or. (w(j) .gt. 1.0_dp + eps8)) then
-            call set_error_fatal(error, 'dis_proj_frozen: error - Eigenvalues not between 0 and 1', comm)
+            call set_error_fatal(error, 'dis_proj_froz: error - Eigenvalues not between 0 and 1', comm)
             return
           end if
         end do
@@ -2208,7 +2220,7 @@ contains
           end do
 
           if (il - 1 .ne. iu) then
-            call set_error_fatal(error, 'dis_proj_frozen: error -  il-1.ne.iu  (in ortho-fix)', comm)
+            call set_error_fatal(error, 'dis_proj_froz: error -  il-1.ne.iu  (in ortho-fix)', comm)
             return
           end if
 
@@ -2273,7 +2285,7 @@ contains
     end if
     deallocate (cap, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating cap in dis_project', comm)
+      call set_error_dealloc(error, 'Error in deallocating cap in dis_proj_froz', comm)
       return
     end if
     deallocate (rwork, stat=ierr)
@@ -3312,7 +3324,7 @@ contains
 
     allocate (temp_hist(dis_conv_window), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error allocating temp_hist in dis_extract', comm)
+      call set_error_alloc(error, 'Error allocating temp_hist in dis_extract: test_convergence', comm)
       return
     end if
 
@@ -3330,7 +3342,7 @@ contains
 
     deallocate (temp_hist, stat=ierr)
     if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error deallocating temp_hist in dis_extract', comm)
+      call set_error_dealloc(error, 'Error deallocating temp_hist in dis_extract: test_convergence', comm)
       return
     end if
 
