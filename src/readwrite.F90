@@ -83,6 +83,7 @@ module w90_readwrite
   public :: w90_readwrite_read_ws_data
   public :: w90_readwrite_set_kmesh
   public :: w90_readwrite_write_header
+  public :: w90_readwrite_write_win
 
   private :: w90_readwrite_set_atoms
 
@@ -4901,5 +4902,98 @@ contains
     allocate (nentries(m)); nentries(1:n) = settings%entries(1:n); call move_alloc(nentries, settings%entries) !f2003, note that "new" space not initialised
     settings%num_entries_max = m
   end subroutine expand_settings
+
+  subroutine w90_readwrite_write_win(settings, seedname, error, comm)
+    ! print win file
+    use w90_error, only: w90_error_type, set_error_fatal
+
+    implicit none
+
+    ! arguments
+    character(len=*), intent(in) :: seedname
+    type(settings_type), intent(inout), target :: settings
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    ! local variables
+    integer :: i, j, l, fu
+    type(settings_data), pointer :: entry_ptr
+
+    open (newunit=fu, file=trim(seedname)//".win_dump", err=101)
+
+    do l = 1, size(settings%entries, 1)
+
+      entry_ptr => settings%entries(l)
+
+      if (allocated(entry_ptr%txtdata)) then
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%txtdata
+
+      else if (allocated(entry_ptr%idata)) then
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%idata
+
+      else if (allocated(entry_ptr%ldata)) then
+        if (entry_ptr%keyword == "dump_inputs") exit ! this is not valid .win input
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%ldata
+
+      else if (allocated(entry_ptr%rdata)) then
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%rdata
+
+      else if (allocated(entry_ptr%i1d)) then
+        if (entry_ptr%keyword == "distk") exit ! this is not valid .win input
+        write (fu, *) entry_ptr%keyword, " = ", entry_ptr%i1d(:)
+      end if
+
+      nullify (entry_ptr)
+    end do
+
+    ! same again, to put the long lists (kpoints, etc?) last
+    ! 2d "block" data, integer or float
+    do l = 1, size(settings%entries, 1)
+
+      entry_ptr => settings%entries(l)
+
+      if (allocated(entry_ptr%i2d)) then
+        write (fu, *) "begin ", entry_ptr%keyword
+        do j = 1, size(entry_ptr%i2d, 2)
+          do i = 1, size(entry_ptr%i2d, 1)
+            write (fu, '(i4)', advance='no') entry_ptr%i2d(i, j)
+          end do
+          write (fu, *) '' ! EOL
+        end do
+        write (fu, *) "end ", entry_ptr%keyword
+
+      else if (allocated(entry_ptr%r2d)) then
+        write (fu, *) "begin ", entry_ptr%keyword
+        do j = 1, size(entry_ptr%r2d, 2)
+          do i = 1, size(entry_ptr%r2d, 1)
+            write (fu, '(f20.12)', advance='no') entry_ptr%r2d(i, j)
+          end do
+          write (fu, *) '' ! EOL
+        end do
+        write (fu, *) "end ", entry_ptr%keyword
+      end if
+
+      nullify (entry_ptr)
+    end do
+
+    close (fu)
+    return
+
+!     else
+!       write(*,'(a20,10l3)')entry_ptr%keyword,&
+!         allocated(entry_ptr%txtdata),&
+!         allocated(entry_ptr%c2d),&
+!         allocated(entry_ptr%i1d),&
+!         allocated(entry_ptr%i2d),&
+!         allocated(entry_ptr%idata),&
+!         allocated(entry_ptr%l1d),&
+!         allocated(entry_ptr%ldata),&
+!         allocated(entry_ptr%r1d),&
+!         allocated(entry_ptr%r2d),&
+!         allocated(entry_ptr%rdata)
+!     endif
+101 call set_error_fatal(error, 'Error: failed to open .win_dump output file', comm)
+    return
+  end subroutine w90_readwrite_write_win
 
 end module w90_readwrite

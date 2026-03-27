@@ -993,6 +993,10 @@ contains
                                    l_value=output_file%write_tb)
     if (allocated(error)) return
 
+    call w90_readwrite_get_keyword(settings, 'dump_inputs', found, error, comm, &
+                                   l_value=output_file%write_win_ammats)
+    if (allocated(error)) return
+
     !%%%%%%%%%%%%%%%%
     !  Other Stuff
     !%%%%%%%%%%%%%%%%

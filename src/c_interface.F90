@@ -316,14 +316,14 @@ contains
     call w90_set_option(w90_fptr, keyword, fptr)
   end subroutine
 
-  subroutine w90_set_option_logical_f(w90_obj, keyword, bool) bind(c)
+  subroutine w90_set_option_logical_f(w90_obj, keyword, boolarg) bind(c)
     implicit none
     type(w90_data), value :: w90_obj
     character(*, kind=c_char) :: keyword
-    logical(kind=c_bool), value  :: bool
+    logical(kind=c_bool), value  :: boolarg
     logical :: fbool
     type(lib_common_type), pointer :: w90_fptr
-    fbool = bool
+    fbool = boolarg
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_set_option(w90_fptr, keyword, fbool)
   end subroutine

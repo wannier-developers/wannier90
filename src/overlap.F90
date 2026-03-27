@@ -44,6 +44,7 @@ module w90_overlap
   public :: overlap_allocate
   public :: overlap_dealloc
   public :: overlap_read
+  public :: overlap_write
   ! these are only public for old wannier_lib
   public :: overlap_project
   public :: overlap_project_gamma
@@ -340,7 +341,7 @@ contains
       read (amn_in, '(a)', err=104, end=104) dummy
       if (print_output%iprint > 0) write (stdout, '(a)') trim(dummy)
 
-      ! Read the number of bands, k-points and wannier functions
+      ! Read the number of bands, k-points and projections
       read (amn_in, *, err=104, end=104) nb_tmp, nkp_tmp, np_tmp
 
       ! Checks
@@ -404,6 +405,7 @@ contains
     if (timing_level > 0) call io_stopwatch_stop('overlap: read', timer)
 
     return
+
 101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn', comm)
     return
 102 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.amn', comm)
@@ -416,6 +418,96 @@ contains
     !if (on_root) deallocate(m_matrix_orig)
 
   end subroutine overlap_read
+
+  !================================================!
+  subroutine overlap_write(kmesh_info, au_matrix, m_matrix, eval, num_bands, num_kpts, num_wann, &
+                           num_proj, seedname, error, comm)
+    !================================================!
+    !! Write the Mmn and Amn from files
+    !
+    !================================================!
+
+    use w90_types, only: kmesh_info_type
+    use w90_error
+
+    implicit none
+
+    ! arguments
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(inout) :: error
+
+    integer, intent(in) :: num_bands, num_kpts, num_wann, num_proj
+
+    complex(kind=dp), intent(in) :: au_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    real(kind=dp), intent(in) :: eval(:, :)
+
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
+    integer :: fu, ik, in, ip, n, m
+
+    if (mpirank(comm) == 0) then
+
+      ! dump overlap ("M") matrix
+      open (newunit=fu, file=trim(seedname)//'.mmn_dump', err=201)
+
+      write (fu, '(a)') "header" !header='Created on '//cdate//' at '//ctime
+      write (fu, '(3i5)') num_bands, num_kpts, kmesh_info%nntot
+
+      do ik = 1, num_kpts
+        do in = 1, kmesh_info%nntot
+          write (fu, *) ik, kmesh_info%nnlist(ik, in), kmesh_info%nncell(:, ik, in)
+          do n = 1, num_bands
+            do m = 1, num_bands
+              write (fu, '(2f18.12)') m_matrix(m, n, in, ik)
+            end do
+          end do
+        end do
+      end do
+
+      close (fu)
+
+      ! dump projections
+      open (newunit=fu, file=trim(seedname)//'.amn_dump', err=202)
+
+      write (fu, '(a)') "header" !header='Created on '//cdate//' at '//ctime
+      write (fu, '(3i5)') num_bands, num_kpts, num_proj ! number of projections (select_proj ignored here)
+
+      do ik = 1, num_kpts
+        do ip = 1, num_proj
+          do m = 1, num_bands
+            write (fu, '(3i5,2f18.12)') m, ip, ik, au_matrix(m, ip, ik)
+          end do
+        end do
+      end do
+
+      close (fu)
+
+      ! dump evals
+      open (newunit=fu, file=trim(seedname)//'.eig_dump', err=203)
+
+      if (num_bands > num_wann) then ! disentanglement condition
+      do ik = 1, num_kpts
+        do m = 1, num_bands
+          write (fu, '(2i5,f18.12)') m, ik, eval(m, ik)
+        end do
+      end do
+      end if
+
+      close (fu)
+
+    end if ! on root
+    return
+
+201 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.mmn_dump', comm)
+    return
+202 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.amn_dump', comm)
+    return
+203 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.eig_dump', comm)
+    return
+  end subroutine overlap_write
 
 !~[aam]
 !~  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

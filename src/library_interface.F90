@@ -296,9 +296,11 @@ contains
 
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_alloc, set_error_fatal, code_mpi
-    use w90_comms, only: w90_comm_type, valid_communicator
+    use w90_comms, only: w90_comm_type, valid_communicator, mpisize, mpirank
+    use w90_readwrite, only: w90_readwrite_write_win
     use w90_wannier90_readwrite, only: w90_wannier90_readwrite_read, &
                                        w90_wannier90_readwrite_read_special
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -425,6 +427,16 @@ contains
       return
     end if
 
+    if (common_data%output_file%write_win_ammats) then
+      if (mpirank(common_data%comm) == 0) then
+        call w90_readwrite_write_win(common_data%settings, seedname, error, common_data%comm)
+      end if
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
+    end if
+
     ! clear settings container (from settings interface not .win file)
     deallocate (common_data%settings%entries, stat=ierr)
     if (ierr /= 0) then
@@ -523,6 +535,7 @@ contains
     use w90_disentangle_mod, only: dis_main, setup_m_loc
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -562,6 +575,13 @@ contains
       if (common_data%dis_manifold%froz_min == -huge(0.0_dp)) then
         common_data%dis_manifold%froz_min = minval(common_data%eigval(:, :))
       end if
+    end if
+
+    if (common_data%output_file%write_win_ammats) then
+      ! for writing input m,a matrices
+      call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
+                         common_data%eigval, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                         common_data%num_proj, common_data%seedname, error, common_data%comm)
     end if
 
     ! condition for disentanglement is number of bands > number of WF
@@ -667,6 +687,7 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_wannierise_mod, only: wann_main, wann_main_gamma
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -688,6 +709,13 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
+    end if
+
+    if (common_data%output_file%write_win_ammats .and. .not. common_data%have_disentangled) then
+      ! for writing input m,a matrices
+      call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
+                         common_data%eigval, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                         common_data%num_proj, common_data%seedname, error, common_data%comm)
     end if
 
     if (common_data%gamma_only) then
@@ -1150,27 +1178,27 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%txtdata = text
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
   end subroutine w90_set_option_text
 
-  subroutine w90_set_option_logical(common_data, keyword, bool)
+  subroutine w90_set_option_logical(common_data, keyword, boolarg)
     use w90_readwrite, only: init_settings, expand_settings
 
     implicit none
 
     character(*), intent(in) :: keyword
-    logical, intent(in) :: bool
+    logical, intent(in) :: boolarg
     type(lib_common_type), intent(inout) :: common_data
     integer :: i
 
     if (.not. allocated(common_data%settings%entries)) call init_settings(common_data%settings)
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
-    common_data%settings%entries(i)%ldata = bool
-    common_data%settings%num_entries = i + 1
+    common_data%settings%entries(i)%ldata = boolarg
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1190,7 +1218,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%i1d = arr ! this causes an automatic allocation
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1210,7 +1238,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%i2d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1230,7 +1258,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%idata = ival
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1250,7 +1278,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%r1d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1270,7 +1298,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%r2d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1290,7 +1318,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%c2d = arr
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
@@ -1310,7 +1338,7 @@ contains
     i = common_data%settings%num_entries + 1
     common_data%settings%entries(i)%keyword = keyword
     common_data%settings%entries(i)%rdata = rval
-    common_data%settings%num_entries = i + 1
+    common_data%settings%num_entries = i
     if (common_data%settings%num_entries == common_data%settings%num_entries_max) then
       call expand_settings(common_data%settings)
     end if
