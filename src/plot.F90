@@ -421,12 +421,12 @@ contains
 
     allocate (counts(0:num_nodes - 1), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating counts in plot_interpolate_bands', comm)
+      call set_error_dealloc(error, 'Error in deallocating counts in plot_interpolate_bands', comm)
       return
     end if
     allocate (displs(0:num_nodes - 1), stat=ierr)
     if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating displs in plot_interpolate_bands', comm)
+      call set_error_dealloc(error, 'Error in deallocating displs in plot_interpolate_bands', comm)
       return
     end if
     !
