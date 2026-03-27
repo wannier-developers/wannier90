@@ -970,7 +970,11 @@ contains
     type(lib_common_type), intent(in) :: common_data
     !! library data object
 
-    num_excl_bands = size(common_data%exclude_bands(:))
+    if (.not. allocated(common_data%exclude_bands)) then
+      num_excl_bands = 0
+    else
+      num_excl_bands = size(common_data%exclude_bands(:))
+    end if
   end subroutine w90_get_num_excl_bands
 
   subroutine w90_get_excl_bands(common_data, excl_bands, istdout, istderr, ierr)
