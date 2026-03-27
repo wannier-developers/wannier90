@@ -213,6 +213,10 @@ module w90_library
   !! get number of b-vectors (finite-difference points)
   public :: w90_get_gkpb
   !! get g offsets of k'
+  public :: w90_get_num_excl_bands
+  !! number of excluded bands, for sizing array arg of w90_get_excl_bands
+  public :: w90_get_excl_bands
+  !! list of indices of excluded bands (which may be possibly non-contiguous)
   public :: w90_input_reader
   !! optionally read additional input variables from .win file
   public :: w90_input_setopt
@@ -997,6 +1001,49 @@ contains
 
     spreads = common_data%wannier_data%spreads
   end subroutine w90_get_spreads
+
+  subroutine w90_get_num_excl_bands(common_data, num_excl_bands)
+    implicit none
+
+    integer, intent(out) :: num_excl_bands
+    !! number of excluded bands, for sizing array arg of w90_get_excl_bands
+    type(lib_common_type), intent(in) :: common_data
+    !! library data object
+
+    if (.not. allocated(common_data%exclude_bands)) then
+      num_excl_bands = 0
+    else
+      num_excl_bands = size(common_data%exclude_bands(:))
+    end if
+  end subroutine w90_get_num_excl_bands
+
+  subroutine w90_get_excl_bands(common_data, excl_bands, istdout, istderr, ierr)
+    use w90_error, only: w90_error_type, set_error_fatal
+    implicit none
+
+    integer, allocatable, intent(inout) :: excl_bands(:)
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    !! must be allocated with size >= num_excl_bands
+    type(lib_common_type), intent(in) :: common_data
+    !! library data object
+
+    type(w90_error_type), allocatable :: error
+
+    if (.not. allocated(excl_bands)) then
+      call set_error_fatal(error, &
+                           'Error: array argument excl_bands in get_excl_bands() call is not allocated', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    else if (size(excl_bands) < size(common_data%exclude_bands(:))) then
+      call set_error_fatal(error, &
+                           'Error: array argument excl_bands in get_excl_bands() call is incorrectly sized', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    else
+      excl_bands(:) = common_data%exclude_bands(:)
+    end if
+  end subroutine w90_get_excl_bands
 
   subroutine w90_get_proj(common_data, n, site, l, m, s, rad, x, z, sqa, zona, istdout, istderr, ierr)
     !! probes library data object and returns arrays describing a list of projections
