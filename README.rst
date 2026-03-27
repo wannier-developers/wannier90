@@ -76,7 +76,7 @@ For the method please cite:
 Licence
 +++++++
 
-The Wannier90 code is licensed under GPLv2.
+The Wannier90 code is licensed under LGPLv2.1 or later.
 You can read the licence text in the LICENSE file in the root directory
 of the Wannier90 distribution.
 
@@ -95,16 +95,21 @@ The Wannier90 Developer Group includes:
 * Giovanni Pizzi    (Paul Scherrer Institute, CH)
 * Valerio Vitale    (University of Trieste, IT)
 * David Vanderbilt  (Rutgers University, US)
-* Nicola Marzari    (EPFL, CH)
+* Nicola Marzari    (EPFL, CH and University of Cambridge, GB)
 * Ivo Souza         (Universidad del Pais Vasco, ES)
 * Arash A. Mostofi  (Imperial College London, GB)
 * Jonathan R. Yates (University of Oxford, GB)
 
 In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.4.x are:
 
-* Jerome Jackson    (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design
-* Leon Petit        (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design
-* Barry G. Searle   (STFC Daresbury Laboratory, UK): CCP9 code restructuring and parallel library design, python interface
+* Jerome Jackson    (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
+* Leon Petit        (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
+* Barry G. Searle   (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design, python interface
+
+Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Minsu Ghim,
+Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik Jochym,
+Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm,
+Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin.
 
 In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
 

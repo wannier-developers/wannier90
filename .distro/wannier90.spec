@@ -2,7 +2,7 @@ Name:           wannier90
 Summary:        Maximally-Localised Generalised Wannier Functions Code
 Version:        0.0.0
 Release:        %autorelease
-License:        GPL-2.0-only
+License:        LGPL-2.1-or-later
 URL:            https://www.wannier.org/
 
 Source:         https://github.com/wannier-developers/wannier90/archive/refs/tags/v%{version}.tar.gz
