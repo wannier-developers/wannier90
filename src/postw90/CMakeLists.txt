@@ -48,8 +48,11 @@ target_link_libraries(Wannier90_post PRIVATE
 if (WANNIER90_MPI)
 	target_compile_definitions(Wannier90_post PRIVATE
 			# TODO: Use mpi_f08 instead. Tests are not adapted yet
-			MPI90 MPI
+			MPI ${_wannier90_mpi_interface}
 	)
+	if (WANNIER90_MPIH AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(Wannier90_post PRIVATE -fallow-argument-mismatch)
+	endif ()
 endif ()
 
 ## Installs

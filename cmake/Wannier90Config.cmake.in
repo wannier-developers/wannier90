@@ -3,6 +3,7 @@
 
 ## Define basic variables
 set(Wannier90_MPI @WANNIER90_MPI@)
+set(Wannier90_MPIH @WANNIER90_MPIH@)
 
 ## Include dependencies
 include(CMakeFindDependencyMacro)

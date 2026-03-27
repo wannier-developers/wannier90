@@ -72,6 +72,8 @@ nav:
       - "33: Monolayer BC₂N &#151; k&middot;p expansion coefficients": "tutorials/tutorial_33.md"
       - "34: Graphene — Projectability-disentangled Wannier functions": "tutorials/tutorial_34.md"
       - "35: Silicon — Projectability-disentangled Wannier functions with custom projectors": "tutorials/tutorial_35.md"
+      - "36: Silicon - Comparison of Marzari-Vanderbilt and Stengel-Spaldin functionals": "tutorials/tutorial_36.md"
+      - "37: Iron — Translationally-invariant Wannier Interpolation": "tutorials/tutorial_37.md"
 
 theme:
   name: material

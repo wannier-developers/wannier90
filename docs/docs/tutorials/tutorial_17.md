@@ -71,7 +71,7 @@ both the up- and down-spin channels, effectively doubling their number.
     pw2wannier90.x < Fe.pw2wan > pw2wan.out
     ```
 
-5. Run `wannier90` to compute the MLWFs.\
+5. Run `wannier90` to compute the MLWFs.
 
     ```bash title="Terminal"
     wannier90.x Fe
@@ -207,7 +207,7 @@ may want to increase `kslice_2dkmesh`.)
     and without spin-orbit, and note the spin-orbit-induced avoided
     crossings.
 
-- In Tutorial [8](tutorial_8.md#iron-spin-polarized-wfs-dos-projeced-wfs-versus-mlwfs)
+- In Tutorial [8](tutorial_8.md)
     we obtained MLWFs separately for the up- and down-spin
     channels of bcc Fe without spin-orbit. The Wannier-interpolated DOS
     was therefore automatically separated into minority and majority

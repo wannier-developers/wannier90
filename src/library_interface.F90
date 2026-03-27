@@ -302,6 +302,10 @@ contains
 
     implicit none
 
+#ifdef MPIH
+    include 'mpif.h'
+#endif
+
     ! arguments
     character(len=*), intent(in) :: seedname
     integer, intent(in) :: istdout, istderr
@@ -1066,6 +1070,11 @@ contains
     use mpi_f08
 #endif
     implicit none
+
+#ifdef MPIH
+    include 'mpif.h'
+#endif
+
     type(lib_common_type), intent(inout) :: common_data
 #ifdef MPI08
     type(mpi_comm), intent(in) :: comm
