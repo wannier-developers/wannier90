@@ -542,7 +542,7 @@ contains
   end subroutine w90_readwrite_read_kpath
 
   subroutine w90_readwrite_read_explicit_kpath(settings, kpoint_path, ok, bands_plot, bohr, error, comm)
-    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
     logical, intent(in) :: bands_plot
     type(kpoint_path_type), intent(inout) :: kpoint_path
