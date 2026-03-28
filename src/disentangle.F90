@@ -918,7 +918,7 @@ contains
     !     eigval_opt(nb,nkp) At input it contains a large set of eigenvalues. At
     !                    it is slimmed down to contain only those inside the
     !                    energy window, stored in nb=1,...,ndimwin(nkp)
-    use w90_constants, only: dp, cmplx_0, cmplx_1
+    use w90_constants, only: dp
     use w90_error
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: dis_manifold_type, kmesh_info_type, print_output_type, timer_list_type
@@ -1239,7 +1239,7 @@ contains
     !                    it is slimmed down to contain only those inside the
     !                    energy window, stored in nb=1,...,ndimwin(nkp)
     use w90_comms, only: w90_comm_type
-    use w90_constants, only: dp, cmplx_0, cmplx_1
+    use w90_constants, only: dp, cmplx_0
     use w90_error
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: dis_manifold_type, timer_list_type

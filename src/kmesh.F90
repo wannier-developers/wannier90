@@ -79,7 +79,6 @@ contains
     !
     !================================================
 
-    use w90_constants, only: eps6
     use w90_utility, only: utility_compar, utility_recip_lattice, utility_frac_to_cart, &
                            utility_cart_to_frac, utility_inverse_mat
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
@@ -203,7 +202,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a)') '|                    Distance to Nearest-Neighbour Shells                    |'
       write (stdout, '(1x,a)') '|                    ------------------------------------                    |'
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(1x,a)') '|          Shell             Distance (Ang^-1)          Multiplicity         |'
         write (stdout, '(1x,a)') '|          -----             -----------------          ------------         |'
       else
@@ -702,7 +701,7 @@ contains
     end if
 
     if (print_output%iprint > 0) then
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
         write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
       else
@@ -716,7 +715,7 @@ contains
           i, (bk_local(j, i, 1)/print_output%lenconfac, j=1, 3), wb_local(i)*print_output%lenconfac**2
       end do
       write (stdout, '(1x,"+",76("-"),"+")')
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(1x,a)') '|                           b_k Directions (Ang^-1)                          |'
         write (stdout, '(1x,a)') '|                           -----------------------                          |'
       else
@@ -870,7 +869,7 @@ contains
         write (stdout, '(1x,"+",76("-"),"+")')
         write (stdout, '(1x,a)') '|        Gamma-point: number of the b-vectors is reduced by half             |'
         write (stdout, '(1x,"+",76("-"),"+")')
-        if (print_output%lenconfac .eq. 1.0_dp) then
+        if (trim(print_output%length_unit) == 'ang') then
           write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
           write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
         else
@@ -2051,9 +2050,7 @@ contains
     real(kind=dp) :: work(lwork)
     integer       :: bvec_list(num_nnmax, max_shells)
     real(kind=dp), parameter :: target(6) = (/1.0_dp, 1.0_dp, 1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp/)
-    logical :: b1sat
-    integer :: ierr, loop_i, loop_j, loop_b, loop_s, info
-    real(kind=dp) :: delta
+    integer :: ierr, loop_b, loop_s, info
 
     integer :: loop, shell, pos, kshell_in, counter, length, i, loop2, num_lines, tot_num_lines
     character(len=maxlen) :: dummy, dummy2

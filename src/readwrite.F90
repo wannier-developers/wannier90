@@ -498,16 +498,32 @@ contains
     if (allocated(error)) return
     if (path_found) then
       bands_num_spec_points = i_temp*2
-      if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
+      if (allocated(kpoint_path%labels)) then
+        deallocate (kpoint_path%labels, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating kpoint_path%labels &
+          & in w90_readwrite_read_kpath', comm)
+          return
+        end if
+      end if
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating labels in w90_readwrite_read_kpath', comm)
+        call set_error_alloc(error, 'Error allocating kpoint_path%labels in &
+        & w90_readwrite_read_kpath', comm)
         return
       end if
-      if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
+      if (allocated(kpoint_path%points)) then
+        deallocate (kpoint_path%points, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating kpoint_path%points in &
+          & w90_readwrite_read_kpath', comm)
+          return
+        end if
+      end if
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating points in w90_readwrite_read_kpath', comm)
+        call set_error_alloc(error, 'Error allocating kpoint_path%points&
+        & in w90_readwrite_read_kpath', comm)
         return
       end if
       call w90_readwrite_get_keyword_kpath(settings, kpoint_path, error, comm)
@@ -536,7 +552,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
 
-    integer :: i_temp, ierr, bands_num_spec_points
+    integer :: ierr, bands_num_spec_points
     logical :: found
 
     bands_num_spec_points = 0
@@ -546,16 +562,32 @@ contains
       ok = .true.
       kpoint_path%bands_kpt_explicit = .true.
 !      bands_num_spec_points = i_temp*2
-      if (allocated(kpoint_path%labels)) deallocate (kpoint_path%labels)
+      if (allocated(kpoint_path%labels)) then
+        deallocate (kpoint_path%labels, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating kpoint_path%labels &
+          & in w90_readwrite_read_explicit_kpath', comm)
+          return
+        end if
+      end if
       allocate (kpoint_path%labels(bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating explicit_kpath labels in w90_readwrite_read_explicit_kpath', comm)
+        call set_error_alloc(error, 'Error allocating kpoint_path%labels &
+        & in w90_readwrite_read_explicit_kpath', comm)
         return
       end if
-      if (allocated(kpoint_path%points)) deallocate (kpoint_path%points)
+      if (allocated(kpoint_path%points)) then
+        deallocate (kpoint_path%points, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating kpoint_path%points &
+          & in w90_readwrite_read_explicit_kpath', comm)
+          return
+        end if
+      end if
       allocate (kpoint_path%points(3, bands_num_spec_points), stat=ierr)
       if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating explicit kpoint labels in w90_readwrite_read_explicit_kpath', comm)
+        call set_error_alloc(error, 'Error allocating kpoint_path%points &
+        & in w90_readwrite_read_explicit_kpath', comm)
         return
       end if
       call w90_readwrite_get_keyword_explicit_kpath(settings, kpoint_path, error, comm)

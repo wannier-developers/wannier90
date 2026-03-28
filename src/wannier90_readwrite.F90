@@ -248,7 +248,7 @@ contains
     ! local variables
     logical :: has_kpath
     logical :: has_explicit_kpath
-    integer :: num_exclude_bands
+!    integer :: num_exclude_bands
     logical :: found_fermi_energy
     logical :: disentanglement
     character(len=20) :: energy_unit  ! is this not used???
@@ -1860,7 +1860,7 @@ contains
       write (stdout, '(36x,a6)') 'SYSTEM'
       write (stdout, '(36x,a6)') '------'
       write (stdout, *)
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
       else
         write (stdout, '(28x,a22)') 'Lattice Vectors (Bohr)'
@@ -1874,13 +1874,13 @@ contains
                     real_lattice(1, 3)*(real_lattice(2, 1)*real_lattice(3, 2) - real_lattice(3, 1)*real_lattice(2, 2))
       write (stdout, '(19x,a17,3x,f11.5)', advance='no') &
         'Unit Cell Volume:', cell_volume*print_output%lenconfac**3
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(2x,a7)') '(Ang^3)'
       else
         write (stdout, '(2x,a8)') '(Bohr^3)'
       end if
       write (stdout, *)
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(24x,a33)') 'Reciprocal-Space Vectors (Ang^-1)'
       else
         write (stdout, '(22x,a34)') 'Reciprocal-Space Vectors (Bohr^-1)'
@@ -1893,7 +1893,7 @@ contains
       ! Atoms
       if (atom_data%num_atoms > 0) then
         write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-        if (print_output%lenconfac .eq. 1.0_dp) then
+        if (trim(print_output%length_unit) == 'ang') then
           write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
         else
           write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
@@ -1982,7 +1982,7 @@ contains
       write (stdout, *) ' '
       if (print_output%iprint > 1) then
         write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-        if (print_output%lenconfac .eq. 1.0_dp) then
+        if (trim(print_output%length_unit) == 'ang') then
           write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Ang^-1)    |'
         else
           write (stdout, '(1x,a)') '| k-point      Fractional Coordinate        Cartesian Coordinate (Bohr^-1)   |'

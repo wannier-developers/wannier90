@@ -363,7 +363,7 @@ contains
     !
     !================================================
 
-    use w90_constants, only: dp, twopi, eps5
+    use w90_constants, only: dp, eps5
     use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
@@ -471,8 +471,6 @@ contains
     !!  Convert from Cartesian to fractional coordinates
     !
     !================================================
-
-    use w90_constants, only: twopi
 
     implicit none
 
@@ -831,7 +829,7 @@ contains
     ! trace of the matrix product of a and b.
     !
     !================================================!
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp
 
     complex(kind=dp), intent(in) :: a(:, :), b(:, :)
     real(kind=dp) :: utility_re_tr_prod
@@ -858,7 +856,7 @@ contains
     ! trace of the matrix product of a and b.
     !
     !================================================!
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp
 
     complex(kind=dp), intent(in) :: a(:, :), b(:, :)
 

@@ -110,7 +110,8 @@ contains
     ! not be the best thing if you invoke it while the WFs are moving
     if (present(force_recompute)) then
       if (force_recompute) then
-        call clean_ws_translate(ws_distance)
+        call clean_ws_translate(ws_distance, error, comm)
+        if (allocated(error)) return
       end if
     end if
     if (ws_distance%done) return
@@ -375,15 +376,43 @@ contains
   end subroutine ws_write_vec
 
   !================================================!
-  subroutine clean_ws_translate(ws_distance)
+  subroutine clean_ws_translate(ws_distance, error, comm)
     !================================================!
     use w90_types, only: ws_distance_type
+    use w90_comms, only: w90_comm_type
+    use w90_error, only: w90_error_type, set_error_dealloc
+
     implicit none
+
     type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    integer :: ierr
+
     ws_distance%done = .false.
-    if (allocated(ws_distance%irdist)) deallocate (ws_distance%irdist)
-    if (allocated(ws_distance%ndeg)) deallocate (ws_distance%ndeg)
-    if (allocated(ws_distance%crdist)) deallocate (ws_distance%crdist)
+    if (allocated(ws_distance%irdist)) then
+      deallocate (ws_distance%irdist, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ws_distance%irdist in clean_ws_translate', comm)
+        return
+      end if
+    end if
+    if (allocated(ws_distance%ndeg)) then
+      deallocate (ws_distance%ndeg, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ws_distance%ndeg in clean_ws_translate', comm)
+        return
+      end if
+    end if
+    if (allocated(ws_distance%crdist)) then
+      deallocate (ws_distance%crdist, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ws_distance%crdist in clean_ws_translate', comm)
+        return
+      end if
+    end if
+
     !================================================!
   end subroutine clean_ws_translate
 

@@ -2573,7 +2573,6 @@ contains
     !================================================!
 
     use w90_io, only: io_date
-    use w90_constants, only: dp
     use w90_types, only: kmesh_info_type
     use w90_error, only: w90_error_type, set_error_file
 
@@ -3181,7 +3180,7 @@ contains
     !================================================!
 
     use w90_io, only: io_date
-    use w90_constants, only: dp, cmplx_0
+    use w90_constants, only: dp
     use w90_utility, only: utility_translate_home
     use w90_error, only: w90_error_type, set_error_file
     use w90_types, only: atom_data_type, print_output_type
