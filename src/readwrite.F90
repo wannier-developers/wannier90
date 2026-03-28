@@ -478,7 +478,7 @@ contains
 
   subroutine w90_readwrite_read_kpath(settings, kpoint_path, path_found, bands_plot, error, comm)
     !! Read band plotting path variables: "kpoint_path" and "bands_num_points"
-    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_dealloc
     implicit none
 
     logical, intent(in) :: bands_plot
