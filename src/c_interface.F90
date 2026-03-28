@@ -31,6 +31,8 @@ module w90_library_c
   use w90_library, only: w90_disentangle_f => w90_disentangle, &
                          w90_get_centres_f => w90_get_centres, w90_get_gkpb_f => w90_get_gkpb, &
                          w90_get_nn_f => w90_get_nn, w90_get_nnkp_f => w90_get_nnkp, &
+                         w90_get_proj_f => w90_get_proj, &
+                         w90_print_info_f => w90_print_info, &
                          w90_get_spreads_f => w90_get_spreads, w90_input_setopt_ff => w90_input_setopt, &
                          w90_input_reader_f => w90_input_reader, &
                          w90_project_overlap_f => w90_project_overlap, &
@@ -69,42 +71,28 @@ contains
     w90_obj%caddr = C_NULL_PTR
   end subroutine
 
-  subroutine w90_disentangle(w90_obj, ierr) bind(c)
+  subroutine w90_get_nk(w90_obj, n) bind(c)
+    ! return the number of k-points
     implicit none
     type(w90_data), value :: w90_obj
+    type(c_ptr), value :: n
     type(lib_common_type), pointer :: w90_fptr
-    integer(kind=c_int) :: istdout, istderr, ierr
-    call w90_get_fortran_stderr(istderr)
-    call w90_get_fortran_stdout(istdout)
+    integer(kind=c_int), pointer :: ndat
     call c_f_pointer(w90_obj%caddr, w90_fptr)
-    call w90_disentangle_f(w90_fptr, istdout, istderr, ierr)
+    call c_f_pointer(n, ndat)
+    ndat = w90_fptr%num_kpts
   end subroutine
 
-  subroutine w90_get_centres(w90_obj, centres) bind(c)
-    ! returns the centres of calulated mlwfs
+  subroutine w90_get_nw(w90_obj, n) bind(c)
+    ! return the number of wfs
     implicit none
     type(w90_data), value :: w90_obj
-    type(c_ptr), value :: centres
+    type(c_ptr), value :: n
     type(lib_common_type), pointer :: w90_fptr
-    real(kind=8), pointer :: fcentres(:, :)
+    integer(kind=c_int), pointer :: ndat
     call c_f_pointer(w90_obj%caddr, w90_fptr)
-    call c_f_pointer(centres, fcentres, [3, w90_fptr%num_wann])
-    call w90_get_centres_f(w90_fptr, fcentres)
-  end subroutine
-
-  subroutine w90_get_gkpb(w90_obj, gkpb) bind(c)
-    ! return the g-offset of adjacent k-points in finite difference scheme
-    implicit none
-    type(w90_data), value :: w90_obj
-    type(c_ptr), value :: gkpb
-    type(lib_common_type), pointer :: w90_fptr
-    integer(kind=c_int), pointer :: nfptr(:, :, :)
-    integer(kind=c_int) :: istderr, istdout, ierr
-    call w90_get_fortran_stderr(istderr)
-    call w90_get_fortran_stdout(istdout)
-    call c_f_pointer(w90_obj%caddr, w90_fptr)
-    call c_f_pointer(gkpb, nfptr, [3, w90_fptr%num_kpts, w90_fptr%kmesh_info%nntot])
-    call w90_get_gkpb_f(w90_fptr, nfptr, istdout, istderr, ierr)
+    call c_f_pointer(n, ndat)
+    ndat = w90_fptr%num_wann
   end subroutine
 
   subroutine w90_get_nn(w90_obj, n) bind(c)
@@ -122,6 +110,21 @@ contains
     call w90_get_nn_f(w90_fptr, ndat, istdout, istderr, ierr)
   end subroutine
 
+  subroutine w90_get_gkpb(w90_obj, gkpb) bind(c)
+    ! return the g-offset of adjacent k-points in finite difference scheme
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: gkpb
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int), pointer :: nfptr(:, :, :)
+    integer(kind=c_int) :: istderr, istdout, ierr
+    call w90_get_fortran_stderr(istderr)
+    call w90_get_fortran_stdout(istdout)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call c_f_pointer(gkpb, nfptr, [3, w90_fptr%num_kpts, w90_fptr%kmesh_info%nntot])
+    call w90_get_gkpb_f(w90_fptr, nfptr, istdout, istderr, ierr)
+  end subroutine
+
   subroutine w90_get_nnkp(w90_obj, nnkp) bind(c)
     ! return the indexing of adjacent k-points in finite difference scheme
     implicit none
@@ -135,18 +138,6 @@ contains
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call c_f_pointer(nnkp, nfptr, [w90_fptr%num_kpts, w90_fptr%kmesh_info%nntot])
     call w90_get_nnkp_f(w90_fptr, nfptr, istdout, istderr, ierr)
-  end subroutine
-
-  subroutine w90_get_spreads(w90_obj, spreads) bind(c)
-    ! returns the spreads of calulated mlwfs
-    implicit none
-    type(w90_data), value :: w90_obj
-    type(c_ptr), value :: spreads
-    type(lib_common_type), pointer :: w90_fptr
-    real(kind=8), pointer :: fspreads(:)
-    call c_f_pointer(w90_obj%caddr, w90_fptr)
-    call c_f_pointer(spreads, fspreads, [w90_fptr%num_wann])
-    call w90_get_spreads_f(w90_fptr, fspreads)
   end subroutine
 
   subroutine w90_input_setopt_f(w90_obj, seedname, ierr) bind(c)
@@ -185,12 +176,23 @@ contains
     call w90_project_overlap_f(w90_fptr, istdout, istderr, ierr)
   end subroutine
 
+  subroutine w90_print_info(w90_obj, ierr) bind(c)
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int) :: istdout, istderr, ierr
+    call w90_get_fortran_stderr(istderr)
+    call w90_get_fortran_stdout(istdout)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call w90_print_info_f(w90_fptr, istdout, istderr, ierr)
+  end subroutine
+
   subroutine w90_set_eigval(w90_obj, eigval_cptr) bind(c)
     ! copy a pointer to eigenvalue data
     implicit none
     type(w90_data), value :: w90_obj
     type(c_ptr), value :: eigval_cptr
-    real(8), pointer :: eigval_fptr(:, :)
+    real(kind=c_double), pointer :: eigval_fptr(:, :)
     type(lib_common_type), pointer :: w90_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call c_f_pointer(eigval_cptr, eigval_fptr, [w90_fptr%num_bands, w90_fptr%num_kpts])
@@ -202,7 +204,7 @@ contains
     implicit none
     type(w90_data), value :: w90_obj
     type(c_ptr), value :: m_cptr
-    complex(8), pointer :: fptr(:, :, :, :)
+    complex(kind=c_double_complex), pointer :: fptr(:, :, :, :)
     type(lib_common_type), pointer :: w90_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call c_f_pointer(m_cptr, fptr, [w90_fptr%num_bands, w90_fptr%num_bands, w90_fptr%kmesh_info%nntot, w90_fptr%num_kpts])
@@ -214,7 +216,7 @@ contains
     implicit none
     type(w90_data), value :: w90_obj
     type(c_ptr), value :: a_cptr
-    complex(8), pointer :: a_fptr(:, :, :)
+    complex(kind=c_double_complex), pointer :: a_fptr(:, :, :)
     type(lib_common_type), pointer :: w90_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call c_f_pointer(a_cptr, a_fptr, [w90_fptr%num_wann, w90_fptr%num_wann, w90_fptr%num_kpts]) ! these are reversed wrt c
@@ -226,11 +228,22 @@ contains
     implicit none
     type(w90_data), value :: w90_obj
     type(c_ptr), value :: a_cptr
-    complex(kind=8), pointer :: a_fptr(:, :, :)
+    complex(kind=c_double_complex), pointer :: a_fptr(:, :, :)
     type(lib_common_type), pointer :: w90_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call c_f_pointer(a_cptr, a_fptr, [w90_fptr%num_bands, w90_fptr%num_wann, w90_fptr%num_kpts]) ! these are reversed wrt c
     call w90_set_u_opt_f(w90_fptr, a_fptr)
+  end subroutine
+
+  subroutine w90_disentangle(w90_obj, ierr) bind(c)
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int) :: istdout, istderr, ierr
+    call w90_get_fortran_stderr(istderr)
+    call w90_get_fortran_stdout(istdout)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call w90_disentangle_f(w90_fptr, istdout, istderr, ierr)
   end subroutine
 
   subroutine w90_wannierise(w90_obj, ierr) bind(c)
@@ -242,6 +255,71 @@ contains
     call w90_get_fortran_stdout(istdout)
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_wannierise_f(w90_fptr, istdout, istderr, ierr)
+  end subroutine
+
+  subroutine w90_get_centres(w90_obj, centres) bind(c)
+    ! returns the centres of calulated mlwfs
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: centres
+    type(lib_common_type), pointer :: w90_fptr
+    real(kind=c_double), pointer :: fcentres(:, :)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call c_f_pointer(centres, fcentres, [3, w90_fptr%num_wann])
+    call w90_get_centres_f(w90_fptr, fcentres)
+  end subroutine
+
+  subroutine w90_get_spreads(w90_obj, spreads) bind(c)
+    ! returns the spreads of calulated mlwfs
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: spreads
+    type(lib_common_type), pointer :: w90_fptr
+    real(kind=c_double), pointer :: fspreads(:)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call c_f_pointer(spreads, fspreads, [w90_fptr%num_wann])
+    call w90_get_spreads_f(w90_fptr, fspreads)
+  end subroutine
+
+  subroutine w90_get_nproj(w90_obj, n) bind(c)
+    ! return the number of projectors
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: n
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int), pointer :: ndat
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call c_f_pointer(n, ndat)
+    ndat = size(w90_fptr%proj_input)
+  end subroutine
+
+  subroutine w90_get_proj(w90_obj, n, site, l, m, s, rad, x, z, sqa, zona, ierr) bind(c)
+    ! probes projectors configured in the library object
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: n, site, l, m, s, rad, x, z, sqa, zona
+    integer(kind=c_int) :: ierr
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int), pointer :: n_fptr, l_fptr(:), m_fptr(:), s_fptr(:), rad_fptr(:)
+    real(kind=c_double), pointer :: site_fptr(:, :), x_fptr(:, :), z_fptr(:, :), sqa_fptr(:, :), zona_fptr(:)
+    integer(kind=c_int) :: nproj
+    integer(kind=c_int) :: istderr, istdout
+    call w90_get_fortran_stderr(istderr)
+    call w90_get_fortran_stdout(istdout)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call c_f_pointer(n, n_fptr)
+    nproj = n_fptr
+    call c_f_pointer(site, site_fptr, [3, nproj])
+    call c_f_pointer(l, l_fptr, [nproj])
+    call c_f_pointer(m, m_fptr, [nproj])
+    call c_f_pointer(s, s_fptr, [nproj])
+    call c_f_pointer(rad, rad_fptr, [nproj])
+    call c_f_pointer(x, x_fptr, [3, nproj])
+    call c_f_pointer(z, z_fptr, [3, nproj])
+    call c_f_pointer(sqa, sqa_fptr, [3, nproj])
+    call c_f_pointer(zona, zona_fptr, [nproj])
+    call w90_get_proj_f(w90_fptr, n_fptr, site_fptr, l_fptr, m_fptr, s_fptr, rad_fptr, x_fptr, z_fptr, sqa_fptr, zona_fptr, &
+                        istdout, istderr, ierr)
   end subroutine
 
   subroutine w90_set_option_double_f(w90_obj, keyword, cdble) bind(c)
@@ -261,7 +339,7 @@ contains
     type(c_ptr), value  :: arg_cptr
     integer(kind=c_int), value :: x
     type(lib_common_type), pointer :: w90_fptr
-    real(kind=8), pointer :: fptr(:)
+    real(kind=c_double), pointer :: fptr(:)
     call c_f_pointer(arg_cptr, fptr, [x])
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_set_option(w90_fptr, keyword, fptr)
@@ -274,7 +352,7 @@ contains
     type(c_ptr), value  :: arg_cptr
     integer(kind=c_int), value :: x, y
     type(lib_common_type), pointer :: w90_fptr
-    real(kind=8), pointer :: fptr(:, :)
+    real(kind=c_double), pointer :: fptr(:, :)
     call c_f_pointer(arg_cptr, fptr, [y, x]) ! these are reversed wrt c
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_set_option(w90_fptr, keyword, fptr)
@@ -296,7 +374,7 @@ contains
     type(c_ptr), value ::  arg_cptr
     character(*, kind=c_char) :: keyword
     integer(kind=c_int), value  :: x
-    integer, pointer :: fptr(:)
+    integer(kind=c_int), pointer :: fptr(:)
     type(lib_common_type), pointer :: w90_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call c_f_pointer(arg_cptr, fptr, [x])
@@ -333,6 +411,17 @@ contains
     type(w90_data), value :: w90_obj
     character(*, kind=c_char) :: keyword
     character(*, kind=c_char) :: text
+    type(lib_common_type), pointer :: w90_fptr
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call w90_set_option(w90_fptr, keyword, text)
+  end subroutine
+
+  subroutine w90_set_option_text2d_f(w90_obj, keyword, text) bind(c)
+    implicit none
+    type(w90_data), value :: w90_obj
+    character(*, kind=c_char), intent(in) :: keyword
+    ! len=* automatically picks up the 'max_len' we set in CFI_establish
+    character(len=*, kind=c_char), intent(in) :: text(:)
     type(lib_common_type), pointer :: w90_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_set_option(w90_fptr, keyword, text)
