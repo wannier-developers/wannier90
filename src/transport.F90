@@ -1835,27 +1835,27 @@ contains
       call set_error_alloc(error, 'Error in allocating ipiv in tran_green', comm)
       return
     end if
-    allocate (g_inv(nxx, nxx))
+    allocate (g_inv(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating g_inv in tran_green', comm)
       return
     end if
-    allocate (eh_00(nxx, nxx))
+    allocate (eh_00(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating eh_00 in tran_green', comm)
       return
     end if
-    allocate (c1(nxx, nxx))
+    allocate (c1(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating c1 in tran_green', comm)
       return
     end if
-    allocate (s1(nxx, nxx))
+    allocate (s1(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating s1 in tran_green', comm)
       return
     end if
-    allocate (s2(nxx, nxx))
+    allocate (s2(nxx, nxx), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating s2 in tran_green', comm)
       return
@@ -1965,32 +1965,32 @@ contains
 
     end select
 
-    deallocate (s2)
+    deallocate (s2, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating s2 in tran_green', comm)
       return
     end if
-    deallocate (s1)
+    deallocate (s1, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating s1 in tran_green', comm)
       return
     end if
-    deallocate (c1)
+    deallocate (c1, stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in deallocating c1 in tran_green', comm)
       return
     end if
-    deallocate (eh_00)
+    deallocate (eh_00, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating eh_00 in tran_green', comm)
       return
     end if
-    deallocate (g_inv)
+    deallocate (g_inv, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating g_inv in tran_green', comm)
       return
     end if
-    deallocate (ipiv)
+    deallocate (ipiv, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ipiv in tran_green', comm)
       return
@@ -2822,7 +2822,7 @@ contains
         call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
         return
       end if
-      deallocate (PL1_subgroup_info)
+      deallocate (PL1_subgroup_info, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
         return
@@ -2880,7 +2880,7 @@ contains
           call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
           return
         end if
-        deallocate (PL1_subgroup_info)
+        deallocate (PL1_subgroup_info, stat=ierr)
         if (ierr /= 0) then
           call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
           return
@@ -2964,7 +2964,7 @@ contains
         call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
         return
       end if
-      deallocate (PL1_subgroup_info)
+      deallocate (PL1_subgroup_info, stat=ierr)
       if (ierr /= 0) then
         call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
         return
@@ -3043,7 +3043,7 @@ contains
               call set_error_dealloc(error, 'Error deallocating PL4_groups in tran_lcr_2c2_sort', comm)
               return
             end if
-            deallocate (PL1_subgroup_info)
+            deallocate (PL1_subgroup_info, stat=ierr)
             if (ierr /= 0) then
               call set_error_dealloc(error, 'Error deallocating PL1_subgroup_info in tran_lcr_2c2_sort', comm)
               return

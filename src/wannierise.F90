@@ -434,7 +434,7 @@ contains
       write (stdout, *)
       write (stdout, '(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
       write (stdout, '(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
-      if (print_output%lenconfac .eq. 1.0_dp) then
+      if (trim(print_output%length_unit) == 'ang') then
         write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV'
       else
         write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Bohr^2)     Time  |<-- CONV'
@@ -1782,7 +1782,7 @@ contains
     !
     !================================================
 
-    use w90_constants, only: eps6, cmplx_0, cmplx_i, twopi
+    use w90_constants, only: eps6, cmplx_0, cmplx_i
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_utility, only: utility_inv3
     use w90_comms, only: comms_allreduce, w90_comm_type
@@ -3069,7 +3069,7 @@ contains
     write (stdout, *)
     write (stdout, '(1x,a)') '*------------------------------- WANNIERISE ---------------------------------*'
     write (stdout, '(1x,a)') '+--------------------------------------------------------------------+<-- CONV'
-    if (print_output%lenconfac .eq. 1.0_dp) then
+    if (trim(print_output%length_unit) == 'ang') then
       write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV'
     else
       write (stdout, '(1x,a)') '| Iter  Delta Spread     RMS Gradient      Spread (Bohr^2)     Time  |<-- CONV'
