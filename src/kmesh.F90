@@ -202,7 +202,7 @@ contains
       write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a)') '|                    Distance to Nearest-Neighbour Shells                    |'
       write (stdout, '(1x,a)') '|                    ------------------------------------                    |'
-      if (trim(print_output%length_unit) == 'ang') then
+      if (trim(print_output%length_unit) == 'Ang') then
         write (stdout, '(1x,a)') '|          Shell             Distance (Ang^-1)          Multiplicity         |'
         write (stdout, '(1x,a)') '|          -----             -----------------          ------------         |'
       else
@@ -701,7 +701,7 @@ contains
     end if
 
     if (print_output%iprint > 0) then
-      if (trim(print_output%length_unit) == 'ang') then
+      if (trim(print_output%length_unit) == 'Ang') then
         write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
         write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
       else
@@ -715,7 +715,7 @@ contains
           i, (bk_local(j, i, 1)/print_output%lenconfac, j=1, 3), wb_local(i)*print_output%lenconfac**2
       end do
       write (stdout, '(1x,"+",76("-"),"+")')
-      if (trim(print_output%length_unit) == 'ang') then
+      if (trim(print_output%length_unit) == 'Ang') then
         write (stdout, '(1x,a)') '|                           b_k Directions (Ang^-1)                          |'
         write (stdout, '(1x,a)') '|                           -----------------------                          |'
       else
@@ -869,7 +869,7 @@ contains
         write (stdout, '(1x,"+",76("-"),"+")')
         write (stdout, '(1x,a)') '|        Gamma-point: number of the b-vectors is reduced by half             |'
         write (stdout, '(1x,"+",76("-"),"+")')
-        if (trim(print_output%length_unit) == 'ang') then
+        if (trim(print_output%length_unit) == 'Ang') then
           write (stdout, '(1x,a)') '|                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |'
           write (stdout, '(1x,a)') '|                  ----------------------------------------                  |'
         else
