@@ -30,10 +30,10 @@ jobs:
         include:
           - toolchain: intel
             mpi: false
-            experimental: true
+            experimental: false
           - toolchain: intel
             mpi: intel
-            experimental: true
+            experimental: false
     steps:
       - name: Install missing packages
         run: sudo dnf install -y bzip2 python-unversioned-command which
@@ -57,14 +57,19 @@ jobs:
       - name: Enable msvc toolchain on windows
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
-      - name: Activate Intel compilers
-        # Not elegant, it will propagate all environment variable.
-        # Intel does not provide a way to output the environment variables to a file
-        # Note: PATH needs to be exported to GITHUB_PATH otherwise it can be overwritten
+      - name: Load Intel compiler module
         run: |
-          source /opt/intel/oneapi/setvars.sh
-          printenv >> $GITHUB_ENV
-          echo $PATH >> $GITHUB_PATH
+          # Get interactive profile to be able to load modules
+          source /etc/profile
+
+          # Save the current environment since we only want the added difference
+          printenv > orig_env
+
+          # Load the relevant mpi module
+          module load intel/compiler
+          printenv > module_env
+
+          diff orig_env module_env | sed -n 's/> //p' >> $GITHUB_ENV
         if: matrix.toolchain == 'intel'
       - uses: actions/checkout@v3
       - uses: lukka/get-cmake@latest
