@@ -4050,7 +4050,7 @@ contains
         end if
       end do
       line_s = 0
-      line_e = settings%num_entries
+      line_e = settings%num_entries + 1  ! +1: no 'end projections' sentinel in library mode; loop uses line_e-1
     end if ! reading from input file or entries
 
     counter = 0
