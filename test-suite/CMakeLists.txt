@@ -143,6 +143,7 @@ if (WANNIER90_MPI)
 	# These tests require MPI interface
 	list(APPEND functional_tests
 			library-mode-test
+			library-mode-test-projections
 	)
 endif ()
 foreach (test IN LISTS functional_tests)
