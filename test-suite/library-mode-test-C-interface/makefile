@@ -4,4 +4,4 @@ include ../../make.inc
 wannier_c.x : wannier.o ../../libwannier90.a
 	$(CXX) $(LDOPTS) -g wannier.o ../../libwannier90.a $(LIBS) -lgfortran -o $@ -fpermissive
 clean:
-	@rm wannier.o wannier_c.x
+	@rm -f wannier.o wannier_c.x

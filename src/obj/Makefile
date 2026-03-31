@@ -10,22 +10,18 @@ include ../../Makefile.header
 # Define the path where to actually look for files (the source .f90 files)
 VPATH=..
 
+OBJS  = constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
+		ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
+		wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
+		library_extra.o
 ifdef WANNIER90_WITH_C
-OBJS  = constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
-        ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
-        wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
-	library_extra.o c_interface.o
-else
-OBJS  = constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
-        ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
-        wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
-	library_extra.o
+OBJS  += c_interface.o wannier90.o
 endif
 
 OBJS_POST  = ws_distance.o types.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
-        postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
-        boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o readwrite.o \
-	error.o error_base.o
+ 		postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
+		boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o readwrite.o \
+		error.o error_base.o
 
 
 
@@ -95,6 +91,9 @@ c_interface.o : c_interface.F90 \
 	library_interface.o comms.o constants.o error_base.o io.o kmesh.o overlap.o plot.o transport.o \
 	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $< --std=f2018
+
+wannier90.o: wannier90.c
+	 $(CC) $(CFLAGS) -c $<
 
 constants.o: constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
