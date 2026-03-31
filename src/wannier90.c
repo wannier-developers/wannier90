@@ -80,7 +80,7 @@ void w90_set_option_text2d(w90_data blob, const char* key, const char* const* da
         fprintf(stderr, "Error: memory allocation failed in w90_set_option_text2d\n");
         return;
     }
-    
+
     for (int i = 0; i < n; i++) {
         // Copy string and pad the rest with spaces (Fortran style)
         strncpy(&flat_array[i * max_len], data[i], max_len);
@@ -94,7 +94,7 @@ void w90_set_option_text2d(w90_data blob, const char* key, const char* const* da
     CFI_index_t extent[] = {n}; // number of elements
     CFI_cdesc_t *desc_data_ptr = (CFI_cdesc_t *)&desc_data;
     // We use max_len as the element size
-    CFI_establish(desc_data_ptr, flat_array, CFI_attribute_other, 
+    CFI_establish(desc_data_ptr, flat_array, CFI_attribute_other,
                   CFI_type_char, max_len, 1, extent);
 
     w90_set_option_text2d_f(blob, &desc, desc_data_ptr);
