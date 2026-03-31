@@ -76,6 +76,9 @@ void w90_get_centres(w90_data w90_obj, double* centres);
 void w90_get_spreads(w90_data w90_obj, double* spreads);
 
 #ifdef MPI
+#include <mpi.h>
+
+void w90_set_comm_f(w90_data blob, int* comm);
 void w90_set_comm(w90_data blob, MPI_Comm comm);
 #endif
 #endif

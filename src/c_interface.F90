@@ -41,7 +41,7 @@ module w90_library_c
                          w90_set_eigval_f => w90_set_eigval, w90_set_m_local_f => w90_set_m_local, &
                          w90_set_u_matrix_f => w90_set_u_matrix, w90_set_u_opt_f => w90_set_u_opt, &
                          w90_wannierise_f => w90_wannierise, w90_set_option, &
-                         w90_set_comm_f => w90_set_comm, lib_common_type, &
+                         w90_set_comm_ff => w90_set_comm, lib_common_type, &
                          w90_get_fortran_stderr, w90_get_fortran_stdout
   implicit none
 
@@ -466,5 +466,31 @@ contains
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_set_option(w90_fptr, keyword, text)
   end subroutine
+
+#ifdef MPI
+  subroutine w90_set_comm_f(w90_obj, comm) bind(c)
+#ifdef MPI08
+    use mpi_f08
+#endif
+    implicit none
+#ifdef MPIH
+    include 'mpif.h'
+#endif
+    type(w90_data), intent(in), value :: w90_obj
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int), intent(in) :: comm
+
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+
+#ifdef MPI08
+    type(mpi_comm) :: comm08
+    ! Manually assign the integer to the type's internal handle
+    comm08%MPI_VAL = comm
+    call w90_set_comm_ff(w90_fptr, comm08)
+#else
+    call w90_set_comm_ff(w90_fptr, comm)
+#endif
+  end subroutine
+#endif
 
 end module w90_library_c
