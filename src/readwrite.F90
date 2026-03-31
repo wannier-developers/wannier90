@@ -4042,6 +4042,10 @@ contains
         end if
       end if
 
+      ! skip the begin/end lines
+      line_s = line_s + 1
+      line_e = line_e - 1
+
     elseif (allocated(settings%entries)) then ! reading from setopt
       do loop = 1, settings%num_entries
         if (settings%entries(loop)%keyword == 'projections') then
@@ -4049,13 +4053,13 @@ contains
           if (settings%entries(loop)%txtdata == 'random') lrandom = .true.
         end if
       end do
-      line_s = 0
+      line_s = 1
       line_e = settings%num_entries
     end if ! reading from input file or entries
 
     counter = 0
     if (.not. lrandom) then
-      do line = line_s + 1, line_e - 1
+      do line = line_s, line_e
         ang_states = 0
         !Assume the default values
         proj_z_tmp = proj_z_def

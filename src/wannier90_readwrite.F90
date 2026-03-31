@@ -1232,7 +1232,7 @@ contains
       ! we plot all wannier functions
       wann_plot_num = num_wann
       if (allocated(wann_plot%list)) then
-        deallocate (wann_plot%list)
+        deallocate (wann_plot%list, stat=ierr)
         if (ierr /= 0) then
           call set_error_dealloc(error, 'Error deallocating wannier_plot%list &
           & in w90_wannier90_readwrite_read_wann_plot', comm)

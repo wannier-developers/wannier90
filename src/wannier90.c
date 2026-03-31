@@ -61,13 +61,6 @@ void w90_set_option_text2d(w90_data blob, char* key, char** data, int n) {
     int n = 2; // 2 strings
     char *data[3] = {"Ga", "N"}; // Array of strings
     */
-
-    printf("in wannier90.c:\n");
-    printf("%s\n", key);
-    for (int i = 0; i < n; i++) {
-        printf("%s\n", data[i]);
-    }
-
     CFI_cdesc_t desc;
     CFI_establish(&desc, key, CFI_attribute_other, CFI_type_char, strlen(key), 0, NULL);
 
