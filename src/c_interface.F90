@@ -350,12 +350,16 @@ contains
     call w90_get_fortran_stdout(istdout)
     call c_f_pointer(w90_obj%caddr, w90_fptr)
     call w90_get_num_excl_bands_f(w90_fptr, nex)
-    allocate(temp_excl(nex))
+    if (nex == 0) then
+      ! no excluded bands, just return an empty array
+      return
+    end if
+    allocate (temp_excl(nex))
     call w90_get_excl_bands_f(w90_fptr, temp_excl, istdout, istderr, ierr)
     ! copy to the output pointer
     call c_f_pointer(excl_bands, excl_bands_fptr, [nex])
     excl_bands_fptr = temp_excl
-    deallocate(temp_excl)
+    deallocate (temp_excl)
   end subroutine
 
   subroutine w90_set_option_double_f(w90_obj, keyword, cdble) bind(c)
