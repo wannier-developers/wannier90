@@ -51,8 +51,8 @@ void reade(string, int, int, double*);
 
 int main(int argc, char* argv[]) {
 
-        // check if win file exists
-        if (((argc == 2) && (filesystem::exists(argv[1])))){
+        // check command-line argument and input file existence
+        if ((argc != 2) || (!filesystem::exists(argv[1]))) {
                 cerr << "usage: " << argv[0] << " xxx.win" << endl;
                 exit(1);
         }
@@ -65,17 +65,18 @@ int main(int argc, char* argv[]) {
         winfile.close();
 
         // clean up win format
-        regex regexp { R"(\#.*|\.*)" }; // remove comments
+        regex regexp { R"([#!].*)" }; // remove comments
         filestring = regex_replace(filestring, regexp, string(""));
         regexp = { R"(:|=)" }; // remove define/assign
         filestring = regex_replace(filestring, regexp, string(""));
         regexp = { R"(^ *)" }; // remove define/assign
         filestring = regex_replace(filestring, regexp, string(""));
 
-        regexp = { R"((.*).win)" }; // remove define/assign
+        regexp = { R"(^(.*)\.win$)" };
         smatch match;
         string fn { argv[1] };
         regex_search(fn, match, regexp);
+        assert(!match.empty());
         string root = match[1];
 
         double uc[3][3];
@@ -107,13 +108,14 @@ int main(int argc, char* argv[]) {
         w90_set_option_logical(w90glob, "dump_inputs", true);
 
         int ierr;
-        w90_input_setopt(w90glob, (char*)root.c_str(), &ierr); // process necessary library options
+        w90_input_setopt(w90glob, root.c_str(), &ierr); // process necessary library options
 
         w90_input_reader(w90glob, &ierr); // process any other options
         assert(ierr == 0);
 
         int nnfd;
-        w90_get_nn(w90glob, &nnfd); // return number of NN in FD scheme
+        w90_get_nn(w90glob, &nnfd, &ierr); // return number of NN in FD scheme
+        assert(ierr == 0);
         cout << nnfd <<endl;
 
         // prepare nnkp and gkpb arrans
@@ -135,8 +137,10 @@ int main(int argc, char* argv[]) {
                 }
         }
 
-        w90_get_nnkp(w90glob, &nnkp[0][0]); // return indexes of NN k-points in FD scheme
-        w90_get_gkpb(w90glob, &gkpb[0][0][0]);
+        w90_get_nnkp(w90glob, &nnkp[0][0], &ierr); // return indexes of NN k-points in FD scheme
+        assert(ierr == 0);
+        w90_get_gkpb(w90glob, &gkpb[0][0][0], &ierr);
+        assert(ierr == 0);
 
         // printout nnkp data for testing
         for (int i = 0; i < nk; ++i) {
@@ -154,9 +158,9 @@ int main(int argc, char* argv[]) {
         complex<double>* umat = new complex<double>[nw * nw * nk];
         double* edata = new double[nb * nk];
 
-        w90_set_m_local(w90glob, mdata); // m matrix
-        w90_set_u_matrix(w90glob, umat); // results returned here
-        w90_set_u_opt(w90glob, adata);   // initial projections
+        w90_set_m_local(w90glob, reinterpret_cast<_Complex double*>(mdata)); // m matrix
+        w90_set_u_matrix(w90glob, reinterpret_cast<_Complex double*>(umat)); // results returned here
+        w90_set_u_opt(w90glob, reinterpret_cast<_Complex double*>(adata));   // initial projections
         w90_set_eigval(w90glob, edata);  // contains eigenvalues
 
         fn = root + ".mmn";
@@ -177,7 +181,7 @@ int main(int argc, char* argv[]) {
 
         double wannier_ctr[nw][3];
         double wannier_spr[nw];
-        w90_get_centres(w90glob, wannier_ctr);
+        w90_get_centres(w90glob, &wannier_ctr[0][0]);
         w90_get_spreads(w90glob, wannier_spr);
         w90_delete(&w90glob);
 
@@ -188,14 +192,14 @@ int nwann(string filestring) {
         regex regexp { R"(num_wann\s*(\d+)\s*\n)" };
         smatch match;
         regex_search(filestring, match, regexp);
-        assert(match.empty());
+        assert(!match.empty());
         return stoi(match[1]);
 }
 int nband(string filestring) {
         regex regexp { R"(num_bands\s*(\d+)\s*\n)" };
         smatch match;
         regex_search(filestring, match, regexp);
-        if (match.empty()) {
+        if (!match.empty()) {
                 return stoi(match[1]);
         } else {
                 return 0;
@@ -204,10 +208,10 @@ int nband(string filestring) {
 
 void rlat(double rlat[][3], string filestring) {
         // unit cell specification
-        regex latticeregex(R"((begin unit_cell_cart\s*)\n\s*(bohr)?\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(end unit_cell_cart))", std::regex_constants::icase);
+        regex latticeregex(R"((begin unit_cell_cart\s*)\n\s*(bohr|ang)?\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(-?\d*\.\d+)\s*\n?\s*(end unit_cell_cart))", std::regex_constants::icase);
         smatch latticematch;
         regex_search(filestring, latticematch, latticeregex);
-        assert(latticematch.empty());
+        assert(!latticematch.empty());
         double fac = 1.0;
         if (latticematch[2] == "bohr") fac = 0.52917720859;
         rlat[0][0] = stod(latticematch[3]) * fac;
@@ -237,7 +241,7 @@ void mpgrid(int nkabc[3], string filestring) {
         regex nkregex { R"(mp_grid\s*(\d+)\s(\d+)\s(\d+)\s*\n)" };
         smatch nkmatch;
         regex_search(filestring, nkmatch, nkregex);
-        assert(nkmatch.empty());
+        assert(!nkmatch.empty());
         nkabc[0] = stoi(nkmatch[1]);
         nkabc[1] = stoi(nkmatch[2]);
         nkabc[2] = stoi(nkmatch[3]);
@@ -250,17 +254,20 @@ void kpts(double kpts[][3], int nkexpected, string filestring) {
         regex kptregex(R"(begin kpoints\s*\n((.|\n)*)\s*\nend kpoints)", std::regex_constants::icase);
         smatch kptmatch;
         regex_search(filestring, kptmatch, kptregex);
-        assert(kptmatch.empty());
+        assert(!kptmatch.empty());
         stringstream kstream(kptmatch[1]);
         int nkfound { 0 };
-        double kx, ky, kz;
-        kstream >> kx >> ky >> kz;
-        while (kstream) {
+        string line;
+        while (getline(kstream, line)) {
+                if (line.empty()) continue;
+                stringstream linestream(line);
+                double kx, ky, kz;
+                if (!(linestream >> kx >> ky >> kz)) continue;
+                assert(nkfound < nkexpected);
                 kpts[nkfound][0] = kx;
                 kpts[nkfound][1] = ky;
                 kpts[nkfound][2] = kz;
                 nkfound++;
-                kstream >> kx >> ky >> kz;
         }
         assert(nkfound == nkexpected);
 }
