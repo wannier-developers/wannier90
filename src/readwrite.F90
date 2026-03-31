@@ -3703,10 +3703,6 @@ contains
       read (c_num1, *, err=101, end=101) num1
       dummy = adjustl(dummy(i_punc:))
       !look for range
-      write (77, *) trim(keyword)
-      write (77, *) 'here'
-      write (77, *) dummy
-      write (77, *) 'here 2'
       if (scan(dummy, c_range) == 1) then
         i_digit = scan(dummy, c_digit)
         dummy = adjustl(dummy(i_digit:))
@@ -3922,7 +3918,7 @@ contains
     real(kind=dp)     :: pos_frac(3)
     real(kind=dp)     :: pos_cart(3)
     character(len=20) :: keyword
-    integer           :: in, ins, ine, loop, line_e, line_s, counter
+    integer           :: in, ins, ine, loop, line_e, line_s, block_line_e, block_line_s, counter
     integer           :: sites, species, line, pos1, pos2, pos3, m_tmp, l_tmp, mstate
     integer           :: loop_l, loop_m, loop_sites, ierr, loop_s, spn_counter
     logical           :: found_e, found_s
@@ -4015,6 +4011,9 @@ contains
                              //' in input file', comm)
         return
       end if
+
+      block_line_s = line_s
+      block_line_e = line_e
 
       dummy = settings%in_data(line_s + 1)
       if (index(dummy, 'ang') .ne. 0) then
@@ -4538,7 +4537,9 @@ contains
     end if
 
     ! I shouldn't get here, but just in case
-    if (.not. lcount .and. allocated(settings%in_data)) settings%in_data(line_s:line_e) (1:maxlen) = ' '
+    if (.not. lcount .and. allocated(settings%in_data)) then
+      settings%in_data(block_line_s:block_line_e) (1:maxlen) = ' '
+    end if
 
 !~     ! Check
 !~     do loop=1,num_wann
