@@ -52,12 +52,14 @@ void w90_input_setopt(w90_data blob, char* seed, int* ierr);
 void w90_input_reader(w90_data, int*);
 
 void w90_get_proj(w90_data, void*, void*, void*, void*, void*, void*, void*, void*, void*, void*, int*);
+void w90_get_num_excl_bands(w90_data, void*, int*);
+void w90_get_excl_bands(w90_data, void*, int*);
 
 void w90_get_nk(w90_data, void*);
 void w90_get_nw(w90_data, void*);
-void w90_get_nn(w90_data, void*);
-void w90_get_nnkp(w90_data, void*);
-void w90_get_gkpb(w90_data, void*);
+void w90_get_nn(w90_data, void*, int*);
+void w90_get_nnkp(w90_data, void*, int*);
+void w90_get_gkpb(w90_data, void*, int*);
 
 void w90_set_eigval(w90_data, void*);
 void w90_set_m_local(w90_data, void*);

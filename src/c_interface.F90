@@ -32,6 +32,8 @@ module w90_library_c
                          w90_get_centres_f => w90_get_centres, w90_get_gkpb_f => w90_get_gkpb, &
                          w90_get_nn_f => w90_get_nn, w90_get_nnkp_f => w90_get_nnkp, &
                          w90_get_proj_f => w90_get_proj, &
+                         w90_get_num_excl_bands_f => w90_get_num_excl_bands, &
+                         w90_get_excl_bands_f => w90_get_excl_bands, &
                          w90_print_info_f => w90_print_info, &
                          w90_get_spreads_f => w90_get_spreads, w90_input_setopt_ff => w90_input_setopt, &
                          w90_input_reader_f => w90_input_reader, &
@@ -95,7 +97,7 @@ contains
     ndat = w90_fptr%num_wann
   end subroutine
 
-  subroutine w90_get_nn(w90_obj, n) bind(c)
+  subroutine w90_get_nn(w90_obj, n, ierr) bind(c)
     ! return the number of adjacent k-points in finite difference scheme
     implicit none
     type(w90_data), value :: w90_obj
@@ -110,7 +112,7 @@ contains
     call w90_get_nn_f(w90_fptr, ndat, istdout, istderr, ierr)
   end subroutine
 
-  subroutine w90_get_gkpb(w90_obj, gkpb) bind(c)
+  subroutine w90_get_gkpb(w90_obj, gkpb, ierr) bind(c)
     ! return the g-offset of adjacent k-points in finite difference scheme
     implicit none
     type(w90_data), value :: w90_obj
@@ -125,7 +127,7 @@ contains
     call w90_get_gkpb_f(w90_fptr, nfptr, istdout, istderr, ierr)
   end subroutine
 
-  subroutine w90_get_nnkp(w90_obj, nnkp) bind(c)
+  subroutine w90_get_nnkp(w90_obj, nnkp, ierr) bind(c)
     ! return the indexing of adjacent k-points in finite difference scheme
     implicit none
     type(w90_data), value :: w90_obj
@@ -287,10 +289,10 @@ contains
     type(w90_data), value :: w90_obj
     type(c_ptr), value :: n
     type(lib_common_type), pointer :: w90_fptr
-    integer(kind=c_int), pointer :: ndat
+    integer(kind=c_int), pointer :: n_fptr
     call c_f_pointer(w90_obj%caddr, w90_fptr)
-    call c_f_pointer(n, ndat)
-    ndat = size(w90_fptr%proj_input)
+    call c_f_pointer(n, n_fptr)
+    n_fptr = size(w90_fptr%proj_input)
   end subroutine
 
   subroutine w90_get_proj(w90_obj, n, site, l, m, s, rad, x, z, sqa, zona, ierr) bind(c)
@@ -320,6 +322,40 @@ contains
     call c_f_pointer(zona, zona_fptr, [nproj])
     call w90_get_proj_f(w90_fptr, n_fptr, site_fptr, l_fptr, m_fptr, s_fptr, rad_fptr, x_fptr, z_fptr, sqa_fptr, zona_fptr, &
                         istdout, istderr, ierr)
+  end subroutine
+
+  subroutine w90_get_num_excl_bands(w90_obj, num_excl_bands) bind(c)
+    ! return the number of excluded bands
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: num_excl_bands
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int), pointer :: n_fptr
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call c_f_pointer(num_excl_bands, n_fptr)
+    call w90_get_num_excl_bands_f(w90_fptr, n_fptr)
+  end subroutine
+
+  subroutine w90_get_excl_bands(w90_obj, excl_bands, ierr) bind(c)
+    ! return the excluded bands
+    implicit none
+    type(w90_data), value :: w90_obj
+    type(c_ptr), value :: excl_bands
+    type(lib_common_type), pointer :: w90_fptr
+    integer(kind=c_int), pointer :: excl_bands_fptr(:)
+    integer(kind=c_int), allocatable :: temp_excl(:)
+    integer(kind=c_int) :: istderr, istdout, ierr
+    integer :: nex
+    call w90_get_fortran_stderr(istderr)
+    call w90_get_fortran_stdout(istdout)
+    call c_f_pointer(w90_obj%caddr, w90_fptr)
+    call w90_get_num_excl_bands_f(w90_fptr, nex)
+    allocate(temp_excl(nex))
+    call w90_get_excl_bands_f(w90_fptr, temp_excl, istdout, istderr, ierr)
+    ! copy to the output pointer
+    call c_f_pointer(excl_bands, excl_bands_fptr, [nex])
+    excl_bands_fptr = temp_excl
+    deallocate(temp_excl)
   end subroutine
 
   subroutine w90_set_option_double_f(w90_obj, keyword, cdble) bind(c)
