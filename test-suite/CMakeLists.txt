@@ -142,6 +142,7 @@ endif ()
 if (WANNIER90_MPI)
 	# These tests require MPI interface
 	list(APPEND functional_tests
+			library-mode-test-proj-overflow
 			library-mode-test
 			library-mode-test-projections
 	)
