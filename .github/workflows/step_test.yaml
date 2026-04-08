@@ -51,6 +51,9 @@ jobs:
 
           diff orig_env module_env | sed -n 's/> //p' >> $GITHUB_ENV
 
+          # GITHUB_ENV inappropriate for PATH var:
+          echo "$PATH" >> $GITHUB_PATH
+
           # Set MPI flag on
           echo "WITH_MPI=ON" >> $GITHUB_ENV
         if: matrix.mpi
