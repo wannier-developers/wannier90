@@ -25,15 +25,18 @@ jobs:
       fail-fast: false
       matrix:
         toolchain: [ gcc ]
-        mpi: [false, openmpi, mpich]
+        mpi: [false, openmpi]
         experimental: [false]
         include:
           - toolchain: intel
             mpi: false
-            experimental: true
+            experimental: false
           - toolchain: intel
             mpi: intel
-            experimental: true
+            experimental: false
+          - toolchain: gcc
+            mpi: mpich
+            experimental: true # mpirun hanging forever
     steps:
       - name: Install missing packages
         run: sudo dnf install -y bzip2 python-unversioned-command which
