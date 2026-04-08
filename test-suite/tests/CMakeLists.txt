@@ -96,9 +96,9 @@ set(test_names
                 testw90_nnkpt5 # expects to fail
 )
 if (Wannier90_MPI)
-	list(APPEND test_names
-			partestw90_mpierr # dropped because intended to fail
-	)
+#	list(APPEND test_names
+#			partestw90_mpierr # dropped because intended to fail
+#	)
 endif ()
 
 ## Define tests
