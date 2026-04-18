@@ -469,7 +469,7 @@ contains
       end if
 
       if (pw90_berry%tetrahedron_method) then
-        !if (pw90_berry%tetrahedron_higher_correction) then
+        if (pw90_berry%tetrahedron_higher_correction) then
         allocate (imjv(num_wann, num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
         allocate (eig(num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
         allocate (imjv_tet(num_wann, num_wann, 64))
@@ -483,7 +483,8 @@ contains
         else
           nfreq = fermi_n
         endif
-        !else !w/o correction: not implemented
+        else !w/o correction: not implemented
+          call set_error_input(error, 'Error: tetrahedron method without higher-order correction not implemented', comm)
         !  allocate (imjv(num_wann, num_wann, pw90_berry%kmesh%mesh(1) + 1, pw90_berry%kmesh%mesh(2) + 1, 2))
         !  allocate (eig(num_wann, pw90_berry%kmesh%mesh(1) + 1, pw90_berry%kmesh%mesh(2) + 1, 2))
         !  allocate (imjv_tet(num_wann, num_wann, 8))
@@ -491,7 +492,7 @@ contains
         !  allocate (counts(0:num_nodes - 1))
         !  allocate (displs(0:num_nodes - 1))
         !  !tetrahedron_array_small
-        !endif
+        endif
         call comms_array_split(pw90_berry%kmesh%mesh(3), counts, displs, comm)
       endif
 
