@@ -975,6 +975,12 @@ contains
                                    r_value=pw90_berry%tetrahedron_cutoff)
     if (pw90_berry%tetrahedron_cutoff <= 0._dp) call set_error_input &
       (error, 'Error: tetrahedron_cutoff must be greater than zero', comm)
+    
+    pw90_berry%tetrahedron_avoid_degeneracy = 3.e-4_dp
+    call w90_readwrite_get_keyword(settings, 'tetrahedron_avoid_degeneracy', found, error, comm, &
+                                   r_value=pw90_berry%tetrahedron_avoid_degeneracy)
+    if (pw90_berry%tetrahedron_avoid_degeneracy <= 0._dp) call set_error_input &
+      (error, 'Error: tetrahedron_avoid_degeneracy must be greater than zero', comm)
 
     kdotp_num_bands = 0
     call w90_readwrite_get_keyword(settings, 'kdotp_num_bands', found, error, comm, &
@@ -2203,6 +2209,8 @@ contains
           pw90_berry%tetrahedron_higher_correction, '|'
         write (stdout, '(1x,a46,10x,E8.3,13x,a1)') '|  Tetrahedron cutoff                        :', &
           pw90_berry%tetrahedron_cutoff, '|'
+        write (stdout, '(1x,a46,10x,E8.3,13x,a1)') '|  Cutoff to avoid band degeneracy           :', &
+          pw90_berry%tetrahedron_avoid_degeneracy, '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method                        :', '       F', '|'
       endif

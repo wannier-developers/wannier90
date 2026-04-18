@@ -172,6 +172,7 @@ module w90_postw90_types
     logical :: tetrahedron_method
     logical :: tetrahedron_higher_correction
     real(kind=dp) :: tetrahedron_cutoff
+    real(kind=dp) :: tetrahedron_avoid_degeneracy
   end type pw90_berry_mod_type
 
   !type pw90_tetrahedron_type

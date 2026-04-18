@@ -1138,18 +1138,23 @@ contains
                       if (omega == 0.0) then
                         shc_k_tet = &
                           tetrahedron_spinhall(Ftet, E1tet, E2tet, ttet, &
-                                               0.0_dp, Ef, 3, pw90_berry%tetrahedron_cutoff)
+                                               0.0_dp, Ef, 3, pw90_berry%tetrahedron_cutoff, &
+                                               pw90_berry%tetrahedron_avoid_degeneracy)
                       else
                         shc_k_tet = &
                           (tetrahedron_spinhall(Ftet, E1tet, E2tet, ttet, &
-                                                -omega, Ef, 1, pw90_berry%tetrahedron_cutoff) &
+                                                -omega, Ef, 1, pw90_berry%tetrahedron_cutoff, &
+                                                pw90_berry%tetrahedron_avoid_degeneracy) &
                            - tetrahedron_spinhall(Ftet, E1tet, E2tet, ttet, &
-                                                  omega, Ef, 1, pw90_berry%tetrahedron_cutoff)) &
+                                                  omega, Ef, 1, pw90_berry%tetrahedron_cutoff, &
+                                                  pw90_berry%tetrahedron_avoid_degeneracy)) &
                           /(2.0_dp*omega) + (cmplx_i*pi* &
                                              (tetrahedron_spinhall(Ftet, E1tet, E2tet, ttet, &
-                                                                   -omega, Ef, 2, pw90_berry%tetrahedron_cutoff) &
+                                                                   -omega, Ef, 2, pw90_berry%tetrahedron_cutoff, &
+                                                                   pw90_berry%tetrahedron_avoid_degeneracy) &
                                               + tetrahedron_spinhall(Ftet, E1tet, E2tet, ttet, &
-                                                                     omega, Ef, 2, pw90_berry%tetrahedron_cutoff))) &
+                                                                     omega, Ef, 2, pw90_berry%tetrahedron_cutoff, &
+                                                                     pw90_berry%tetrahedron_avoid_degeneracy))) &
                           /(2.0_dp*omega)
                       endif
 
