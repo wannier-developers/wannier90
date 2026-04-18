@@ -7,7 +7,8 @@ shc_method = qiao
 
 tetrahedron_method = true
 tetrahedron_higher_correction = true
-tetrahedron_cutoff = 1.e-4
+tetrahedron_cutoff = 1.e-1
+tetrahedron_avoid_degeneracy = 3.e-4
 
 #kpath = true
 kpath_task = bands+shc
@@ -39,9 +40,9 @@ berry_curv_unit = ang2
 #berry_curv_adpt_kmesh = 5  
 #berry_curv_adpt_kmesh_thresh = 100.0
 
-fermi_energy_min = 6
-fermi_energy_max = 26
-fermi_energy_step = 0.1
+fermi_energy_min = 13
+fermi_energy_max = 23
+fermi_energy_step = 0.5
 
 num_bands         =   40
 num_wann          =   18

@@ -1606,6 +1606,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'spin_kmesh_spacing', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'spin_moment', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'spn_formatted', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'tetrahedron_avoid_degeneracy', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_correction', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_cutoff', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_higher_correction', found, error, comm)

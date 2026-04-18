@@ -122,7 +122,7 @@ contains
   end subroutine tetrahedron_array_init
 
   !================================================!
-  function tetrahedron_spinhall(F, E1, E2, t, hw, Ef, type, tet_cutoff)
+  function tetrahedron_spinhall(F, E1, E2, t, hw, Ef, type, tet_cutoff, avoid_deg)
     !=============================================================================
     ! Calculates contribution from a single tetrahedron, for the Kubo formula.   !
     ! "integral d3k (f_{nk} - f_{mk}) * (...)"
@@ -139,6 +139,7 @@ contains
     real(kind=dp), intent(in) :: hw, Ef
     integer, intent(in) :: type
     real(kind=dp), intent(in) :: tet_cutoff
+    real(kind=dp), intent(in) :: avoid_deg
     !intermediate variables, s:sorted
     real(kind=dp) :: t_s(3, 3), t_small(3, 3), x(3), y
     real(kind=dp), dimension(4) :: D, occ1, occ2, F_s, E1_s, E2_s, &
@@ -157,15 +158,15 @@ contains
     if (flag1 .or. flag2) then
       tetrahedron_spinhall = 0.0_dp
     else
-      tetrahedron_spinhall = tetrahedron_fermidirac(F, E1, E2, t, hw, Ef, type, tet_cutoff) &
-                             - tetrahedron_fermidirac(F, E2, E1, t, hw, Ef, type, tet_cutoff)
+      tetrahedron_spinhall = tetrahedron_fermidirac(F, E1, E2, t, hw, Ef, type, tet_cutoff, avoid_deg) &
+                             - tetrahedron_fermidirac(F, E2, E1, t, hw, Ef, type, tet_cutoff, avoid_deg)
     endif
 
     return
 
   end function tetrahedron_spinhall
 
-  function tetrahedron_fermidirac(F, E_ref, E2, t, hw, Ef, type, tet_cutoff)
+  function tetrahedron_fermidirac(F, E_ref, E2, t, hw, Ef, type, tet_cutoff, avoid_deg)
     !=============================================================================
     ! Calculates contribution from a single tetrahedron, for the Kubo formula.   !
     ! "integral d3k f_{nk} * (...)
@@ -181,6 +182,7 @@ contains
     real(kind=dp), intent(in) :: hw, Ef
     integer, intent(in) :: type
     real(kind=dp), intent(in) :: tet_cutoff
+    real(kind=dp), intent(in) :: avoid_deg
     !intermediate variables, s:sorted
     real(kind=dp) :: t_s(3, 3), t_small(3, 3), x(3), y
     real(kind=dp), dimension(4) :: D, F_s, E1_s, E2_s, F_small, D_small
@@ -208,7 +210,7 @@ contains
         D_small(i + 1) = D(1) + (D(i + 1) - D(1))*x(i)
         t_small(:, i) = t_s(:, i)*x(i)
       enddo
-      Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff)
+      Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff, avoid_deg)
 
     else if (Ef < E1_s(3)) then  ! case 3: two tet.'s with cases 2 and 4
 
@@ -221,14 +223,14 @@ contains
       F_small(4) = F_s(1) + (F_s(4) - F_s(1))*x(3)
       D_small(4) = D(1) + (D(4) - D(1))*x(3)
       t_small(:, 3) = t_s(:, 3)*x(3)
-      Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff)
+      Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff, avoid_deg)
 
       F_small(1) = F_s(1) + (F_s(3) - F_s(1))*x(2); F_small(2) = F_s(3) + (F_s(2) - F_s(3))*y
       D_small(1) = D(1) + (D(3) - D(1))*x(2); D_small(2) = D(3) + (D(2) - D(3))*y
       t_small(:, 1) = t_s(:, 1)*y + t_s(:, 2)*(1 - y - x(2))
       t_small(:, 2) = t_s(:, 2)*(1 - x(2))
       t_small(:, 3) = t_s(:, 3)*x(3) - t_s(:, 2)*x(2)
-      Ans = Ans - tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff)
+      Ans = Ans - tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff, avoid_deg)
 
       F_small(1) = F_s(4) + (F_s(2) - F_s(4))*x(1)
       F_small(3) = F_small(2); F_small(2) = F_s(2)
@@ -237,7 +239,7 @@ contains
       t_small(:, 1) = (t_s(:, 1) - t_s(:, 3))*(1 - x(1))
       t_small(:, 2) = t_s(:, 1)*(y - x(1)) + t_s(:, 2)*(1 - y) + t_s(:, 3)*(x(1) - 1)
       t_small(:, 3) = -t_s(:, 1)*x(1) + t_s(:, 3)*(x(1) + x(3) - 1)
-      Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff)
+      Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff, avoid_deg)
 
     else if (Ef < E1_s(4)) then  ! case 4: a large tet. - a small tet.
 
@@ -254,18 +256,18 @@ contains
       t_small(:, 1) = -t_s(:, 3)*(1 - x(3))
       t_small(:, 2) = (t_s(:, 1) - t_s(:, 3))*x(1)
       t_small(:, 3) = (t_s(:, 2) - t_s(:, 3))*x(2)
-      Ans = Ans + tetrahedron_integral(F_s, D, t_s, hw, type, tet_cutoff) &
-            - tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff)
+      Ans = Ans + tetrahedron_integral(F_s, D, t_s, hw, type, tet_cutoff, avoid_deg) &
+            - tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff, avoid_deg)
 
     else                      ! case 5: a large tet.
-      Ans = Ans + tetrahedron_integral(F_s, D, t_s, hw, type, tet_cutoff)
+      Ans = Ans + tetrahedron_integral(F_s, D, t_s, hw, type, tet_cutoff, avoid_deg)
     endif
     tetrahedron_fermidirac = Ans
 
   end function tetrahedron_fermidirac
 
   !=======================================================================
-  function tetrahedron_integral(F_in, D_in, t_in, hw, type, tet_cutoff)
+  function tetrahedron_integral(F_in, D_in, t_in, hw, type, tet_cutoff, avoid_deg)
     !=============================================================================
     ! Calculates contribution from a single tetrahedron, for the Kubo formula.   !
     ! To do: extend to complex numbers                                           !
@@ -287,6 +289,8 @@ contains
     real(kind=dp), intent(in) :: hw
     integer, intent(in) :: type
     real(kind=dp), intent(in) :: tet_cutoff
+    !small parameter to avoid a problem of degenearcy
+    real(kind=dp), intent(in) :: avoid_deg
     !result
     real(kind=dp) :: Ans, Det_t
 
@@ -299,8 +303,7 @@ contains
     REAL(kind=dp) :: GradD, Jac, y
     REAL(kind=dp) :: x(3)
     REAL(kind=dp), DIMENSION(0:2) :: F_uv
-    !small parameter to avoid a problem of degenearcy
-    real(kind=dp), parameter :: avoid_deg = 1.e-4_dp
+    
 
     D = D_in; F = F_in; t = t_in
     call tetrahedron_sort(D, F, dummy, t)
