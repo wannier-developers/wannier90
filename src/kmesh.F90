@@ -432,7 +432,7 @@ contains
             vkpp = vkpp2 + kpt_cart(:, nkp2)
             dist = sqrt((kpt_cart(1, nkp) - vkpp(1))**2 &
                         + (kpt_cart(2, nkp) - vkpp(2))**2 + (kpt_cart(3, nkp) - vkpp(3))**2)
-            if ((dist .ge. dnn(ndnn)*(1 - kmesh_input%tol)) .and. (dist .le. dnn(ndnn)*(1 + kmesh_input%tol))) then
+            if ((dist .ge. dnn(ndnn) - kmesh_input%tol) .and. (dist .le. dnn(ndnn) + kmesh_input%tol)) then
               nnx = nnx + 1
               nnshell(nkp, ndnn) = nnshell(nkp, ndnn) + 1
               kmesh_info%nnlist(nkp, nnx) = nkp2
@@ -1298,7 +1298,7 @@ contains
         vkpp = vkpp2 + kpt_cart(:, nkp2)
         dist = sqrt((kpt_cart(1, kpt) - vkpp(1))**2 &
                     + (kpt_cart(2, kpt) - vkpp(2))**2 + (kpt_cart(3, kpt) - vkpp(3))**2)
-        if ((dist .ge. shell_dist*(1.0_dp - kmesh_input%tol)) .and. dist .le. shell_dist*(1.0_dp + kmesh_input%tol)) then
+        if ((dist .ge. shell_dist - kmesh_input%tol) .and. (dist .le. shell_dist + kmesh_input%tol)) then
           num_bvec = num_bvec + 1
           bvector(:, num_bvec) = vkpp(:) - kpt_cart(:, kpt)
         end if
