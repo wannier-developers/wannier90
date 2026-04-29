@@ -839,7 +839,7 @@ contains
         elseif (plot_fermi_lines) then
           filename = trim(seedname)//'-kslice-shc'//'+fermi_lines.py'
           write (stdout, '(/,3x,a)') filename
-          open (scriptunit, file=filename, form='formatted')
+          open (newunit=scriptunit, file=filename, form='formatted')
         end if
         write (scriptunit, '(a)') "# uncomment these two lines if you are " &
           //"running in non-GUI environment"

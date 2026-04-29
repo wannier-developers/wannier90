@@ -1220,7 +1220,7 @@ contains
         write (stdout, '(a)') trim(header)
         read (uHu_in, *, err=106, end=106) nb_tmp, nkp_tmp, nntot_tmp
       else
-        open (unit=uHu_in, file=trim(seedname)//".uHu", form='unformatted', &
+        open (newunit=uHu_in, file=trim(seedname)//".uHu", form='unformatted', &
               status='old', action='read', err=105)
         write (stdout, '(/a)', advance='no') &
           ' Reading uHu overlaps from '//trim(seedname)//'.uHu in get_CC_R: '
@@ -1736,7 +1736,7 @@ contains
         write (stdout, '(a)') trim(header)
         read (spn_in, *, err=110, end=110) nb_tmp, nkp_tmp
       else
-        open (unit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
+        open (newunit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
           ' Reading spin matrices from '//trim(seedname)//'.spn in get_SS_R : '
@@ -1973,7 +1973,7 @@ contains
         write (stdout, '(a)') trim(header)
         read (spn_in, *, err=110, end=110) nb_tmp, nkp_tmp
       else
-        open (unit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
+        open (newunit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
           ' Reading spin matrices from '//trim(seedname)//'.spn in get_SHC_R : '
@@ -2371,7 +2371,7 @@ contains
         write (stdout, '(a)') trim(header)
         read (spn_in, *, err=110, end=110) nb_tmp, nkp_tmp
       else
-        open (unit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
+        open (newunit=spn_in, file=trim(seedname)//'.spn', form='unformatted', &
               status='old', err=109)
         write (stdout, '(/a)', advance='no') &
           ' Reading spin matrices from '//trim(seedname)//'.spn in get_SH_R : '
