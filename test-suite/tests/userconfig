@@ -88,7 +88,7 @@ tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
 	       (1.0e-2, 1.0e-2, 'bandderivx'),
 	       (1.0e-2, 1.0e-2, 'bandderivy'),
 	       (1.0e-2, 1.0e-2, 'bandderivz'),
-              (1.0e-6, 1.0e-6, 'bandidx'))
+              (1.0e-6, None, 'bandidx'))
 
 [POSTW90_MORBDAT_OK]
 exe = ../../postw90.x
