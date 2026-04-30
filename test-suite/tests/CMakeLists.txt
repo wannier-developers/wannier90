@@ -83,8 +83,6 @@ set(test_names
                 testw90_nnkpt1
                 testw90_nnkpt2
                 testw90_nnkpt3
-                testw90_nnkpt4 # expects to fail
-                testw90_nnkpt5 # expects to fail
                 testw90_nnkpt6
                 testw90_nnkpt7
                 testw90_precond_1
@@ -92,10 +90,12 @@ set(test_names
                 testw90_proj1
                 testw90_proj2
                 testw90_proj3
-                testw90_readin_b_vec
                 testw90_rmn
                 testw90_write_u_matrices
                 testw90_write_u_matrices_disent
+                testw90_readin_b_vec
+                testw90_nnkpt4 # expects to fail MUST BE AT END OF LIST (MPI subsystem left defunct)
+                testw90_nnkpt5 # expects to fail MUST BE AT END OF LIST (MPI subsystem left defunct)
 )
 if (Wannier90_MPI)
 #	list(APPEND test_names
