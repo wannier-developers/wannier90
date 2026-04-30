@@ -988,7 +988,7 @@ contains
                                    r_value=pw90_berry%tetrahedron_cutoff)
     if (pw90_berry%tetrahedron_cutoff <= 0._dp) call set_error_input &
       (error, 'Error: tetrahedron_cutoff must be greater than zero', comm)
-    
+
     pw90_berry%tetrahedron_avoid_degeneracy = 3.e-4_dp
     call w90_readwrite_get_keyword(settings, 'tetrahedron_avoid_degeneracy', found, error, comm, &
                                    r_value=pw90_berry%tetrahedron_avoid_degeneracy)
@@ -2215,7 +2215,7 @@ contains
         end if
         write (stdout, '(1x,a21,5x,a47,4x,a1)') '|  Smearing Function ', &
           trim(w90_readwrite_get_smearing_type(pw90_dos%smearing%type_index)), '|'
-      endif
+      end if
       if (pw90_berry%tetrahedron_method) then
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method (PRB 106, 075125)                        :', '       T', '|'
         write (stdout, '(1x,a46,10x,a8,13x,L8)') '|  with higher-order correction                                :', &
@@ -2226,7 +2226,7 @@ contains
           pw90_berry%tetrahedron_avoid_degeneracy, '|'
       else
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|  Tetrahedron method                        :', '       F', '|'
-      endif
+      end if
       if (pw90_extra_io%global_kmesh%mesh(1) == pw90_dos%kmesh%mesh(1) .and. &
           pw90_extra_io%global_kmesh%mesh(2) == pw90_dos%kmesh%mesh(2) .and. &
           pw90_extra_io%global_kmesh%mesh(3) == pw90_dos%kmesh%mesh(3)) then

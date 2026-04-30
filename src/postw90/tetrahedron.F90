@@ -154,13 +154,13 @@ contains
       if (E2(i) < Ef) occ2(i) = 1.0_dp
       if (occ1(i) /= 1.0 .or. occ2(i) /= 1.0) flag1 = flag1 .and. .false.
       if (occ1(i) /= 0.0 .or. occ2(i) /= 0.0) flag2 = flag2 .and. .false.
-    enddo
+    end do
     if (flag1 .or. flag2) then
       tetrahedron_spinhall = 0.0_dp
     else
       tetrahedron_spinhall = tetrahedron_fermidirac(F, E1, E2, t, hw, Ef, type, tet_cutoff, avoid_deg) &
                              - tetrahedron_fermidirac(F, E2, E1, t, hw, Ef, type, tet_cutoff, avoid_deg)
-    endif
+    end if
 
     return
 
@@ -209,7 +209,7 @@ contains
         F_small(i + 1) = F_s(1) + (F_s(i + 1) - F_s(1))*x(i)
         D_small(i + 1) = D(1) + (D(i + 1) - D(1))*x(i)
         t_small(:, i) = t_s(:, i)*x(i)
-      enddo
+      end do
       Ans = Ans + tetrahedron_integral(F_small, D_small, t_small, hw, type, tet_cutoff, avoid_deg)
 
     else if (Ef < E1_s(3)) then  ! case 3: two tet.'s with cases 2 and 4
@@ -261,7 +261,7 @@ contains
 
     else                      ! case 5: a large tet.
       Ans = Ans + tetrahedron_integral(F_s, D, t_s, hw, type, tet_cutoff, avoid_deg)
-    endif
+    end if
     tetrahedron_fermidirac = Ans
 
   end function tetrahedron_fermidirac
@@ -303,7 +303,6 @@ contains
     REAL(kind=dp) :: GradD, Jac, y
     REAL(kind=dp) :: x(3)
     REAL(kind=dp), DIMENSION(0:2) :: F_uv
-    
 
     D = D_in; F = F_in; t = t_in
     call tetrahedron_sort(D, F, dummy, t)
@@ -317,9 +316,9 @@ contains
           if (abs(D(j)) < avoid_deg) then
             D(j) = avoid_deg*(abs(D(j))/D(j))
             F = 0
-          endif
-        enddo
-      endif
+          end if
+        end do
+      end if
 
       !cutoff treatment, hw == 0.0 for case 3
       DAV = (D(2) + D(3))/2.0_dp
@@ -329,35 +328,35 @@ contains
         D(2) = DAV - 0.5_dp*abs(DAV + hw)*tet_cutoff
         if (D(1) > D(2)) D(1) = D(1) + (D(2) - D_small_prev)
         if (D(3) > D(4)) D(4) = D(4) + (D(3) - D_large_prev)
-      endif
+      end if
       DAV = (D(1) + D(2))/2.0_dp
       if (abs((D(1) - D(2))/(DAV + hw)) < tet_cutoff) then
         if (D(2) > 0) then
           D(1) = D(2)*(2.0_dp - tet_cutoff)/(2.0_dp + tet_cutoff)
         else
           D(1) = D(2)*(2.0_dp + tet_cutoff)/(2.0_dp - tet_cutoff)
-        endif
-      endif
+        end if
+      end if
       DAV = (D(3) + D(4))/2.0_dp
       if (abs((D(3) - D(4))/(DAV + hw)) < tet_cutoff) then
         if (D(3) > 0) then
           D(4) = D(3)*(2.0_dp + tet_cutoff)/(2.0_dp - tet_cutoff)
         else
           D(4) = D(3)*(2.0_dp - tet_cutoff)/(2.0_dp + tet_cutoff)
-        endif
-      endif
+        end if
+      end if
 
       !intermediate variables for case 1 and 3
       do i = 1, 3
         dd(i) = (D(4) - D(i))/(D(i) + hw)
         ll(i) = tetrahedron_log1p(dd(i))
-      enddo
+      end do
       ff = 1.0_dp
 
       !determinant factor from parametrisation(tetrahedron volume)
       Det_t = ABS(t(1, 1)*t(2, 2)*t(3, 3) + t(1, 2)*t(2, 3)*t(3, 1) + t(1, 3)*t(2, 1)*t(3, 2) &
                   - t(1, 1)*t(2, 3)*t(3, 2) - t(1, 3)*t(2, 2)*t(3, 1) - t(1, 2)*t(2, 1)*t(3, 3))
-    endif
+    end if
 
     select case (type)
     case (1)
@@ -372,13 +371,13 @@ contains
         cc(4, a) = -(dd(a) - dd(b))*(dd(c) - dd(a))*((dd(b) - dd(c))*dd(b)*dd(c))**2
         bb(a) = cc(4, a)*dd(a)
         ff = ff*(1.0_dp + dd(a))/(dd(a)*(dd(a) - dd(b)))**2
-      enddo
+      end do
       bb(4) = -dd(1)*dd(2)*dd(3)*((dd(1) - dd(2))*(dd(2) - dd(3))*(dd(3) - dd(1)))**2
       ff = -ff/6.0_dp
 
       do i = 1, 4
         Ans = Ans + F(i)*(cc(i, 1)*ll(1) + cc(i, 2)*ll(2) + cc(i, 3)*ll(3) + bb(i))
-      enddo
+      end do
       Ans = Ans*ff/(D(4) + hw)
 
       tetrahedron_integral = Ans*Det_t
@@ -470,12 +469,12 @@ contains
         cc(4, a) = -(1.0_dp + dd(a))*(dd(a) - dd(b))*(dd(c) - dd(a))*((dd(b) - dd(c))*dd(b)*dd(c))**2
         bb(a) = cc(4, a)*dd(a)
         ff = ff*(1.0_dp + dd(a))/(dd(a)*(dd(a) - dd(b)))**2
-      enddo
+      end do
       bb(4) = -dd(1)*dd(2)*dd(3)*((dd(1) - dd(2))*(dd(2) - dd(3))*(dd(3) - dd(1)))**2
       ff = ff/2.0_dp
       do i = 1, 4
         Ans = Ans + F(i)*(cc(i, 1)*ll(1) + cc(i, 2)*ll(2) + cc(i, 3)*ll(3) + bb(i))
-      enddo
+      end do
       Ans = Ans*ff/(D(4) + hw)**2
 
       tetrahedron_integral = Ans*Det_t
@@ -504,16 +503,16 @@ contains
 
     DO i = 1, 4
       reference(i) = i
-    ENDDO
+    END DO
     b1_temp = b1; b2_temp = b2
     DO j = 1, 3
       t_temp(j, 1) = 0
-    ENDDO
+    END DO
     DO i = 2, 4
       DO j = 1, 3
         t_temp(j, i) = t(j, i - 1)
-      ENDDO
-    ENDDO
+      END DO
+    END DO
     DO i = 4, 1, -1
       DO j = 1, i - 1, +1
         IF (a(j) > a(j + 1)) THEN
@@ -530,13 +529,13 @@ contains
     DO i = 2, 4
       DO j = 1, 3
         t(j, i - 1) = t_temp(j, reference(i)) - t_temp(j, reference(1))
-      ENDDO
-    ENDDO
+      END DO
+    END DO
     ! rearrange b(j,i)
     DO i = 1, 4
       b1(i) = b1_temp(reference(i))
       b2(i) = b2_temp(reference(i))
-    ENDDO
+    END DO
 
   end subroutine tetrahedron_sort
 
@@ -584,12 +583,12 @@ contains
             DO c = 1, 3
               DO d = 1, 3
                 Ans = Ans + t(j_, a)*t(j_, b)*t(k, c)*t(k, d)*J(a, 1)*J(c, 2)*(J(b, 1)*J(d, 2) - J(b, 2)*J(d, 1))
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDDO
-      ENDDO
-    ENDDO
+              END DO
+            END DO
+          END DO
+        END DO
+      END DO
+    END DO
     tetrahedron_jacobian = SQRT(ABS(Ans))
 
   end function tetrahedron_jacobian
@@ -613,8 +612,8 @@ contains
         tetrahedron_log1p = x
       else
         tetrahedron_log1p = x*LOG(y)/z
-      endif
-    endif
+      end if
+    end if
 
   end function tetrahedron_log1p
 
