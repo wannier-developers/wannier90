@@ -36,6 +36,8 @@ set(test_names
                 testpostw90_pt_shc_higher
                 testpostw90_pt_shc_ryoo
                 testpostw90_pt_shc_ryoo_transl_inv
+                testpostw90_pt_tetra_shcfermi
+                testpostw90_pt_tetra_shcfreq
                 testpostw90_si_geninterp
                 testpostw90_si_geninterp_wsdistance
                 testpostw90_te_gyrotropic
@@ -81,6 +83,8 @@ set(test_names
                 testw90_nnkpt1
                 testw90_nnkpt2
                 testw90_nnkpt3
+                testw90_nnkpt4 # expects to fail
+                testw90_nnkpt5 # expects to fail
                 testw90_nnkpt6
                 testw90_nnkpt7
                 testw90_precond_1
@@ -88,12 +92,10 @@ set(test_names
                 testw90_proj1
                 testw90_proj2
                 testw90_proj3
+                testw90_readin_b_vec
                 testw90_rmn
                 testw90_write_u_matrices
                 testw90_write_u_matrices_disent
-                testw90_readin_b_vec
-                testw90_nnkpt4 # expects to fail
-                testw90_nnkpt5 # expects to fail
 )
 if (Wannier90_MPI)
 #	list(APPEND test_names
