@@ -41,6 +41,7 @@ target_sources(Wannier90_lib PRIVATE
 		postw90_readwrite.F90
 		postw90_types.F90
 		spin.F90
+                tetrahedron.F90
 		wan_ham.F90
 		)
 target_link_libraries(Wannier90_post PRIVATE

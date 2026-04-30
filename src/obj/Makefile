@@ -21,9 +21,7 @@ endif
 OBJS_POST  = ws_distance.o types.o kmesh.o io.o comms.o utility.o get_oper.o constants.o \
  		postw90_common.o wan_ham.o spin.o dos.o berry.o gyrotropic.o kpath.o kslice.o \
 		boltzwann.o geninterp.o postw90_types.o postw90_readwrite.o readwrite.o \
-		error.o error_base.o
-
-
+		error.o error_base.o tetrahedron.o
 
 wannier: ../../wannier90.x
 w90chk2chk: ../../w90chk2chk.x
@@ -173,7 +171,7 @@ kpath.o: $(POSTDIR)kpath.F90 comms.o types.o constants.o io.o spin.o berry.o pos
 kslice.o: $(POSTDIR)kslice.F90 comms.o types.o constants.o io.o spin.o berry.o postw90_types.o ws_distance.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
-berry.o: $(POSTDIR)berry.F90 comms.o types.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o postw90_types.o ws_distance.o
+berry.o: $(POSTDIR)berry.F90 comms.o types.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o postw90_types.o ws_distance.o tetrahedron.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 gyrotropic.o: $(POSTDIR)gyrotropic.F90 comms.o types.o constants.o utility.o postw90_common.o get_oper.o io.o spin.o wan_ham.o berry.o postw90_types.o ws_distance.o
@@ -189,6 +187,9 @@ postw90_types.o: $(POSTDIR)postw90_types.F90 comms.o types.o utility.o constants
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 postw90_readwrite.o: $(POSTDIR)postw90_readwrite.F90 comms.o postw90_types.o types.o utility.o constants.o io.o error.o wannier90_readwrite.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
+
+tetrahedron.o: $(POSTDIR)tetrahedron.F90 constants.o utility.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 .PHONY: wannier staticlib dynlib post clean mpi_test w90spn2spn

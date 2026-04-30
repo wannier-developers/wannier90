@@ -112,8 +112,8 @@ contains
     !
     !================================================!
 
-    use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize
-    use w90_constants, only: dp, cmplx_0, pi, pw90_physical_constants_type
+    use w90_comms, only: comms_reduce, w90_comm_type, mpirank, mpisize, comms_array_split
+    use w90_constants, only: dp, cmplx_0, cmplx_i, pi, pw90_physical_constants_type
     use w90_utility, only: utility_recip_lattice_base
     use w90_get_oper, only: get_HH_R, get_AA_R_effective, get_AA_R, get_BB_R, get_CC_R, get_SS_R, get_SHC_R, &
                             get_SH_R, get_SAA_R, get_SBB_R
@@ -123,6 +123,7 @@ contains
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_mod_type, &
                                  pw90_spin_hall_type, pw90_band_deriv_degen_type, pw90_oper_read_type, wigner_seitz_type, &
                                  kpoint_dist_type
+    use w90_tetrahedron
 
     implicit none
 
@@ -470,33 +471,33 @@ contains
 
       if (pw90_berry%tetrahedron_method) then
         if (pw90_berry%tetrahedron_higher_correction) then
-        allocate (imjv(num_wann, num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
-        allocate (eig(num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
-        allocate (imjv_tet(num_wann, num_wann, 64))
-        allocate (eig_tet(num_wann, 64))
-        allocate (counts(0:num_nodes - 1))
-        allocate (displs(0:num_nodes - 1))
-        call tetrahedron_P_matrix_init(P_matrix)
-        call tetrahedron_array_init(tet_array)
-        if (pw90_spin_hall%freq_scan) then
-          nfreq = pw90_berry%kubo_nfreq
-        else
-          nfreq = fermi_n
-        endif
+          allocate (imjv(num_wann, num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
+          allocate (eig(num_wann, 0:pw90_berry%kmesh%mesh(1) + 2, 0:pw90_berry%kmesh%mesh(2) + 2, 0:3))
+          allocate (imjv_tet(num_wann, num_wann, 64))
+          allocate (eig_tet(num_wann, 64))
+          allocate (counts(0:num_nodes - 1))
+          allocate (displs(0:num_nodes - 1))
+          call tetrahedron_P_matrix_init(P_matrix)
+          call tetrahedron_array_init(tet_array)
+          if (pw90_spin_hall%freq_scan) then
+            nfreq = pw90_berry%kubo_nfreq
+          else
+            nfreq = fermi_n
+          end if
         else !w/o correction: not implemented
           call set_error_input(error, 'Error: tetrahedron method without higher-order correction not implemented', comm)
-        !  allocate (imjv(num_wann, num_wann, pw90_berry%kmesh%mesh(1) + 1, pw90_berry%kmesh%mesh(2) + 1, 2))
-        !  allocate (eig(num_wann, pw90_berry%kmesh%mesh(1) + 1, pw90_berry%kmesh%mesh(2) + 1, 2))
-        !  allocate (imjv_tet(num_wann, num_wann, 8))
-        !  allocate (eig_tet(num_wann, 8))
-        !  allocate (counts(0:num_nodes - 1))
-        !  allocate (displs(0:num_nodes - 1))
-        !  !tetrahedron_array_small
-        endif
+          !  allocate (imjv(num_wann, num_wann, pw90_berry%kmesh%mesh(1) + 1, pw90_berry%kmesh%mesh(2) + 1, 2))
+          !  allocate (eig(num_wann, pw90_berry%kmesh%mesh(1) + 1, pw90_berry%kmesh%mesh(2) + 1, 2))
+          !  allocate (imjv_tet(num_wann, num_wann, 8))
+          !  allocate (eig_tet(num_wann, 8))
+          !  allocate (counts(0:num_nodes - 1))
+          !  allocate (displs(0:num_nodes - 1))
+          !  !tetrahedron_array_small
+        end if
         call comms_array_split(pw90_berry%kmesh%mesh(3), counts, displs, comm)
-      endif
+      end if
 
-    endif
+    end if
 
     if (eval_kdotp) then
       call get_HH_R(dis_manifold, kpt_latt, print_output, wigner_seitz, HH_R, u_matrix, v_matrix, &
@@ -567,8 +568,8 @@ contains
         else
           write (stdout, '(/,3x,a)') '  Tetrahedron method without correction(PRB 89, 094515)'
           call set_error_input(error, 'Not yet implemented', comm)
-        endif
-      endif
+        end if
+      end if
 
       if (print_output%timing_level > 1) then
         call io_stopwatch_stop('berry: prelims', timer)
@@ -1079,10 +1080,10 @@ contains
                 else
                   imjv(:, :, loop_x + 1, loop_y + 1, i) = imjv(:, :, loop_x + 1, loop_y + 1, i + 1)
                   eig(:, loop_x + 1, loop_y + 1, i) = eig(:, loop_x + 1, loop_y + 1, i + 1)
-                endif
-              enddo
-            enddo
-          enddo
+                end if
+              end do
+            end do
+          end do
           !summation
           do loop_x = 0, pw90_berry%kmesh%mesh(1) - 1
             do loop_y = 0, pw90_berry%kmesh%mesh(2) - 1
@@ -1100,18 +1101,18 @@ contains
                     kptc(3, 16*l + 4*k + i + 1) = (loop_z + l - 1)*db3 + mesh_shift*db3
                     imjv_tet(:, :, 16*l + 4*k + i + 1) = imjv(:, :, loop_x + i, loop_y + k, l)
                     eig_tet(:, 16*l + 4*k + i + 1) = eig(:, loop_x + i, loop_y + k, l)
-                  enddo
-                enddo
-              enddo
+                  end do
+                end do
+              end do
               do itet = 1, 6 ! 6 tetrahedra
                 do i = 1, 4 ! four vertices
                   kptv(i, :) = kptc(:, tet_array(itet, i))
-                enddo
+                end do
                 do i = 1, 3 ! xyz
                   do k = 1, 3 ! three vectors forming a tetrahedron
                     ttet(i, k) = kptv(k + 1, i) - kptv(1, i)
-                  enddo
-                enddo
+                  end do
+                end do
 
                 do n = 1, num_wann
                   do m = 1, num_wann
@@ -1120,7 +1121,7 @@ contains
                       F_opt(i) = imjv_tet(n, m, tet_array(itet, i))
                       E1_opt(i) = eig_tet(n, tet_array(itet, i))
                       E2_opt(i) = eig_tet(m, tet_array(itet, i))
-                    enddo
+                    end do
 
                     E1tet = 0.0_dp
                     E2tet = 0.0_dp
@@ -1130,8 +1131,8 @@ contains
                         E1tet(i) = E1tet(i) + P_matrix(i, k)*E1_opt(k)
                         E2tet(i) = E2tet(i) + P_matrix(i, k)*E2_opt(k)
                         Ftet(i) = Ftet(i) + P_matrix(i, k)*F_opt(k)
-                      enddo
-                    enddo
+                      end do
+                    end do
 
                     ! do i = 1, 4
                     !   Ftet(i) = imjv_tet(n, m, tet_array(itet, i))
@@ -1145,7 +1146,7 @@ contains
                       else
                         omega = real(pw90_berry%kubo_freq_list(ifreq), dp)
                         Ef = fermi_energy_list(1)
-                      endif
+                      end if
 
                       if (omega == 0.0) then
                         shc_k_tet = &
@@ -1168,20 +1169,20 @@ contains
                                                                      omega, Ef, 2, pw90_berry%tetrahedron_cutoff, &
                                                                      pw90_berry%tetrahedron_avoid_degeneracy))) &
                           /(2.0_dp*omega)
-                      endif
+                      end if
 
                       if (.not. pw90_spin_hall%freq_scan) then
                         shc_fermi(ifreq) = shc_fermi(ifreq) - real(shc_k_tet, dp)
                       else
                         shc_freq(ifreq) = shc_freq(ifreq) - shc_k_tet
-                      endif
-                    enddo !ifreq
-                  enddo ! m
-                enddo ! n
-              enddo ! itet
-            enddo ! loop_y for summation
-          enddo ! loop_x for summation
-        enddo ! loop_z
+                      end if
+                    end do !ifreq
+                  end do ! m
+                end do ! n
+              end do ! itet
+            end do ! loop_y for summation
+          end do ! loop_x for summation
+        end do ! loop_z
       end if
     end if !wanint_kpoint_file
 
@@ -3112,7 +3113,7 @@ contains
     use w90_error, only: w90_error_type
     use w90_comms, only: w90_comm_type
     use w90_types, only: print_output_type, wannier_data_type, ws_region_type, &
-      ws_distance_type
+                         ws_distance_type
     use w90_postw90_types, only: pw90_berry_mod_type, pw90_spin_hall_type, wigner_seitz_type
     use w90_postw90_common, only: pw90common_fourier_R_to_k_new, pw90common_fourier_R_to_k_vec
 
@@ -3213,7 +3214,7 @@ contains
                                          SHR_R(:, :, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha), &
                                          kpt, real_lattice, mp_grid, num_wann, error, comm, &
                                          OO=SBB(:, :, pw90_spin_hall%gamma, pw90_spin_hall%alpha))
-    endif
+    end if
 
     do i = 1, 3
       AA(:, :, i) = utility_rotate(AA(:, :, i), UU, num_wann)
@@ -3222,16 +3223,16 @@ contains
       do j = 1, 3
         SAA(:, :, i, j) = utility_rotate(SAA(:, :, i, j), UU, num_wann)
         SBB(:, :, i, j) = utility_rotate(SBB(:, :, i, j), UU, num_wann)
-      enddo
-    enddo
+      end do
+    end do
 
     !velocity
     do m = 1, num_wann
       do n = 1, num_wann
         VV(n, m, pw90_spin_hall%beta) = VV0(n, m, pw90_spin_hall%beta) &
                                         - cmplx_i*AA(n, m, pw90_spin_hall%beta)*(eig(m) - eig(n))
-      enddo
-    enddo
+      end do
+    end do
 
     !spin velocity
     spinVel0 = 0.D0
@@ -3247,8 +3248,8 @@ contains
                               - cmplx_i*(eig(m)*SAA(n, m, j, i) - SBB(n, m, j, i))
         spinVel(n, m, j, i) = spinVel(n, m, j, i) &
                               + cmplx_i*(eig(n)*conjg(SAA(m, n, j, i)) - conjg(SBB(m, n, j, i)))
-      enddo
-    enddo
+      end do
+    end do
 
     spinVel = spinVel/2.0_dp
 
@@ -3256,8 +3257,8 @@ contains
     do n = 1, num_wann
       do m = 1, num_wann
         imjv(n, m) = aimag(spinVel(n, m, j, i)*VV(m, n, pw90_spin_hall%beta))
-      enddo
-    enddo
+      end do
+    end do
     eig_out = eig
 
     deallocate (HH)
