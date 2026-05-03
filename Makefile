@@ -59,7 +59,7 @@ wannier:
 	$(MAKE) -C src/obj ../$@
 
 staticlib:
-	$(MAKE) -C src/obj
+	$(MAKE) -C src/obj staticlib
 
 dynlib:
 	$(MAKE) -C src/obj dynlib
