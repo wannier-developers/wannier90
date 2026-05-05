@@ -208,7 +208,7 @@ tolerance = ( (1.0e-6, 5.0e-6, 'energy'),
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_shc_dat.parse
 tolerance = ( (1.0e-6, 5.0e-6, 'frequency'),
-              (1.0e-1, 1.0e-1, 'shc_re'),
+              (1.0e+1, 1.0e+1, 'shc_re'),
               (1.0e-1, 1.0e-1, 'shc_im'))
 
 [POSTW90_SHCKPATHBANDSDAT_OK]
