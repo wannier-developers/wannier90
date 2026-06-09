@@ -38,8 +38,9 @@ module w90_constants
   !!
   !! Values of the fundamental constants are taken from
   !! http://physics.nist.gov/cuu/Constants/index.html
-  !! By default CODATA2006 is used (CODATA2010/18/22 can be selected
-  !! using an appropriate compile-time flag (see INSTALL guide)
+  !! By default CODATA2006 is used. CODATA2010, CODATA2018 or CODATA2022
+  !! can be selected with the corresponding preprocessor flag
+  !! (see README.install)
 
   implicit none
 

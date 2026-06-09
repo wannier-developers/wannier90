@@ -303,6 +303,12 @@ Flags
 * CODATA2010
   Use physical constants from 2010 version of CODATA tables
   (http://physics.nist.gov/cuu/Constants/index.html)
+* CODATA2018
+  Use physical constants from 2018 version of CODATA tables
+  (http://physics.nist.gov/cuu/Constants/index.html)
+* CODATA2022
+  Use physical constants from 2022 version of CODATA tables
+  (http://physics.nist.gov/cuu/Constants/index.html)
 * USE_WANNIER90_V1_BOHR
   Use the value of the bohr radius (expressed in angstrom) that
   was adopted in versions 1.x of the Wannier90 code, instead of
