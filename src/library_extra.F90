@@ -183,6 +183,7 @@ contains
 
     use w90_comms, only: mpirank, comms_sync_error
     use w90_error_base, only: w90_error_type
+    use w90_error, only: set_error_fatal
     use w90_kmesh, only: kmesh_write
 
     implicit none
@@ -197,23 +198,26 @@ contains
 
     ierr = 0
 
-    if (mpirank(common_data%comm) == 0) then ! root only
-      if (.not. allocated(common_data%kmesh_info%nnlist)) then
-        call w90_create_kmesh(common_data, istdout, istderr, ierr)
+    if (.not. allocated(common_data%kmesh_info%nnlist)) then
+      ! should be called by all ranks
+      call w90_create_kmesh(common_data, istdout, istderr, ierr)
+      if (ierr /= 0) then
+        call set_error_fatal(error, 'Error in setting up k-mesh!', common_data%comm)
       end if
-      if (ierr /= 0) return
+    end if
 
+    if (allocated(error)) then
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    end if
+
+    if (mpirank(common_data%comm) == 0) then ! root only
       call kmesh_write(common_data%exclude_bands, common_data%kmesh_info, &
                        common_data%select_proj%auto_projections, common_data%proj_input, &
                        common_data%print_output, common_data%kpt_latt, common_data%real_lattice, &
                        common_data%num_kpts, common_data%num_proj, common_data%calc_only_A, &
                        common_data%w90_system%spinors, common_data%seedname, common_data%timer)
-      if (allocated(error)) then
-        call prterr(error, ierr, istdout, istderr, common_data%comm)
-        return
-      end if
     end if
-    call comms_sync_error(common_data%comm, error, 0) ! this is necessary since non-root may never enter an mpi collective if root has exited here
   end subroutine write_kmesh
 
   subroutine overlaps(common_data, istdout, istderr, ierr)
