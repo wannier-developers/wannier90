@@ -2493,7 +2493,7 @@ contains
     !
     !================================================!
 
-    use w90_constants, only: dp
+    use w90_constants, only: dp, cmplx_0, cmplx_1
     use w90_io, only: io_time, io_date
     use w90_types, only: dis_manifold_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
@@ -2509,57 +2509,63 @@ contains
     logical, intent(in) :: have_disentangled
     real(kind=dp), intent(in) :: kpt_latt(:, :)
     type(dis_manifold_type), intent(in) :: dis_manifold
-    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_error_type), allocatable, intent(out) :: error ! no error condition here
     type(w90_comm_type), intent(in) :: comm
 
+    complex(kind=dp), allocatable :: v_matrix(:, :)
     character(len=33)  :: header
     character(len=9)   :: cdate, ctime
-    complex(kind=dp), allocatable :: utmp(:, :) ! re-indexed u_matrix_opt for printout
-    integer :: matunit, i, j, nkp, ioff, nbw, ierr
+    integer :: matunit, i, j, nkp, ierr
 
     call io_date(cdate, ctime)
     header = 'written on '//cdate//' at '//ctime
 
+    ! u matrix
     open (newunit=matunit, file=trim(seedname)//'_u.mat', form='formatted')
-
     write (matunit, *) header
     write (matunit, *) num_kpts, num_wann, num_wann
-
     do nkp = 1, num_kpts
       write (matunit, *)
-      write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)
+      write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)  ! shouldn't this really be e15.10?
       write (matunit, '(f15.10,sp,f15.10)') ((u_matrix(i, j, nkp), i=1, num_wann), j=1, num_wann)
     end do
     close (matunit)
 
     if (have_disentangled) then
-      allocate (utmp(num_bands, num_wann), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating utmp in plot_u_matrices', comm)
-        return
-      end if
-
+      ! u_opt matrix
       open (newunit=matunit, file=trim(seedname)//'_u_dis.mat', form='formatted')
       write (matunit, *) header
       write (matunit, *) num_kpts, num_wann, num_bands
       do nkp = 1, num_kpts
-        utmp = 0.d0
-        ioff = dis_manifold%nfirstwin(nkp)
-        nbw = dis_manifold%ndimwin(nkp)
-        utmp(ioff:ioff + nbw - 1, :) = u_matrix_opt(1:nbw, :, nkp)
         write (matunit, *)
         write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)
-        !write (matunit, '(f15.10,sp,f15.10)') ((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann)
-        write (matunit, '(f15.10,sp,f15.10)') ((utmp(i, j), i=1, num_bands), j=1, num_wann)
+        write (matunit, '(f15.10,sp,f15.10)') ((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann)
       end do
       close (matunit)
-      deallocate (utmp, stat=ierr)
+
+      ! v matrix
+      allocate (v_matrix(num_bands, num_wann), stat=ierr)
       if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating utmp in plot_u_matrices', comm)
+        call set_error_alloc(error, 'Error in allocating v_matrix in plot_u_matrices', comm)
+        return
+      end if
+      open (newunit=matunit, file=trim(seedname)//'_v.mat', form='formatted')
+      write (matunit, *) header
+      write (matunit, *) num_kpts, num_wann, num_bands
+      do nkp = 1, num_kpts
+        call zgemm('n', 'n', num_bands, num_wann, num_wann, cmplx_1, u_matrix_opt(:, :, nkp), &
+                   num_bands, u_matrix(:, :, nkp), num_wann, cmplx_0, v_matrix, num_bands)
+        write (matunit, *)
+        write (matunit, '(f15.10,sp,f15.10,sp,f15.10)') kpt_latt(:, nkp)
+        write (matunit, '(f15.10,sp,f15.10)') ((v_matrix(i, j), i=1, num_bands), j=1, num_wann)
+      end do
+      close (matunit)
+      deallocate (v_matrix, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error deallocating vmatrix in plot_u_matrices', comm)
         return
       end if
     end if
-
   end subroutine plot_u_matrices
 
   !================================================!
