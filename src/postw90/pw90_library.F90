@@ -395,25 +395,16 @@ contains
   end subroutine pw_setup
 
   subroutine calc_v_matrix(wann90, pw90, v_matrix)
-    !use w90_error_base, only: w90_error_type
-    !use w90_comms, only: w90_comm_type, mpirank
-
     implicit none
     type(lib_common_type), intent(inout) :: wann90
     type(lib_postw90_type), intent(inout) :: pw90
-    !integer, intent(in) :: istdout, istderr
-    !complex(kind=dp), intent(inout) :: u_opt(:, :, :)
-    !complex(kind=dp), intent(inout) :: u_matrix(:, :, :)
     complex(kind=dp), intent(inout), target :: v_matrix(:, :, :)
-    !
+
     integer :: i, j, m, loop_kpt
 
-    !allocate (v_matrix(wann90%num_bands, wann90%num_wann, wann90%num_kpts), stat=ierr)
-    ! u_matrix and u_opt are stored on root only
     if (.not. wann90%have_disentangled) then
       v_matrix(1:wann90%num_wann, :, :) = wann90%u_matrix(1:wann90%num_wann, :, :)
     else
-      !this should be initialised by the caller really
       v_matrix(1:wann90%num_bands, 1:wann90%num_wann, 1:wann90%num_kpts) = cmplx_0
       do loop_kpt = 1, wann90%num_kpts
         do j = 1, wann90%num_wann

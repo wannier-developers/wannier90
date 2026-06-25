@@ -393,7 +393,6 @@ program postw90
                                   num_kpts, num_wann, checkpoint, have_disentangled, .true., &
                                   seedname, stdout, error, comm)
     if (allocated(error)) call print_error_halt(error, ierr, stdout, stderr, comm)
-    !endif
 
     ! Distribute the information in the um and chk files to the other nodes
     !
