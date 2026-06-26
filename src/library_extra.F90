@@ -414,7 +414,7 @@ contains
     implicit none
 
     ! arguments
-    character(len=*), intent(out) :: checkpoint
+    character(len=20), intent(out) :: checkpoint
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
     type(lib_common_type), target, intent(inout) :: common_data
