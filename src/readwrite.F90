@@ -2271,7 +2271,7 @@ contains
     real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    character(len=*), intent(inout) :: checkpoint
+    character(len=20), intent(inout) :: checkpoint
     character(len=*), intent(in)  :: seedname
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
@@ -2296,7 +2296,7 @@ contains
   subroutine w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
                                              mp_grid, num_bands, num_exclude_bands, num_kpts, &
                                              num_wann, checkpoint, have_disentangled, ispostw90, &
-                                             seedname, io_unit, stdout, error, comm)
+                                             seedname, chk_unit, stdout, error, comm)
     !================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -2326,19 +2326,19 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_exclude_bands
-    integer, intent(out) :: io_unit
+    integer, intent(inout) :: chk_unit
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     character(len=*), intent(in)  :: seedname
-    character(len=*), intent(inout) :: checkpoint
+    character(len=20), intent(inout) :: checkpoint
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
     ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
-    integer :: chk_unit, nkp, i, j, ntmp
+    integer :: nkp, i, j, ntmp, stat
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands), tmp_mp_grid(1:3)
@@ -2349,7 +2349,6 @@ contains
     if (on_root) write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
     open (newunit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
-    io_unit = chk_unit
 
     ! Read comment line
     read (chk_unit) header
@@ -2483,7 +2482,7 @@ contains
     logical, intent(in) :: have_disentangled
 
     ! local variables
-    integer :: nkp, i, j, k, l, ierr
+    integer :: nkp, i, j, k, l, ierr, stat
 
     if (have_disentangled) then
 
@@ -2521,7 +2520,8 @@ contains
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
-    read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
+    read (chk_unit, err=126) &
+      ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
     ! wannier_centres
     read (chk_unit, err=127) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
@@ -2594,7 +2594,7 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) !only alloc/assigned on root
     real(kind=dp), intent(inout) :: omega_invariant
 
-    character(len=*), intent(inout) :: checkpoint
+    character(len=20), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
     ! local variables
@@ -5021,19 +5021,6 @@ contains
     close (fu)
     return
 
-!     else
-!       write(*,'(a20,10l3)')entry_ptr%keyword,&
-!         allocated(entry_ptr%txtdata),&
-!         allocated(entry_ptr%c2d),&
-!         allocated(entry_ptr%i1d),&
-!         allocated(entry_ptr%i2d),&
-!         allocated(entry_ptr%idata),&
-!         allocated(entry_ptr%l1d),&
-!         allocated(entry_ptr%ldata),&
-!         allocated(entry_ptr%r1d),&
-!         allocated(entry_ptr%r2d),&
-!         allocated(entry_ptr%rdata)
-!     endif
 101 call set_error_fatal(error, 'Error: failed to open .win_dump output file', comm)
     return
   end subroutine w90_readwrite_write_win

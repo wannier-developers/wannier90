@@ -86,9 +86,15 @@ program wannier
   include 'mpif.h'
 #endif
 
+! nvfortran fails to correctly handle the dp private attribute in module w90_library
+!       nvfortran 25.7-0 64-bit target on x86-64 Linux -tp znve
+! if needed in practice, use "only" or rename dp in use directive
+#ifndef __NVCOMPILER
   integer, parameter :: dp = kind(0.d0)
+#endif
 
-  character(len=:), allocatable :: seedname, progname, cpstatus
+  character(len=:), allocatable :: seedname, progname
+  character(len=20) :: cpstatus ! checkpoint file status
   character(len=:), pointer :: restart
   complex(kind=dp), allocatable :: m_matrix_loc(:, :, :, :)
   complex(kind=dp), allocatable :: u_matrix(:, :, :)

@@ -226,7 +226,7 @@ contains
     implicit none
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    character(len=*), intent(out) :: checkpoint
+    character(len=20), intent(out) :: checkpoint
     integer :: chk_unit, i, j, k, l, nkp, ierr
 
     write (stdout, '(1x,3a)') 'Reading information from file ', trim(seedname), '.chk :'
@@ -389,7 +389,7 @@ contains
 
     integer, intent(in) :: stdout
     character(len=50), intent(in)  :: seedname
-    character(len=*), intent(out) :: checkpoint
+    character(len=20), intent(out) :: checkpoint
 
     integer :: chk_unit, i, j, k, l, nkp, ierr, idum
     character(len=30) :: cdum
@@ -598,11 +598,10 @@ contains
     implicit none
 
     integer, intent(in) :: stdout
-    character(len=*), intent(in) :: checkpoint
+    character(len=20), intent(in) :: checkpoint
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
-    !character(len=9) :: cdate, ctime
 
     write (stdout, '(/1x,3a)', advance='no') 'Writing checkpoint file ', trim(seedname), '.chk...'
 
@@ -653,7 +652,7 @@ contains
     implicit none
 
     integer, intent(in) :: stdout
-    character(len=*), intent(in) :: checkpoint
+    character(len=20), intent(in) :: checkpoint
     character(len=50), intent(in)  :: seedname
 
     integer :: chk_unit, nkp, i, j, k, l
