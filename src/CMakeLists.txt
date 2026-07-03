@@ -29,6 +29,7 @@ target_sources(Wannier90_lib PRIVATE
 		c_interface.F90
 		comms.F90
 		constants.F90
+		decompose.F90
 		disentangle.F90
 		error.F90
 		error_base.F90
