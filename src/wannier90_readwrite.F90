@@ -1339,7 +1339,7 @@ contains
 
     decompose_num = 0
     call w90_readwrite_get_range_vector(settings, 'decompose_list', found, decompose_num, .true., &
-                                       error, comm)
+                                        error, comm)
     if (allocated(error)) return
     if (found) then
       if (decompose_num < 1) then

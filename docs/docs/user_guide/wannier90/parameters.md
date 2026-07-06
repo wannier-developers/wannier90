@@ -1138,7 +1138,7 @@ be taken into account when plotting a spinor WF.
 If `wannier_decompose = true`, the code decomposes the density
 $|w_n(\mathbf{r})|^2$ of each selected WF onto an orthonormalised basis
 of Gaussian radial functions times real spherical harmonics, centred on
-the WF centre, following Himanen *et al.*, *Adv. Sci.* **7**, 1902333
+the WF centre, following Himanen _et al._, _Adv. Sci._ **7**, 1902333
 (2020). This is useful, for example, as a rotationally-invariant
 machine-learning descriptor of localised orbitals. The decomposition
 runs in the plotting phase of the code (it is also available with
