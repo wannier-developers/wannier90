@@ -1558,9 +1558,9 @@ contains
     use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type, &
                          timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
-    use w90_comms, only: w90_comm_type
+    use w90_comms, only: w90_comm_type, comms_sync_error
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_file, &
-                         set_error_warn
+                         set_error_warn, code_file
 
     implicit none
 
@@ -1613,6 +1613,9 @@ contains
     integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
     integer :: wann_plot_num
+
+    integer :: ierr_read
+    character(len=60) :: errmsg_read
 
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
@@ -1741,8 +1744,10 @@ contains
         return
       end if
 
+      ierr_read = 0
+      errmsg_read = ''
       call io_date(cdate, ctime)
-      do loop_kpt = 1, num_kpts
+      kpt_loop: do loop_kpt = 1, num_kpts
         if (dist_k(loop_kpt) /= my_node_id) cycle
 
         inc_band = .true.
@@ -1757,20 +1762,45 @@ contains
         else
           write (wfnname, 199) loop_kpt
         end if
+
+        ! A missing UNK file must be detected here rather than silently
+        ! (re)created by the open below (status='old' forbids creation).
+        inquire (file=wfnname, exist=have_file)
+        if (.not. have_file) then
+          errmsg_read = 'plot_wannier: file '//wfnname//' not found'
+          ierr_read = code_file
+          exit kpt_loop
+        end if
         if (wvfn_read%formatted) then
-          open (newunit=file_unit, file=wfnname, form='formatted')
-          read (file_unit, *) ix, iy, iz, ik, nbnd
+          open (newunit=file_unit, file=wfnname, form='formatted', status='old', iostat=ierr)
         else
-          open (newunit=file_unit, file=wfnname, form='unformatted')
-          read (file_unit) ix, iy, iz, ik, nbnd
+          open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
+        end if
+        if (ierr /= 0) then
+          errmsg_read = 'plot_wannier: could not open file '//wfnname
+          ierr_read = code_file
+          exit kpt_loop
+        end if
+        if (wvfn_read%formatted) then
+          read (file_unit, *, iostat=ierr) ix, iy, iz, ik, nbnd
+        else
+          read (file_unit, iostat=ierr) ix, iy, iz, ik, nbnd
+        end if
+        if (ierr /= 0) then
+          errmsg_read = 'plot_wannier: error reading file '//wfnname
+          ierr_read = code_file
+          close (file_unit)
+          exit kpt_loop
         end if
 
         if ((ix /= ngx) .or. (iy /= ngy) .or. (iz /= ngz) .or. (ik /= loop_kpt)) then
           write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
           write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
           write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          call set_error_file(error, 'plot_wannier', comm)
-          return
+          errmsg_read = 'plot_wannier: mismatch in file '//wfnname
+          ierr_read = code_file
+          close (file_unit)
+          exit kpt_loop
         end if
 
         if (have_disentangled) then
@@ -1779,58 +1809,72 @@ contains
             if (counter > num_inc) exit
             if (wvfn_read%formatted) then
               do nx = 1, ngx*ngy*ngz
-                read (file_unit, *) w_real, w_imag
+                read (file_unit, *, iostat=ierr) w_real, w_imag
+                if (ierr /= 0) exit
                 if (.not. spinors) then
                   r_wvfn_tmp(nx, counter) = cmplx(w_real, w_imag, kind=dp)
                 else
                   r_wvfn_tmp_nc(nx, counter, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
                 end if
               end do
-              if (spinors) then
+              if (ierr == 0 .and. spinors) then
                 do nx = 1, ngx*ngy*ngz
-                  read (file_unit, *) w_real, w_imag
+                  read (file_unit, *, iostat=ierr) w_real, w_imag
+                  if (ierr /= 0) exit
                   r_wvfn_tmp_nc(nx, counter, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
                 end do
               end if
             else
               if (.not. spinors) then
-                read (file_unit) (r_wvfn_tmp(nx, counter), nx=1, ngx*ngy*ngz)
+                read (file_unit, iostat=ierr) (r_wvfn_tmp(nx, counter), nx=1, ngx*ngy*ngz)
               else
-                read (file_unit) (r_wvfn_tmp_nc(nx, counter, 1), nx=1, ngx*ngy*ngz) ! up-spinor
-                read (file_unit) (r_wvfn_tmp_nc(nx, counter, 2), nx=1, ngx*ngy*ngz) ! down-spinor
+                read (file_unit, iostat=ierr) (r_wvfn_tmp_nc(nx, counter, 1), nx=1, ngx*ngy*ngz) ! up-spinor
+                if (ierr == 0) &
+                  read (file_unit, iostat=ierr) (r_wvfn_tmp_nc(nx, counter, 2), nx=1, ngx*ngy*ngz) ! down-spinor
               end if
             end if
+            if (ierr /= 0) exit
             if (inc_band(loop_b)) counter = counter + 1
           end do
         else
           do loop_b = 1, num_bands
             if (wvfn_read%formatted) then
               do nx = 1, ngx*ngy*ngz
-                read (file_unit, *) w_real, w_imag
+                read (file_unit, *, iostat=ierr) w_real, w_imag
+                if (ierr /= 0) exit
                 if (.not. spinors) then
                   r_wvfn(nx, loop_b) = cmplx(w_real, w_imag, kind=dp)
                 else
                   r_wvfn_nc(nx, loop_b, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
                 end if
               end do
-              if (spinors) then
+              if (ierr == 0 .and. spinors) then
                 do nx = 1, ngx*ngy*ngz
-                  read (file_unit, *) w_real, w_imag
+                  read (file_unit, *, iostat=ierr) w_real, w_imag
+                  if (ierr /= 0) exit
                   r_wvfn_nc(nx, loop_b, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
                 end do
               end if
             else
               if (.not. spinors) then
-                read (file_unit) (r_wvfn(nx, loop_b), nx=1, ngx*ngy*ngz)
+                read (file_unit, iostat=ierr) (r_wvfn(nx, loop_b), nx=1, ngx*ngy*ngz)
               else
-                read (file_unit) (r_wvfn_nc(nx, loop_b, 1), nx=1, ngx*ngy*ngz) ! up-spinor
-                read (file_unit) (r_wvfn_nc(nx, loop_b, 2), nx=1, ngx*ngy*ngz) ! down-spinor
+                read (file_unit, iostat=ierr) (r_wvfn_nc(nx, loop_b, 1), nx=1, ngx*ngy*ngz) ! up-spinor
+                if (ierr == 0) &
+                  read (file_unit, iostat=ierr) (r_wvfn_nc(nx, loop_b, 2), nx=1, ngx*ngy*ngz) ! down-spinor
               end if
             end if
+            if (ierr /= 0) exit
           end do
         end if
 
         close (file_unit)
+
+        if (ierr /= 0) then
+          errmsg_read = 'plot_wannier: error reading file '//wfnname
+          ierr_read = code_file
+          exit kpt_loop
+        end if
 
         if (have_disentangled) then
           if (.not. spinors) then
@@ -1921,7 +1965,18 @@ contains
           end do
         end do
 
-      end do !loop over kpoints
+      end do kpt_loop !loop over kpoints
+
+      ! Failures above are rank-local (k-points are distributed), but
+      ! set_error_file is collective. Here we direct succeeding ranks to enter
+      ! the same synchronisation (comms_sync_error) as the failing ones rather
+      ! than continuing to the comms_reduce below.
+      if (ierr_read /= 0) then
+        call set_error_file(error, trim(errmsg_read), comm)
+      else
+        call comms_sync_error(comm, error, 0)
+      end if
+      if (allocated(error)) return
 
       if (spinors) then
         call comms_reduce(wann_func_nc(nxx_lo, nyy_lo, nzz_lo, 1, 1), &
