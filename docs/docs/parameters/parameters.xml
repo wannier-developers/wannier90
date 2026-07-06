@@ -846,6 +846,87 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>wannier_decompose</name>
+    <type>L</type>
+    <description>Decompose the WF density onto a Gaussian-radial x real-spherical-harmonic basis</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_n_max</name>
+    <type>I</type>
+    <description>Number of radial basis functions used to decompose the WF density</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <default>6</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_l_max</name>
+    <type>I</type>
+    <description>Maximum angular momentum of the basis used to decompose the WF density</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <default>6</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_r_min</name>
+    <type>R</type>
+    <description>Smallest threshold radius (Å) used to define the radial basis functions</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <default>0.5</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_r_max</name>
+    <type>R</type>
+    <description>Largest threshold radius (Å) used to define the radial basis functions</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <default>4.0</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_r_cut</name>
+    <type>R</type>
+    <description>Cut-off radius (Å) of the sphere over which the WF density is decomposed</description>
+    <note>*</note>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_list</name>
+    <type>I</type>
+    <description>List of WF to decompose</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <dimensions>
+      <dim>*</dim>
+    </dimensions>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>decompose_centres_file</name>
+    <type>S</type>
+    <description>File of external centres about which to decompose the group (summed) WF density</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>bands_plot</name>
     <type>L</type>
     <description>Plot interpolated band structure</description>
