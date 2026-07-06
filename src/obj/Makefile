@@ -11,7 +11,7 @@ include ../../Makefile.header
 VPATH=..
 
 OBJS  = constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
-		ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
+		ws_distance.o wannierise.o decompose.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
 		wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
 		library_extra.o
 ifdef WANNIER90_WITH_C
@@ -135,7 +135,10 @@ disentangle.o: disentangle.F90 constants.o io.o types.o sitesym.o comms.o wannie
 wannierise.o: wannierise.F90 hamiltonian.o constants.o io.o utility.o types.o sitesym.o comms.o wannier90_types.o wannier90_readwrite.o error.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
-plot.o: plot.F90 constants.o io.o utility.o types.o hamiltonian.o ws_distance.o wannier90_types.o comms.o
+plot.o: plot.F90 constants.o io.o utility.o types.o hamiltonian.o ws_distance.o wannier90_types.o comms.o decompose.o
+	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
+
+decompose.o: decompose.F90 constants.o comms.o error.o utility.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 ws_distance.o: ws_distance.F90 constants.o io.o types.o utility.o

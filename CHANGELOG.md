@@ -1,5 +1,11 @@
 # CHANGELOG of Wannier90
 
+## [Unreleased]
+
+### New features
+
+- Decomposition of each Wannier function's density onto an orthonormalised Gaussian-radial x real-spherical-harmonic basis (Himanen et al., Adv. Sci. 7, 1902333 (2020)), enabled with `wannier_decompose`, optionally including a group-density channel about externally supplied centres via `decompose_centres_file`
+
 ## v3.1.0 (5th March 2020)
 
 ### New features

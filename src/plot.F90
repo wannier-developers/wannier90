@@ -40,6 +40,7 @@ module w90_plot_mod
   private
 
   public :: plot_main
+  public :: plot_build_wannier_grid
 
 contains
 
@@ -47,7 +48,7 @@ contains
 
   subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
                        ham_logical, kmesh_info, kpt_latt, output_file, wvfn_read, real_space_ham, &
-                       kpoint_path, print_output, wannier_data, wannier_plot, ws_region, &
+                       kpoint_path, print_output, wannier_data, wannier_plot, decompose, ws_region, &
                        w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                        real_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
@@ -69,7 +70,7 @@ contains
     use w90_utility, only: utility_recip_lattice_base
     use w90_wannier90_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
                                    fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type, &
-                                   ham_logical_type
+                                   ham_logical_type, decompose_type
     use w90_ws_distance, only: ws_translate_dist, ws_write_vec
     use w90_error, only: w90_error_type
 
@@ -105,6 +106,7 @@ contains
     type(w90_system_type), intent(in) :: w90_system
     type(wannier_data_type), intent(in) :: wannier_data
     type(wannier_plot_type), intent(in) :: wannier_plot
+    type(decompose_type), intent(in) :: decompose
     type(ws_region_type), intent(in) :: ws_region
     type(wvfn_read_type), intent(in) :: wvfn_read
 
@@ -323,6 +325,14 @@ contains
                         dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                         num_bands, num_wann, have_disentangled, w90_system%spinors, bohr, stdout, &
                         seedname, timer, dist_k, error, comm)
+      if (allocated(error)) return
+    end if
+
+    if (w90_calculation%wannier_decompose) then
+      call plot_decompose(decompose, wvfn_read, wannier_data, print_output, u_matrix_opt, &
+                          dis_manifold, real_lattice, kpt_latt, u_matrix, num_kpts, num_bands, &
+                          num_wann, have_disentangled, w90_system%spinors, mp_grid, stdout, &
+                          seedname, timer, dist_k, error, comm)
       if (allocated(error)) return
     end if
 
@@ -1596,38 +1606,25 @@ contains
 
     ! local variables
     real(kind=dp) :: tmax, tmaxx, x_0ang, y_0ang, z_0ang
-    real(kind=dp) :: fxcry(3), dirl(3, 3), w_real, w_imag, ratmax, ratio
+    real(kind=dp) :: fxcry(3), dirl(3, 3), ratmax, ratio
     real(kind=dp) :: upspinor, dnspinor, upphase, dnphase
 
     complex(kind=dp), allocatable :: wann_func(:, :, :, :)
-    complex(kind=dp), allocatable :: r_wvfn(:, :)
-    complex(kind=dp), allocatable :: r_wvfn_tmp(:, :)
     complex(kind=dp), allocatable :: wann_func_nc(:, :, :, :, :) ! add the spinor dim.
-    complex(kind=dp), allocatable :: r_wvfn_nc(:, :, :) ! add the spinor dim.
-    complex(kind=dp), allocatable :: r_wvfn_tmp_nc(:, :, :) ! add the spinor dim.
-    complex(kind=dp) :: catmp, wmod
+    complex(kind=dp) :: wmod
 
     logical :: have_file, on_root
 
     integer :: num_nodes, my_node_id
-    integer :: i, j, nsp, nat, nbnd, counter, ierr
-    integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
-    integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
+    integer :: i, j, nsp, nat, nbnd, ierr
+    integer :: nk, ngx, ngy, ngz, nxx, nyy, nzz
+    integer :: loop_b, nx, ny, nz, file_unit, loop_w
     integer :: wann_plot_num
 
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
     character(len=9)  :: cdate, ctime
-    logical           :: inc_band(num_bands)
 
-    ! Pre-contracted wavefunction: band sum done once per unit cell point
-    complex(kind=dp), allocatable :: c_wvfn(:, :)
-    complex(kind=dp), allocatable :: c_wvfn_nc(:, :, :)
-    complex(kind=dp) :: uw, phase_yz
-    integer :: ngrid
-
-    ! Factored phase arrays
-    complex(kind=dp), allocatable :: phase_x(:), phase_y(:), phase_z(:)
     integer :: nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi
 
     num_nodes = mpisize(comm)
@@ -1677,260 +1674,16 @@ contains
       nyy_hi = ((ngs(2) + 1)/2)*ngy - 1
       nzz_lo = -((ngs(3))/2)*ngz
       nzz_hi = ((ngs(3) + 1)/2)*ngz - 1
-      ngrid = ngx*ngy*ngz
-
-      allocate (wann_func(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, wann_plot_num), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating wann_func in plot_wannier', comm)
-        return
-      end if
-      wann_func = cmplx_0
-      if (spinors) then
-        allocate (wann_func_nc(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, 2, wann_plot_num), &
-                  stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_wannier', comm)
-          return
-        end if
-        wann_func_nc = cmplx_0
-      end if
-      if (.not. spinors) then
-        if (have_disentangled) then
-          allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_manifold%ndimwin)), stat=ierr)
-          if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp in plot_wannier', comm)
-            return
-          end if
-        end if
-        allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating r_wvfn in plot_wannier', comm)
-          return
-        end if
-      else
-        if (have_disentangled) then
-          allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_manifold%ndimwin), 2), stat=ierr)
-          if (ierr /= 0) then
-            call set_error_alloc(error, 'Error in allocating r_wvfn_tmp_nc in plot_wannier', comm)
-            return
-          end if
-        end if
-        allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_wannier', comm)
-          return
-        end if
-      end if
-
-      if (.not. spinors) then
-        allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating c_wvfn in plot_wannier', comm)
-          return
-        end if
-      else
-        allocate (c_wvfn_nc(ngrid, wann_plot_num, 2), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating c_wvfn_nc in plot_wannier', comm)
-          return
-        end if
-      end if
-
-      allocate (phase_x(nxx_lo:nxx_hi), phase_y(nyy_lo:nyy_hi), phase_z(nzz_lo:nzz_hi), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating phase arrays in plot_wannier', comm)
-        return
-      end if
-
       call io_date(cdate, ctime)
-      do loop_kpt = 1, num_kpts
-        if (dist_k(loop_kpt) /= my_node_id) cycle
 
-        inc_band = .true.
-        num_inc = num_wann
-        if (have_disentangled) then
-          inc_band(:) = dis_manifold%lwindow(:, loop_kpt)
-          num_inc = dis_manifold%ndimwin(loop_kpt)
-        end if
-
-        if (.not. spinors) then
-          write (wfnname, 200) loop_kpt, wvfn_read%spin_channel
-        else
-          write (wfnname, 199) loop_kpt
-        end if
-        if (wvfn_read%formatted) then
-          open (newunit=file_unit, file=wfnname, form='formatted')
-          read (file_unit, *) ix, iy, iz, ik, nbnd
-        else
-          open (newunit=file_unit, file=wfnname, form='unformatted')
-          read (file_unit) ix, iy, iz, ik, nbnd
-        end if
-
-        if ((ix /= ngx) .or. (iy /= ngy) .or. (iz /= ngz) .or. (ik /= loop_kpt)) then
-          write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
-          write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
-          write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          call set_error_file(error, 'plot_wannier', comm)
-          return
-        end if
-
-        if (have_disentangled) then
-          counter = 1
-          do loop_b = 1, num_bands
-            if (counter > num_inc) exit
-            if (wvfn_read%formatted) then
-              do nx = 1, ngx*ngy*ngz
-                read (file_unit, *) w_real, w_imag
-                if (.not. spinors) then
-                  r_wvfn_tmp(nx, counter) = cmplx(w_real, w_imag, kind=dp)
-                else
-                  r_wvfn_tmp_nc(nx, counter, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
-                end if
-              end do
-              if (spinors) then
-                do nx = 1, ngx*ngy*ngz
-                  read (file_unit, *) w_real, w_imag
-                  r_wvfn_tmp_nc(nx, counter, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
-                end do
-              end if
-            else
-              if (.not. spinors) then
-                read (file_unit) (r_wvfn_tmp(nx, counter), nx=1, ngx*ngy*ngz)
-              else
-                read (file_unit) (r_wvfn_tmp_nc(nx, counter, 1), nx=1, ngx*ngy*ngz) ! up-spinor
-                read (file_unit) (r_wvfn_tmp_nc(nx, counter, 2), nx=1, ngx*ngy*ngz) ! down-spinor
-              end if
-            end if
-            if (inc_band(loop_b)) counter = counter + 1
-          end do
-        else
-          do loop_b = 1, num_bands
-            if (wvfn_read%formatted) then
-              do nx = 1, ngx*ngy*ngz
-                read (file_unit, *) w_real, w_imag
-                if (.not. spinors) then
-                  r_wvfn(nx, loop_b) = cmplx(w_real, w_imag, kind=dp)
-                else
-                  r_wvfn_nc(nx, loop_b, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
-                end if
-              end do
-              if (spinors) then
-                do nx = 1, ngx*ngy*ngz
-                  read (file_unit, *) w_real, w_imag
-                  r_wvfn_nc(nx, loop_b, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
-                end do
-              end if
-            else
-              if (.not. spinors) then
-                read (file_unit) (r_wvfn(nx, loop_b), nx=1, ngx*ngy*ngz)
-              else
-                read (file_unit) (r_wvfn_nc(nx, loop_b, 1), nx=1, ngx*ngy*ngz) ! up-spinor
-                read (file_unit) (r_wvfn_nc(nx, loop_b, 2), nx=1, ngx*ngy*ngz) ! down-spinor
-              end if
-            end if
-          end do
-        end if
-
-        close (file_unit)
-
-        if (have_disentangled) then
-          if (.not. spinors) then
-            r_wvfn = cmplx_0
-            do loop_w = 1, num_wann
-              do loop_b = 1, num_inc
-                r_wvfn(:, loop_w) = r_wvfn(:, loop_w) + &
-                                    u_matrix_opt(loop_b, loop_w, loop_kpt)*r_wvfn_tmp(:, loop_b)
-              end do
-            end do
-          else
-            r_wvfn_nc = cmplx_0
-            do loop_w = 1, num_wann
-              do loop_b = 1, num_inc
-                call zaxpy(ngx*ngy*ngz, u_matrix_opt(loop_b, loop_w, loop_kpt), r_wvfn_tmp_nc(1, loop_b, 1), 1, & ! up-spinor
-                           r_wvfn_nc(1, loop_w, 1), 1)
-                call zaxpy(ngx*ngy*ngz, u_matrix_opt(loop_b, loop_w, loop_kpt), r_wvfn_tmp_nc(1, loop_b, 2), 1, & ! down-spinor
-                           r_wvfn_nc(1, loop_w, 2), 1)
-              end do
-            end do
-          end if
-        end if
-
-        ! Contract band index: c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
-        if (.not. spinors) then
-          c_wvfn = cmplx_0
-        else
-          c_wvfn_nc = cmplx_0
-        end if
-        do loop_b = 1, num_wann
-          do loop_w = 1, wann_plot_num
-            uw = u_matrix(loop_b, wannier_plot%list(loop_w), loop_kpt)
-            do npoint = 1, ngrid
-              if (.not. spinors) then
-                c_wvfn(npoint, loop_w) = c_wvfn(npoint, loop_w) + uw*r_wvfn(npoint, loop_b)
-              else
-                c_wvfn_nc(npoint, loop_w, 1) = c_wvfn_nc(npoint, loop_w, 1) + uw*r_wvfn_nc(npoint, loop_b, 1)
-                c_wvfn_nc(npoint, loop_w, 2) = c_wvfn_nc(npoint, loop_w, 2) + uw*r_wvfn_nc(npoint, loop_b, 2)
-              end if
-            end do
-          end do
-        end do
-
-        ! Precompute factored phase arrays for this k-point
-        do nxx = nxx_lo, nxx_hi
-          phase_x(nxx) = exp(twopi*cmplx_i*kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp))
-        end do
-        do nyy = nyy_lo, nyy_hi
-          phase_y(nyy) = exp(twopi*cmplx_i*kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp))
-        end do
-        do nzz = nzz_lo, nzz_hi
-          phase_z(nzz) = exp(twopi*cmplx_i*kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp))
-        end do
-
-        ! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
-        ! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
-        !
-        ! nx ny nz are the nxx nyy nzz brought back to the unit cell in
-        ! which u_nk(r)=cptwrb(r,n)  is represented
-        !
-        ! There is a big performance improvement in looping over num_wann
-        ! in the inner loop. This is poor memory access for wann_func and
-        ! but the reduced number of operations wins out.
-        do nzz = nzz_lo, nzz_hi
-          nz = mod(nzz, ngz)
-          if (nz .lt. 1) nz = nz + ngz
-          do nyy = nyy_lo, nyy_hi
-            ny = mod(nyy, ngy)
-            if (ny .lt. 1) ny = ny + ngy
-            phase_yz = phase_y(nyy)*phase_z(nzz)
-            do nxx = nxx_lo, nxx_hi
-              nx = mod(nxx, ngx)
-              if (nx .lt. 1) nx = nx + ngx
-              npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
-              catmp = phase_x(nxx)*phase_yz
-              do loop_w = 1, wann_plot_num
-                if (.not. spinors) then
-                  wann_func(nxx, nyy, nzz, loop_w) = &
-                    wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
-                else
-                  wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
-                    wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
-                  wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
-                    wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
-                end if
-              end do
-            end do
-          end do
-        end do
-
-      end do !loop over kpoints
-
-      if (spinors) then
-        call comms_reduce(wann_func_nc(nxx_lo, nyy_lo, nzz_lo, 1, 1), &
-                          size(wann_func_nc), 'SUM', error, comm)
-      else
-        call comms_reduce(wann_func(nxx_lo, nyy_lo, nzz_lo, 1), &
-                          size(wann_func), 'SUM', error, comm)
-      end if
+      ! Build the real-space Wannier functions on the supercell grid. The heavy
+      ! lifting (UNK read, gauge contraction and Bloch-phase accumulation) lives
+      ! in a shared helper so the density-decomposition path can reuse it.
+      call plot_build_wannier_grid(wannier_plot%list, wvfn_read, dis_manifold, u_matrix_opt, &
+                                   u_matrix, kpt_latt, dist_k, num_bands, num_kpts, num_wann, &
+                                   ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi, &
+                                   have_disentangled, spinors, stdout, wann_func, wann_func_nc, &
+                                   error, comm)
       if (allocated(error)) return
 
       if (on_root) then
@@ -2032,41 +1785,6 @@ contains
 
     end associate
 
-    if (allocated(c_wvfn)) then
-      deallocate (c_wvfn, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating c_wvfn in plot_wannier', comm)
-        return
-      end if
-    end if
-    if (allocated(c_wvfn_nc)) then
-      deallocate (c_wvfn_nc, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating c_wvfn_nc in plot_wannier', comm)
-        return
-      end if
-    end if
-    if (allocated(phase_x)) then
-      deallocate (phase_x, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating phase_x in plot_wannier', comm)
-        return
-      end if
-    end if
-    if (allocated(phase_y)) then
-      deallocate (phase_y, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating phase_y in plot_wannier', comm)
-        return
-      end if
-    end if
-    if (allocated(phase_z)) then
-      deallocate (phase_z, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating phase_z in plot_wannier', comm)
-        return
-      end if
-    end if
     return
 
   contains
@@ -2483,6 +2201,672 @@ contains
     end subroutine internal_xsf_format
 
   end subroutine plot_wannier
+
+  !================================================!
+  subroutine plot_decompose(decompose, wvfn_read, wannier_data, print_output, u_matrix_opt, &
+                            dis_manifold, real_lattice, kpt_latt, u_matrix, num_kpts, num_bands, &
+                            num_wann, have_disentangled, spinors, mp_grid, stdout, seedname, &
+                            timer, dist_k, error, comm)
+    !================================================!
+    !! Decompose the density of each selected Wannier function (and,
+    !! optionally, the group density of ALL of this run's WFs about a set
+    !! of external centres) into a Gaussian-radial x real-spherical-harmonic
+    !! basis (see w90_decompose).
+    !!
+    !! Follows the plot_wannier pattern: the WF grid is built on the
+    !! Born-von-Karman supercell (mp_grid, the true WF periodicity cell)
+    !! via the shared plot_build_wannier_grid helper, then handed to
+    !! decompose_main.
+    !================================================!
+
+    use w90_constants, only: dp
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: wannier_data_type, dis_manifold_type, print_output_type, timer_list_type
+    use w90_wannier90_types, only: wvfn_read_type, decompose_type
+    use w90_comms, only: w90_comm_type
+    use w90_decompose, only: decompose_main
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_input
+
+    implicit none
+
+    ! arguments
+    type(decompose_type), intent(in) :: decompose
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(print_output_type), intent(in) :: print_output
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wvfn_read_type), intent(in) :: wvfn_read
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    integer, intent(in) :: dist_k(:)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spinors
+
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
+    complex(kind=dp), allocatable :: wann_func(:, :, :, :)
+    complex(kind=dp), allocatable :: wann_func_nc(:, :, :, :, :) ! unused: spinors unsupported
+
+    real(kind=dp), allocatable :: ext_centres(:, :)
+    real(kind=dp), allocatable :: wf_centres(:, :)
+
+    integer, allocatable :: wf_index(:), out_slot(:)
+    integer :: n_wf, n_out, n_ext, ngx, ngy, ngz, nk, nbnd, file_unit, ierr, n
+    integer :: nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi
+
+    logical :: have_file, group_channel
+
+    character(len=11) :: wfnname
+
+    if (spinors) then
+      call set_error_input(error, 'wannier_decompose does not yet support spinor wavefunctions', comm)
+      return
+    end if
+
+    if (print_output%timing_level > 1) call io_stopwatch_start('plot: decompose', timer)
+
+    write (wfnname, 200) 1, wvfn_read%spin_channel
+200 format('UNK', i5.5, '.', i1)
+
+    inquire (file=wfnname, exist=have_file)
+    if (.not. have_file) then
+      call set_error_file(error, 'plot_decompose: file '//wfnname//' not found', comm)
+      return
+    end if
+
+    if (wvfn_read%formatted) then
+      open (newunit=file_unit, file=wfnname, form='formatted')
+      read (file_unit, *) ngx, ngy, ngz, nk, nbnd
+    else
+      open (newunit=file_unit, file=wfnname, form='unformatted')
+      read (file_unit) ngx, ngy, ngz, nk, nbnd
+    end if
+    close (file_unit)
+
+    ! The group density must sum over ALL Wannier functions of this run (its
+    ! coefficients are combined across runs into total-density coefficients),
+    ! so when the group channel is active the grid is built for every WF and
+    ! decompose%list only selects which WFs are decomposed about their own
+    ! centres. Without the group channel, only the listed WFs are built.
+    group_channel = len_trim(decompose%centres_file) > 0
+    if (group_channel) then
+      n_wf = num_wann
+    else
+      n_wf = size(decompose%list)
+    end if
+    n_out = size(decompose%list)
+
+    allocate (wf_index(n_wf), wf_centres(3, n_wf), out_slot(n_out), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating wf_index/wf_centres in plot_decompose', comm)
+      return
+    end if
+    if (group_channel) then
+      wf_index = [(n, n=1, num_wann)]
+      out_slot = decompose%list
+    else
+      wf_index = decompose%list
+      out_slot = [(n, n=1, n_out)]
+    end if
+    wf_centres = wannier_data%centres(:, wf_index)
+
+    ! Supercell grid bounds: Born-von-Karman cell (true WF periodicity), mp_grid
+    nxx_lo = -(mp_grid(1)/2)*ngx
+    nxx_hi = ((mp_grid(1) + 1)/2)*ngx - 1
+    nyy_lo = -(mp_grid(2)/2)*ngy
+    nyy_hi = ((mp_grid(2) + 1)/2)*ngy - 1
+    nzz_lo = -(mp_grid(3)/2)*ngz
+    nzz_hi = ((mp_grid(3) + 1)/2)*ngz - 1
+
+    call plot_build_wannier_grid(wf_index, wvfn_read, dis_manifold, u_matrix_opt, u_matrix, &
+                                 kpt_latt, dist_k, num_bands, num_kpts, num_wann, ngx, ngy, ngz, &
+                                 nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi, have_disentangled, &
+                                 spinors, stdout, wann_func, wann_func_nc, error, comm)
+    if (allocated(error)) return
+
+    ! Optional group-density channel: read on every rank (simplest way to keep
+    ! n_ext consistent for the collective sections of decompose_main)
+    n_ext = 0
+    if (group_channel) then
+      call plot_decompose_read_centres(decompose%centres_file, ext_centres, n_ext, error, comm)
+      if (allocated(error)) return
+    else
+      allocate (ext_centres(3, 0), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating ext_centres in plot_decompose', comm)
+        return
+      end if
+    end if
+
+    call decompose_main(wann_func, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi, &
+                        n_wf, wf_index, wf_centres, n_out, out_slot, real_lattice, &
+                        decompose%n_max, decompose%l_max, decompose%r_min, decompose%r_max, &
+                        decompose%r_cut, n_ext, ext_centres, seedname, stdout, error, comm)
+    if (allocated(error)) return
+
+    if (print_output%timing_level > 1) call io_stopwatch_stop('plot: decompose', timer)
+
+  end subroutine plot_decompose
+
+  !================================================!
+  subroutine plot_decompose_read_centres(centres_file, ext_centres, n_ext, error, comm)
+    !================================================!
+    !! Read Cartesian centres (Angstrom, same frame as real_lattice) for the
+    !! group-density channel of wannier_decompose. ASCII, one centre per
+    !! line (3 reals); blank lines and '#' comments are skipped. Read
+    !! identically on every rank so the n_ext seen by the following
+    !! collective decompose_main call is consistent across ranks.
+    !================================================!
+
+    use w90_constants, only: dp
+    use w90_comms, only: w90_comm_type
+    use w90_error, only: w90_error_type, set_error_file, set_error_alloc, set_error_input
+
+    implicit none
+
+    character(len=*), intent(in) :: centres_file
+    real(kind=dp), allocatable, intent(out) :: ext_centres(:, :)
+    integer, intent(out) :: n_ext
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    integer :: file_unit, ierr, ios
+    logical :: have_file
+    character(len=256) :: line
+
+    inquire (file=trim(centres_file), exist=have_file)
+    if (.not. have_file) then
+      call set_error_file(error, 'plot_decompose: centres file '//trim(centres_file)//' not found', comm)
+      return
+    end if
+
+    open (newunit=file_unit, file=trim(centres_file), form='formatted', status='old', action='read')
+
+    n_ext = 0
+    do
+      read (file_unit, '(a)', iostat=ios) line
+      if (ios /= 0) exit
+      line = adjustl(line)
+      if (len_trim(line) == 0) cycle
+      if (line(1:1) == '#') cycle
+      n_ext = n_ext + 1
+    end do
+
+    allocate (ext_centres(3, n_ext), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating ext_centres in plot_decompose_read_centres', comm)
+      close (file_unit)
+      return
+    end if
+
+    rewind (file_unit)
+    n_ext = 0
+    do
+      read (file_unit, '(a)', iostat=ios) line
+      if (ios /= 0) exit
+      line = adjustl(line)
+      if (len_trim(line) == 0) cycle
+      if (line(1:1) == '#') cycle
+      n_ext = n_ext + 1
+      read (line, *, iostat=ios) ext_centres(:, n_ext)
+      if (ios /= 0) then
+        call set_error_input(error, 'plot_decompose: malformed line in centres file '// &
+                             trim(centres_file), comm)
+        close (file_unit)
+        return
+      end if
+    end do
+
+    close (file_unit)
+
+  end subroutine plot_decompose_read_centres
+
+  !================================================!
+  subroutine plot_build_wannier_grid(plot_list, wvfn_read, dis_manifold, u_matrix_opt, u_matrix, &
+                                     kpt_latt, dist_k, num_bands, num_kpts, num_wann, ngx, ngy, &
+                                     ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi, &
+                                     have_disentangled, spinors, stdout, wann_func, wann_func_nc, &
+                                     error, comm)
+    !================================================!
+    !! Build the real-space Wannier functions on a (super)cell grid.
+    !!
+    !! Reads the UNK files, applies the optional disentanglement rotation, contracts
+    !! the band index with the gauge matrix for the requested set of WFs, and
+    !! accumulates the Bloch phases into wann_func (and wann_func_nc for spinors),
+    !! finishing with an MPI reduction over k-points.
+    !!
+    !! Extracted from plot_wannier so the density-decomposition path can reuse it.
+    !! It is parameterised over the WF index set (plot_list) and the supercell grid
+    !! bounds (nxx_lo..nzz_hi) rather than a wannier_plot_type, so a caller can build
+    !! the WFs over an arbitrary supercell (e.g. the mp_grid Born-von-Karman cell).
+    !================================================!
+
+    use w90_constants, only: dp, cmplx_0, cmplx_i, twopi
+    use w90_types, only: dis_manifold_type
+    use w90_wannier90_types, only: wvfn_read_type
+    use w90_comms, only: w90_comm_type, comms_sync_error
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_file, &
+                         code_file
+
+    implicit none
+
+    ! arguments
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(wvfn_read_type), intent(in) :: wvfn_read
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+    complex(kind=dp), allocatable, intent(out) :: wann_func(:, :, :, :)
+    complex(kind=dp), allocatable, intent(out) :: wann_func_nc(:, :, :, :, :) ! add the spinor dim.
+
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+
+    integer, intent(in) :: plot_list(:)
+    integer, intent(in) :: dist_k(:)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: ngx, ngy, ngz
+    integer, intent(in) :: nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi
+    integer, intent(in) :: stdout
+
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spinors
+
+    ! local variables
+    real(kind=dp) :: w_real, w_imag
+
+    complex(kind=dp), allocatable :: r_wvfn(:, :)
+    complex(kind=dp), allocatable :: r_wvfn_tmp(:, :)
+    complex(kind=dp), allocatable :: r_wvfn_nc(:, :, :) ! add the spinor dim.
+    complex(kind=dp), allocatable :: r_wvfn_tmp_nc(:, :, :) ! add the spinor dim.
+    complex(kind=dp), allocatable :: c_wvfn(:, :)
+    complex(kind=dp), allocatable :: c_wvfn_nc(:, :, :)
+    complex(kind=dp), allocatable :: phase_x(:), phase_y(:), phase_z(:)
+    complex(kind=dp) :: catmp, uw, phase_yz
+
+    integer :: my_node_id
+    integer :: nbnd, counter, ierr
+    integer :: loop_kpt, ik, ix, iy, iz
+    integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
+    integer :: nxx, nyy, nzz
+    integer :: wann_plot_num, ngrid
+
+    integer :: ierr_read
+    character(len=60) :: errmsg_read
+
+    character(len=11) :: wfnname
+    logical :: inc_band(num_bands)
+    logical :: have_file
+
+    my_node_id = mpirank(comm)
+
+    wann_plot_num = size(plot_list)
+    ngrid = ngx*ngy*ngz
+
+200 format('UNK', i5.5, '.', i1)
+199 format('UNK', i5.5, '.', 'NC')
+
+    allocate (wann_func(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, wann_plot_num), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wann_func in plot_build_wannier_grid', comm)
+      return
+    end if
+    wann_func = cmplx_0
+    if (spinors) then
+      allocate (wann_func_nc(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi, 2, wann_plot_num), &
+                stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating wann_func_nc in plot_build_wannier_grid', comm)
+        return
+      end if
+      wann_func_nc = cmplx_0
+    end if
+    if (.not. spinors) then
+      if (have_disentangled) then
+        allocate (r_wvfn_tmp(ngx*ngy*ngz, maxval(dis_manifold%ndimwin)), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating r_wvfn_tmp in plot_build_wannier_grid', comm)
+          return
+        end if
+      end if
+      allocate (r_wvfn(ngx*ngy*ngz, num_wann), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating r_wvfn in plot_build_wannier_grid', comm)
+        return
+      end if
+    else
+      if (have_disentangled) then
+        allocate (r_wvfn_tmp_nc(ngx*ngy*ngz, maxval(dis_manifold%ndimwin), 2), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating r_wvfn_tmp_nc in plot_build_wannier_grid', comm)
+          return
+        end if
+      end if
+      allocate (r_wvfn_nc(ngx*ngy*ngz, num_wann, 2), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating r_wvfn_nc in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+
+    if (.not. spinors) then
+      allocate (c_wvfn(ngrid, wann_plot_num), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating c_wvfn in plot_build_wannier_grid', comm)
+        return
+      end if
+    else
+      allocate (c_wvfn_nc(ngrid, wann_plot_num, 2), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating c_wvfn_nc in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+
+    allocate (phase_x(nxx_lo:nxx_hi), phase_y(nyy_lo:nyy_hi), phase_z(nzz_lo:nzz_hi), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating phase arrays in plot_build_wannier_grid', comm)
+      return
+    end if
+
+    ierr_read = 0
+    errmsg_read = ''
+    kpt_loop: do loop_kpt = 1, num_kpts
+      if (dist_k(loop_kpt) /= my_node_id) cycle
+
+      inc_band = .true.
+      num_inc = num_wann
+      if (have_disentangled) then
+        inc_band(:) = dis_manifold%lwindow(:, loop_kpt)
+        num_inc = dis_manifold%ndimwin(loop_kpt)
+      end if
+
+      if (.not. spinors) then
+        write (wfnname, 200) loop_kpt, wvfn_read%spin_channel
+      else
+        write (wfnname, 199) loop_kpt
+      end if
+
+      ! A missing UNK file must be detected here rather than silently
+      ! (re)created by the open below (status='old' forbids creation).
+      inquire (file=wfnname, exist=have_file)
+      if (.not. have_file) then
+        errmsg_read = 'plot_build_wannier_grid: file '//wfnname//' not found'
+        ierr_read = code_file
+        exit kpt_loop
+      end if
+      if (wvfn_read%formatted) then
+        open (newunit=file_unit, file=wfnname, form='formatted', status='old', iostat=ierr)
+      else
+        open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
+      end if
+      if (ierr /= 0) then
+        errmsg_read = 'plot_build_wannier_grid: could not open file '//wfnname
+        ierr_read = code_file
+        exit kpt_loop
+      end if
+      if (wvfn_read%formatted) then
+        read (file_unit, *, iostat=ierr) ix, iy, iz, ik, nbnd
+      else
+        read (file_unit, iostat=ierr) ix, iy, iz, ik, nbnd
+      end if
+      if (ierr /= 0) then
+        errmsg_read = 'plot_build_wannier_grid: error reading file '//wfnname
+        ierr_read = code_file
+        close (file_unit)
+        exit kpt_loop
+      end if
+
+      if ((ix /= ngx) .or. (iy /= ngy) .or. (iz /= ngz) .or. (ik /= loop_kpt)) then
+        write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
+        write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
+        write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
+        errmsg_read = 'plot_build_wannier_grid: mismatch in file '//wfnname
+        ierr_read = code_file
+        close (file_unit)
+        exit kpt_loop
+      end if
+
+      if (have_disentangled) then
+        counter = 1
+        do loop_b = 1, num_bands
+          if (counter > num_inc) exit
+          if (wvfn_read%formatted) then
+            do nx = 1, ngx*ngy*ngz
+              read (file_unit, *, iostat=ierr) w_real, w_imag
+              if (ierr /= 0) exit
+              if (.not. spinors) then
+                r_wvfn_tmp(nx, counter) = cmplx(w_real, w_imag, kind=dp)
+              else
+                r_wvfn_tmp_nc(nx, counter, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
+              end if
+            end do
+            if (ierr == 0 .and. spinors) then
+              do nx = 1, ngx*ngy*ngz
+                read (file_unit, *, iostat=ierr) w_real, w_imag
+                if (ierr /= 0) exit
+                r_wvfn_tmp_nc(nx, counter, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
+              end do
+            end if
+          else
+            if (.not. spinors) then
+              read (file_unit, iostat=ierr) (r_wvfn_tmp(nx, counter), nx=1, ngx*ngy*ngz)
+            else
+              read (file_unit, iostat=ierr) (r_wvfn_tmp_nc(nx, counter, 1), nx=1, ngx*ngy*ngz) ! up-spinor
+              if (ierr == 0) &
+                read (file_unit, iostat=ierr) (r_wvfn_tmp_nc(nx, counter, 2), nx=1, ngx*ngy*ngz) ! down-spinor
+            end if
+          end if
+          if (ierr /= 0) exit
+          if (inc_band(loop_b)) counter = counter + 1
+        end do
+      else
+        do loop_b = 1, num_bands
+          if (wvfn_read%formatted) then
+            do nx = 1, ngx*ngy*ngz
+              read (file_unit, *, iostat=ierr) w_real, w_imag
+              if (ierr /= 0) exit
+              if (.not. spinors) then
+                r_wvfn(nx, loop_b) = cmplx(w_real, w_imag, kind=dp)
+              else
+                r_wvfn_nc(nx, loop_b, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
+              end if
+            end do
+            if (ierr == 0 .and. spinors) then
+              do nx = 1, ngx*ngy*ngz
+                read (file_unit, *, iostat=ierr) w_real, w_imag
+                if (ierr /= 0) exit
+                r_wvfn_nc(nx, loop_b, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
+              end do
+            end if
+          else
+            if (.not. spinors) then
+              read (file_unit, iostat=ierr) (r_wvfn(nx, loop_b), nx=1, ngx*ngy*ngz)
+            else
+              read (file_unit, iostat=ierr) (r_wvfn_nc(nx, loop_b, 1), nx=1, ngx*ngy*ngz) ! up-spinor
+              if (ierr == 0) &
+                read (file_unit, iostat=ierr) (r_wvfn_nc(nx, loop_b, 2), nx=1, ngx*ngy*ngz) ! down-spinor
+            end if
+          end if
+          if (ierr /= 0) exit
+        end do
+      end if
+
+      close (file_unit)
+
+      if (ierr /= 0) then
+        errmsg_read = 'plot_build_wannier_grid: error reading file '//wfnname
+        ierr_read = code_file
+        exit kpt_loop
+      end if
+
+      if (have_disentangled) then
+        if (.not. spinors) then
+          r_wvfn = cmplx_0
+          do loop_w = 1, num_wann
+            do loop_b = 1, num_inc
+              r_wvfn(:, loop_w) = r_wvfn(:, loop_w) + &
+                                  u_matrix_opt(loop_b, loop_w, loop_kpt)*r_wvfn_tmp(:, loop_b)
+            end do
+          end do
+        else
+          r_wvfn_nc = cmplx_0
+          do loop_w = 1, num_wann
+            do loop_b = 1, num_inc
+              call zaxpy(ngx*ngy*ngz, u_matrix_opt(loop_b, loop_w, loop_kpt), r_wvfn_tmp_nc(1, loop_b, 1), 1, & ! up-spinor
+                         r_wvfn_nc(1, loop_w, 1), 1)
+              call zaxpy(ngx*ngy*ngz, u_matrix_opt(loop_b, loop_w, loop_kpt), r_wvfn_tmp_nc(1, loop_b, 2), 1, & ! down-spinor
+                         r_wvfn_nc(1, loop_w, 2), 1)
+            end do
+          end do
+        end if
+      end if
+
+      ! Contract band index: c_wvfn(npoint, w) = sum_b u_matrix(b, list(w), k) * r_wvfn(npoint, b)
+      if (.not. spinors) then
+        c_wvfn = cmplx_0
+      else
+        c_wvfn_nc = cmplx_0
+      end if
+      do loop_b = 1, num_wann
+        do loop_w = 1, wann_plot_num
+          uw = u_matrix(loop_b, plot_list(loop_w), loop_kpt)
+          do npoint = 1, ngrid
+            if (.not. spinors) then
+              c_wvfn(npoint, loop_w) = c_wvfn(npoint, loop_w) + uw*r_wvfn(npoint, loop_b)
+            else
+              c_wvfn_nc(npoint, loop_w, 1) = c_wvfn_nc(npoint, loop_w, 1) + uw*r_wvfn_nc(npoint, loop_b, 1)
+              c_wvfn_nc(npoint, loop_w, 2) = c_wvfn_nc(npoint, loop_w, 2) + uw*r_wvfn_nc(npoint, loop_b, 2)
+            end if
+          end do
+        end do
+      end do
+
+      ! Precompute factored phase arrays for this k-point
+      do nxx = nxx_lo, nxx_hi
+        phase_x(nxx) = exp(twopi*cmplx_i*kpt_latt(1, loop_kpt)*real(nxx - 1, dp)/real(ngx, dp))
+      end do
+      do nyy = nyy_lo, nyy_hi
+        phase_y(nyy) = exp(twopi*cmplx_i*kpt_latt(2, loop_kpt)*real(nyy - 1, dp)/real(ngy, dp))
+      end do
+      do nzz = nzz_lo, nzz_hi
+        phase_z(nzz) = exp(twopi*cmplx_i*kpt_latt(3, loop_kpt)*real(nzz - 1, dp)/real(ngz, dp))
+      end do
+
+      ! nxx, nyy, nzz span a parallelogram in the real space mesh, of side
+      ! 2*nphir, and centered around the maximum of phi_i, nphimx(i, 1 2 3)
+      !
+      ! nx ny nz are the nxx nyy nzz brought back to the unit cell in
+      ! which u_nk(r)=cptwrb(r,n)  is represented
+      !
+      ! There is a big performance improvement in looping over num_wann
+      ! in the inner loop. This is poor memory access for wann_func and
+      ! but the reduced number of operations wins out.
+      do nzz = nzz_lo, nzz_hi
+        nz = mod(nzz, ngz)
+        if (nz .lt. 1) nz = nz + ngz
+        do nyy = nyy_lo, nyy_hi
+          ny = mod(nyy, ngy)
+          if (ny .lt. 1) ny = ny + ngy
+          phase_yz = phase_y(nyy)*phase_z(nzz)
+          do nxx = nxx_lo, nxx_hi
+            nx = mod(nxx, ngx)
+            if (nx .lt. 1) nx = nx + ngx
+            npoint = nx + (ny - 1)*ngx + (nz - 1)*ngy*ngx
+            catmp = phase_x(nxx)*phase_yz
+            do loop_w = 1, wann_plot_num
+              if (.not. spinors) then
+                wann_func(nxx, nyy, nzz, loop_w) = &
+                  wann_func(nxx, nyy, nzz, loop_w) + c_wvfn(npoint, loop_w)*catmp
+              else
+                wann_func_nc(nxx, nyy, nzz, 1, loop_w) = &
+                  wann_func_nc(nxx, nyy, nzz, 1, loop_w) + c_wvfn_nc(npoint, loop_w, 1)*catmp
+                wann_func_nc(nxx, nyy, nzz, 2, loop_w) = &
+                  wann_func_nc(nxx, nyy, nzz, 2, loop_w) + c_wvfn_nc(npoint, loop_w, 2)*catmp
+              end if
+            end do
+          end do
+        end do
+      end do
+
+    end do kpt_loop !loop over kpoints
+
+    ! Failures above are rank-local (k-points are distributed), but
+    ! set_error_file is collective. Here we direct succeeding ranks to enter
+    ! the same synchronisation (comms_sync_error) as the failing ones rather
+    ! than continuing to the comms_reduce below.
+    if (ierr_read /= 0) then
+      call set_error_file(error, trim(errmsg_read), comm)
+    else
+      call comms_sync_error(comm, error, 0)
+    end if
+    if (allocated(error)) return
+
+    if (spinors) then
+      call comms_reduce(wann_func_nc(nxx_lo, nyy_lo, nzz_lo, 1, 1), &
+                        size(wann_func_nc), 'SUM', error, comm)
+    else
+      call comms_reduce(wann_func(nxx_lo, nyy_lo, nzz_lo, 1), &
+                        size(wann_func), 'SUM', error, comm)
+    end if
+    if (allocated(error)) return
+
+    if (allocated(c_wvfn)) then
+      deallocate (c_wvfn, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating c_wvfn in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+    if (allocated(c_wvfn_nc)) then
+      deallocate (c_wvfn_nc, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating c_wvfn_nc in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+    if (allocated(phase_x)) then
+      deallocate (phase_x, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating phase_x in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+    if (allocated(phase_y)) then
+      deallocate (phase_y, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating phase_y in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+    if (allocated(phase_z)) then
+      deallocate (phase_z, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating phase_z in plot_build_wannier_grid', comm)
+        return
+      end if
+    end if
+
+    return
+
+  end subroutine plot_build_wannier_grid
 
   !================================================!
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, &

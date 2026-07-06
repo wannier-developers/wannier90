@@ -54,6 +54,11 @@ set(test_names
                 testw90_benzene_gamma_val_hexcell
                 testw90_bvec
                 testw90_cube_format
+                testw90_decompose
+                testw90_decompose_power
+                testw90_decompose_gc
+                testw90_decompose_sphere
+                testw90_decompose_l2
                 testw90_disentanglement_sawfs
                 testw90_example01
                 testw90_example02

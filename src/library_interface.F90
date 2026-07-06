@@ -179,6 +179,7 @@ module w90_library
     type(wann_control_type) :: wann_control
     type(wannier_data_type) :: wannier_data
     type(wannier_plot_type) :: wann_plot
+    type(decompose_type) :: decompose
     type(wann_omega_type) :: omega
     type(wann_omega_type) :: wann_omega
     type(ws_region_type) :: ws_region
@@ -418,6 +419,7 @@ contains
                                       common_data%real_space_ham, common_data%kpoint_path, &
                                       common_data%w90_system, common_data%tran, &
                                       common_data%print_output, common_data%wann_plot, &
+                                      common_data%decompose, &
                                       common_data%ws_region, common_data%real_lattice, &
                                       common_data%w90_calculation, common_data%physics%bohr, &
                                       common_data%sitesym%symmetrize_eps, common_data%num_bands, &
@@ -508,6 +510,7 @@ contains
                                       common_data%real_space_ham, common_data%kpoint_path, &
                                       common_data%w90_system, common_data%tran, &
                                       common_data%print_output, common_data%wann_plot, &
+                                      common_data%decompose, &
                                       common_data%ws_region, common_data%real_lattice, &
                                       common_data%w90_calculation, common_data%physics%bohr, &
                                       common_data%sitesym%symmetrize_eps, common_data%num_bands, &
@@ -783,7 +786,7 @@ contains
                    common_data%ham_logical, common_data%kmesh_info, common_data%kpt_latt, &
                    common_data%output_file, common_data%wvfn_read, common_data%real_space_ham, &
                    common_data%kpoint_path, common_data%print_output, common_data%wannier_data, &
-                   common_data%wann_plot, common_data%ws_region, common_data%w90_calculation, &
+                   common_data%wann_plot, common_data%decompose, common_data%ws_region, common_data%w90_calculation, &
                    common_data%ham_k, common_data%ham_r, common_data%m_matrix_local, &
                    common_data%u_matrix, common_data%u_matrix_opt, common_data%eigval, &
                    common_data%real_lattice, common_data%wannier_centres_translated, &
@@ -1198,6 +1201,7 @@ contains
                                        common_data%select_proj, common_data%kpoint_path, &
                                        common_data%tran, common_data%print_output, &
                                        common_data%wannier_data, common_data%wann_plot, &
+                                       common_data%decompose, &
                                        common_data%w90_calculation, common_data%real_lattice, &
                                        common_data%sitesym%symmetrize_eps, common_data%mp_grid, &
                                        common_data%num_bands, common_data%num_kpts, &

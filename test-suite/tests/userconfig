@@ -77,6 +77,31 @@ exe = ../../wannier90.x
 extract_fn = tools parsers.parse_cube.parse
 tolerance = ( (1.0e-5, 1.0e-5, 'origin'))
 
+[WANNIER90_DECOMPOSE_COEFF_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_decompose_coeff.parse
+# header fields are exact/deterministic; coefficients get a looser,
+# either-abs-or-rel tolerance (strict=False) since some components are
+# close to zero by symmetry
+tolerance = ( (1.0e-8, None, 'n_max'),
+              (1.0e-8, None, 'l_max'),
+              (1.0e-8, None, 'r_min'),
+              (1.0e-8, None, 'r_max'),
+              (1.0e-8, None, 'r_cut'),
+              (1.0e-8, None, 'ncoeff'),
+              (1.0e-8, 1.0e-6, 'coeff', False))
+
+[WANNIER90_DECOMPOSE_POWER_OK]
+exe = ../../wannier90.x
+extract_fn = tools parsers.parse_decompose_power.parse
+tolerance = ( (1.0e-8, None, 'n_max'),
+              (1.0e-8, None, 'l_max'),
+              (1.0e-8, None, 'r_min'),
+              (1.0e-8, None, 'r_max'),
+              (1.0e-8, None, 'r_cut'),
+              (1.0e-8, None, 'nentries'),
+              (1.0e-8, 1.0e-6, 'power', False))
+
 [POSTW90_GENINTERPDAT_OK]
 exe = ../../postw90.x
 extract_fn = tools parsers.parse_geninterp_dat.parse

@@ -1319,6 +1319,12 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'cp_pp', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'decompose_centres_file', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'decompose_l_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'decompose_n_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'decompose_r_cut', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'decompose_r_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'decompose_r_min', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'devel_flag', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm)
@@ -1407,6 +1413,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'wannier_decompose', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'wannier_plot_format', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'wannier_plot', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'wannier_plot_mode', found, error, comm)
@@ -1459,6 +1466,20 @@ contains
       return
     end if
     call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .false., error, comm, lxa)
+    call w90_readwrite_get_range_vector(settings, 'decompose_list', found, lx, .true., error, comm)
+    if (allocated(lxa)) then
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end if
+    allocate (lxa(lx), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+      return
+    end if
+    call w90_readwrite_get_range_vector(settings, 'decompose_list', found, lx, .false., error, comm, lxa)
     call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
     if (allocated(lxa)) then
       deallocate (lxa, stat=ierr)

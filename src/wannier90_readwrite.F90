@@ -185,7 +185,7 @@ contains
                                           dis_manifold, fermi_energy_list, fermi_surface_data, &
                                           output_file, wvfn_read, wann_control, real_space_ham, &
                                           kpoint_path, w90_system, tran, print_output, wann_plot, &
-                                          ws_region, real_lattice, w90_calculation, bohr, &
+                                          decompose, ws_region, real_lattice, w90_calculation, bohr, &
                                           symmetrize_eps, num_bands, num_kpts, num_wann, &
                                           optimisation, calc_only_A, cp_pp, gamma_only, &
                                           lsitesymmetry, use_bloch_phases, seedname, stdout, &
@@ -223,6 +223,7 @@ contains
     type(w90_system_type), intent(inout) :: w90_system
     type(wann_control_type), intent(inout) :: wann_control
     type(wannier_plot_type), intent(inout) :: wann_plot
+    type(decompose_type), intent(inout) :: decompose
     type(ws_region_type), intent(inout) :: ws_region
     type(wvfn_read_type), intent(inout) :: wvfn_read
 
@@ -315,6 +316,10 @@ contains
 
       call w90_wannier90_readwrite_read_wann_plot(settings, wann_plot, num_wann, &
                                                   w90_calculation%wannier_plot, error, comm)
+      if (allocated(error)) return
+
+      call w90_wannier90_readwrite_read_decompose(settings, decompose, num_wann, &
+                                                  w90_calculation%wannier_decompose, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_fermi_surface(settings, fermi_surface_data, &
@@ -413,6 +418,10 @@ contains
 
     call w90_readwrite_get_keyword(settings, 'wannier_plot', found, error, comm, &
                                    l_value=w90_calculation%wannier_plot)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'wannier_decompose', found, error, comm, &
+                                   l_value=w90_calculation%wannier_decompose)
     if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'bands_plot', found, error, comm, &
@@ -1284,6 +1293,128 @@ contains
   end subroutine w90_wannier90_readwrite_read_wann_plot
 
   !================================================!
+  subroutine w90_wannier90_readwrite_read_decompose(settings, decompose, num_wann, wannier_decompose, &
+                                                    error, comm)
+    !================================================!
+    ! Wannier density decomposition
+    !================================================!
+    use w90_error, only: w90_error_type
+    implicit none
+
+    integer, intent(in) :: num_wann
+    logical, intent(in) :: wannier_decompose
+    type(settings_type), intent(inout) :: settings
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(decompose_type), intent(inout) :: decompose
+
+    integer :: loop, ierr, decompose_num
+    logical :: found, found_r_cut
+
+    found = .false.
+
+    call w90_readwrite_get_keyword(settings, 'decompose_n_max', found, error, comm, &
+                                   i_value=decompose%n_max)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'decompose_l_max', found, error, comm, &
+                                   i_value=decompose%l_max)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'decompose_r_min', found, error, comm, &
+                                   r_value=decompose%r_min)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'decompose_r_max', found, error, comm, &
+                                   r_value=decompose%r_max)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'decompose_r_cut', found_r_cut, error, comm, &
+                                   r_value=decompose%r_cut)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'decompose_centres_file', found, error, comm, &
+                                   c_value=decompose%centres_file)
+    if (allocated(error)) return
+
+    decompose_num = 0
+    call w90_readwrite_get_range_vector(settings, 'decompose_list', found, decompose_num, .true., &
+                                        error, comm)
+    if (allocated(error)) return
+    if (found) then
+      if (decompose_num < 1) then
+        call set_error_input(error, 'Error: problem reading decompose_list', comm)
+        return
+      end if
+      if (allocated(decompose%list)) then
+        deallocate (decompose%list, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating decompose%list in &
+          & w90_wannier90_readwrite_read_decompose', comm)
+          return
+        end if
+      end if
+      allocate (decompose%list(decompose_num), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating decompose%list in &
+        & w90_wannier90_readwrite_read_decompose', comm)
+        return
+      end if
+      call w90_readwrite_get_range_vector(settings, 'decompose_list', found, decompose_num, .false., &
+                                          error, comm, decompose%list)
+      if (allocated(error)) return
+      if (any(decompose%list < 1) .or. any(decompose%list > num_wann)) then
+        call set_error_input(error, 'Error: decompose_list asks for a non-valid wannier function &
+        &to be decomposed', comm)
+        return
+      end if
+    else
+      ! we decompose all wannier functions
+      decompose_num = num_wann
+      if (allocated(decompose%list)) then
+        deallocate (decompose%list, stat=ierr)
+        if (ierr /= 0) then
+          call set_error_dealloc(error, 'Error deallocating decompose%list in &
+          & w90_wannier90_readwrite_read_decompose', comm)
+          return
+        end if
+      end if
+      allocate (decompose%list(decompose_num), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating decompose%list in &
+        & w90_wannier90_readwrite_read_decompose', comm)
+        return
+      end if
+      do loop = 1, num_wann
+        decompose%list(loop) = loop
+      end do
+    end if
+
+    ! checks
+    if (wannier_decompose) then
+      if (.not. found_r_cut) then
+        call set_error_input(error, 'Error: decompose_r_cut must be provided when &
+        &wannier_decompose=true', comm)
+        return
+      end if
+      if (decompose%n_max < 1) then
+        call set_error_input(error, 'Error: decompose_n_max must be greater than zero', comm)
+        return
+      end if
+      if (decompose%l_max < 0) then
+        call set_error_input(error, 'Error: decompose_l_max must be greater than or equal to zero', comm)
+        return
+      end if
+      if (.not. (0.0_dp < decompose%r_min .and. decompose%r_min < decompose%r_max)) then
+        call set_error_input(error, 'Error: decompose_r_min and decompose_r_max must satisfy &
+        &0 < r_min < r_max', comm)
+        return
+      end if
+    end if
+
+  end subroutine w90_wannier90_readwrite_read_decompose
+
+  !================================================!
   subroutine w90_wannier90_readwrite_read_fermi_surface(settings, fermi_surface_data, &
                                                         fermi_surface_plot, error, comm)
     !================================================!
@@ -1786,7 +1917,8 @@ contains
                                            fermi_energy_list, fermi_surface_data, kpt_latt, &
                                            output_file, wvfn_read, wann_control, proj, proj_input, &
                                            real_space_ham, select_proj, kpoint_path, tran, &
-                                           print_output, wannier_data, wann_plot, w90_calculation, &
+                                           print_output, wannier_data, wann_plot, decompose, &
+                                           w90_calculation, &
                                            real_lattice, symmetrize_eps, mp_grid, num_bands, &
                                            num_kpts, num_proj, num_wann, optimisation, cp_pp, &
                                            gamma_only, lsitesymmetry, spinors, use_bloch_phases, &
@@ -1819,6 +1951,7 @@ contains
     type(proj_type), allocatable, intent(in) :: proj_input(:)
     type(kpoint_path_type), intent(in) :: kpoint_path
     type(wannier_plot_type), intent(in) :: wann_plot
+    type(decompose_type), intent(in) :: decompose
     type(proj_type), allocatable, intent(in) :: proj(:)
 
     integer, intent(in) :: num_bands
@@ -2115,7 +2248,8 @@ contains
       !
       ! Plotting
       !
-      if (w90_calculation%wannier_plot .or. w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot &
+      if (w90_calculation%wannier_plot .or. w90_calculation%wannier_decompose .or. &
+          w90_calculation%bands_plot .or. w90_calculation%fermi_surface_plot &
           .or. output_file%write_hr .or. print_output%iprint > 2) then
         !
         write (stdout, '(1x,a78)') '*-------------------------------- PLOTTING ----------------------------------*'
@@ -2147,6 +2281,26 @@ contains
               wann_plot%radius, '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Plot scale                               :', &
               wann_plot%scale, '|'
+          end if
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        end if
+        !
+        if (w90_calculation%wannier_decompose .or. print_output%iprint > 2) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Decomposing Wannier function densities    :', &
+            w90_calculation%wannier_decompose, '|'
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   n_max                                    :', &
+            decompose%n_max, '|'
+          write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   l_max                                    :', &
+            decompose%l_max, '|'
+          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   r_min (Ang)                              :', &
+            decompose%r_min, '|'
+          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   r_max (Ang)                              :', &
+            decompose%r_max, '|'
+          write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   r_cut (Ang)                              :', &
+            decompose%r_cut, '|'
+          if (len_trim(decompose%centres_file) > 0) then
+            write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Group-density centres file               :', &
+              trim(decompose%centres_file), '|'
           end if
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
         end if

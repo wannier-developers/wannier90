@@ -118,6 +118,7 @@ are represented by, I for an integer, R for a real number, P for a
 physical value, L for a logical value and S for a text string.
 
 - `wannier_plot_radius` only applies when `wannier_plot_format` is `cube`.
+- `decompose_r_cut` must be provided when `wannier_decompose = true`.
 
 ### Transport Parameters
 
@@ -982,6 +983,8 @@ Capabilities:
 
 - Plot the WF
 
+- Decompose the WF density onto a Gaussian-radial x real-spherical-harmonic basis
+
 - Plot the interpolated band structure
 
 - Plot the Fermi surface
@@ -1129,6 +1132,147 @@ quatity plotted is
 
 If `wannier_plot_spinor_phase = true` phase information will
 be taken into account when plotting a spinor WF.
+
+### `logical :: wannier_decompose`
+
+If `wannier_decompose = true`, the code decomposes the density
+$|w_n(\mathbf{r})|^2$ of each selected WF onto an orthonormalised basis
+of Gaussian radial functions times real spherical harmonics, centred on
+the WF centre, following Himanen _et al._, _Adv. Sci._ **7**, 1902333
+(2020). This is useful, for example, as a rotationally-invariant
+machine-learning descriptor of localised orbitals. The decomposition
+runs in the plotting phase of the code (it is also available with
+`restart = plot`) and requires the `UNK` files produced when
+`write_unk = true`, exactly as for `wannier_plot`. Spinor WF
+(`spinors = true`) are not currently supported and the code will stop
+with an error if `wannier_decompose = true` is combined with
+`spinors = true`.
+
+The basis functions are $\phi_{nl}(r) = r^l \exp(-\alpha_{nl} r^2)$,
+Löwdin-orthonormalised (via the analytic overlap of the $\phi_{nl}$ and
+a symmetric eigendecomposition) into $g_{nl}(r) = \sum_{n'}
+\beta_{n'nl}\,\phi_{n'l}(r)$, with decay coefficients $\alpha_{nl}$ set
+so that $\phi_{nl}(r) = 10^{-3}$ at a threshold radius that is spaced
+linearly between `decompose_r_min` and `decompose_r_max` over the
+`decompose_n_max` radial functions; the angular part $Y_{lm}(\theta,
+\phi)$ runs over $l = 0 \ldots$ `decompose_l_max` and all $m$. Before
+projection, each WF density is normalised to integrate to 1 over the
+Born-von-Kármán supercell (`mp_grid` repetitions of the unit cell).
+
+The default value of this parameter is `false`.
+
+### `integer :: decompose_n_max`
+
+The number of radial basis functions $\phi_{nl}(r)$ used to decompose
+the WF density (see `wannier_decompose`). Must be greater than zero.
+
+The default value is 6.
+
+### `integer :: decompose_l_max`
+
+The maximum angular momentum $l$ of the real spherical harmonics
+$Y_{lm}(\theta,\phi)$ used to decompose the WF density (see
+`wannier_decompose`). Must be greater than or equal to zero.
+
+The default value is 6.
+
+### `real(kind=dp) :: decompose_r_min`
+
+The smallest of the `decompose_n_max` threshold radii used to fix the
+decay of the radial basis functions (see `wannier_decompose`). Must
+satisfy `0 < decompose_r_min < decompose_r_max`. Units are Å.
+
+The default value is 0.5.
+
+### `real(kind=dp) :: decompose_r_max`
+
+The largest of the `decompose_n_max` threshold radii used to fix the
+decay of the radial basis functions (see `wannier_decompose`). Must
+satisfy `decompose_r_min < decompose_r_max`. Units are Å.
+
+The default value is 4.0.
+
+### `real(kind=dp) :: decompose_r_cut`
+
+The radius of the sphere, centred on each WF (or, for the group
+density, on each centre in `decompose_centres_file`), inside which the
+density is projected onto the basis. `decompose_r_cut` must not exceed
+the inscribed-sphere radius of the Born-von-Kármán supercell defined by
+`mp_grid` and the unit cell (half the shortest distance between
+opposite faces of that supercell); the code computes this bound and
+stops with an error, quoting the bound, if `decompose_r_cut` exceeds
+it. Units are Å.
+
+There is no default value: `decompose_r_cut` must be provided whenever
+`wannier_decompose = true`.
+
+### `integer :: decompose_list(:)`
+
+A list of WF to decompose about their own centres, using the same
+syntax as `wannier_plot_list`, e.g. to decompose WF 4, 5, 6 and 10:
+
+```vi title="Input file"
+decompose_list : 4-6, 10
+```
+
+The default behaviour is to decompose all WF. Note that when
+`decompose_centres_file` is given, `decompose_list` only restricts
+which own-centre `.coeff`/`.power` files are written: the group density
+(see below) is always accumulated from every WF of the run, since its
+coefficients need to represent the total density of the run.
+
+### `character(len=256) :: decompose_centres_file`
+
+The name of a file containing a list of external Cartesian centres
+(Å, in the same frame as `unit_cell_cart`), one centre per line, with
+blank lines and lines beginning with `#` ignored, for example:
+
+```vi title="Input file"
+# Cartesian centres (Angstrom) for the group-density channel
+3.159166  -3.286943  -3.412441
+0.000000   0.000000   0.000000
+```
+
+If `decompose_centres_file` is given, in addition to the own-centre
+decomposition described under `wannier_decompose`, the code also forms
+the group density $\sum_n |w_n(\mathbf{r})|^2$, summed over every WF of
+the run (after each WF density has been normalised to integrate to 1),
+and decomposes it about every centre listed in the file, writing the
+coefficients to `<seedname>_gc_NNNNN.coeff` where `NNNNN` is the
+1-based index of the centre in the file. Because the expansion
+coefficients are linear in the density, group-density coefficients
+obtained from separate wannierisation runs (for example, different
+occupied/empty blocks or spin channels) can be summed externally,
+centre by centre, to build the expansion coefficients of the *total*
+density at each centre, from which the full orbital-total power
+spectrum can then be assembled.
+
+The default is not to compute a group density.
+
+#### Output files
+
+`wannier_decompose` writes one pair of files per decomposed WF,
+`<seedname>_NNNNN.coeff` and `<seedname>_NNNNN.power`, where `NNNNN` is
+the WF index (as in `wannier_plot_list`), and, if
+`decompose_centres_file` is given, one `<seedname>_gc_NNNNN.coeff` file
+per external centre. All files are plain ASCII with a self-describing
+`#`-commented header giving `n_max`, `l_max`, `r_min`, `r_max`, `r_cut`
+and the ordering of the entries that follow, one value per line.
+
+`<seedname>_NNNNN.coeff` and `<seedname>_gc_NNNNN.coeff` hold the flat
+expansion coefficients $c_{nlm}$ of the (own-centre or group) density,
+in the order: outer $n = 0 \ldots$ `decompose_n_max`$-1$, then $l = 0
+\ldots$ `decompose_l_max`, then inner $m = -l \ldots l$.
+
+`<seedname>_NNNNN.power` holds the rotationally-invariant orbital-orbital
+power spectrum $p_{n_1n_2l} = \sum_m c_{n_1lm}\,c_{n_2lm}$, in the
+order: outer $n_1 = 0 \ldots$ `decompose_n_max`$-1$, then $n_2 = n_1
+\ldots$ `decompose_n_max`$-1$, then $l = 0 \ldots$ `decompose_l_max`.
+No group-density power spectrum is written; when
+`decompose_centres_file` is used, only the orbital-orbital block is
+covered by the `.power` files, and the full orbital-total power
+spectrum must be assembled by the caller from the summed group-density
+coefficients described under `decompose_centres_file`.
 
 ### `logical :: bands_plot`
 

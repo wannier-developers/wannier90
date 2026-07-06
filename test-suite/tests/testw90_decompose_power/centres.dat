@@ -1,0 +1,6 @@
+# Group-density centres for the wannier_decompose regression test:
+# the 4 GaAs WF centres (own centres, in Angstrom, from gaas.wout).
+-0.866253  1.973841  1.973841
+-0.866253  0.866253  0.866253
+-1.973841  1.973841  0.866253
+-1.973841  0.866253  1.973841
