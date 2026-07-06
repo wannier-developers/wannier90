@@ -107,7 +107,7 @@ contains
     real(kind=dp) :: evec(n_max, n_max)
     real(kind=dp) :: eval(n_max)
     real(kind=dp) :: work(3*n_max)
-    real(kind=dp) :: gamma_half, exponent, cc
+    real(kind=dp) :: gamma_half, s_expo, cc
     integer :: n, np, l, info
     character(len=128) :: mesg
 
@@ -134,12 +134,12 @@ contains
       do n = 0, l
         gamma_half = gamma_half*(real(n, dp) + 0.5_dp)
       end do
-      exponent = real(l, dp) + 1.5_dp
+      s_expo = real(l, dp) + 1.5_dp
 
       do np = 1, n_max
         do n = 1, n_max
           cc = alphas(n, l) + alphas(np, l)
-          smat(n, np) = 0.5_dp*gamma_half*cc**(-exponent)
+          smat(n, np) = 0.5_dp*gamma_half*cc**(-s_expo)
         end do
       end do
 
@@ -205,7 +205,7 @@ contains
     real(kind=dp), intent(out) :: ylm(0:l_max, 0:2*l_max)
     !! Real spherical harmonics; ylm(l, m+l)
 
-    real(kind=dp) :: x, plm, norm, ang, sqrt2
+    real(kind=dp) :: x, plm, csphase, ang, sqrt2
     integer :: l, m
 
     x = cos(theta)
@@ -219,12 +219,12 @@ contains
           ylm(l, l) = plm
         else
           ! (-1)^m
-          norm = merge(-1.0_dp, 1.0_dp, mod(m, 2) == 1)
+          csphase = merge(-1.0_dp, 1.0_dp, mod(m, 2) == 1)
           ang = real(m, dp)*phi
           ! m > 0  ->  index l + m
-          ylm(l, l + m) = sqrt2*norm*plm*cos(ang)
+          ylm(l, l + m) = sqrt2*csphase*plm*cos(ang)
           ! m < 0  ->  index l - m
-          ylm(l, l - m) = sqrt2*norm*plm*sin(ang)
+          ylm(l, l - m) = sqrt2*csphase*plm*sin(ang)
         end if
       end do
     end do
@@ -314,8 +314,8 @@ contains
 
   !================================================================!
   subroutine decompose_project(rho, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, &
-                               nzz_lo, nzz_hi, real_lattice, centre, n_max, l_max, &
-                               r_cut, alphas, betas, coeff)
+                               nzz_lo, nzz_hi, real_lattice, inv_lat, dvol, centre, &
+                               n_max, l_max, r_cut, alphas, betas, coeff)
     !! Project a real-space density onto the orthonormalised
     !! Gaussian-radial x real-spherical-harmonic basis about a single
     !! centre, returning the flat coefficient vector
@@ -330,10 +330,13 @@ contains
     !! The Cartesian displacement from the centre is taken with the
     !! minimum-image convention over the supercell, and only points with
     !! \(|\mathbf{r}-\mathbf{c}| \le r_{\mathrm{cut}}\) contribute
-    !! (spherical mask). The volume element is
+    !! (spherical mask). The volume element `dvol`,
     !! \(\mathrm{d}V = |\det(A)| / (n_{gx} n_{gy} n_{gz})\) with \(A\) the
-    !! primitive real lattice, which equals |det(supercell)|/(total grid
-    !! points). No normalisation of `rho` is applied here.
+    !! primitive real lattice (equal to |det(supercell)|/(total grid
+    !! points)), and the lattice inverse `inv_lat` are precomputed once by
+    !! the caller (this routine is called once per centre, so neither
+    !! depends on `centre` and both would otherwise be recomputed
+    !! redundantly). No normalisation of `rho` is applied here.
     !!
     !! Angles follow the python reference convention
     !! (`koopmans.ml._misc.cart2sph_array`):
@@ -342,8 +345,7 @@ contains
     !! \(n\) (0..n_max-1), then \(l\) (0..l_max), then inner \(m\) (0..2l):
     !! `coeff((n-1)*(l_max+1)**2 + l**2 + m + 1)`.
 
-    use w90_utility, only: utility_inverse_mat, utility_cart_to_frac, &
-                           utility_recip_lattice_base
+    use w90_utility, only: utility_cart_to_frac
 
     implicit none
 
@@ -355,6 +357,11 @@ contains
     !! Grid points per (primitive) unit cell along each lattice vector
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     !! Primitive real lattice; `real_lattice(i,:)` is the i-th vector (Angstrom)
+    real(kind=dp), intent(in) :: inv_lat(3, 3)
+    !! Inverse of `real_lattice` (precomputed once by the caller)
+    real(kind=dp), intent(in) :: dvol
+    !! Volume element per grid point, |det(real_lattice)| / (ngx*ngy*ngz)
+    !! (Angstrom^3; precomputed once by the caller)
     real(kind=dp), intent(in) :: centre(3)
     !! Cartesian coordinates of the projection centre (Angstrom)
     integer, intent(in) :: n_max
@@ -370,21 +377,14 @@ contains
     real(kind=dp), intent(out) :: coeff(n_max*(l_max + 1)**2)
     !! Flat expansion coefficients
 
-    real(kind=dp) :: inv_lat(3, 3), cfrac(3)
+    real(kind=dp) :: cfrac(3)
     real(kind=dp) :: ylm(0:l_max, 0:2*l_max)
     real(kind=dp) :: phinl(n_max), rpow(0:l_max)
-    real(kind=dp) :: dvol, det_cell, r_cut2, r2, rr, xyproj, theta, phi
-    real(kind=dp) :: fx, fy, fz, dcart(3), gnl, weight, rhoval, recip(3, 3)
+    real(kind=dp) :: r_cut2, r2, rr, xyproj, theta, phi
+    real(kind=dp) :: fx, fy, fz, dcart(3), gnl, weight, rhoval
     integer :: nsc(3), ix, iy, iz, n, np, l, m, ibase
-    real(kind=dp) :: volume
 
     coeff = 0.0_dp
-
-    ! Volume element: |det(primitive lattice)| / (points per cell)
-    call utility_inverse_mat(real_lattice, inv_lat)
-    call utility_recip_lattice_base(real_lattice, recip, volume)
-    det_cell = volume
-    dvol = det_cell/real(ngx*ngy*ngz, dp)
 
     ! Supercell replication factors implied by the grid bounds
     nsc(1) = (nxx_hi - nxx_lo + 1)/ngx
@@ -418,7 +418,11 @@ contains
           if (r2 > r_cut2) cycle
           rr = sqrt(r2)
 
-          ! Spherical angles (python cart2sph convention)
+          ! Spherical angles (python cart2sph convention). The +pi/2 and +pi
+          ! shifts amount to evaluating the harmonics at an inverted/rotated
+          ! argument; they are deliberately inherited from the reference
+          ! python implementation (koopmans ml module) and must not be
+          ! "corrected" independently of the coefficient conventions above.
           xyproj = sqrt(dcart(1)**2 + dcart(2)**2)
           theta = atan2(dcart(3), xyproj) + 0.5_dp*pi
           phi = atan2(dcart(2), dcart(1)) + pi
@@ -523,7 +527,7 @@ contains
 
     use w90_comms, only: w90_comm_type, mpirank
     use w90_error, only: w90_error_type, set_error_input
-    use w90_utility, only: utility_recip_lattice_base
+    use w90_utility, only: utility_recip_lattice_base, utility_inverse_mat
 
     implicit none
 
@@ -573,11 +577,12 @@ contains
     real(kind=dp), allocatable :: rho(:, :, :), group_rho(:, :, :)
     real(kind=dp), allocatable :: coeff(:), power(:)
     real(kind=dp) :: asc(3, 3), cross(3), det_sc, area, dist, bound
-    real(kind=dp) :: rsum, dvol, det_cell, recip(3, 3), volume
+    real(kind=dp) :: rsum, dvol, det_cell, recip(3, 3), volume, inv_lat(3, 3)
     integer :: nsc(3), n_coeff, n_power, n, e, ierr
     logical :: do_own(n_wf)
     character(len=5) :: numstr
     character(len=256) :: fname
+    character(len=256) :: mesg
 
     ! --- Collective section (grid-independent): safe error synchronisation ---
 
@@ -590,18 +595,14 @@ contains
     asc(2, :) = real(nsc(2), dp)*real_lattice(2, :)
     asc(3, :) = real(nsc(3), dp)*real_lattice(3, :)
 
-    ! Signed cell volume via triple product a1 . (a2 x a3)
-    cross(1) = asc(2, 2)*asc(3, 3) - asc(2, 3)*asc(3, 2)
-    cross(2) = asc(2, 3)*asc(3, 1) - asc(2, 1)*asc(3, 3)
-    cross(3) = asc(2, 1)*asc(3, 2) - asc(2, 2)*asc(3, 1)
-    det_sc = abs(asc(1, 1)*cross(1) + asc(1, 2)*cross(2) + asc(1, 3)*cross(3))
-
-    ! Inscribed-sphere radius = 0.5 * min over faces of |det|/area(face)
-    bound = huge(1.0_dp)
+    ! Inscribed-sphere radius = 0.5 * min over faces of |det|/area(face);
+    ! the cell volume (triple product a1 . (a2 x a3)) reuses the first
+    ! face's cross product rather than being computed separately.
     call cross_product_local(asc(2, :), asc(3, :), cross)
+    det_sc = abs(dot_product(asc(1, :), cross))
     area = sqrt(dot_product(cross, cross))
     dist = det_sc/area
-    bound = min(bound, 0.5_dp*dist)
+    bound = 0.5_dp*dist
     call cross_product_local(asc(3, :), asc(1, :), cross)
     area = sqrt(dot_product(cross, cross))
     dist = det_sc/area
@@ -616,11 +617,11 @@ contains
       return
     end if
     if (r_cut > bound) then
-      write (fname, '(a,f0.6,a)') &
+      write (mesg, '(a,f0.6,a)') &
         'decompose_main: r_cut exceeds the inscribed-sphere radius of the &
         &Born-von-Karman supercell (', bound, ' Angstrom); reduce r_cut or &
         &increase the k-point mesh'
-      call set_error_input(error, trim(fname), comm)
+      call set_error_input(error, trim(mesg), comm)
       return
     end if
 
@@ -639,10 +640,12 @@ contains
     n_coeff = decompose_num_coeff(n_max, l_max)
     n_power = decompose_num_power(n_max, l_max)
 
-    ! Volume element on the primitive-cell grid
+    ! Volume element and lattice inverse on the primitive-cell grid, computed
+    ! once here rather than per centre inside decompose_project
     call utility_recip_lattice_base(real_lattice, recip, volume)
     det_cell = volume
     dvol = det_cell/real(ngx*ngy*ngz, dp)
+    call utility_inverse_mat(real_lattice, inv_lat)
 
     allocate (rho(nxx_lo:nxx_hi, nyy_lo:nyy_hi, nzz_lo:nzz_hi), stat=ierr)
     if (ierr /= 0) then
@@ -696,8 +699,8 @@ contains
       if (.not. do_own(n)) cycle
 
       call decompose_project(rho, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, &
-                             nzz_lo, nzz_hi, real_lattice, centres(:, n), n_max, l_max, &
-                             r_cut, alphas, betas, coeff)
+                             nzz_lo, nzz_hi, real_lattice, inv_lat, dvol, centres(:, n), &
+                             n_max, l_max, r_cut, alphas, betas, coeff)
       call decompose_power_orb(coeff, n_max, l_max, power)
 
       write (numstr, '(i5.5)') wf_index(n)
@@ -712,8 +715,8 @@ contains
     ! Group-density channel about each external centre
     do e = 1, n_ext
       call decompose_project(group_rho, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, &
-                             nzz_lo, nzz_hi, real_lattice, ext_centres(:, e), n_max, l_max, &
-                             r_cut, alphas, betas, coeff)
+                             nzz_lo, nzz_hi, real_lattice, inv_lat, dvol, ext_centres(:, e), &
+                             n_max, l_max, r_cut, alphas, betas, coeff)
       write (numstr, '(i5.5)') e
       fname = trim(seedname)//'_gc_'//numstr//'.coeff'
       call decompose_write_coeff(fname, coeff, n_coeff, n_max, l_max, r_min, r_max, r_cut, error)
