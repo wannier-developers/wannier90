@@ -52,6 +52,7 @@ module w90_wannier90_types
     character(len=20) :: restart = ' '
     logical :: bands_plot = .false. !hamiltonian (setup only), plot, wannier_lib
     logical :: wannier_plot = .false. !plot, wannier_lib
+    logical :: wannier_decompose = .false. !plot, wannier_lib
     logical :: fermi_surface_plot = .false. ! plot, wannier_lib!
     logical :: transport = .false. ! also hamiltonian, wannier_prog, wannier_lib
   end type w90_calculation_type
@@ -124,6 +125,20 @@ module w90_wannier90_types
     character(len=20) :: spinor_mode = 'total'
     logical :: spinor_phase = .true.
   end type wannier_plot_type
+
+  type decompose_type
+    !!==================================================
+    !! Contains information for how to decompose Wannier function densities
+    !! into a Gaussian-radial x real-spherical-harmonic basis (see w90_decompose).
+    !!==================================================
+    integer, allocatable :: list(:)
+    integer :: n_max = 6
+    integer :: l_max = 6
+    real(kind=dp) :: r_min = 0.5_dp
+    real(kind=dp) :: r_max = 4.0_dp
+    real(kind=dp) :: r_cut = -1.0_dp ! no physical default; required if wannier_decompose=T
+    character(len=256) :: centres_file = ' '
+  end type decompose_type
 
   type wvfn_read_type ! only in plot.F90
     !!==================================================

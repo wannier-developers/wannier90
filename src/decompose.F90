@@ -494,23 +494,26 @@ contains
 
   !================================================================!
   subroutine decompose_main(wann_func, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, &
-                            nzz_lo, nzz_hi, n_wf, wf_index, centres, real_lattice, &
-                            n_max, l_max, r_min, r_max, r_cut, n_ext, ext_centres, &
-                            seedname, stdout, error, comm)
+                            nzz_lo, nzz_hi, n_wf, wf_index, centres, n_out, out_slot, &
+                            real_lattice, n_max, l_max, r_min, r_max, r_cut, n_ext, &
+                            ext_centres, seedname, stdout, error, comm)
     !! Root-only driver for the Wannier-density decomposition.
     !!
-    !! For each of the `n_wf` Wannier functions supplied in `wann_func`
-    !! (already reduced onto root by `plot_build_wannier_grid`) the density
-    !! \(\rho_n = |w_n|^2\) is normalised to unit integral over the
-    !! supercell and decomposed about its own centre `centres(:,n)`; the
-    !! coefficients are written to `<seed>_NNNNN.coeff` and the
-    !! orbital-orbital power spectrum to `<seed>_NNNNN.power`, where NNNNN
-    !! is the global index `wf_index(n)`. If `n_ext > 0`, the group density
-    !! \(\sum_n \rho_n\) (all densities of this run) is additionally
-    !! decomposed about each external centre `ext_centres(:,e)` and written
-    !! to `<seed>_gc_NNNNN.coeff` (NNNNN = e). The group-density
-    !! coefficients are linear in \(\rho\), so a caller can sum them across
-    !! runs to build total-density coefficients (see the design notes).
+    !! Each of the `n_wf` Wannier functions supplied in `wann_func`
+    !! (already reduced onto root by `plot_build_wannier_grid`) has its
+    !! density \(\rho_n = |w_n|^2\) normalised to unit integral over the
+    !! supercell. The `n_out` functions selected by `out_slot` (indices
+    !! into the last dimension of `wann_func`) are decomposed about their
+    !! own centres `centres(:,n)`; the coefficients are written to
+    !! `<seed>_NNNNN.coeff` and the orbital-orbital power spectrum to
+    !! `<seed>_NNNNN.power`, where NNNNN is the global index
+    !! `wf_index(n)`. If `n_ext > 0`, the group density \(\sum_n \rho_n\)
+    !! summed over ALL `n_wf` functions (not just the `out_slot` subset)
+    !! is additionally decomposed about each external centre
+    !! `ext_centres(:,e)` and written to `<seed>_gc_NNNNN.coeff`
+    !! (NNNNN = e). The group-density coefficients are linear in
+    !! \(\rho\), so a caller can sum them across runs to build
+    !! total-density coefficients (see the design notes).
     !!
     !! The radial-basis precomputation and the `r_cut` validation are
     !! collective (all ranks) so their error synchronisation is safe; the
@@ -534,6 +537,11 @@ contains
     !! Global index of each Wannier function (used in file names)
     real(kind=dp), intent(in) :: centres(3, n_wf)
     !! Cartesian centres of the Wannier functions (Angstrom)
+    integer, intent(in) :: n_out
+    !! Number of Wannier functions to decompose about their own centres
+    integer, intent(in) :: out_slot(n_out)
+    !! Indices (into the last dimension of `wann_func`) of the functions
+    !! to decompose about their own centres
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     !! Primitive real lattice; `real_lattice(i,:)` is the i-th vector (Angstrom)
     integer, intent(in) :: n_max
@@ -565,6 +573,7 @@ contains
     real(kind=dp) :: asc(3, 3), cross(3), det_sc, area, dist, bound
     real(kind=dp) :: rsum, dvol, det_cell, recip(3, 3), volume
     integer :: nsc(3), n_coeff, n_power, n, e, ierr
+    logical :: do_own(n_wf)
     character(len=5) :: numstr
     character(len=256) :: fname
 
@@ -656,9 +665,19 @@ contains
     write (stdout, '(3x,a,i0,a,i0)') 'n_max = ', n_max, ',  l_max = ', l_max
     write (stdout, '(3x,a,f0.4,a,f0.4,a,f0.4,a)') &
       'r_min = ', r_min, ',  r_max = ', r_max, ',  r_cut = ', r_cut, ' (Angstrom)'
-    write (stdout, '(3x,a,i0,a)') 'Number of Wannier functions: ', n_wf, ''
+    write (stdout, '(3x,a,i0,a,i0)') 'Number of Wannier functions: ', n_wf, &
+      ', decomposed about their own centres: ', n_out
     if (n_ext > 0) write (stdout, '(3x,a,i0)') &
       'Group-density external centres: ', n_ext
+
+    if (any(out_slot < 1) .or. any(out_slot > n_wf)) then
+      call set_error_local(error, 'decompose_main: out_slot index out of range')
+      return
+    end if
+    do_own = .false.
+    do n = 1, n_out
+      do_own(out_slot(n)) = .true.
+    end do
 
     do n = 1, n_wf
       ! Density and normalisation to unit integral over the supercell
@@ -671,7 +690,9 @@ contains
       rho = rho/(rsum*dvol)
       if (n_ext > 0) group_rho = group_rho + rho
 
-      ! Own-centre orbital channel
+      ! Own-centre orbital channel (only for the selected subset)
+      if (.not. do_own(n)) cycle
+
       call decompose_project(rho, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, &
                              nzz_lo, nzz_hi, real_lattice, centres(:, n), n_max, l_max, &
                              r_cut, alphas, betas, coeff)

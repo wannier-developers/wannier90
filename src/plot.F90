@@ -48,7 +48,7 @@ contains
 
   subroutine plot_main(atom_data, band_plot, dis_manifold, fermi_energy_list, fermi_surface_plot, &
                        ham_logical, kmesh_info, kpt_latt, output_file, wvfn_read, real_space_ham, &
-                       kpoint_path, print_output, wannier_data, wannier_plot, ws_region, &
+                       kpoint_path, print_output, wannier_data, wannier_plot, decompose, ws_region, &
                        w90_calculation, ham_k, ham_r, m_matrix, u_matrix, u_matrix_opt, eigval, &
                        real_lattice, wannier_centres_translated, bohr, irvec, mp_grid, ndegen, &
                        shift_vec, nrpts, num_bands, num_kpts, num_wann, rpt_origin, &
@@ -70,7 +70,7 @@ contains
     use w90_utility, only: utility_recip_lattice_base
     use w90_wannier90_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
                                    fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type, &
-                                   ham_logical_type
+                                   ham_logical_type, decompose_type
     use w90_ws_distance, only: ws_translate_dist, ws_write_vec
     use w90_error, only: w90_error_type
 
@@ -106,6 +106,7 @@ contains
     type(w90_system_type), intent(in) :: w90_system
     type(wannier_data_type), intent(in) :: wannier_data
     type(wannier_plot_type), intent(in) :: wannier_plot
+    type(decompose_type), intent(in) :: decompose
     type(ws_region_type), intent(in) :: ws_region
     type(wvfn_read_type), intent(in) :: wvfn_read
 
@@ -324,6 +325,14 @@ contains
                         dis_manifold, real_lattice, atom_data, kpt_latt, u_matrix, num_kpts, &
                         num_bands, num_wann, have_disentangled, w90_system%spinors, bohr, stdout, &
                         seedname, timer, dist_k, error, comm)
+      if (allocated(error)) return
+    end if
+
+    if (w90_calculation%wannier_decompose) then
+      call plot_decompose(decompose, wvfn_read, wannier_data, print_output, u_matrix_opt, &
+                          dis_manifold, real_lattice, kpt_latt, u_matrix, num_kpts, num_bands, &
+                          num_wann, have_disentangled, w90_system%spinors, mp_grid, stdout, &
+                          seedname, timer, dist_k, error, comm)
       if (allocated(error)) return
     end if
 
@@ -2192,6 +2201,239 @@ contains
     end subroutine internal_xsf_format
 
   end subroutine plot_wannier
+
+  !================================================!
+  subroutine plot_decompose(decompose, wvfn_read, wannier_data, print_output, u_matrix_opt, &
+                            dis_manifold, real_lattice, kpt_latt, u_matrix, num_kpts, num_bands, &
+                            num_wann, have_disentangled, spinors, mp_grid, stdout, seedname, &
+                            timer, dist_k, error, comm)
+    !================================================!
+    !! Decompose the density of each selected Wannier function (and,
+    !! optionally, the group density of ALL of this run's WFs about a set
+    !! of external centres) into a Gaussian-radial x real-spherical-harmonic
+    !! basis (see w90_decompose).
+    !!
+    !! Follows the plot_wannier pattern: the WF grid is built on the
+    !! Born-von-Karman supercell (mp_grid, the true WF periodicity cell)
+    !! via the shared plot_build_wannier_grid helper, then handed to
+    !! decompose_main.
+    !================================================!
+
+    use w90_constants, only: dp
+    use w90_io, only: io_stopwatch_start, io_stopwatch_stop
+    use w90_types, only: wannier_data_type, dis_manifold_type, print_output_type, timer_list_type
+    use w90_wannier90_types, only: wvfn_read_type, decompose_type
+    use w90_comms, only: w90_comm_type
+    use w90_decompose, only: decompose_main
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_file, set_error_input
+
+    implicit none
+
+    ! arguments
+    type(decompose_type), intent(in) :: decompose
+    type(dis_manifold_type), intent(in) :: dis_manifold
+    type(print_output_type), intent(in) :: print_output
+    type(wannier_data_type), intent(in) :: wannier_data
+    type(wvfn_read_type), intent(in) :: wvfn_read
+    type(timer_list_type), intent(inout) :: timer
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    complex(kind=dp), intent(in) :: u_matrix(:, :, :)
+    complex(kind=dp), intent(in) :: u_matrix_opt(:, :, :)
+
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+
+    integer, intent(in) :: dist_k(:)
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_bands
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: stdout
+
+    logical, intent(in) :: have_disentangled
+    logical, intent(in) :: spinors
+
+    character(len=50), intent(in) :: seedname
+
+    ! local variables
+    complex(kind=dp), allocatable :: wann_func(:, :, :, :)
+    complex(kind=dp), allocatable :: wann_func_nc(:, :, :, :, :) ! unused: spinors unsupported
+
+    real(kind=dp), allocatable :: ext_centres(:, :)
+    real(kind=dp), allocatable :: wf_centres(:, :)
+
+    integer, allocatable :: wf_index(:), out_slot(:)
+    integer :: n_wf, n_out, n_ext, ngx, ngy, ngz, nk, nbnd, file_unit, ierr, n
+    integer :: nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi
+
+    logical :: have_file, group_channel
+
+    character(len=11) :: wfnname
+
+    if (spinors) then
+      call set_error_input(error, 'wannier_decompose does not yet support spinor wavefunctions', comm)
+      return
+    end if
+
+    if (print_output%timing_level > 1) call io_stopwatch_start('plot: decompose', timer)
+
+    write (wfnname, 200) 1, wvfn_read%spin_channel
+200 format('UNK', i5.5, '.', i1)
+
+    inquire (file=wfnname, exist=have_file)
+    if (.not. have_file) then
+      call set_error_file(error, 'plot_decompose: file '//wfnname//' not found', comm)
+      return
+    end if
+
+    if (wvfn_read%formatted) then
+      open (newunit=file_unit, file=wfnname, form='formatted')
+      read (file_unit, *) ngx, ngy, ngz, nk, nbnd
+    else
+      open (newunit=file_unit, file=wfnname, form='unformatted')
+      read (file_unit) ngx, ngy, ngz, nk, nbnd
+    end if
+    close (file_unit)
+
+    ! The group density must sum over ALL Wannier functions of this run (its
+    ! coefficients are combined across runs into total-density coefficients),
+    ! so when the group channel is active the grid is built for every WF and
+    ! decompose%list only selects which WFs are decomposed about their own
+    ! centres. Without the group channel, only the listed WFs are built.
+    group_channel = len_trim(decompose%centres_file) > 0
+    if (group_channel) then
+      n_wf = num_wann
+    else
+      n_wf = size(decompose%list)
+    end if
+    n_out = size(decompose%list)
+
+    allocate (wf_index(n_wf), wf_centres(3, n_wf), out_slot(n_out), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating wf_index/wf_centres in plot_decompose', comm)
+      return
+    end if
+    if (group_channel) then
+      wf_index = [(n, n=1, num_wann)]
+      out_slot = decompose%list
+    else
+      wf_index = decompose%list
+      out_slot = [(n, n=1, n_out)]
+    end if
+    wf_centres = wannier_data%centres(:, wf_index)
+
+    ! Supercell grid bounds: Born-von-Karman cell (true WF periodicity), mp_grid
+    nxx_lo = -(mp_grid(1)/2)*ngx
+    nxx_hi = ((mp_grid(1) + 1)/2)*ngx - 1
+    nyy_lo = -(mp_grid(2)/2)*ngy
+    nyy_hi = ((mp_grid(2) + 1)/2)*ngy - 1
+    nzz_lo = -(mp_grid(3)/2)*ngz
+    nzz_hi = ((mp_grid(3) + 1)/2)*ngz - 1
+
+    call plot_build_wannier_grid(wf_index, wvfn_read, dis_manifold, u_matrix_opt, u_matrix, &
+                                 kpt_latt, dist_k, num_bands, num_kpts, num_wann, ngx, ngy, ngz, &
+                                 nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi, have_disentangled, &
+                                 spinors, stdout, wann_func, wann_func_nc, error, comm)
+    if (allocated(error)) return
+
+    ! Optional group-density channel: read on every rank (simplest way to keep
+    ! n_ext consistent for the collective sections of decompose_main)
+    n_ext = 0
+    if (group_channel) then
+      call plot_decompose_read_centres(decompose%centres_file, ext_centres, n_ext, error, comm)
+      if (allocated(error)) return
+    else
+      allocate (ext_centres(3, 0), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating ext_centres in plot_decompose', comm)
+        return
+      end if
+    end if
+
+    call decompose_main(wann_func, ngx, ngy, ngz, nxx_lo, nxx_hi, nyy_lo, nyy_hi, nzz_lo, nzz_hi, &
+                        n_wf, wf_index, wf_centres, n_out, out_slot, real_lattice, &
+                        decompose%n_max, decompose%l_max, decompose%r_min, decompose%r_max, &
+                        decompose%r_cut, n_ext, ext_centres, seedname, stdout, error, comm)
+    if (allocated(error)) return
+
+    if (print_output%timing_level > 1) call io_stopwatch_stop('plot: decompose', timer)
+
+  end subroutine plot_decompose
+
+  !================================================!
+  subroutine plot_decompose_read_centres(centres_file, ext_centres, n_ext, error, comm)
+    !================================================!
+    !! Read Cartesian centres (Angstrom, same frame as real_lattice) for the
+    !! group-density channel of wannier_decompose. ASCII, one centre per
+    !! line (3 reals); blank lines and '#' comments are skipped. Read
+    !! identically on every rank so the n_ext seen by the following
+    !! collective decompose_main call is consistent across ranks.
+    !================================================!
+
+    use w90_constants, only: dp
+    use w90_comms, only: w90_comm_type
+    use w90_error, only: w90_error_type, set_error_file, set_error_alloc, set_error_input
+
+    implicit none
+
+    character(len=*), intent(in) :: centres_file
+    real(kind=dp), allocatable, intent(out) :: ext_centres(:, :)
+    integer, intent(out) :: n_ext
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    integer :: file_unit, ierr, ios
+    logical :: have_file
+    character(len=256) :: line
+
+    inquire (file=trim(centres_file), exist=have_file)
+    if (.not. have_file) then
+      call set_error_file(error, 'plot_decompose: centres file '//trim(centres_file)//' not found', comm)
+      return
+    end if
+
+    open (newunit=file_unit, file=trim(centres_file), form='formatted', status='old', action='read')
+
+    n_ext = 0
+    do
+      read (file_unit, '(a)', iostat=ios) line
+      if (ios /= 0) exit
+      line = adjustl(line)
+      if (len_trim(line) == 0) cycle
+      if (line(1:1) == '#') cycle
+      n_ext = n_ext + 1
+    end do
+
+    allocate (ext_centres(3, n_ext), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating ext_centres in plot_decompose_read_centres', comm)
+      close (file_unit)
+      return
+    end if
+
+    rewind (file_unit)
+    n_ext = 0
+    do
+      read (file_unit, '(a)', iostat=ios) line
+      if (ios /= 0) exit
+      line = adjustl(line)
+      if (len_trim(line) == 0) cycle
+      if (line(1:1) == '#') cycle
+      n_ext = n_ext + 1
+      read (line, *, iostat=ios) ext_centres(:, n_ext)
+      if (ios /= 0) then
+        call set_error_input(error, 'plot_decompose: malformed line in centres file '// &
+                             trim(centres_file), comm)
+        close (file_unit)
+        return
+      end if
+    end do
+
+    close (file_unit)
+
+  end subroutine plot_decompose_read_centres
 
   !================================================!
   subroutine plot_build_wannier_grid(plot_list, wvfn_read, dis_manifold, u_matrix_opt, u_matrix, &
