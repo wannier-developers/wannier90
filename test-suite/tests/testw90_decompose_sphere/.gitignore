@@ -1,0 +1,6 @@
+sphere.wout
+sphere.werr
+sphere.chk
+sphere_*.coeff
+sphere_*.power
+test.out*

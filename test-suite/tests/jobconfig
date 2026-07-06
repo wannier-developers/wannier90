@@ -272,6 +272,25 @@ program = WANNIER90_DECOMPOSE_COEFF_OK
 inputs_args = ('gaas.win', '')
 output = gaas_gc_00001.coeff
 
+# Synthetic physics-pinning test for wannier_decompose: single gamma-only
+# "WF" = isotropic Gaussian about an off-grid centre; the density is pure
+# l=0, so the benchmark's l>=1 coefficients are ~0 by construction
+# (inputs from tools/generate_decompose_synthetic.py)
+[testw90_decompose_sphere]
+program = WANNIER90_DECOMPOSE_COEFF_OK
+inputs_args = ('sphere.win', '')
+output = sphere_00001.coeff
+
+# Synthetic physics-pinning test for wannier_decompose: single gamma-only
+# "WF" = d_z2-like orbital about an off-grid centre; the density contains
+# only (l,m) = (0,0), (2,0), (4,0), so the benchmark's odd-l and m/=0
+# coefficients are ~0 and the even-l values are analytically known
+# (inputs from tools/generate_decompose_synthetic.py)
+[testw90_decompose_l2]
+program = WANNIER90_DECOMPOSE_COEFF_OK
+inputs_args = ('dz2.win', '')
+output = dz2_00001.coeff
+
 # Graphene, PDWF
 [testw90_graphene_pdwf]
 program = WANNIER90_WOUT_OK
