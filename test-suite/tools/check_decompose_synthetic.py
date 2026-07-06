@@ -32,14 +32,46 @@ from scipy.integrate import quad
 from scipy.special import gamma as gamma_fn
 
 RATIO_TOL = 1.0e-4      # required l-purity
-CENTRE_TOL = 1.0e-3     # Angstrom, wout centre vs true centre
+CENTRE_TOL = 1.0e-3     # Angstrom, wout centre vs true centre (minimum image)
 ANALYTIC_RTOL = 1.0e-3  # continuum vs grid quadrature (discretisation)
 
-# Must match generate_decompose_synthetic.py
+
+def lattice_from_params(a, b, c, alpha, beta, gamma):
+    """Row-stacked lattice vectors from lengths (Ang) and angles (deg), in the
+    wannier90 real_lattice convention. Duplicated from
+    generate_decompose_synthetic.py so the two stay a matched pair."""
+    al, be, ga = np.deg2rad([alpha, beta, gamma])
+    a1 = np.array([a, 0.0, 0.0])
+    a2 = np.array([b * np.cos(ga), b * np.sin(ga), 0.0])
+    cx = c * np.cos(be)
+    cy = c * (np.cos(al) - np.cos(be) * np.cos(ga)) / np.sin(ga)
+    cz = c * np.sqrt(1.0 - (cx / c) ** 2 - (cy / c) ** 2)
+    return np.array([a1, a2, [cx, cy, cz]])
+
+
+# Must match generate_decompose_synthetic.py. The sphere cell is triclinic; its
+# centre is the off-grid fractional point (0.4123, 0.5237, 0.4871). Each cell is
+# carried so the centre comparison can be done modulo lattice translations (a WF
+# centre is only defined up to a lattice vector, and for the triclinic cell
+# wannier90 legitimately reports the centre wrapped into a neighbouring cell).
+_SPHERE_CELL = lattice_from_params(7.0, 8.0, 9.0, 70.0, 80.0, 75.0)
 SYSTEMS = {
-    'sphere': {'sigma': 0.8, 'centre': (3.2117, 2.8331, 3.4569)},
-    'dz2': {'sigma': 0.8, 'centre': (3.3579, 3.1259, 2.9873)},
+    'sphere': {'sigma': 0.8,
+               'centre': tuple(np.array([0.4123, 0.5237, 0.4871]) @ _SPHERE_CELL),
+               'cell': _SPHERE_CELL},
+    'dz2': {'sigma': 0.8, 'centre': (3.3579, 3.1259, 2.9873),
+            'cell': 8.0 * np.eye(3)},
 }
+
+
+def min_image_deviation(centre, true_centre, cell):
+    """max |component| of (centre - true_centre) reduced to the minimum image
+    through `cell` (rows = lattice vectors). Zero when the two differ by a
+    lattice vector, as they do when wannier90 wraps the finite-difference
+    centre into a neighbouring cell."""
+    frac = (np.asarray(centre) - np.asarray(true_centre)) @ np.linalg.inv(cell)
+    frac -= np.round(frac)
+    return np.abs(frac @ cell).max()
 
 
 def radial_params(n_max, l_max, r_min, r_max):
@@ -148,10 +180,11 @@ def main():
     # --- centre ---
     centre = parse_wout_centre(os.path.join(rundir, seed + '.wout'))
     true_centre = np.array(sysdef['centre'])
-    dc = np.abs(centre - true_centre).max()
+    dc = min_image_deviation(centre, true_centre, sysdef['cell'])
     print('W90 centre   : {0}'.format(centre))
     print('true centre  : {0}'.format(true_centre))
-    print('max |diff|   : {0:.3e} Angstrom (tol {1:.0e})'.format(dc, CENTRE_TOL))
+    print('max |diff|   : {0:.3e} Angstrom (minimum image; tol {1:.0e})'
+          .format(dc, CENTRE_TOL))
     if dc > CENTRE_TOL:
         ok = False
         print('  ** CENTRE CHECK FAILED **')
