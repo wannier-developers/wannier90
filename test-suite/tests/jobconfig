@@ -252,6 +252,26 @@ program = WANNIER90_CUBE
 inputs_args = ('gaas.win', '')
 output = gaas_00001.cube
 
+# GaAs - wannier_decompose (no wannier_plot): own-centre density projection
+# coefficients for WF 1
+[testw90_decompose]
+program = WANNIER90_DECOMPOSE_COEFF_OK
+inputs_args = ('gaas.win', '')
+output = gaas_00001.coeff
+
+# GaAs - wannier_decompose: orbital-orbital power spectrum for WF 1
+[testw90_decompose_power]
+program = WANNIER90_DECOMPOSE_POWER_OK
+inputs_args = ('gaas.win', '')
+output = gaas_00001.power
+
+# GaAs - wannier_decompose: group-density coefficients about external centre 1
+# (decompose_centres_file mechanism)
+[testw90_decompose_gc]
+program = WANNIER90_DECOMPOSE_COEFF_OK
+inputs_args = ('gaas.win', '')
+output = gaas_gc_00001.coeff
+
 # Graphene, PDWF
 [testw90_graphene_pdwf]
 program = WANNIER90_WOUT_OK

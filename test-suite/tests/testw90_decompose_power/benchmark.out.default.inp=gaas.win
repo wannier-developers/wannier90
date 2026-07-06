@@ -1,0 +1,17 @@
+# Wannier density decomposition power spectrum (orbital-orbital)
+# n_max = 2
+# l_max = 2
+# r_min =   5.000000000000000E-001
+# r_max =   4.000000000000000E+000
+# r_cut =   3.000000000000000E+000
+# ordering: outer n1 (0..n_max-1), then n2 (n1..n_max-1), then l (0..l_max); entry = sum_m c(n1,l,m) c(n2,l,m)
+# number of entries = 9
+  2.332813652530566E-003
+  3.620830143727549E-004
+  3.738989296997072E-005
+  1.070244165580004E-002
+  1.998616812084480E-003
+  1.927191814648555E-004
+  4.910047455850228E-002
+  1.545596945591453E-002
+  1.780208714160748E-003
