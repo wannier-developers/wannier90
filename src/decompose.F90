@@ -396,15 +396,17 @@ contains
 
     r_cut2 = r_cut*r_cut
 
+    ! Grid index i sits at fractional coordinate (i-1)/ng: index 1 is the cell
+    ! origin, matching the Bloch-phase convention of plot_build_wannier_grid
     do iz = nzz_lo, nzz_hi
-      fz = real(iz, dp)/real(ngz, dp) - cfrac(3)
+      fz = real(iz - 1, dp)/real(ngz, dp) - cfrac(3)
       fz = fz - real(nsc(3), dp)*anint(fz/real(nsc(3), dp))
       do iy = nyy_lo, nyy_hi
-        fy = real(iy, dp)/real(ngy, dp) - cfrac(2)
+        fy = real(iy - 1, dp)/real(ngy, dp) - cfrac(2)
         fy = fy - real(nsc(2), dp)*anint(fy/real(nsc(2), dp))
         do ix = nxx_lo, nxx_hi
           rhoval = rho(ix, iy, iz)
-          fx = real(ix, dp)/real(ngx, dp) - cfrac(1)
+          fx = real(ix - 1, dp)/real(ngx, dp) - cfrac(1)
           fx = fx - real(nsc(1), dp)*anint(fx/real(nsc(1), dp))
 
           ! Minimum-image Cartesian displacement from the centre
