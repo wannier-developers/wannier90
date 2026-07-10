@@ -75,10 +75,10 @@ contains
     integer, intent(in) :: dist_k(:)
 
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)  !root only
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)  !root only
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)  !root only
     complex(kind=dp), allocatable :: u_matrix(:, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
 
@@ -108,8 +108,6 @@ contains
           call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_allocate', comm)
           return
         end if
-      else
-        allocate (m_matrix_orig(0, 0, 0, 0))
       end if
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, nkl), stat=ierr)
       if (ierr /= 0) then
@@ -118,9 +116,6 @@ contains
       end if
       m_matrix_orig = cmplx_0
       m_matrix_orig_local = cmplx_0
-    else
-      allocate (m_matrix_orig_local(0, 0, 0, 0))
-      allocate (m_matrix_orig(0, 0, 0, 0))
     end if
 
     if (on_root) then
@@ -130,8 +125,8 @@ contains
         return
       end if
       m_matrix = cmplx_0
-    else
-      allocate (m_matrix(0, 0, 0, 0))
+      !else
+      !allocate (m_matrix(0, 0, 0, 0))
     end if
     allocate (m_matrix_local(num_wann, num_wann, nntot, nkl), stat=ierr)
     if (ierr /= 0) then
@@ -414,9 +409,6 @@ contains
     return
 104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.amn', comm)
     return
-
-    !if (on_root) deallocate(m_matrix_orig)
-
   end subroutine overlap_read
 
   !================================================!

@@ -1,7 +1,7 @@
 dis_froz_max = 13.0
 mp_grid = 4 4 4
 num_bands = 12
-num_iter = 2000
+num_iter = 50
 num_wann = 7
 
 # postw90 options
