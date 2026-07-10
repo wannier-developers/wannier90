@@ -356,7 +356,6 @@ contains
     end if
 
     ! higher-order algorithm: include 2b, 3b, ..., Nb shells, and modify bweights
-    ! jj fixmeare these branches really separate?
     if (kmesh_input%higher_order_nearest_shells) then
       write (stdout, '(a)') ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
         ' | not been extensively tested.                                               |'
@@ -525,7 +524,7 @@ contains
     end do
 
     if (kmesh_input%kmesh_shell_from_file) then
-      ! JJ fixme, this set of actions should be moved to the kmesh_shell_from_file function and clean up
+      ! should this be moved to the kmesh_shell_from_file as a function to simplify?
       nnshell = 0
       do nkp = 1, num_kpts
         nnx = 0

@@ -354,7 +354,6 @@ contains
     end if
 
     ! initialize local u matrix with global one
-    ! JJ fixme, do a proper copy, please
     do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       u_matrix_loc(:, :, nkp_loc) = u_matrix(:, :, nkp)

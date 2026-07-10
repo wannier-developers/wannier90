@@ -208,7 +208,6 @@ contains
       end if
 
       if (w90_calculation%fermi_surface_plot) then
-        ! plot_fermi_surface can be trivially parallelised--fixme
         call plot_fermi_surface(fermi_energy_list, recip_lattice, fermi_surface_plot, num_wann, &
                                 ham_r, irvec, ndegen, nrpts, print_output%timing_level, stdout, &
                                 seedname, timer, error, comm)

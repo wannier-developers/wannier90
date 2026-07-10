@@ -228,7 +228,7 @@ contains
     call w90_readwrite_read_ws_data(settings, ws_region, error, comm)
     if (allocated(error)) return
 
-    allocate (eigval(num_bands, num_kpts)) !fixme(jj) check allocation success
+    allocate (eigval(num_bands, num_kpts)) !fixme check allocation success
     call w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, seedname, &
                                     error, comm)
     if (allocated(error)) return

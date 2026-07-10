@@ -473,7 +473,7 @@ contains
 106 call set_error_file(error, 'Error: Problem reading k-point file '//trim(seedname)//'_geninterp.kpt', comm)
     return
 107 call set_error_file(error, 'Error: Problem opening output file '//trim(outdat_filename), comm)
-    return !fixme JJ restructure these away
+    return
 
   end subroutine geninterp_main
 

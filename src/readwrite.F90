@@ -739,7 +739,6 @@ contains
   subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, &
                                         seedname, error, comm)
     !! Read the eigenvalues from wannier.eig
-    ! fixme (jj) consider relocating to library_extra
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
     implicit none
