@@ -373,7 +373,6 @@ program postw90
     ! Read files seedname.chk (overlap matrices, unitary matrices for
     ! both disentanglement and maximal localization, etc.)
 
-    !-----------------JJ
     !if (on_root) then
     allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
     allocate (u_matrix(num_bands, num_wann, num_kpts), stat=ierr)
@@ -382,7 +381,6 @@ program postw90
     !  allocate (m_matrix(0, 0, 0, 0))
     !endif
     !m_matrix = cmplx_0
-    !-----------------JJ
 
     !if (on_root) then
     num_exclude_bands = 0

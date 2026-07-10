@@ -382,7 +382,7 @@ contains
         allocate (kubo_AH_spn(3, 3, 3, pw90_berry%kubo_nfreq))
         allocate (jdos_k_spn(3, pw90_berry%kubo_nfreq))
         allocate (jdos_spn(3, pw90_berry%kubo_nfreq))
-        ! fixme, shouldn't we pedantically check these allocs also JJ
+        ! fixme, check these allocs for failure
         kubo_H_spn = cmplx_0
         kubo_AH_spn = cmplx_0
         jdos_spn = 0.0_dp

@@ -286,7 +286,7 @@ contains
 
 101 call set_error_file(error, 'Error in get_HH_R: problem opening file '// &
                         trim(seedname)//'_HH_R.dat', comm)
-    return !fixme restructure
+    return
 
   end subroutine get_HH_R
 
@@ -395,7 +395,7 @@ contains
 102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn', comm)
     return
 103 call set_error_file(error, 'Error in get_AA_R: problem opening file '//trim(seedname)//'_AA_R.dat', comm)
-    return !fixme jj restructure
+    return
 
   end subroutine get_AA_R_effective
 
@@ -787,7 +787,7 @@ contains
 102 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.mmn', comm)
     return
 103 call set_error_file(error, 'Error in get_AA_R: problem opening file '//trim(seedname)//'_AA_R.dat', comm)
-    return !fixme jj restructure
+    return
 
   end subroutine get_AA_R
 
@@ -1451,7 +1451,7 @@ contains
 105 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.uHu', comm)
     return
 106 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.uHu', comm)
-    return !jj fixme restructure
+    return
 
   end subroutine get_CC_R
 
@@ -2814,7 +2814,7 @@ contains
 111 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sHu', comm)
     return
 112 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sHu', comm)
-    return !fixme jj restructure
+    return
 
   end subroutine get_SBB_R
 
@@ -3112,7 +3112,7 @@ contains
 113 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.sIu', comm)
     return
 114 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.sIu', comm)
-    return !jj fixme restructure
+    return
 
   end subroutine get_SAA_R
 

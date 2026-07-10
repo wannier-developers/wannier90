@@ -185,7 +185,7 @@ contains
 
 101 call set_error_file(error, 'Error in pw90common_wanint_setup: problem opening file '// &
                         trim(seedname)//'_HH_R.dat', comm)
-    return !jj fixme restructure
+    return
 
   end subroutine pw90common_wanint_setup
 
@@ -386,7 +386,7 @@ contains
     if (allocated(error)) return
 
     !______________________________________
-    !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
+    ! not so pretty solution to setting iprint to zero on non-root processes
     iprintroot = print_output%iprint
     print_output%iprint = 0
     call comms_bcast(print_output%iprint, 1, error, comm)
