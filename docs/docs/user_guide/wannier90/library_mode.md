@@ -244,7 +244,7 @@ Must follow w90_input_setopt
 
 Returns tabulation of finite difference scheme k' indices.
 
-On entry, nnkp must be allocated with dimension(nn,num_kpts) where nn is the
+On entry, nnkp must be allocated with dimension(num_kpts,nn) where nn is the
 number of points in the FD scheme (returned by w90_get_nn) and num_kpts is the
 total number of k-points (FBZ).
 
@@ -262,7 +262,7 @@ Must follow w90_input_setopt
 
 Get BZ offsets corresponding to each k,k' pair described in nnkp.
 
-On entry, gkpb must be allocated with dimension(nn,num_kpts) where nn is the
+On entry, gkpb must be allocated with dimension(3,num_kpts,nn) where nn is the
 number of points in the FD scheme (returned by w90_get_nn) and num_kpts is the
 total number of k-points (FBZ).
 
