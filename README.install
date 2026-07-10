@@ -297,11 +297,10 @@ Flags
   By default, when this flag is not present, the value of the exit code is
   not sensible.
 * CODATA2006
-  Use physical constants from 2006 version of CODATA tables
-  (http://physics.nist.gov/cuu/Constants/index.html)
-  (Note that this is the default choice if nothing is specified)
 * CODATA2010
-  Use physical constants from 2010 version of CODATA tables
+* CODATA2018
+* CODATA2022
+  Use physical constants from 2006,2010,2018 or 2022 (default) version of CODATA tables
   (http://physics.nist.gov/cuu/Constants/index.html)
 * USE_WANNIER90_V1_BOHR
   Use the value of the bohr radius (expressed in angstrom) that
