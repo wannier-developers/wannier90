@@ -39,6 +39,8 @@ module w90_sitesym
 
   use w90_constants, only: dp, cmplx_1, cmplx_0
   use w90_comms, only: w90_comm_type
+  use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_fatal, &
+                       set_error_file
 
   implicit none
 
@@ -96,7 +98,7 @@ contains
   end subroutine sitesym_slim_d_matrix_band
 
   !================================================!
-  subroutine sitesym_replace_d_matrix_band(sitesym, num_wann)
+  subroutine sitesym_replace_d_matrix_band(sitesym, num_wann, error, comm)
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
@@ -105,9 +107,22 @@ contains
 
     integer, intent(in) :: num_wann
     type(sitesym_type), intent(inout) :: sitesym
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
 
-    deallocate (sitesym%d_matrix_band)
-    allocate (sitesym%d_matrix_band(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr))
+    integer :: ierr
+
+    deallocate (sitesym%d_matrix_band, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating sitesym%d_matrix_band in sitesym_replace_d_matrix_band', comm)
+      return
+    end if
+    allocate (sitesym%d_matrix_band(num_wann, num_wann, sitesym%nsymmetry, sitesym%nkptirr), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating sitesym%d_matrix_band in sitesym_replace_d_matrix_band', comm)
+      return
+    end if
+
     sitesym%d_matrix_band = sitesym%d_matrix_wann
 
     return
@@ -129,7 +144,6 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
 
@@ -509,8 +523,6 @@ contains
   subroutine orthogonalize_u(ndim, m, u, n, error, comm)
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_fatal, set_error_fatal
-
     implicit none
 
     type(w90_error_type), allocatable, intent(out) :: error
@@ -522,8 +534,7 @@ contains
     complex(kind=dp), allocatable :: smat(:, :), evecl(:, :), evecr(:, :)
     complex(kind=dp), allocatable :: WORK(:)
     real(kind=dp), allocatable :: eig(:), RWORK(:)
-    integer :: INFO, i, j, l
-    integer :: LWORK
+    integer :: INFO, i, j, l, LWORK, ierr
 
     if (n .lt. m) then
       call set_error_fatal(error, 'n<m', comm)
@@ -543,7 +554,27 @@ contains
       call set_error_fatal(error, ' ERROR: IN ZGESVD IN orthogonalize_u', comm)
       return
     end if
-    deallocate (smat, eig, WORK, RWORK)
+    deallocate (smat, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating smat in orthogonalize_u', comm)
+      return
+    end if
+    deallocate (eig, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating eig in orthogonalize_u', comm)
+      return
+    end if
+    deallocate (WORK, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating WORK in orthogonalize_u', comm)
+      return
+    end if
+    deallocate (RWORK, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating RWORK in orthogonalize_u', comm)
+      return
+    end if
+
     ! u_matrix is the initial guess for the unitary rotation of the
     ! basis states given by the subroutine extract
     u = 0
@@ -554,9 +585,17 @@ contains
       end do
     end do
     end do
-    deallocate (evecl, evecr)
 
-    return
+    deallocate (evecl, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating evecl in orthogonalize_u', comm)
+      return
+    end if
+    deallocate (evecr, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error in deallocating evecr in orthogonalize_u', comm)
+      return
+    end if
   end subroutine orthogonalize_u
 
   !================================================!
@@ -573,7 +612,6 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_fatal, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -607,19 +645,16 @@ contains
       call set_error_alloc(error, 'Error in allocating umatnew in sitesym_dis_extract_symmetry', comm)
       return
     end if
-
     allocate (ZU(num_bands, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating ZU in sitesym_dis_extract_symmetry', comm)
       return
     end if
-
     allocate (deltaU(num_bands, num_wann), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating deltaU in sitesym_dis_extract_symmetry', comm)
       return
     end if
-
     allocate (carr(num_bands), stat=ierr)
     if (ierr /= 0) then
       call set_error_alloc(error, 'Error in allocating carr in sitesym_dis_extract_symmetry', comm)
@@ -685,19 +720,16 @@ contains
       call set_error_dealloc(error, 'Error in deallocating umatnew in sitesym_dis_extract_symmetry', comm)
       return
     end if
-
     deallocate (ZU, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating ZU in sitesym_dis_extract_symmetry', comm)
       return
     end if
-
     deallocate (deltaU, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating deltaU in sitesym_dis_extract_symmetry', comm)
       return
     end if
-
     deallocate (carr, stat=ierr)
     if (ierr /= 0) then
       call set_error_dealloc(error, 'Error in deallocating carr in sitesym_dis_extract_symmetry', comm)
@@ -712,7 +744,6 @@ contains
     !================================================!
 
     use w90_wannier90_types, only: sitesym_type
-    use w90_error, only: w90_error_type, set_error_file, set_error_alloc
 
     implicit none
 
@@ -781,7 +812,6 @@ contains
   subroutine sitesym_dealloc(sitesym, error, comm)
     !================================================!
 
-    use w90_error, only: w90_error_type, set_error_dealloc
     use w90_wannier90_types, only: sitesym_type
 
     implicit none

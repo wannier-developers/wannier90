@@ -120,6 +120,7 @@ program wannier
   progname = 'wannier90' ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
   call io_commandline(progname, ld, pp, seedname)
 
+  call w90_get_fortran_stderr(stderr) ! for early error cases; maybe overwritten later
 #ifdef MPI
   call mpi_init(ierr)
   if (ierr /= 0) then
