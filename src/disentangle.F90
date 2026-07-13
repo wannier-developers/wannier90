@@ -1288,7 +1288,7 @@ contains
     integer :: invindxkeep(num_bands)
     real(kind=dp), allocatable :: pooled(:), otsu_thr(:)
     real(kind=dp) :: pval
-    integer :: ip, ierr
+    integer :: ip, ierr, nclasses_eff
     logical :: degenerate
 
     if (timing_level > 1 .and. on_root) call io_stopwatch_start('dis: windows_proj', timer)
@@ -1323,18 +1323,26 @@ contains
         call set_error_alloc(error, 'Error allocating otsu_thr in dis_windows_proj', comm)
         return
       end if
-      call dis_otsu_thresholds(pooled, 64, dis_manifold%proj_auto_classes, otsu_thr, degenerate)
+      call dis_otsu_thresholds(pooled, 64, dis_manifold%proj_auto_classes, otsu_thr, &
+                               nclasses_eff, degenerate)
       deallocate (pooled)
 
       if (degenerate) then
         deallocate (otsu_thr)
         ! message must fit the 128-char w90_error_type buffer
-        call set_error_fatal(error, 'Error: dis_proj_auto: projectabilities do not split into '// &
-                             'dis_proj_auto_classes classes; lower it or set thresholds manually', comm)
+        call set_error_fatal(error, 'Error: dis_proj_auto: fewer than 3 distinct projectability '// &
+                             'clusters; set dis_proj_min/dis_proj_max manually', comm)
         return
       end if
+      ! A class needs its own populated bin, so more classes than clusters is
+      ! not resolvable; reduce and tell the user.
+      if (nclasses_eff < dis_manifold%proj_auto_classes .and. on_root) then
+        write (stdout, '(1x,a,i0,a,i0,a,i0)') &
+          ' dis_proj_auto: only ', nclasses_eff, ' distinct projectability clusters; reducing classes from ', &
+          dis_manifold%proj_auto_classes, ' to ', nclasses_eff
+      end if
       dis_manifold%proj_min = otsu_thr(1)
-      dis_manifold%proj_max = otsu_thr(dis_manifold%proj_auto_classes - 1)
+      dis_manifold%proj_max = otsu_thr(nclasses_eff - 1)
       deallocate (otsu_thr)
     end if
 
@@ -1364,7 +1372,7 @@ contains
     if (dis_manifold%proj_auto) then
       if (on_root) write (stdout, '(1x,a,i2,a)') &
         '|         Thresholds determined automatically (multi-Otsu, ', &
-        dis_manifold%proj_auto_classes, ' classes)       |'
+        nclasses_eff, ' classes)       |'
     end if
     if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
       '|               Discarded: ', 0.0_dp, '  to ', dis_manifold%proj_min, &
@@ -4299,15 +4307,19 @@ contains
   end subroutine internal_zmatrix_gamma
 
   !================================================!
-  subroutine dis_otsu_thresholds(values, nbins, nclasses, thr, degenerate)
+  subroutine dis_otsu_thresholds(values, nbins, nclasses, thr, nclasses_eff, degenerate)
     !================================================!
     !! Multi-class Otsu thresholding of a scalar distribution.
     !! Histograms `values` into `nbins` equal-width bins over [min, max] and
     !! finds the `nclasses`-1 ascending thresholds that maximise the between-class
     !! variance (exhaustive search, strict tie-break so the first-found maximum in
-    !! ascending enumeration wins). Returns bin-centre thresholds. Sets
-    !! `degenerate` = .true. (thresholds undefined) when the data cannot be split
-    !! into `nclasses` populated classes, leaving the policy to the caller.
+    !! ascending enumeration wins). Returns bin-centre thresholds in thr(1:nclasses_eff-1).
+    !! The number of classes cannot exceed the number of populated bins (a cut
+    !! must fall in a gap between clusters), so the effective class count is
+    !! `nclasses_eff` = min(nclasses, populated bins); the caller is expected to
+    !! note any reduction. Sets `degenerate` = .true. (thresholds undefined) only
+    !! when the data cannot support even three classes: fewer than three populated
+    !! bins, or all values equal.
     !================================================!
     use w90_constants, only: dp
 
@@ -4316,6 +4328,7 @@ contains
     real(kind=dp), intent(in) :: values(:)
     integer, intent(in) :: nbins, nclasses
     real(kind=dp), intent(out) :: thr(nclasses - 1)
+    integer, intent(out) :: nclasses_eff
     logical, intent(out) :: degenerate
 
     integer :: n, i, k, npop, ncut, a, b
@@ -4325,6 +4338,7 @@ contains
     real(kind=dp) :: mn, mx, d, denom, best_var
 
     degenerate = .false.
+    nclasses_eff = 0
     thr = 0.0_dp
 
     n = size(values)
@@ -4347,20 +4361,24 @@ contains
     end do
 
     npop = count(counts > 0)
-    if (npop < nclasses) then
+    if (npop < 3) then
       degenerate = .true.
       return
     end if
 
-    ! Shortcut: exactly as many populated bins as classes -> centres of the
-    ! first nclasses-1 populated bins.
-    if (npop == nclasses) then
-      ncut = 0
+    ! Cannot resolve more classes than there are populated bins.
+    nclasses_eff = min(nclasses, npop)
+    ncut = nclasses_eff - 1
+
+    ! Shortcut: as many classes as populated bins -> centres of the first
+    ! nclasses_eff-1 populated bins.
+    if (npop == nclasses_eff) then
+      i = 0
       do k = 0, nbins - 1
         if (counts(k) > 0) then
-          ncut = ncut + 1
-          if (ncut > nclasses - 1) exit
-          thr(ncut) = mn + (real(k, dp) + 0.5_dp)*d
+          i = i + 1
+          if (i > ncut) exit
+          thr(i) = mn + (real(k, dp) + 0.5_dp)*d
         end if
       end do
       return
@@ -4386,7 +4404,6 @@ contains
       end do
     end do
 
-    ncut = nclasses - 1
     allocate (cuts(ncut), best_cuts(ncut))
     best_var = -1.0_dp
     best_cuts = 0
