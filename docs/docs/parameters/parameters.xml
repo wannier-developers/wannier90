@@ -432,6 +432,26 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>dis_proj_auto</name>
+    <type>L</type>
+    <description>Determine dis_proj_min/max automatically via multi-Otsu thresholding</description>
+    <groups>
+      <group>disentanglement</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>dis_proj_auto_classes</name>
+    <type>I</type>
+    <description>Number of classes for automatic projectability thresholds</description>
+    <groups>
+      <group>disentanglement</group>
+    </groups>
+    <default>5</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>dis_num_iter</name>
     <type>I</type>
     <description>Number of iterations for the minimisation of $\\Omega_{\\mathrm{I}}$</description>

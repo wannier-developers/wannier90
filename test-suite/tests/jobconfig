@@ -252,6 +252,12 @@ program = WANNIER90_CUBE
 inputs_args = ('gaas.win', '')
 output = gaas_00001.cube
 
+# Graphene, PDWF with automatic multi-Otsu projectability thresholds
+[testw90_graphene_dis_proj_auto]
+program = WANNIER90_WOUT_OK
+inputs_args = ('graphene.win', '')
+output = graphene.wout
+
 # Graphene, PDWF
 [testw90_graphene_pdwf]
 program = WANNIER90_WOUT_OK

@@ -1,5 +1,11 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+### New features
+
+- Automatic projectability thresholds for projectability disentanglement (PDWF): setting `dis_proj_auto = .true.` determines `dis_proj_min` and `dis_proj_max` at runtime by multi-level Otsu thresholding of the pooled projectability distribution (`dis_proj_auto_classes` classes, default 5), removing the need to choose them by hand.
+
 ## v3.1.0 (5th March 2020)
 
 ### New features
