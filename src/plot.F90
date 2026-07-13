@@ -1595,7 +1595,7 @@ contains
 
     ! local variables
     real(kind=dp) :: tmax, tmaxx, x_0ang, y_0ang, z_0ang
-    real(kind=dp) :: fxcry(3), dirl(3, 3), w_real, w_imag, ratmax, ratio
+    real(kind=dp) :: fxcry(3), dirl(3, 3), ratmax, ratio
     real(kind=dp) :: upspinor, dnspinor, upphase, dnphase
 
     complex(kind=dp), allocatable :: wann_func(:, :, :, :)
@@ -1609,8 +1609,8 @@ contains
     logical :: have_file, on_root
 
     integer :: num_nodes, my_node_id
-    integer :: i, j, nsp, nat, nbnd, counter, ierr
-    integer :: loop_kpt, ik, ix, iy, iz, nk, ngx, ngy, ngz, nxx, nyy, nzz
+    integer :: i, j, nsp, nat, nbnd, ierr
+    integer :: loop_kpt, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
     integer :: wann_plot_num
 
@@ -1654,13 +1654,24 @@ contains
       end if
 
       if (wvfn_read%formatted) then
-        open (newunit=file_unit, file=wfnname, form='formatted')
-        read (file_unit, *) ngx, ngy, ngz, nk, nbnd
+        open (newunit=file_unit, file=wfnname, form='formatted', status='old', iostat=ierr)
       else
-        open (newunit=file_unit, file=wfnname, form='unformatted')
-        read (file_unit) ngx, ngy, ngz, nk, nbnd
+        open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
+      end if
+      if (ierr /= 0) then
+        call set_error_file(error, 'plot_wannier: could not open file '//wfnname, comm)
+        return
+      end if
+      if (wvfn_read%formatted) then
+        read (file_unit, *, iostat=ierr) ngx, ngy, ngz, nk, nbnd
+      else
+        read (file_unit, iostat=ierr) ngx, ngy, ngz, nk, nbnd
       end if
       close (file_unit)
+      if (ierr /= 0) then
+        call set_error_file(error, 'plot_wannier: error reading file '//wfnname, comm)
+        return
+      end if
 
 200   format('UNK', i5.5, '.', i1)
 199   format('UNK', i5.5, '.', 'NC')
@@ -1760,113 +1771,16 @@ contains
           write (wfnname, 199) loop_kpt
         end if
 
-        ! A missing UNK file must be detected here rather than silently
-        ! (re)created by the open below (status='old' forbids creation).
-        inquire (file=wfnname, exist=have_file)
-        if (.not. have_file) then
-          call set_base_error(error, 'plot_wannier: file '//wfnname//' not found', code_file)
-          exit kpt_loop
-        end if
-        if (wvfn_read%formatted) then
-          open (newunit=file_unit, file=wfnname, form='formatted', status='old', iostat=ierr)
-        else
-          open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
-        end if
-        if (ierr /= 0) then
-          call set_base_error(error, 'plot_wannier: could not open file '//wfnname, code_file)
-          exit kpt_loop
-        end if
-        if (wvfn_read%formatted) then
-          read (file_unit, *, iostat=ierr) ix, iy, iz, ik, nbnd
-        else
-          read (file_unit, iostat=ierr) ix, iy, iz, ik, nbnd
-        end if
-        if (ierr /= 0) then
-          call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
-          close (file_unit)
-          exit kpt_loop
-        end if
-
-        if ((ix /= ngx) .or. (iy /= ngy) .or. (iz /= ngz) .or. (ik /= loop_kpt)) then
-          write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
-          write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
-          write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          call set_base_error(error, 'plot_wannier: mismatch in file '//wfnname, code_file)
-          close (file_unit)
-          exit kpt_loop
-        end if
-
         if (have_disentangled) then
-          counter = 1
-          do loop_b = 1, num_bands
-            if (counter > num_inc) exit
-            if (wvfn_read%formatted) then
-              do nx = 1, ngx*ngy*ngz
-                read (file_unit, *, iostat=ierr) w_real, w_imag
-                if (ierr /= 0) exit
-                if (.not. spinors) then
-                  r_wvfn_tmp(nx, counter) = cmplx(w_real, w_imag, kind=dp)
-                else
-                  r_wvfn_tmp_nc(nx, counter, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
-                end if
-              end do
-              if (ierr == 0 .and. spinors) then
-                do nx = 1, ngx*ngy*ngz
-                  read (file_unit, *, iostat=ierr) w_real, w_imag
-                  if (ierr /= 0) exit
-                  r_wvfn_tmp_nc(nx, counter, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
-                end do
-              end if
-            else
-              if (.not. spinors) then
-                read (file_unit, iostat=ierr) (r_wvfn_tmp(nx, counter), nx=1, ngx*ngy*ngz)
-              else
-                read (file_unit, iostat=ierr) (r_wvfn_tmp_nc(nx, counter, 1), nx=1, ngx*ngy*ngz) ! up-spinor
-                if (ierr == 0) &
-                  read (file_unit, iostat=ierr) (r_wvfn_tmp_nc(nx, counter, 2), nx=1, ngx*ngy*ngz) ! down-spinor
-              end if
-            end if
-            if (ierr /= 0) exit
-            if (inc_band(loop_b)) counter = counter + 1
-          end do
+          call plot_read_unk(wfnname, wvfn_read%formatted, spinors, inc_band, num_inc, &
+                             num_bands, loop_kpt, ngx, ngy, ngz, r_wvfn_tmp, r_wvfn_tmp_nc, &
+                             stdout, error)
         else
-          do loop_b = 1, num_bands
-            if (wvfn_read%formatted) then
-              do nx = 1, ngx*ngy*ngz
-                read (file_unit, *, iostat=ierr) w_real, w_imag
-                if (ierr /= 0) exit
-                if (.not. spinors) then
-                  r_wvfn(nx, loop_b) = cmplx(w_real, w_imag, kind=dp)
-                else
-                  r_wvfn_nc(nx, loop_b, 1) = cmplx(w_real, w_imag, kind=dp) ! up-spinor
-                end if
-              end do
-              if (ierr == 0 .and. spinors) then
-                do nx = 1, ngx*ngy*ngz
-                  read (file_unit, *, iostat=ierr) w_real, w_imag
-                  if (ierr /= 0) exit
-                  r_wvfn_nc(nx, loop_b, 2) = cmplx(w_real, w_imag, kind=dp) ! down-spinor
-                end do
-              end if
-            else
-              if (.not. spinors) then
-                read (file_unit, iostat=ierr) (r_wvfn(nx, loop_b), nx=1, ngx*ngy*ngz)
-              else
-                read (file_unit, iostat=ierr) (r_wvfn_nc(nx, loop_b, 1), nx=1, ngx*ngy*ngz) ! up-spinor
-                if (ierr == 0) &
-                  read (file_unit, iostat=ierr) (r_wvfn_nc(nx, loop_b, 2), nx=1, ngx*ngy*ngz) ! down-spinor
-              end if
-            end if
-            if (ierr /= 0) exit
-          end do
+          call plot_read_unk(wfnname, wvfn_read%formatted, spinors, inc_band, num_bands, &
+                             num_bands, loop_kpt, ngx, ngy, ngz, r_wvfn, r_wvfn_nc, &
+                             stdout, error)
         end if
-
-        close (file_unit)
-
-        if (ierr /= 0) then
-          call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
-          exit kpt_loop
-        end if
+        if (allocated(error)) exit kpt_loop
 
         if (have_disentangled) then
           if (.not. spinors) then
@@ -2526,6 +2440,130 @@ contains
     end subroutine internal_xsf_format
 
   end subroutine plot_wannier
+
+  subroutine plot_read_unk(wfnname, formatted, spinors, inc_band, num_inc, num_bands, &
+                           kpt, ngx, ngy, ngz, wvfn, wvfn_nc, stdout, error)
+    !! Read a single UNK file into `wvfn` (or `wvfn_nc` for spinors), keeping
+    !! the first `num_inc` bands flagged in `inc_band` (bands not flagged are
+    !! read and discarded).
+    !!
+    !! Failures are reported with the non-collective set_base_error and an
+    !! immediate return: the caller distributes k-points over ranks, so a
+    !! failure here is rank-local and must not enter a collective. The caller
+    !! is responsible for synchronising the error across ranks afterwards.
+
+    use w90_constants, only: dp
+    use w90_error, only: w90_error_type, set_base_error, code_file
+
+    implicit none
+
+    character(len=*), intent(in) :: wfnname
+    !! Name of the UNK file to read
+    logical, intent(in) :: formatted
+    !! Whether the UNK file is formatted
+    logical, intent(in) :: spinors
+    !! Whether the wavefunctions are spinors
+    logical, intent(in) :: inc_band(:)
+    !! Bands to keep
+    integer, intent(in) :: num_inc
+    !! Number of bands to keep
+    integer, intent(in) :: num_bands
+    !! Total number of bands in the file
+    integer, intent(in) :: kpt
+    !! Expected k-point index (checked against the file header)
+    integer, intent(in) :: ngx, ngy, ngz
+    !! Expected grid dimensions (checked against the file header)
+    complex(kind=dp), allocatable, intent(inout) :: wvfn(:, :)
+    !! Destination, band as second index (caller-allocated; if .not. spinors)
+    complex(kind=dp), intent(inout), allocatable :: wvfn_nc(:, :, :)
+    !! Spinor destination, spin as third index (caller-allocated; if spinors)
+    integer, intent(in) :: stdout
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    integer :: file_unit, ierr, ix, iy, iz, ik, nbnd, counter, loop_b, ngpts
+
+    logical :: have_file
+
+    ngpts = ngx*ngy*ngz
+
+    ! A missing UNK file must be detected here rather than silently
+    ! (re)created by the open below (status='old' forbids creation).
+    inquire (file=wfnname, exist=have_file)
+    if (.not. have_file) then
+      call set_base_error(error, 'plot_wannier: file '//wfnname//' not found', code_file)
+      return
+    end if
+
+    if (formatted) then
+      open (newunit=file_unit, file=wfnname, form='formatted', status='old', iostat=ierr)
+    else
+      open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
+    end if
+    if (ierr /= 0) then
+      call set_base_error(error, 'plot_wannier: could not open file '//wfnname, code_file)
+      return
+    end if
+
+    if (formatted) then
+      read (file_unit, *, iostat=ierr) ix, iy, iz, ik, nbnd
+    else
+      read (file_unit, iostat=ierr) ix, iy, iz, ik, nbnd
+    end if
+    if (ierr /= 0) then
+      call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
+      close (file_unit)
+      return
+    end if
+
+    if ((ix /= ngx) .or. (iy /= ngy) .or. (iz /= ngz) .or. (ik /= kpt)) then
+      write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
+      write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
+      write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', kpt, 'bands=', num_bands
+      call set_base_error(error, 'plot_wannier: mismatch in file '//wfnname, code_file)
+      close (file_unit)
+      return
+    end if
+
+    counter = 1
+    do loop_b = 1, num_bands
+      if (counter > num_inc) exit
+      if (.not. spinors) then
+        call plot_read_unk_band(wvfn(:, counter))
+      else
+        call plot_read_unk_band(wvfn_nc(:, counter, 1)) ! up-spinor
+        if (ierr == 0) call plot_read_unk_band(wvfn_nc(:, counter, 2)) ! down-spinor
+      end if
+      if (ierr /= 0) then
+        call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
+        close (file_unit)
+        return
+      end if
+      if (inc_band(loop_b)) counter = counter + 1
+    end do
+
+    close (file_unit)
+
+  contains
+
+    subroutine plot_read_unk_band(band)
+      !! Read one band's worth of grid values, leaving any failure in `ierr`
+      complex(kind=dp), intent(out) :: band(:)
+
+      real(kind=dp) :: w_real, w_imag
+      integer :: nx
+
+      if (formatted) then
+        do nx = 1, ngpts
+          read (file_unit, *, iostat=ierr) w_real, w_imag
+          if (ierr /= 0) return
+          band(nx) = cmplx(w_real, w_imag, kind=dp)
+        end do
+      else
+        read (file_unit, iostat=ierr) (band(nx), nx=1, ngpts)
+      end if
+    end subroutine plot_read_unk_band
+
+  end subroutine plot_read_unk
 
   !================================================!
   subroutine plot_u_matrices(u_matrix_opt, u_matrix, kpt_latt, dis_manifold, &
