@@ -1560,7 +1560,7 @@ contains
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
     use w90_comms, only: w90_comm_type, comms_sync_error
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_file, &
-                         set_error_warn, code_file
+                         set_error_warn, set_base_error, code_file
 
     implicit none
 
@@ -1614,8 +1614,7 @@ contains
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
     integer :: wann_plot_num
 
-    integer :: ierr_read
-    character(len=60) :: errmsg_read
+    integer :: sync_code
 
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
@@ -1744,8 +1743,6 @@ contains
         return
       end if
 
-      ierr_read = 0
-      errmsg_read = ''
       call io_date(cdate, ctime)
       kpt_loop: do loop_kpt = 1, num_kpts
         if (dist_k(loop_kpt) /= my_node_id) cycle
@@ -1767,8 +1764,7 @@ contains
         ! (re)created by the open below (status='old' forbids creation).
         inquire (file=wfnname, exist=have_file)
         if (.not. have_file) then
-          errmsg_read = 'plot_wannier: file '//wfnname//' not found'
-          ierr_read = code_file
+          call set_base_error(error, 'plot_wannier: file '//wfnname//' not found', code_file)
           exit kpt_loop
         end if
         if (wvfn_read%formatted) then
@@ -1777,8 +1773,7 @@ contains
           open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
         end if
         if (ierr /= 0) then
-          errmsg_read = 'plot_wannier: could not open file '//wfnname
-          ierr_read = code_file
+          call set_base_error(error, 'plot_wannier: could not open file '//wfnname, code_file)
           exit kpt_loop
         end if
         if (wvfn_read%formatted) then
@@ -1787,8 +1782,7 @@ contains
           read (file_unit, iostat=ierr) ix, iy, iz, ik, nbnd
         end if
         if (ierr /= 0) then
-          errmsg_read = 'plot_wannier: error reading file '//wfnname
-          ierr_read = code_file
+          call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
           close (file_unit)
           exit kpt_loop
         end if
@@ -1797,8 +1791,7 @@ contains
           write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
           write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
           write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', loop_kpt, 'bands=', num_bands
-          errmsg_read = 'plot_wannier: mismatch in file '//wfnname
-          ierr_read = code_file
+          call set_base_error(error, 'plot_wannier: mismatch in file '//wfnname, code_file)
           close (file_unit)
           exit kpt_loop
         end if
@@ -1871,8 +1864,7 @@ contains
         close (file_unit)
 
         if (ierr /= 0) then
-          errmsg_read = 'plot_wannier: error reading file '//wfnname
-          ierr_read = code_file
+          call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
           exit kpt_loop
         end if
 
@@ -1967,15 +1959,12 @@ contains
 
       end do kpt_loop !loop over kpoints
 
-      ! Failures above are rank-local (k-points are distributed), but
-      ! set_error_file is collective. Here we direct succeeding ranks to enter
-      ! the same synchronisation (comms_sync_error) as the failing ones rather
-      ! than continuing to the comms_reduce below.
-      if (ierr_read /= 0) then
-        call set_error_file(error, trim(errmsg_read), comm)
-      else
-        call comms_sync_error(comm, error, 0)
-      end if
+      ! Read failures in the loop above are rank-local (each rank reads only
+      ! its own UNK files), so some might pass and others fail. Synchronise
+      ! the error here.
+      sync_code = 0
+      if (allocated(error)) sync_code = error%code
+      call comms_sync_error(comm, error, sync_code)
       if (allocated(error)) return
 
       if (spinors) then
