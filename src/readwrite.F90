@@ -804,7 +804,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     ! local
-    logical :: found, found2
+    logical :: found, found2, found_auto, found_ac
 
     call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm, &
                                    r_value=dis_manifold%win_min)
@@ -873,6 +873,33 @@ contains
     if (dis_manifold%proj_max < dis_manifold%proj_min) then
       call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < dis_proj_min', comm)
       return
+    end if
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto', found_auto, error, comm, &
+                                   l_value=dis_manifold%proj_auto)
+    if (allocated(error)) return
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_classes', found_ac, error, comm, &
+                                   i_value=dis_manifold%proj_auto_classes)
+    if (allocated(error)) return
+    if (found_ac .and. .not. dis_manifold%proj_auto) then
+      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
+                           'dis_proj_auto_classes set without dis_proj_auto', comm)
+      return
+    end if
+    if (dis_manifold%proj_auto) then
+      if (found .or. found2) then
+        call set_error_input(error, 'Error: dis_proj_auto is incompatible with '// &
+                             'explicit dis_proj_min/dis_proj_max', comm)
+        return
+      end if
+      if (dis_manifold%proj_auto_classes < 3) then
+        call set_error_input(error, 'Error: dis_proj_auto_classes must be >= 3', comm)
+        return
+      end if
+      if (.not. dis_manifold%frozen_proj) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
+                             'dis_proj_auto requires dis_froz_proj = .true.', comm)
+        return
+      end if
     end if
   end subroutine w90_readwrite_read_dis_manifold
 
@@ -1327,6 +1354,8 @@ contains
     call w90_readwrite_get_keyword(settings, 'dis_froz_proj', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_proj_min', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_proj_max', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_classes', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_mix_ratio', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_num_iter', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_spheres_first_wann', found, error, comm)

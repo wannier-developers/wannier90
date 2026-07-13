@@ -37,6 +37,7 @@ module w90_disentangle_mod
 
   public :: dis_main
   public :: setup_m_loc
+  public :: dis_otsu_thresholds
 
 contains
   !================================================!
@@ -1285,10 +1286,57 @@ contains
     integer :: i, j, k, l
     real(kind=dp) :: projs(num_bands)
     integer :: invindxkeep(num_bands)
+    real(kind=dp), allocatable :: pooled(:), otsu_thr(:)
+    real(kind=dp) :: pval
+    integer :: ip, ierr
+    logical :: degenerate
 
     if (timing_level > 1 .and. on_root) call io_stopwatch_start('dis: windows_proj', timer)
 
     linner = .false.
+
+    ! Automatic projectability thresholds via multi-Otsu (dis_proj_auto). The
+    ! a_matrix is full on every rank, so pooling over all bands and k-points is
+    ! rank-uniform and needs no MPI communication.
+    if (dis_manifold%proj_auto) then
+      allocate (pooled(num_bands*num_kpts), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating pooled in dis_windows_proj', comm)
+        return
+      end if
+      ip = 0
+      do nkp = 1, num_kpts
+        do i = 1, num_bands
+          pval = 0.0_dp
+          do j = 1, num_wann
+            pval = pval + real(a_matrix(i, j, nkp), dp)**2 + aimag(a_matrix(i, j, nkp))**2
+          end do
+          if (pval < 0.0_dp) pval = 0.0_dp
+          if (pval > 1.0_dp) pval = 1.0_dp
+          ip = ip + 1
+          pooled(ip) = pval
+        end do
+      end do
+
+      allocate (otsu_thr(dis_manifold%proj_auto_classes - 1), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error allocating otsu_thr in dis_windows_proj', comm)
+        return
+      end if
+      call dis_otsu_thresholds(pooled, 64, dis_manifold%proj_auto_classes, otsu_thr, degenerate)
+      deallocate (pooled)
+
+      if (degenerate) then
+        deallocate (otsu_thr)
+        ! message must fit the 128-char w90_error_type buffer
+        call set_error_fatal(error, 'Error: dis_proj_auto: projectabilities do not split into '// &
+                             'dis_proj_auto_classes classes; lower it or set thresholds manually', comm)
+        return
+      end if
+      dis_manifold%proj_min = otsu_thr(1)
+      dis_manifold%proj_max = otsu_thr(dis_manifold%proj_auto_classes - 1)
+      deallocate (otsu_thr)
+    end if
 
     if (on_root) write (stdout, '(1x,a)') &
       '+----------------------------------------------------------------------------+'
@@ -1313,6 +1361,11 @@ contains
       '|                          Projectability  Windows                           |'
     if (on_root) write (stdout, '(1x,a)') &
       '|                          -----------------------                           |'
+    if (dis_manifold%proj_auto) then
+      if (on_root) write (stdout, '(1x,a,i2,a)') &
+        '|         Thresholds determined automatically (multi-Otsu, ', &
+        dis_manifold%proj_auto_classes, ' classes)       |'
+    end if
     if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
       '|               Discarded: ', 0.0_dp, '  to ', dis_manifold%proj_min, &
       '                         |'
@@ -4244,5 +4297,136 @@ contains
     return
     !================================================!
   end subroutine internal_zmatrix_gamma
+
+  !================================================!
+  subroutine dis_otsu_thresholds(values, nbins, nclasses, thr, degenerate)
+    !================================================!
+    !! Multi-class Otsu thresholding of a scalar distribution.
+    !! Histograms `values` into `nbins` equal-width bins over [min, max] and
+    !! finds the `nclasses`-1 ascending thresholds that maximise the between-class
+    !! variance (exhaustive search, strict tie-break so the first-found maximum in
+    !! ascending enumeration wins). Returns bin-centre thresholds. Sets
+    !! `degenerate` = .true. (thresholds undefined) when the data cannot be split
+    !! into `nclasses` populated classes, leaving the policy to the caller.
+    !================================================!
+    use w90_constants, only: dp
+
+    implicit none
+
+    real(kind=dp), intent(in) :: values(:)
+    integer, intent(in) :: nbins, nclasses
+    real(kind=dp), intent(out) :: thr(nclasses - 1)
+    logical, intent(out) :: degenerate
+
+    integer :: n, i, k, npop, ncut, a, b
+    integer, allocatable :: counts(:)
+    real(kind=dp), allocatable :: pcum(:), scum(:), hmat(:, :)
+    integer, allocatable :: cuts(:), best_cuts(:)
+    real(kind=dp) :: mn, mx, d, denom, best_var
+
+    degenerate = .false.
+    thr = 0.0_dp
+
+    n = size(values)
+    mn = minval(values)
+    mx = maxval(values)
+    if (mn == mx) then
+      degenerate = .true.
+      return
+    end if
+    d = (mx - mn)/real(nbins, dp)
+
+    ! Equal-width histogram; max value lands in the last bin.
+    allocate (counts(0:nbins - 1))
+    counts = 0
+    do i = 1, n
+      k = int(floor((values(i) - mn)/d))
+      if (k < 0) k = 0
+      if (k > nbins - 1) k = nbins - 1
+      counts(k) = counts(k) + 1
+    end do
+
+    npop = count(counts > 0)
+    if (npop < nclasses) then
+      degenerate = .true.
+      return
+    end if
+
+    ! Shortcut: exactly as many populated bins as classes -> centres of the
+    ! first nclasses-1 populated bins.
+    if (npop == nclasses) then
+      ncut = 0
+      do k = 0, nbins - 1
+        if (counts(k) > 0) then
+          ncut = ncut + 1
+          if (ncut > nclasses - 1) exit
+          thr(ncut) = mn + (real(k, dp) + 0.5_dp)*d
+        end if
+      end do
+      return
+    end if
+
+    ! Cumulative count and index-moment (0-based bin index weighting), indexed
+    ! from -1 so that segment [a,b] uses pcum(b)-pcum(a-1).
+    allocate (pcum(-1:nbins - 1), scum(-1:nbins - 1))
+    pcum(-1) = 0.0_dp
+    scum(-1) = 0.0_dp
+    do k = 0, nbins - 1
+      pcum(k) = pcum(k - 1) + real(counts(k), dp)
+      scum(k) = scum(k - 1) + real(k, dp)*real(counts(k), dp)
+    end do
+
+    ! Between-class variance table for every bin segment [a,b].
+    allocate (hmat(0:nbins - 1, 0:nbins - 1))
+    hmat = 0.0_dp
+    do a = 0, nbins - 1
+      do b = a, nbins - 1
+        denom = pcum(b) - pcum(a - 1)
+        if (denom > 0.0_dp) hmat(a, b) = (scum(b) - scum(a - 1))**2/denom
+      end do
+    end do
+
+    ncut = nclasses - 1
+    allocate (cuts(ncut), best_cuts(ncut))
+    best_var = -1.0_dp
+    best_cuts = 0
+    call search(1, 0)
+
+    do i = 1, ncut
+      thr(i) = mn + (real(best_cuts(i), dp) + 0.5_dp)*d
+    end do
+
+  contains
+
+    recursive subroutine search(level, lo)
+      !! Enumerate ascending cut indices; `cuts(level)` is the last bin of the
+      !! class below cut `level`. Objective = sum of between-class variance over
+      !! the class segments; strict > keeps the first ascending maximum.
+      integer, intent(in) :: level, lo
+      integer :: idx, seg, aa, bb
+      real(kind=dp) :: sigma
+
+      if (level <= ncut) then
+        do idx = lo, nbins - ncut + level - 2
+          cuts(level) = idx
+          call search(level + 1, idx + 1)
+        end do
+      else
+        sigma = 0.0_dp
+        aa = 0
+        do seg = 1, ncut
+          bb = cuts(seg)
+          sigma = sigma + hmat(aa, bb)
+          aa = cuts(seg) + 1
+        end do
+        sigma = sigma + hmat(aa, nbins - 1)
+        if (sigma > best_var) then
+          best_var = sigma
+          best_cuts = cuts
+        end if
+      end if
+    end subroutine search
+
+  end subroutine dis_otsu_thresholds
 
 end module w90_disentangle_mod

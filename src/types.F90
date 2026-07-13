@@ -226,6 +226,10 @@ module w90_types
     !! upper threshold of the projectability disentanglement, equal and above are frozen
     logical :: frozen_proj
     !! whether to use projectability frozen window, i.e., proj_min/proj_max
+    logical :: proj_auto = .false.
+    !! whether to determine proj_min/proj_max automatically via multi-Otsu thresholding
+    integer :: proj_auto_classes = 5
+    !! number of classes for the automatic multi-Otsu projectability thresholds
     ! disentangle parameters
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read
     integer, allocatable :: ndimwin(:)
