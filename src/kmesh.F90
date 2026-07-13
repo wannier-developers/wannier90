@@ -356,7 +356,7 @@ contains
     end if
 
     ! higher-order algorithm: include 2b, 3b, ..., Nb shells, and modify bweights
-    if (kmesh_input%higher_order_nearest_shells) then
+    if (kmesh_input%higher_order_nearest_shells .and. print_output%iprint > 0) then
       write (stdout, '(a)') ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
         ' | not been extensively tested.                                               |'
     else
