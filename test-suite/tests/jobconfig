@@ -257,6 +257,8 @@ output = gaas_00001.cube
 program = WANNIER90_WOUT_OK
 inputs_args = ('graphene.win', '')
 output = graphene.wout
+# omegaI and omegaOD differ from the benchmark by ~1e-6 in parallel runs
+tolerance = ( (5.0e-6, 5.0e-6, 'omegaI'), (5.0e-6, 5.0e-6, 'omegaOD'))
 
 # Graphene, PDWF
 [testw90_graphene_pdwf]
