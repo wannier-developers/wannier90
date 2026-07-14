@@ -4309,17 +4309,20 @@ contains
   !================================================!
   subroutine dis_otsu_thresholds(values, nbins, nclasses, thr, nclasses_eff, degenerate)
     !================================================!
-    !! Multi-class Otsu thresholding of a scalar distribution.
-    !! Histograms `values` into `nbins` equal-width bins over [min, max] and
-    !! finds the `nclasses`-1 ascending thresholds that maximise the between-class
+    !! Multi-class Otsu thresholding of a scalar distribution in [0, 1].
+    !! Histograms `values` into `nbins` equal-width bins over a FIXED [0, 1] range
+    !! and finds the `nclasses`-1 ascending thresholds that maximise the between-class
     !! variance (exhaustive search, strict tie-break so the first-found maximum in
     !! ascending enumeration wins). Returns bin-centre thresholds in thr(1:nclasses_eff-1).
     !! The number of classes cannot exceed the number of populated bins (a cut
     !! must fall in a gap between clusters), so the effective class count is
     !! `nclasses_eff` = min(nclasses, populated bins); the caller is expected to
     !! note any reduction. Sets `degenerate` = .true. (thresholds undefined) only
-    !! when the data cannot support even three classes: fewer than three populated
-    !! bins, or all values equal.
+    !! when fewer than three bins are populated.
+    !! Textbook multi-level Otsu, deliberately deviating from
+    !! skimage.filters.threshold_multiotsu in two ways: 0-based bin-index moment
+    !! weights (skimage's LUT quirk makes them 1,1,2,3,...) and a fixed [0,1] range
+    !! (skimage uses the data min/max).
     !================================================!
     use w90_constants, only: dp
 
@@ -4335,26 +4338,20 @@ contains
     integer, allocatable :: counts(:)
     real(kind=dp), allocatable :: pcum(:), scum(:), hmat(:, :)
     integer, allocatable :: cuts(:), best_cuts(:)
-    real(kind=dp) :: mn, mx, d, denom, best_var
+    real(kind=dp) :: d, denom, best_var
 
     degenerate = .false.
     nclasses_eff = 0
     thr = 0.0_dp
 
     n = size(values)
-    mn = minval(values)
-    mx = maxval(values)
-    if (mn == mx) then
-      degenerate = .true.
-      return
-    end if
-    d = (mx - mn)/real(nbins, dp)
+    d = 1.0_dp/real(nbins, dp)
 
-    ! Equal-width histogram; max value lands in the last bin.
+    ! Fixed-range [0,1] histogram; value 1.0 lands in the last bin.
     allocate (counts(0:nbins - 1))
     counts = 0
     do i = 1, n
-      k = int(floor((values(i) - mn)/d))
+      k = int(values(i)*real(nbins, dp))
       if (k < 0) k = 0
       if (k > nbins - 1) k = nbins - 1
       counts(k) = counts(k) + 1
@@ -4378,7 +4375,7 @@ contains
         if (counts(k) > 0) then
           i = i + 1
           if (i > ncut) exit
-          thr(i) = mn + (real(k, dp) + 0.5_dp)*d
+          thr(i) = (real(k, dp) + 0.5_dp)*d
         end if
       end do
       return
@@ -4410,7 +4407,7 @@ contains
     call search(1, 0)
 
     do i = 1, ncut
-      thr(i) = mn + (real(best_cuts(i), dp) + 0.5_dp)*d
+      thr(i) = (real(best_cuts(i), dp) + 0.5_dp)*d
     end do
 
   contains
