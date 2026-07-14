@@ -33,11 +33,19 @@ module w90_disentangle_mod
   !! This module contains the core routines to extract an optimal
   !! subspace from a set of entangled bands.
 
+  use w90_constants, only: dp
+
   implicit none
 
   public :: dis_main
   public :: setup_m_loc
   public :: dis_otsu_thresholds
+
+  ! histogram controls for dis_proj_auto; compile-time constants for now,
+  ! thread into the input parser if user control is ever wanted
+  real(kind=dp), parameter :: otsu_lower_bound = 0.0_dp
+  real(kind=dp), parameter :: otsu_upper_bound = 1.0_dp
+  integer, parameter :: otsu_nbins = 64
 
 contains
   !================================================!
@@ -1323,8 +1331,8 @@ contains
         call set_error_alloc(error, 'Error allocating otsu_thr in dis_windows_proj', comm)
         return
       end if
-      call dis_otsu_thresholds(pooled, 64, dis_manifold%proj_auto_classes, otsu_thr, &
-                               nclasses_eff, degenerate)
+      call dis_otsu_thresholds(pooled, otsu_lower_bound, otsu_upper_bound, otsu_nbins, &
+                               dis_manifold%proj_auto_classes, otsu_thr, nclasses_eff, degenerate)
       deallocate (pooled)
 
       if (degenerate) then
@@ -4307,10 +4315,12 @@ contains
   end subroutine internal_zmatrix_gamma
 
   !================================================!
-  subroutine dis_otsu_thresholds(values, nbins, nclasses, thr, nclasses_eff, degenerate)
+  subroutine dis_otsu_thresholds(values, lower_bound, upper_bound, nbins, nclasses, thr, &
+                                 nclasses_eff, degenerate)
     !================================================!
-    !! Multi-class Otsu thresholding of a scalar distribution in [0, 1].
-    !! Histograms `values` into `nbins` equal-width bins over a FIXED [0, 1] range
+    !! Multi-class Otsu thresholding of a scalar distribution in
+    !! [`lower_bound`, `upper_bound`].
+    !! Histograms `values` into `nbins` equal-width bins over that FIXED range
     !! and finds the `nclasses`-1 ascending thresholds that maximise the between-class
     !! variance (exhaustive search, strict tie-break so the first-found maximum in
     !! ascending enumeration wins). Returns bin-centre thresholds in thr(1:nclasses_eff-1).
@@ -4321,14 +4331,13 @@ contains
     !! when fewer than three bins are populated.
     !! Textbook multi-level Otsu, deliberately deviating from
     !! skimage.filters.threshold_multiotsu in two ways: 0-based bin-index moment
-    !! weights (skimage's LUT quirk makes them 1,1,2,3,...) and a fixed [0,1] range
-    !! (skimage uses the data min/max).
+    !! weights (skimage's LUT quirk makes them 1,1,2,3,...) and a fixed histogram
+    !! range (skimage uses the data min/max).
     !================================================!
-    use w90_constants, only: dp
-
     implicit none
 
     real(kind=dp), intent(in) :: values(:)
+    real(kind=dp), intent(in) :: lower_bound, upper_bound
     integer, intent(in) :: nbins, nclasses
     real(kind=dp), intent(out) :: thr(nclasses - 1)
     integer, intent(out) :: nclasses_eff
@@ -4345,13 +4354,13 @@ contains
     thr = 0.0_dp
 
     n = size(values)
-    d = 1.0_dp/real(nbins, dp)
+    d = (upper_bound - lower_bound)/real(nbins, dp)
 
-    ! Fixed-range [0,1] histogram; value 1.0 lands in the last bin.
+    ! Fixed-range histogram; a value at upper_bound lands in the last bin.
     allocate (counts(0:nbins - 1))
     counts = 0
     do i = 1, n
-      k = int(values(i)*real(nbins, dp))
+      k = int((values(i) - lower_bound)/d)
       if (k < 0) k = 0
       if (k > nbins - 1) k = nbins - 1
       counts(k) = counts(k) + 1
@@ -4375,7 +4384,7 @@ contains
         if (counts(k) > 0) then
           i = i + 1
           if (i > ncut) exit
-          thr(i) = (real(k, dp) + 0.5_dp)*d
+          thr(i) = lower_bound + (real(k, dp) + 0.5_dp)*d
         end if
       end do
       return
@@ -4407,7 +4416,7 @@ contains
     call search(1, 0)
 
     do i = 1, ncut
-      thr(i) = (real(best_cuts(i), dp) + 0.5_dp)*d
+      thr(i) = lower_bound + (real(best_cuts(i), dp) + 0.5_dp)*d
     end do
 
   contains
