@@ -4329,10 +4329,6 @@ contains
     !! `nclasses_eff` = min(nclasses, populated bins); the caller is expected to
     !! note any reduction. Sets `degenerate` = .true. (thresholds undefined) only
     !! when fewer than three bins are populated.
-    !! Textbook multi-level Otsu, deliberately deviating from
-    !! skimage.filters.threshold_multiotsu in two ways: 0-based bin-index moment
-    !! weights (skimage's LUT quirk makes them 1,1,2,3,...) and a fixed histogram
-    !! range (skimage uses the data min/max).
     !================================================!
     implicit none
 
