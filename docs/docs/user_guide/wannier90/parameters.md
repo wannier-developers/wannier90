@@ -644,22 +644,11 @@ The default value is 0.01.
 Determine the projectability thresholds `dis_proj_min` and `dis_proj_max`
 automatically at runtime, instead of setting them by hand. The pooled
 distribution of per-state projectabilities (over all bands and
-$\mathbf{k}$-points) is histogrammed over a fixed $[0, 1]$ range with 64
-bins (resolution $\approx 0.016$) and split into `dis_proj_auto_classes`
-classes by textbook multi-level Otsu thresholding; `dis_proj_min` is set to
+$\mathbf{k}$-points) is split into `dis_proj_auto_classes`
+classes by multi-level Otsu thresholding; `dis_proj_min` is set to
 the lowest threshold and `dis_proj_max` to the highest.
 
-This requires `dis_froz_proj = .true.`; it is an error otherwise. It is
-also an error to set `dis_proj_auto = .true.` together with an explicit
-`dis_proj_min` or `dis_proj_max`. A separate class can only be resolved for
-each populated histogram bin, so projectabilities closer together than one
-bin fall in the same bin and cannot be separated; if
-`dis_proj_auto_classes` exceeds the number of populated bins the effective
-number of classes is reduced accordingly and a note is printed. If fewer
-than three bins are populated (for example a manifold with no entanglement,
-where all projectabilities are nearly equal), the thresholds are undefined
-and the run stops with an error; set `dis_proj_min` and `dis_proj_max`
-manually in that case.
+Requires `dis_froz_proj = .true.`; it is an error otherwise.
 
 !!! note
     As for projectability disentanglement in general (see `dis_froz_proj`),
@@ -673,11 +662,10 @@ The default value is `.false.`.
 ### `integer :: dis_proj_auto_classes`
 
 The number of classes used by the multi-level Otsu thresholding when
-`dis_proj_auto = .true.`. More classes widen the disentanglement window
+`dis_proj_auto = .true.`. A larger value widens the disentanglement window
 between `dis_proj_min` and `dis_proj_max`. Must be at least 3. If it
 exceeds the number of populated histogram bins it is reduced to that
-number at runtime (with a printed note). Only meaningful together with
-`dis_proj_auto`; setting it otherwise is an error.
+number at runtime (with a printed note).
 
 The default value is 5.
 
