@@ -647,16 +647,13 @@ distribution of per-state projectabilities (over all bands and
 $\mathbf{k}$-points) is histogrammed over a fixed $[0, 1]$ range with 64
 bins (resolution $\approx 0.016$) and split into `dis_proj_auto_classes`
 classes by textbook multi-level Otsu thresholding; `dis_proj_min` is set to
-the lowest threshold and `dis_proj_max` to the highest. (The implementation
-deviates deliberately from `scikit-image`'s `threshold_multiotsu` in two
-respects: it uses plain 0-based bin-index moment weights and a fixed $[0,1]$
-range rather than the data min/max.)
+the lowest threshold and `dis_proj_max` to the highest.
 
 This requires `dis_froz_proj = .true.`; it is an error otherwise. It is
 also an error to set `dis_proj_auto = .true.` together with an explicit
 `dis_proj_min` or `dis_proj_max`. A separate class can only be resolved for
 each populated histogram bin, so projectabilities closer together than one
-bin ($\approx 0.016$) fall in the same bin and cannot be separated; if
+bin fall in the same bin and cannot be separated; if
 `dis_proj_auto_classes` exceeds the number of populated bins the effective
 number of classes is reduced accordingly and a note is printed. If fewer
 than three bins are populated (for example a manifold with no entanglement,
