@@ -69,7 +69,7 @@ set(test_names
                 testw90_example05
                 testw90_example07
                 testw90_example11_1
-                testw90_example11_2
+#                testw90_example11_2  # Dropped because CI's old/unfortunate intel/flexiblas versions give too large numerical fuzz
                 testw90_example21_As_sp
                 testw90_example26
                 testw90_example36
