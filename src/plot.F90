@@ -1558,9 +1558,9 @@ contains
     use w90_types, only: wannier_data_type, atom_data_type, dis_manifold_type, print_output_type, &
                          timer_list_type
     use w90_wannier90_types, only: wvfn_read_type, wannier_plot_type
-    use w90_comms, only: w90_comm_type, comms_sync_error
+    use w90_comms, only: w90_comm_type
     use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc, set_error_file, &
-                         set_error_warn, set_base_error, code_file
+                         set_error_warn
 
     implicit none
 
@@ -1613,8 +1613,6 @@ contains
     integer :: loop_kpt, nk, ngx, ngy, ngz, nxx, nyy, nzz
     integer :: loop_b, nx, ny, nz, npoint, file_unit, loop_w, num_inc
     integer :: wann_plot_num
-
-    integer :: sync_code
 
     character(len=11) :: wfnname
     character(len=60) :: wanxsf, wancube
@@ -1755,7 +1753,7 @@ contains
       end if
 
       call io_date(cdate, ctime)
-      kpt_loop: do loop_kpt = 1, num_kpts
+      do loop_kpt = 1, num_kpts
         if (dist_k(loop_kpt) /= my_node_id) cycle
 
         inc_band = .true.
@@ -1774,13 +1772,13 @@ contains
         if (have_disentangled) then
           call plot_read_unk(wfnname, wvfn_read%formatted, spinors, inc_band, num_inc, &
                              num_bands, loop_kpt, ngx, ngy, ngz, r_wvfn_tmp, r_wvfn_tmp_nc, &
-                             stdout, error)
+                             stdout, error, comm)
         else
           call plot_read_unk(wfnname, wvfn_read%formatted, spinors, inc_band, num_bands, &
                              num_bands, loop_kpt, ngx, ngy, ngz, r_wvfn, r_wvfn_nc, &
-                             stdout, error)
+                             stdout, error, comm)
         end if
-        if (allocated(error)) exit kpt_loop
+        if (allocated(error)) return
 
         if (have_disentangled) then
           if (.not. spinors) then
@@ -1871,15 +1869,7 @@ contains
           end do
         end do
 
-      end do kpt_loop !loop over kpoints
-
-      ! Read failures in the loop above are rank-local (each rank reads only
-      ! its own UNK files), so some might pass and others fail. Synchronise
-      ! the error here.
-      sync_code = 0
-      if (allocated(error)) sync_code = error%code
-      call comms_sync_error(comm, error, sync_code)
-      if (allocated(error)) return
+      end do !loop over kpoints
 
       if (spinors) then
         call comms_reduce(wann_func_nc(nxx_lo, nyy_lo, nzz_lo, 1, 1), &
@@ -2442,18 +2432,20 @@ contains
   end subroutine plot_wannier
 
   subroutine plot_read_unk(wfnname, formatted, spinors, inc_band, num_inc, num_bands, &
-                           kpt, ngx, ngy, ngz, wvfn, wvfn_nc, stdout, error)
+                           kpt, ngx, ngy, ngz, wvfn, wvfn_nc, stdout, error, comm)
     !! Read a single UNK file into `wvfn` (or `wvfn_nc` for spinors), keeping
     !! the first `num_inc` bands flagged in `inc_band` (bands not flagged are
     !! read and discarded).
     !!
-    !! Failures are reported with the non-collective set_base_error and an
-    !! immediate return: the caller distributes k-points over ranks, so a
-    !! failure here is rank-local and must not enter a collective. The caller
-    !! is responsible for synchronising the error across ranks afterwards.
+    !! Failures set the error and return immediately. This is safe even though
+    !! the caller distributes k-points over ranks: set_error_file synchronises
+    !! the failing rank via comms_sync_error, and the other ranks pick the
+    !! error up in the matching handshake at their next synchronised
+    !! collective (e.g. the comms_reduce after the caller's k-point loop).
 
     use w90_constants, only: dp
-    use w90_error, only: w90_error_type, set_base_error, code_file
+    use w90_comms, only: w90_comm_type
+    use w90_error, only: w90_error_type, set_error_file
 
     implicit none
 
@@ -2479,6 +2471,7 @@ contains
     !! Spinor destination, spin as third index (caller-allocated; if spinors)
     integer, intent(in) :: stdout
     type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: file_unit, ierr, ix, iy, iz, ik, nbnd, counter, loop_b, ngpts
 
@@ -2490,7 +2483,7 @@ contains
     ! (re)created by the open below (status='old' forbids creation).
     inquire (file=wfnname, exist=have_file)
     if (.not. have_file) then
-      call set_base_error(error, 'plot_wannier: file '//wfnname//' not found', code_file)
+      call set_error_file(error, 'plot_wannier: file '//wfnname//' not found', comm)
       return
     end if
 
@@ -2500,7 +2493,7 @@ contains
       open (newunit=file_unit, file=wfnname, form='unformatted', status='old', iostat=ierr)
     end if
     if (ierr /= 0) then
-      call set_base_error(error, 'plot_wannier: could not open file '//wfnname, code_file)
+      call set_error_file(error, 'plot_wannier: could not open file '//wfnname, comm)
       return
     end if
 
@@ -2510,7 +2503,7 @@ contains
       read (file_unit, iostat=ierr) ix, iy, iz, ik, nbnd
     end if
     if (ierr /= 0) then
-      call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
+      call set_error_file(error, 'plot_wannier: error reading file '//wfnname, comm)
       close (file_unit)
       return
     end if
@@ -2519,7 +2512,7 @@ contains
       write (stdout, '(1x,a,a)') 'WARNING: mismatch in file', trim(wfnname)
       write (stdout, '(1x,5(a6,I5))') '   ix=', ix, '   iy=', iy, '   iz=', iz, '   ik=', ik, ' nbnd=', nbnd
       write (stdout, '(1x,5(a6,I5))') '  ngx=', ngx, '  ngy=', ngy, '  ngz=', ngz, '  kpt=', kpt, 'bands=', num_bands
-      call set_base_error(error, 'plot_wannier: mismatch in file '//wfnname, code_file)
+      call set_error_file(error, 'plot_wannier: mismatch in file '//wfnname, comm)
       close (file_unit)
       return
     end if
@@ -2534,7 +2527,7 @@ contains
         if (ierr == 0) call plot_read_unk_band(wvfn_nc(:, counter, 2)) ! down-spinor
       end if
       if (ierr /= 0) then
-        call set_base_error(error, 'plot_wannier: error reading file '//wfnname, code_file)
+        call set_error_file(error, 'plot_wannier: error reading file '//wfnname, comm)
         close (file_unit)
         return
       end if
