@@ -250,7 +250,7 @@ Note: all k-points handled by MPI rank 0
  |                          -----------------------                           |
  |         Thresholds determined automatically (multi-Otsu,  5 classes)       |
  |               Discarded:    0.00000  to    0.03906                         |
- |            Disentangled:    0.03906  to    1.00000                         |
+ |            Disentangled:    0.03906  to    0.94531                         |
  |                  Frozen:    0.94531  to    1.00000                         |
  +----------------------------------------------------------------------------+
    Number of target bands to extract:    8
