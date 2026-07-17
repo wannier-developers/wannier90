@@ -895,6 +895,14 @@ contains
         call set_error_input(error, 'Error: dis_proj_auto_classes must be >= 3', comm)
         return
       end if
+      if (dis_manifold%proj_auto_classes > 8) then
+        ! Exhaustive threshold search enumerates C(nbins-1, classes-1) tuples
+        ! (nbins = 64), which explodes past classes = 8 (~5.5e8) -> classes = 9
+        ! (~3.9e9); the cap bounds the worst-case cost.
+        call set_error_input(error, 'Error: dis_proj_auto_classes must be <= 8; '// &
+                             'reduce it or set dis_proj_min/max', comm)
+        return
+      end if
       if (.not. dis_manifold%frozen_proj) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
                              'dis_proj_auto requires dis_froz_proj = .true.', comm)
