@@ -79,6 +79,7 @@ contains
     !! are the eigenvectors/eigenvalues of \(S\) (LAPACK dsyev).
 
     use w90_comms, only: w90_comm_type
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use w90_error, only: w90_error_type, set_error_fatal
 
     implicit none
@@ -109,7 +110,7 @@ contains
     real(kind=dp) :: work(3*n_max)
     real(kind=dp) :: gamma_half, s_expo, cc
     integer :: n, np, l, info
-    character(len=128) :: mesg
+    character(len=256) :: mesg
 
     ! Threshold radii: linspace(r_min, r_max, n_max)
     if (n_max == 1) then
@@ -124,6 +125,24 @@ contains
     do l = 0, l_max
       do n = 1, n_max
         alphas(n, l) = -(log(thr) - real(l, dp)*log(r_thr(n)))/r_thr(n)**2
+      end do
+    end do
+
+    ! Every alpha must be positive: for r_thr < 1 Angstrom the decay
+    ! condition gives alpha <= 0 once l >= log(thr)/log(r_thr), and a
+    ! non-positive alpha makes the Gaussian overlap integrals below
+    ! divergent (NaN). The eigenvalue check after dsyev cannot catch
+    ! this because all comparisons with NaN are false.
+    do l = 0, l_max
+      do n = 1, n_max
+        if (alphas(n, l) <= 0.0_dp .or. ieee_is_nan(alphas(n, l))) then
+          write (mesg, '(a,i0,a,f0.4,a)') &
+            'decompose_radial_params: alpha <= 0 (or NaN) for l=', l, &
+            ', r_thr=', r_thr(n), &
+            '; increase decompose_r_min or decrease decompose_l_max'
+          call set_error_fatal(error, trim(mesg), comm)
+          return
+        end if
       end do
     end do
 
