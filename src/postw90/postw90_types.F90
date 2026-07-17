@@ -168,7 +168,7 @@ module w90_postw90_types
     character(len=20) :: curv_unit = 'ang2' ! postw90/kpath, kslice as well
     type(pw90_smearing_type) :: kubo_smearing ! defaults to global values
     integer :: sc_phase_conv = 1
-    real(kind=dp) :: sc_eta = 0.04 ! also postw90/wan_ham
+    real(kind=dp) :: sc_eta = 0.04_dp ! also postw90/wan_ham
     real(kind=dp) :: sc_w_thr = 5.0d0
     logical :: sc_use_eta_corr = .true.
     logical :: wanint_kpoint_file = .false. ! also postw90/spin, postw90/dos, postw90.F90
