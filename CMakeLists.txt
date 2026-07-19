@@ -26,6 +26,7 @@ endif ()
 
 option(WANNIER90_MPI "Wannier90: Build with MPI support" OFF)
 option(WANNIER90_MPIH "Wannier90: Build MPI support using the mpi.h header" OFF)
+option(WANNIER90_WITH_C "Wannier90: Build the C interface" OFF)
 option(WANNIER90_SHARED_LIBS "Wannier90: Build library as a shared library" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_INSTALL "Wannier90: Install files" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_TEST "Wannier90: Build test-suite" ${PROJECT_IS_TOP_LEVEL})
