@@ -663,7 +663,6 @@ contains
       write (stdout, '(1x,"+",76("-"),"+")')
     end if
 
-    !
     kmesh_info%wbtot = 0.0_dp
     nnx = 0
     do ndnnx = 1, kmesh_input%num_shells

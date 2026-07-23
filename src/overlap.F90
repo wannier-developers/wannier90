@@ -412,7 +412,7 @@ contains
   end subroutine overlap_read
 
   !================================================!
-  subroutine overlap_write(kmesh_info, au_matrix, m_matrix, eval, num_bands, num_kpts, num_wann, &
+  subroutine overlap_write(kmesh_info, au_matrix, m_matrix, eval, num_bands, num_kpts, &
                            num_proj, seedname, error, comm)
     !================================================!
     !! Write the Mmn and Amn from files
@@ -429,11 +429,11 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(inout) :: error
 
-    integer, intent(in) :: num_bands, num_kpts, num_wann, num_proj
+    integer, intent(in) :: num_bands, num_kpts, num_proj
 
     complex(kind=dp), intent(in) :: au_matrix(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    real(kind=dp), intent(in) :: eval(:, :)
+    real(kind=dp), pointer, intent(in) :: eval(:, :)
 
     character(len=50), intent(in) :: seedname
 
@@ -477,18 +477,19 @@ contains
 
       close (fu)
 
-      ! dump evals
-      open (newunit=fu, file=trim(seedname)//'.eig_dump', err=203)
+      ! dump evals; eigenvalues are optional input (not required for wannierisation),
+      ! only write the file when the caller has supplied them
+      if (associated(eval)) then
+        open (newunit=fu, file=trim(seedname)//'.eig_dump', err=203)
 
-      if (num_bands > num_wann) then ! disentanglement condition
-      do ik = 1, num_kpts
-        do m = 1, num_bands
-          write (fu, '(2i5,f18.12)') m, ik, eval(m, ik)
+        do ik = 1, num_kpts
+          do m = 1, num_bands
+            write (fu, '(2i5,f18.12)') m, ik, eval(m, ik)
+          end do
         end do
-      end do
-      end if
 
-      close (fu)
+        close (fu)
+      end if
 
     end if ! on root
     return

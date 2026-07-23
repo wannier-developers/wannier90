@@ -4208,7 +4208,7 @@ contains
     real(kind=dp), intent(in) :: wb(:)
     real(kind=dp), intent(out) :: rmtrx(:, :)
 
-    complex(kind=dp), intent(in) :: cbw(:, :)
+    complex(kind=dp), intent(inout) :: cbw(:, :)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 

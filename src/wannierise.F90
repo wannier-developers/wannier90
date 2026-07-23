@@ -1069,13 +1069,12 @@ contains
       call io_stopwatch_stop('wann: main', timer)
     end if
 
+    if (.not. wann_control%lfixstep .and. optimisation <= 0) close (page_unit) !close scratch file
+
     return
 
-1000 format(2x, 'WF centre and spread', &
-&       i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
-
-1001 format(2x, 'Sum of centres and spreads', &
-&       1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+1000 format(2x, 'WF centre and spread', i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+1001 format(2x, 'Sum of centres and spreads', 1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
   contains
 
@@ -1101,7 +1100,7 @@ contains
       type(w90_comm_type), intent(in) :: comm
       type(wann_control_type), intent(in) :: wann_control
       real(kind=dp), intent(inout) :: history(:)
-      real(kind=dp), intent(out) :: save_spread
+      real(kind=dp), intent(inout) :: save_spread
       integer, intent(in) :: iter
       integer, intent(inout) :: conv_count
       integer, intent(inout) :: noise_count
@@ -1773,6 +1772,7 @@ contains
 
       if (timing_level > 1) call io_stopwatch_stop('wann: main: u_and_m', timer)
     end subroutine internal_new_u_and_m
+
   end subroutine wann_main
 
   !================================================!
