@@ -1772,7 +1772,7 @@ contains
           wigner_seitz%irvec(2, ir), wigner_seitz%irvec(3, ir), '  degeneracy: ', &
           wigner_seitz%ndegen(ir)
       end do
-      write (stdout, '(1x,a,f12.3)') ' tot = ', tot
+      !write (stdout, '(1x,a,f12.3)') ' tot = ', tot !not yet computed
       write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
     ! Check the "sum rule"

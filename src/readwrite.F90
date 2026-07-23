@@ -4770,7 +4770,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
 
-    character(len=20) :: keyword
+    character(len=22) :: keyword
     integer           :: ic, in, ins, ine, loop, inner_loop, i, line_e, line_s, counter
     logical           :: found_e, found_s
     character(len=maxlen) :: dummy, end_st, start_st
@@ -4973,14 +4973,14 @@ contains
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%idata
 
       else if (allocated(entry_ptr%ldata)) then
-        if (entry_ptr%keyword == "dump_inputs") exit ! this is not valid .win input
+        if (entry_ptr%keyword == "dump_inputs") cycle ! this is not valid .win input
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%ldata
 
       else if (allocated(entry_ptr%rdata)) then
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%rdata
 
       else if (allocated(entry_ptr%i1d)) then
-        if (entry_ptr%keyword == "distk") exit ! this is not valid .win input
+        if (entry_ptr%keyword == "distk") cycle ! this is not valid .win input
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%i1d(:)
       end if
 

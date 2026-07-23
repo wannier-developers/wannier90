@@ -1090,8 +1090,12 @@ contains
               ! writing progress - summation is the main bottleneck
               loop_xyz = (loop_z - displs(my_node_id))*pw90_berry%kmesh%mesh(1)*pw90_berry%kmesh%mesh(2) &
                          + loop_x*pw90_berry%kmesh%mesh(2) + loop_y
-              call berry_print_progress(loop_xyz, 0, counts(my_node_id)*pw90_berry%kmesh%mesh(1) &
+
+              if (print_output%iprint > 0) then ! only print from root
+                call berry_print_progress(loop_xyz, 0, counts(my_node_id)*pw90_berry%kmesh%mesh(1) &
                                         *pw90_berry%kmesh%mesh(2) - 1, 1, stdout)
+              end if
+
               ! setting 8 vertices and surrounding points
               do i = 0, 3 !16*l+4*k+i+1 = 1,2,3,...,64, eight vertices of a mesh(22, 23, 26, 27, 38, 39, 42, 43) and their surrounding points
                 do k = 0, 3
@@ -3302,6 +3306,7 @@ contains
     ! The last loop_k in the array start:step:end
     ! e.g. 4 of 0:4:7 = [0, 4], 11 of 3:4:11 = [3, 7, 11]
     last_k = (CEILING((end_k - start_k + 1)/real(step_k)) - 1)*step_k + start_k
+
 
     if (loop_k == start_k) then
       write (stdout, '(1x,a)') ''

@@ -73,7 +73,7 @@ when these determine the number of bands in the Wannier90 calculation instead
 of vice-versa.
 
 - `dump_inputs` writes a minimal .win file and .mmn, .amn and .eig files for
-use by standalone executable
+use by standalone executable.
 
 ## Using the Library
 
@@ -84,7 +84,7 @@ use by standalone executable
                           w90_get_gkpb, w90_get_proj, w90_get_centres, &
                           w90_get_spreads, w90_plot, w90_set_eigval, &
                           w90_set_u_opt, w90_set_m_local, w90_set_u_matrix, &
-                          w90_input_reader, input_print_details
+                          w90_input_reader, w90_transport
 ```
 
 The library exposes a number of functions via a Fortran module that should be
@@ -104,9 +104,11 @@ The library exposes a number of functions via a Fortran module that should be
    [w90_get_nnkp](#w90_get_nnkp)
 8. obtain the finite difference neighbour BZ offsets using
    [w90_get_gkpb](#w90_get_gkpb)
-9. (optionally) get projector definition corresponding to input string
-   [w90_get_proj](#w90_get_proj)
-10. calculate projections and overlap
+9. get projector definition corresponding to input string
+   [w90_get_proj](#w90_get_proj)  (your code may have its own mechanism for
+choosing projectors; this is a convenience function that uses Wannier90 to
+parse the .win projector string into a site,l,m,zaxis configuration)
+10. calculate projections and overlap matrices
 11. pass pointers to $U$, $M$, $U^{opt}$ and (if disentangling) eigenvalue
     matrices using [w90_set_eigval](#w90_set_eigval),
 [w90_set_u_matrix](#w90_set_u_matrix), etc
@@ -114,7 +116,7 @@ The library exposes a number of functions via a Fortran module that should be
 13. if disentangling is required, call [w90_disentangle](#w90_disentangle)
 14. prepare for MLWF algorithm by projecting $M$, $U^{opt}$ onto subspace by
     calling [w90_project_overlap](#w90_project_overlap)
-15. call [w90_wannierise](#w90_wannierise)
+15. call [w90_wannierise](#w90_wannierise) (this may be called multiple times in order to test convergence)
 16. obtain centres and spreads with [w90_get_centres](#w90_get_centres) and
     [w90_get_spreads](#w90_get_spreads)
 
@@ -350,7 +352,7 @@ Must follow w90_input_setopt
 Probe library for position of WF spreads.
 
 On entry, spreads must be a double precision array allocated with
-dimension(3,num_wannier)
+dimension(num_wannier).
 
 Must follow w90_input_setopt
 
@@ -371,6 +373,22 @@ value.  Successful optimisation returns ierr zero.
 
 ```fortran title="Fortran"
   subroutine w90_plot(common_data, istdout, istderr, ierr)
+
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), intent(inout) :: common_data
+```
+
+### w90_transport
+
+Perform those transport property calculations that are implemented in the
+Wannier90 main executable (note that this is a much smaller functionality than
+that afforded by postw90.x).  Arguments are the Wannier90 library object,
+integer Fortran unit numbers for standard error and output streams and an
+integer status value.  Successful optimisation returns ierr zero.
+
+```fortran title="Fortran"
+  subroutine w90_transport(common_data, istdout, istderr, ierr)
 
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
@@ -405,10 +423,10 @@ This must be accomplished before calling w90_disentangle.
 This must follow w90_input_setopt.
 
 ```fortran title="Fortran"
-  subroutine w90_set_u_opt(common_data, u_opt)
+  subroutine w90_set_u_opt(common_data, u_matrix_opt)
 
     type(lib_common_type), intent(inout) :: common_data
-    complex(kind=dp), intent(inout), target :: u_opt(:, :, :)
+    complex(kind=dp), intent(inout), target :: u_matrix_opt(:, :, :)
 ```
 
 ### w90_set_m_local
@@ -423,19 +441,18 @@ This must be accomplished before calling w90_disentangle or w90_wannierise.
 This must follow w90_input_setopt.
 
 ```fortran title="Fortran"
-  subroutine w90_set_m_local(common_data, m_orig)
+  subroutine w90_set_m_local(common_data, m_matrix_local)
 
     type(lib_common_type), intent(inout) :: common_data
-    complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
+    complex(kind=dp), intent(inout), target :: m_matrix_local(:, :, :, :)
 ```
 
 ### w90_set_u_matrix
 
 Pass a pointer to a preexisting double precision complex array of
-dimension(num_wannier, num_wannier, nklocal), where nklocal is the number of
-kpoints associated with this rank.  In serial, nklocal equals num_kpoints.
-
-The U matrix is duplicated on all ranks.
+dimension(num_wannier, num_wannier, num_kpoints).
+ 
+The full U matrix is duplicated on all ranks.
 
 This must be accomplished before calling w90_disentangle or w90_wannierise.
 
@@ -454,7 +471,7 @@ w90_input_reader provides an optional mechanism for passing additional flags to
 the library using the input (.win) file.  All valid input tokens of the main
 program may be specified in this way, except for variables listed in
 [w90_set_option](#w90_set_option), i.e. the most important variables defining the
-calculation must be specified by w90_set_input.
+calculation must be specified by w90_set_option.
 
 w90_input_reader must be called after w90_input_setopt.
 
@@ -584,7 +601,8 @@ MPI libraries for Fortran may support both old style ('use mpi') and more
 modern interfaces ('use mpi_f08'); depending on the interface used to build the
 library, communicator objects may be specially typed or treated as integer and
 this must be consistent with what is used in the calling code.  This behaviour
-is driven when Wannier90 is compiled by the use of COMMS=MPI90 or COMMS=MPI08.
+can be adjusted by compiling Wannier90 with use of COMMS=MPI90 , MPI08 or MPIH,
+as needed.
 
 ```bash
 696 | call input_setopt(w90main, filename, stdout, stderr, ierr, comm)

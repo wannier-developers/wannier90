@@ -119,6 +119,11 @@ contains
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch_start('get_oper: get_HH_R', timer)
 
+    if (wigner_seitz%nrpts < 1) then
+       call set_error_fatal(error, 'Error: wigner_setiz%nrpts incorrect at get_HH_R() ', comm)
+       return
+    endif
+
     allocate (HH_R_temp(num_wann, num_wann, wigner_seitz%nrpts))
 
     if (.not. allocated(HH_R)) then
@@ -387,8 +392,10 @@ contains
     end if
     call comms_bcast(AA_R(1, 1, 1, 1), num_wann*num_wann*nrpts*3, error, comm)
     if (allocated(error)) return
+
     if (print_output%timing_level > 1 .and. print_output%iprint > 0) &
       call io_stopwatch_stop('get_oper: get_AA_R', timer)
+    return ! careful, don't fall into the below!
 
 101 call set_error_file(error, 'Error: Problem opening input file '//trim(seedname)//'.mmn', comm)
     return

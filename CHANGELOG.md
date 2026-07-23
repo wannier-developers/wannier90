@@ -1,6 +1,6 @@
 # CHANGELOG of Wannier90
 
-## v4.0.0 (10 July 2026)
+## v4.0.0 (27 July 2026)
 
 ### New features
 
@@ -20,7 +20,7 @@
 
 - Update to the CODATA standard version [[#649]](https://github.com/wannier-developers/wannier90/pull/649)
 
-- Significant code refactoring for data encapsulation, error handling, etc
+- Significant code refactoring for data encapsulation, error handling, etc.
 
 
 ## v3.1.0 (5th March 2020)

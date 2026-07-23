@@ -979,7 +979,7 @@ contains
 
     pw90_berry%tetrahedron_higher_correction = .true.
     call w90_readwrite_get_keyword(settings, 'tetrahedron_higher_correction', found, error, comm, &
-                                   l_value=pw90_berry%tetrahedron_method)
+                                   l_value=pw90_berry%tetrahedron_higher_correction)
     if (.not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
       (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
 
