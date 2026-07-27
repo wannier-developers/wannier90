@@ -631,6 +631,7 @@ contains
 
       if (pw90_berry%tetrahedron_method) call set_error_input &
         (error, 'Tetrahedron method not implemented with wanint_kpoint_file', comm)
+      if (allocated(error)) return
       ! NOTE: still need to specify pw90_pw90_berry%kmesh%mesh in the input file
       !
       !        - Must use the correct nominal value in order to

@@ -1143,7 +1143,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     integer :: ierr
 
-    ! Deallocate real arrays that are public
+    ! Deallocate real arrays
     if (allocated(kmesh_info%bk)) then
       deallocate (kmesh_info%bk, stat=ierr)
       if (ierr /= 0) then
@@ -1165,8 +1165,29 @@ contains
         return
       end if
     end if
+    if (allocated(kmesh_info%nnord)) then
+      deallocate (kmesh_info%wb, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
+        return
+      end if
+    end if
+    if (allocated(kmesh_info%nninv)) then
+      deallocate (kmesh_info%wb, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
+        return
+      end if
+    end if
+    if (allocated(kmesh_info%nnrev)) then
+      deallocate (kmesh_info%wb, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
+        return
+      end if
+    end if
 
-    ! Deallocate integer arrays that are public
+    ! Deallocate integer arrays
     if (allocated(kmesh_info%neigh)) then
       deallocate (kmesh_info%neigh, stat=ierr)
       if (ierr /= 0) then
