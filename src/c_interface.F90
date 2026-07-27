@@ -476,14 +476,16 @@ contains
 #ifdef MPIH
     include 'mpif.h'
 #endif
+    integer(kind=c_int), intent(in) :: comm
+#ifdef MPI08
+    type(mpi_comm) :: comm08
+#endif
     type(w90_data), intent(in), value :: w90_obj
     type(lib_common_type), pointer :: w90_fptr
-    integer(kind=c_int), intent(in) :: comm
 
     call c_f_pointer(w90_obj%caddr, w90_fptr)
 
 #ifdef MPI08
-    type(mpi_comm) :: comm08
     ! Manually assign the integer to the type's internal handle
     comm08%MPI_VAL = comm
     call w90_set_comm_ff(w90_fptr, comm08)
