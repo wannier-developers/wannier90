@@ -53,7 +53,7 @@ the library in serial and parallel.  These examples are distributed in the
 directory `test-suite/library-mode-test`.
 
 Section [C-interface](#c-interface) lists the C interface functions and shows
-how to use them.
+how to use them.  A test is available in `test-suite/library-mode-test-C-interface`.
 
 $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}=\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle$
@@ -68,7 +68,7 @@ projections (Ref. [@marzari-prb97], Eq. (62); Ref. [@souza-prb01], Eq. (22))
 - the `distk` array communicates to Wannier90 how k-points are distributed over
 MPI ranks.  In particular this affects the decomposition of the $M$-matrix.
 
-- `total_bands` is provided for convenience when working with `excluded_bands`
+- `total_bands` is provided for convenience when working with `exclude_bands`
 when these determine the number of bands in the Wannier90 calculation instead
 of vice-versa.
 
@@ -432,13 +432,13 @@ This must follow w90_input_setopt.
 ### w90_set_m_local
 
 Pass a pointer to a preexisting double precision complex array of
-dimension(nbands, nbands, num_wannier, nklocal), where nklocal is the number of
-kpoints associated with this rank.  In serial, nklocal equals num_kpoints.
-The distribution of M across k-points is described by the `distk` array.
+dimension(nbands, nbands, nn, nklocal), where nklocal is the number of kpoints
+associated with this rank and nn is the number of finite difference k-point
+neighbours.  In serial, nklocal equals num_kpoints.  The distribution of M
+across k-points is described by the `distk` array.
 
-This must be accomplished before calling w90_disentangle or w90_wannierise.
-
-This must follow w90_input_setopt.
+This must be done before calling w90_disentangle or w90_wannierise and must
+follow w90_input_setopt.
 
 ```fortran title="Fortran"
   subroutine w90_set_m_local(common_data, m_matrix_local)
@@ -526,6 +526,11 @@ must be added to your "include" path.
 
 The library should be compiled with the same compiler as the calling code.
 
+If you link to the parallel library, you must initialise the MPI system
+(mpi_init) and must pass a valid communicator to the library (failure to do
+this results in an error:  "Error: parallel Wannier90 library invoked with
+invalid communicator, exiting.  Use w90_set_comm()!" )
+
 ## Examples
 
 See directory: test-suite/library-mode-test/
@@ -545,13 +550,13 @@ directory test-suite/library-mode-test-C-interface/
 The directory `wrap/` in the sources contains an Python wrapping of the Fortran
 library.  It is constructed using the [f90wrap
 package](https://github.com/jameskermode/f90wrap) (See also DOI
-10.1088/1361-648X/ab82d2).
+10.1088/1361-648X/ab82d2).  Specifiy `F90WRAP` in the build configuration.
 
 ### Build instructions
 
 - Make sure f90wrap is installed
 - cd wrap
-- make -f Makefile.serial or Makefile.mpi
+- make -f Makefile
 
 Edit the makefiles as appropriate.
 
