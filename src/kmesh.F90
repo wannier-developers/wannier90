@@ -295,7 +295,6 @@ contains
       end if
       write (stdout, '("|")')
     end if
-    !end if
 
     kmesh_info%nntot = 0
     do loop_s = 1, kmesh_input%num_shells
@@ -356,11 +355,11 @@ contains
     end if
 
     ! higher-order algorithm: include 2b, 3b, ..., Nb shells, and modify bweights
-    if (kmesh_input%higher_order_nearest_shells .and. print_output%iprint > 0) then
-      write (stdout, '(a)') ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
+    if (kmesh_input%higher_order_nearest_shells) then
+      if (print_output%iprint > 0) write (stdout, '(a)') &
+        ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
         ' | not been extensively tested.                                               |'
     else
-      ! update nntot
       kmesh_info%nntot = kmesh_info%nntot*kmesh_input%higher_order_n
     end if
 
