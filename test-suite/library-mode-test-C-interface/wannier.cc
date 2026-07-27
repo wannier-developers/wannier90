@@ -51,6 +51,10 @@ void reade(string, int, int, double*);
 
 int main(int argc, char* argv[]) {
 
+#ifdef MPI
+        // before argv parsing: MPI_Init may consume launcher-added arguments
+        MPI_Init(&argc, &argv);
+#endif
         // check command-line argument and input file existence
         if ((argc != 2) || (!filesystem::exists(argv[1]))) {
                 cerr << "usage: " << argv[0] << " xxx.win" << endl;
@@ -99,6 +103,9 @@ int main(int argc, char* argv[]) {
 
         w90_data w90glob;
         w90_create(&w90glob);
+#ifdef MPI
+        w90_set_comm(w90glob, MPI_COMM_WORLD);
+#endif
 
         w90_set_option_double2d(w90glob, "kpoints", &kpt[0][0], nk, 3);
         w90_set_option_int1d(w90glob, "mp_grid", nkabc, 3);
@@ -109,6 +116,7 @@ int main(int argc, char* argv[]) {
 
         int ierr;
         w90_input_setopt(w90glob, root.c_str(), &ierr); // process necessary library options
+        assert(ierr == 0);
 
         w90_input_reader(w90glob, &ierr); // process any other options
         assert(ierr == 0);
@@ -185,6 +193,9 @@ int main(int argc, char* argv[]) {
         w90_get_spreads(w90glob, wannier_spr);
         w90_delete(&w90glob);
 
+#ifdef MPI
+        MPI_Finalize();
+#endif
         return 0;
 }
 

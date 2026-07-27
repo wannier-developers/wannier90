@@ -91,7 +91,7 @@ c_interface.o : c_interface.F90 \
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $< --std=f2018
 
 wannier90.o: wannier90.c
-	 $(CC) $(CFLAGS) -c $<
+	 $(COMPILER) $(POSTOPTS) -fPIC $(CFLAGS) -c $<
 
 constants.o: constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
