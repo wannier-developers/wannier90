@@ -147,6 +147,7 @@ program wannier
   if (rank == 0) open (newunit=stdout, file=seedname//'.wout', status="replace")
 
   ! open main error file
+  ! call w90_get_fortran_stderr(stderr) !alternative for terminal output
   if (rank == 0) open (newunit=stderr, file=seedname//'.werr', status="replace")
 
   call io_date(cdate, ctime)
@@ -167,13 +168,11 @@ program wannier
   ! special branch for writing nnkp file
   ! exit immediately after writing the nnkp file
   if (pp) then
-    if (rank == 0) then
-      call write_kmesh(common_data, stdout, stderr, ierr)
-      if (ierr /= 0) stop
-      close (unit=stderr, status='delete')
-      write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
-      write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
-    end if
+    call write_kmesh(common_data, stdout, stderr, ierr) ! only active on rank 0
+    if (ierr /= 0) stop
+    if (rank == 0) close (unit=stderr, status='delete')
+    if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
+    if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
 #ifdef MPI
     call mpi_finalize(ierr)
 #endif
