@@ -26,12 +26,21 @@
 !------------------------------------------------------------!
 
 program ok
-  !use mpi_f08
+
+#ifdef MPI08
+    use mpi_f08
+#endif
+#ifdef MPI90
   use mpi
+#endif
   use w90_library
   use w90_library_extra, only: overlaps
 
   implicit none
+
+#ifdef MPIH
+    include 'mpif.h'
+#endif
 
   complex(8), allocatable :: m_matrix(:, :, :, :)
   complex(8), allocatable :: u_matrix(:, :, :)
