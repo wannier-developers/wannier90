@@ -28,7 +28,7 @@
 program ok
 
 #ifdef MPI08
-    use mpi_f08
+  use mpi_f08
 #endif
 #ifdef MPI90
   use mpi
@@ -39,7 +39,7 @@ program ok
   implicit none
 
 #ifdef MPIH
-    include 'mpif.h'
+  include 'mpif.h'
 #endif
 
   complex(8), allocatable :: m_matrix(:, :, :, :)

@@ -270,16 +270,16 @@ contains
       if (allocated(error)) return
 
       do ik = 1, nkin
-        if(distk(ik) < 0 .or. distk(ik) >= mpisize(comm)) then
+        if (distk(ik) < 0 .or. distk(ik) >= mpisize(comm)) then
           call set_error_fatal(error, 'Rank in distk table outside of mpi_size in w90_readwrite_read_distk', comm)
           return
-        endif
-      enddo
+        end if
+      end do
     else
       if (mpirank(comm) == 0) then
         write (stdout, '(a)') 'Note: no parallel distribution provided (option distk missing)'
         write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
-      endif
+      end if
       allocate (distk(nkin), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)

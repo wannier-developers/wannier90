@@ -1094,7 +1094,7 @@ contains
 
               if (print_output%iprint > 0) then ! only print from root
                 call berry_print_progress(loop_xyz, 0, counts(my_node_id)*pw90_berry%kmesh%mesh(1) &
-                                        *pw90_berry%kmesh%mesh(2) - 1, 1, stdout)
+                                          *pw90_berry%kmesh%mesh(2) - 1, 1, stdout)
               end if
 
               ! setting 8 vertices and surrounding points
@@ -3307,7 +3307,6 @@ contains
     ! The last loop_k in the array start:step:end
     ! e.g. 4 of 0:4:7 = [0, 4], 11 of 3:4:11 = [3, 7, 11]
     last_k = (CEILING((end_k - start_k + 1)/real(step_k)) - 1)*step_k + start_k
-
 
     if (loop_k == start_k) then
       write (stdout, '(1x,a)') ''
