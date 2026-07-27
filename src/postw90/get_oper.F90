@@ -120,9 +120,9 @@ contains
       call io_stopwatch_start('get_oper: get_HH_R', timer)
 
     if (wigner_seitz%nrpts < 1) then
-       call set_error_fatal(error, 'Error: wigner_setiz%nrpts incorrect at get_HH_R() ', comm)
-       return
-    endif
+      call set_error_fatal(error, 'Error: wigner_setiz%nrpts incorrect at get_HH_R() ', comm)
+      return
+    end if
 
     allocate (HH_R_temp(num_wann, num_wann, wigner_seitz%nrpts))
 

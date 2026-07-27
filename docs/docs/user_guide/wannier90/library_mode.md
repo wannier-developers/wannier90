@@ -116,7 +116,8 @@ parse the .win projector string into a site,l,m,zaxis configuration)
 13. if disentangling is required, call [w90_disentangle](#w90_disentangle)
 14. prepare for MLWF algorithm by projecting $M$, $U^{opt}$ onto subspace by
     calling [w90_project_overlap](#w90_project_overlap)
-15. call [w90_wannierise](#w90_wannierise) (this may be called multiple times in order to test convergence)
+15. call [w90_wannierise](#w90_wannierise) (this may be called multiple times
+    in order to test convergence)
 16. obtain centres and spreads with [w90_get_centres](#w90_get_centres) and
     [w90_get_spreads](#w90_get_spreads)
 
@@ -451,7 +452,7 @@ follow w90_input_setopt.
 
 Pass a pointer to a preexisting double precision complex array of
 dimension(num_wannier, num_wannier, num_kpoints).
- 
+
 The full U matrix is duplicated on all ranks.
 
 This must be accomplished before calling w90_disentangle or w90_wannierise.
