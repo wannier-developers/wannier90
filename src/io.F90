@@ -39,7 +39,7 @@ module w90_io
 
   private
 
-  character(len=10), parameter, public :: w90_version = '4.0.0 ' !! Label for this version of wannier90
+  character(len=10), parameter, public :: w90_version = '4.0.1 ' !! Label for this version of wannier90
 
   public :: io_stopwatch_start
   public :: io_stopwatch_stop
