@@ -382,7 +382,7 @@ contains
         allocate (kubo_AH_spn(3, 3, 3, pw90_berry%kubo_nfreq))
         allocate (jdos_k_spn(3, pw90_berry%kubo_nfreq))
         allocate (jdos_spn(3, pw90_berry%kubo_nfreq))
-        ! fixme, shouldn't we pedantically check these allocs also JJ
+        ! fixme, check these allocs for failure
         kubo_H_spn = cmplx_0
         kubo_AH_spn = cmplx_0
         jdos_spn = 0.0_dp
@@ -631,6 +631,7 @@ contains
 
       if (pw90_berry%tetrahedron_method) call set_error_input &
         (error, 'Tetrahedron method not implemented with wanint_kpoint_file', comm)
+      if (allocated(error)) return
       ! NOTE: still need to specify pw90_pw90_berry%kmesh%mesh in the input file
       !
       !        - Must use the correct nominal value in order to
@@ -1090,8 +1091,12 @@ contains
               ! writing progress - summation is the main bottleneck
               loop_xyz = (loop_z - displs(my_node_id))*pw90_berry%kmesh%mesh(1)*pw90_berry%kmesh%mesh(2) &
                          + loop_x*pw90_berry%kmesh%mesh(2) + loop_y
-              call berry_print_progress(loop_xyz, 0, counts(my_node_id)*pw90_berry%kmesh%mesh(1) &
-                                        *pw90_berry%kmesh%mesh(2) - 1, 1, stdout)
+
+              if (print_output%iprint > 0) then ! only print from root
+                call berry_print_progress(loop_xyz, 0, counts(my_node_id)*pw90_berry%kmesh%mesh(1) &
+                                          *pw90_berry%kmesh%mesh(2) - 1, 1, stdout)
+              end if
+
               ! setting 8 vertices and surrounding points
               do i = 0, 3 !16*l+4*k+i+1 = 1,2,3,...,64, eight vertices of a mesh(22, 23, 26, 27, 38, 39, 42, 43) and their surrounding points
                 do k = 0, 3

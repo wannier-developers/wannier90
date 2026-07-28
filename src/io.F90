@@ -39,7 +39,7 @@ module w90_io
 
   private
 
-  character(len=10), parameter, public :: w90_version = '3.1.0 ' !! Label for this version of wannier90
+  character(len=10), parameter, public :: w90_version = '4.0.1 ' !! Label for this version of wannier90
 
   public :: io_stopwatch_start
   public :: io_stopwatch_stop
@@ -456,6 +456,7 @@ contains
       je = error%code
       call comms_no_sync_send(je, 1, 0, le, comm)
       if (je /= code_remote .and. je /= 0) then
+        ie = je ! also set failed status on non 0 ranks
         mesg = error%message
         call comms_no_sync_send(mesg, 128, 0, le, comm)
       end if

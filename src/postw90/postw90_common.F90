@@ -185,7 +185,7 @@ contains
 
 101 call set_error_file(error, 'Error in pw90common_wanint_setup: problem opening file '// &
                         trim(seedname)//'_HH_R.dat', comm)
-    return !jj fixme restructure
+    return
 
   end subroutine pw90common_wanint_setup
 
@@ -386,7 +386,7 @@ contains
     if (allocated(error)) return
 
     !______________________________________
-    !JJ fixme maybe? not so pretty solution to setting iprint to zero on non-root processes
+    ! not so pretty solution to setting iprint to zero on non-root processes
     iprintroot = print_output%iprint
     print_output%iprint = 0
     call comms_bcast(print_output%iprint, 1, error, comm)
@@ -1772,7 +1772,7 @@ contains
           wigner_seitz%irvec(2, ir), wigner_seitz%irvec(3, ir), '  degeneracy: ', &
           wigner_seitz%ndegen(ir)
       end do
-      write (stdout, '(1x,a,f12.3)') ' tot = ', tot
+      !write (stdout, '(1x,a,f12.3)') ' tot = ', tot !not yet computed
       write (stdout, '(1x,a,i12)') ' mp_grid product = ', mp_grid(1)*mp_grid(2)*mp_grid(3)
     end if
     ! Check the "sum rule"

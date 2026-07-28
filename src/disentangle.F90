@@ -267,7 +267,7 @@ contains
     end do
 
     ! Find the initial u_matrix
-    if (lsitesymmetry) call sitesym_replace_d_matrix_band(sitesym, num_wann) !RS: replace d_matrix_band here
+    if (lsitesymmetry) call sitesym_replace_d_matrix_band(sitesym, num_wann, error, comm)
 
     if (gamma_only) then
       call internal_find_u_gamma(a_matrix, u_matrix, u_matrix_opt, dis_manifold%ndimwin, num_wann, &
@@ -4277,7 +4277,7 @@ contains
     real(kind=dp), intent(in) :: wb(:)
     real(kind=dp), intent(out) :: rmtrx(:, :)
 
-    complex(kind=dp), intent(in) :: cbw(:, :)
+    complex(kind=dp), intent(inout) :: cbw(:, :)
     complex(kind=dp), intent(in) :: m_matrix_orig_local(:, :, :, :)
     complex(kind=dp), intent(inout) :: u_matrix_opt(:, :, :)
 

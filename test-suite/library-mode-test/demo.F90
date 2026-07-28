@@ -26,8 +26,13 @@
 !------------------------------------------------------------!
 
 program ok
-  !use mpi_f08
+
+! fallback to f90 mpi interface for this test's simplified cmake setup
+#ifdef MPI08
+  use mpi_f08
+#else
   use mpi
+#endif
   use w90_library
   use w90_library_extra, only: overlaps
 

@@ -51,6 +51,10 @@ void reade(string, int, int, double*);
 
 int main(int argc, char* argv[]) {
 
+#ifdef MPI
+        // before argv parsing: MPI_Init may consume launcher-added arguments
+        MPI_Init(&argc, &argv);
+#endif
         // check command-line argument and input file existence
         if ((argc != 2) || (!filesystem::exists(argv[1]))) {
                 cerr << "usage: " << argv[0] << " xxx.win" << endl;
@@ -99,6 +103,9 @@ int main(int argc, char* argv[]) {
 
         w90_data w90glob;
         w90_create(&w90glob);
+#ifdef MPI
+        w90_set_comm(w90glob, MPI_COMM_WORLD);
+#endif
 
         w90_set_option_double2d(w90glob, "kpoints", &kpt[0][0], nk, 3);
         w90_set_option_int1d(w90glob, "mp_grid", nkabc, 3);
@@ -109,6 +116,7 @@ int main(int argc, char* argv[]) {
 
         int ierr;
         w90_input_setopt(w90glob, root.c_str(), &ierr); // process necessary library options
+        assert(ierr == 0);
 
         w90_input_reader(w90glob, &ierr); // process any other options
         assert(ierr == 0);
@@ -129,10 +137,8 @@ int main(int argc, char* argv[]) {
         int* gkpbdata = new int[nk * nnfd * 3];
         int*** gkpb = new int**[nnfd];
         for (int j = 0; j < nnfd; ++j) {
-                gkpb[j] = new int*[nk * nnfd];
-
+                gkpb[j] = new int*[nk];
                 for (int i = 0; i < nk; ++i) {
-                        gkpb[j][i] = new int[3];
                         gkpb[j][i] = &gkpbdata[j * nk * 3 + i * 3];
                 }
         }
@@ -156,7 +162,7 @@ int main(int argc, char* argv[]) {
         complex<double>* adata = new complex<double>[nb * nw * nk];
         complex<double>* mdata = new complex<double>[nb * nb * nk * nnfd];
         complex<double>* umat = new complex<double>[nw * nw * nk];
-        double* edata = new double[nb * nk];
+        double* edata = new double[nb * nk]();
 
         w90_set_m_local(w90glob, reinterpret_cast<_Complex double*>(mdata)); // m matrix
         w90_set_u_matrix(w90glob, reinterpret_cast<_Complex double*>(umat)); // results returned here
@@ -170,9 +176,11 @@ int main(int argc, char* argv[]) {
         reada(fn, nk, nb, nw, adata);
 
         fn = root + ".eig";
+        assert(filesystem::exists(fn) || nb == nw); // disentanglement requires eigenvalues
         if (filesystem::exists(fn)) reade(fn, nk, nb, edata);
 
         w90_disentangle(w90glob, &ierr);
+        assert(ierr == 0);
         w90_project_overlap(w90glob, &ierr);
         assert(ierr == 0);
 
@@ -185,6 +193,9 @@ int main(int argc, char* argv[]) {
         w90_get_spreads(w90glob, wannier_spr);
         w90_delete(&w90glob);
 
+#ifdef MPI
+        MPI_Finalize();
+#endif
         return 0;
 }
 
@@ -286,30 +297,26 @@ void readm(string filename, int** nnkp, int*** gkpb, int nkexpect, int nbexpect,
                 for (int jk = 0; jk < nnexpect; ++jk) {
                         int tk, tkp, tx, ty, tz;
                         mfile >> tk >> tkp >> tx >> ty >> tz;
-                        if (mfile) {
+                        assert(mfile);
+                        assert(tk == ik + 1);
 
-                                // some of the examples have reordered m matrix files
-                                int kk;
-                                for (kk = 0; kk < nnexpect; ++kk) {
-                                        if (nnkp[kk][ik] == tkp && tx == gkpb[kk][ik][0] && ty == gkpb[kk][ik][1] && tz == gkpb[kk][ik][2]) break;
-                                }
+                        // some of the examples have reordered m matrix files
+                        int kk;
+                        for (kk = 0; kk < nnexpect; ++kk) {
+                                if (nnkp[kk][ik] == tkp && tx == gkpb[kk][ik][0] && ty == gkpb[kk][ik][1] && tz == gkpb[kk][ik][2]) break;
+                        }
+                        assert(kk < nnexpect); // (k, k+b) pair in file must exist in FD scheme
 
-                                assert(tk == ik + 1);
-                                assert(tkp == nnkp[kk][ik]);
-                                assert(tx == gkpb[kk][ik][0]);
-                                assert(ty == gkpb[kk][ik][1]);
-                                assert(tz == gkpb[kk][ik][2]);
-
-                                int ctr = 0;
-                                int off = (ik * nnexpect + kk) * nbexpect * nbexpect;
-                                for (int ib = 0; ib < nbexpect; ++ib) {
-                                        for (int jb = 0; jb < nbexpect; ++jb) {
-                                                double r, c;
-                                                mfile >> r >> c;
-                                                m[off + ctr++] = complex<double>(r, c);
-                                        }
+                        int ctr = 0;
+                        int off = (ik * nnexpect + kk) * nbexpect * nbexpect;
+                        for (int ib = 0; ib < nbexpect; ++ib) {
+                                for (int jb = 0; jb < nbexpect; ++jb) {
+                                        double r, c;
+                                        mfile >> r >> c;
+                                        m[off + ctr++] = complex<double>(r, c);
                                 }
                         }
+                        assert(mfile);
                 }
         }
         mfile.close();
@@ -331,12 +338,11 @@ void reada(string filename, int nkexpect, int nbexpect, int nwexpect, complex<do
                                 double r, c;
                                 int tb, tk, tw;
                                 afile >> tb >> tw >> tk >> r >> c;
-                                if (afile) {
-                                        assert(tb == ib + 1);
-                                        assert(tk == ik + 1);
-                                        assert(tw == iw + 1);
-                                        a[ctr++] = complex<double>(r, c);
-                                }
+                                assert(afile);
+                                assert(tb == ib + 1);
+                                assert(tk == ik + 1);
+                                assert(tw == iw + 1);
+                                a[ctr++] = complex<double>(r, c);
                         }
                 }
         }
@@ -351,11 +357,10 @@ void reade(string filename, int nkexpect, int nbexpect, double* e) {
                         double r;
                         int tb, tk;
                         efile >> tb >> tk >> r;
-                        if (efile) {
-                                assert(tb == ib + 1);
-                                assert(tk == ik + 1);
-                                e[ctr++] = r;
-                        }
+                        assert(efile);
+                        assert(tb == ib + 1);
+                        assert(tk == ik + 1);
+                        e[ctr++] = r;
                 }
         }
         efile.close();

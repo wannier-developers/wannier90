@@ -295,7 +295,6 @@ contains
       end if
       write (stdout, '("|")')
     end if
-    !end if
 
     kmesh_info%nntot = 0
     do loop_s = 1, kmesh_input%num_shells
@@ -356,12 +355,11 @@ contains
     end if
 
     ! higher-order algorithm: include 2b, 3b, ..., Nb shells, and modify bweights
-    ! jj fixmeare these branches really separate?
     if (kmesh_input%higher_order_nearest_shells) then
-      write (stdout, '(a)') ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
+      if (print_output%iprint > 0) write (stdout, '(a)') &
+        ' | WARNING: higher_order_nearest_shells is an experimental feature, and has   |', &
         ' | not been extensively tested.                                               |'
     else
-      ! update nntot
       kmesh_info%nntot = kmesh_info%nntot*kmesh_input%higher_order_n
     end if
 
@@ -525,7 +523,7 @@ contains
     end do
 
     if (kmesh_input%kmesh_shell_from_file) then
-      ! JJ fixme, this set of actions should be moved to the kmesh_shell_from_file function and clean up
+      ! should this be moved to the kmesh_shell_from_file as a function to simplify?
       nnshell = 0
       do nkp = 1, num_kpts
         nnx = 0
@@ -664,7 +662,6 @@ contains
       write (stdout, '(1x,"+",76("-"),"+")')
     end if
 
-    !
     kmesh_info%wbtot = 0.0_dp
     nnx = 0
     do ndnnx = 1, kmesh_input%num_shells
@@ -1145,7 +1142,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     integer :: ierr
 
-    ! Deallocate real arrays that are public
+    ! Deallocate real arrays
     if (allocated(kmesh_info%bk)) then
       deallocate (kmesh_info%bk, stat=ierr)
       if (ierr /= 0) then
@@ -1167,8 +1164,29 @@ contains
         return
       end if
     end if
+    if (allocated(kmesh_info%nnord)) then
+      deallocate (kmesh_info%wb, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
+        return
+      end if
+    end if
+    if (allocated(kmesh_info%nninv)) then
+      deallocate (kmesh_info%wb, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
+        return
+      end if
+    end if
+    if (allocated(kmesh_info%nnrev)) then
+      deallocate (kmesh_info%wb, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating wb in kmesh_dealloc', comm)
+        return
+      end if
+    end if
 
-    ! Deallocate integer arrays that are public
+    ! Deallocate integer arrays
     if (allocated(kmesh_info%neigh)) then
       deallocate (kmesh_info%neigh, stat=ierr)
       if (ierr /= 0) then

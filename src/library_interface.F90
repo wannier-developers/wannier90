@@ -87,7 +87,7 @@ module w90_library
 
   ! datatype encapsulating types used by wannier90
   type lib_common_type
-    character(len=128) :: seedname
+    character(len=50) :: seedname ! size=50 is a convention here
     !! base name for reading/writing of files
 
     ! matrices
@@ -584,8 +584,12 @@ contains
     if (common_data%output_file%write_win_ammats) then
       ! for writing input m,a matrices
       call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
-                         common_data%eigval, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                         common_data%eigval, common_data%num_bands, common_data%num_kpts, &
                          common_data%num_proj, common_data%seedname, error, common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
     end if
 
     ! condition for disentanglement is number of bands > number of WF
@@ -619,6 +623,7 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_overlap, only: overlap_project, overlap_project_gamma
+    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -645,6 +650,13 @@ contains
       call set_error_fatal(error, 'u_matrixt not set for w90_project_overlap call', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
+    end if
+
+    if (common_data%output_file%write_win_ammats .and. .not. common_data%have_disentangled) then
+      ! for writing input m,a matrices
+      call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
+                         common_data%eigval, common_data%num_bands, common_data%num_kpts, &
+                         common_data%num_proj, common_data%seedname, error, common_data%comm)
     end if
 
     if (.not. common_data%have_disentangled) then
@@ -691,7 +703,6 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_wannierise_mod, only: wann_main, wann_main_gamma
-    use w90_overlap, only: overlap_write
 
     implicit none
 
@@ -713,13 +724,6 @@ contains
     if (allocated(error)) then
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    end if
-
-    if (common_data%output_file%write_win_ammats .and. .not. common_data%have_disentangled) then
-      ! for writing input m,a matrices
-      call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
-                         common_data%eigval, common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
-                         common_data%num_proj, common_data%seedname, error, common_data%comm)
     end if
 
     if (common_data%gamma_only) then
@@ -935,6 +939,8 @@ contains
       call w90_create_kmesh(common_data, istdout, istderr, ierr)
       !! setup k-mesh (b vectors) if not already done (sets setup_complete)
       if (ierr > 0) return
+    else
+      ierr = 0
     end if
 
     nn = common_data%kmesh_info%nntot
@@ -954,6 +960,8 @@ contains
       call w90_create_kmesh(common_data, istdout, istderr, ierr)
       !! setup k-mesh (b vectors) if not already done (sets setup_complete)
       if (ierr > 0) return
+    else
+      ierr = 0
     end if
 
     nnkp = common_data%kmesh_info%nnlist
@@ -973,6 +981,8 @@ contains
       call w90_create_kmesh(common_data, istdout, istderr, ierr)
       !! setup k-mesh (b vectors) if not already done (sets setup_complete)
       if (ierr > 0) return
+    else
+      ierr = 0
     end if
 
     gkpb = common_data%kmesh_info%nncell
@@ -1030,12 +1040,19 @@ contains
 
     type(w90_error_type), allocatable :: error
 
+    ierr = 0
+
     if (.not. allocated(excl_bands)) then
       call set_error_fatal(error, &
                            'Error: array argument excl_bands in get_excl_bands() call is not allocated', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
       return
-    else if (size(excl_bands) < size(common_data%exclude_bands(:))) then
+    else if (.not. allocated(common_data%exclude_bands)) then
+      call set_error_fatal(error, &
+                           'Error: common_data%exclude_bands in get_excl_bands() call is not allocated', common_data%comm)
+      call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    else if (size(excl_bands) < size(common_data%exclude_bands)) then
       call set_error_fatal(error, &
                            'Error: array argument excl_bands in get_excl_bands() call is incorrectly sized', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)

@@ -354,7 +354,6 @@ contains
     end if
 
     ! initialize local u matrix with global one
-    ! JJ fixme, do a proper copy, please
     do nkp_loc = 1, nkrank
       nkp = global_k(nkp_loc)
       u_matrix_loc(:, :, nkp_loc) = u_matrix(:, :, nkp)
@@ -1070,13 +1069,12 @@ contains
       call io_stopwatch_stop('wann: main', timer)
     end if
 
+    if (.not. wann_control%lfixstep .and. optimisation <= 0) close (page_unit) !close scratch file
+
     return
 
-1000 format(2x, 'WF centre and spread', &
-&       i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
-
-1001 format(2x, 'Sum of centres and spreads', &
-&       1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+1000 format(2x, 'WF centre and spread', i5, 2x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
+1001 format(2x, 'Sum of centres and spreads', 1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
   contains
 
@@ -1102,7 +1100,7 @@ contains
       type(w90_comm_type), intent(in) :: comm
       type(wann_control_type), intent(in) :: wann_control
       real(kind=dp), intent(inout) :: history(:)
-      real(kind=dp), intent(out) :: save_spread
+      real(kind=dp), intent(inout) :: save_spread
       integer, intent(in) :: iter
       integer, intent(inout) :: conv_count
       integer, intent(inout) :: noise_count
@@ -1430,14 +1428,17 @@ contains
       end if
 
       ! gcnorm1 = Tr[gradient . gradient] -- NB gradient is anti-Hermitian
-      if (wann_control%precond) then
-        ! compute (zdotc) cdodq_precond_loc.cdodq_loc^c
-        call zgemv('c', m, 1, cmplx_1, cdodq_precond_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
-        gcnorm1 = real(zres, dp)
-      else
-        ! compute (zdotc) cdodq_loc.cdodq_loc^c
-        call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
-        gcnorm1 = real(zres, dp)
+      gcnorm1 = 0
+      if (m > 0) then
+        if (wann_control%precond) then
+          ! compute (zdotc) cdodq_precond_loc.cdodq_loc^c
+          call zgemv('c', m, 1, cmplx_1, cdodq_precond_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
+          gcnorm1 = real(zres, dp)
+        else
+          ! compute (zdotc) cdodq_loc.cdodq_loc^c
+          call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdodq_loc, 1, cmplx_0, zres, 1)
+          gcnorm1 = real(zres, dp)
+        end if
       end if
       call comms_allreduce(gcnorm1, 1, 'SUM', error, comm)
       if (allocated(error)) return
@@ -1485,7 +1486,8 @@ contains
       ! calculate gradient along search direction - Tr[gradient . search direction]
       ! NB gradient is anti-hermitian
       ! compute (zdotc) cdodq_loc.cdq_loc^c
-      call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdq_loc, 1, cmplx_0, zres, 1)
+      zres = 0
+      if (m > 0) call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdq_loc, 1, cmplx_0, zres, 1)
       doda0 = -real(zres, dp)
 
       call comms_allreduce(doda0, 1, 'SUM', error, comm)
@@ -1508,7 +1510,8 @@ contains
 
           ! re-calculate gradient along search direction
           ! compute (zdotc) cdodq_loc.cdq_loc^c
-          call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdq_loc, 1, cmplx_0, zres, 1)
+          zres = 0
+          if (m > 0) call zgemv('c', m, 1, cmplx_1, cdodq_loc, m, cdq_loc, 1, cmplx_0, zres, 1)
           doda0 = -real(zres, dp)
 
           call comms_allreduce(doda0, 1, 'SUM', error, comm)
@@ -1769,6 +1772,7 @@ contains
 
       if (timing_level > 1) call io_stopwatch_stop('wann: main: u_and_m', timer)
     end subroutine internal_new_u_and_m
+
   end subroutine wann_main
 
   !================================================!

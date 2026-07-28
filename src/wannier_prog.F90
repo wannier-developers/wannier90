@@ -86,9 +86,15 @@ program wannier
   include 'mpif.h'
 #endif
 
+! nvfortran fails to correctly handle the dp private attribute in module w90_library
+!       nvfortran 25.7-0 64-bit target on x86-64 Linux -tp znve
+! if needed in practice, use "only" or rename dp in use directive
+#ifndef __NVCOMPILER
   integer, parameter :: dp = kind(0.d0)
+#endif
 
-  character(len=:), allocatable :: seedname, progname, cpstatus
+  character(len=:), allocatable :: seedname, progname
+  character(len=20) :: cpstatus ! checkpoint file status
   character(len=:), pointer :: restart
   complex(kind=dp), allocatable :: m_matrix_loc(:, :, :, :)
   complex(kind=dp), allocatable :: u_matrix(:, :, :)
@@ -114,6 +120,7 @@ program wannier
   progname = 'wannier90' ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
   call io_commandline(progname, ld, pp, seedname)
 
+  call w90_get_fortran_stderr(stderr) ! for early error cases; maybe overwritten later
 #ifdef MPI
   call mpi_init(ierr)
   if (ierr /= 0) then
@@ -140,7 +147,6 @@ program wannier
   if (rank == 0) open (newunit=stdout, file=seedname//'.wout', status="replace")
 
   ! open main error file
-  ! call w90_get_fortran_stderr(stderr) !alternative for terminal output
   if (rank == 0) open (newunit=stderr, file=seedname//'.werr', status="replace")
 
   call io_date(cdate, ctime)
@@ -161,7 +167,7 @@ program wannier
   ! special branch for writing nnkp file
   ! exit immediately after writing the nnkp file
   if (pp) then
-    call write_kmesh(common_data, stdout, stderr, ierr) ! only active on rank 0
+    call write_kmesh(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop
     if (rank == 0) close (unit=stderr, status='delete')
     if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'

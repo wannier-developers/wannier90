@@ -1,5 +1,5 @@
 
-This crude file demonstrates basic functionality of the Wannier90 library (version 2).
+This crude file demonstrates basic functionality of the Wannier90 v4 library.
 
 It parses .win files for unit cell definitions, kpoints and number of Wannier functions before reading M and A matrices and eigenvalues from usual Wannier90 input files and perfoms a wannierisation.
 

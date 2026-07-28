@@ -54,9 +54,8 @@
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
-             | of the GNU General Public License as published by |
-             | the Free Software Foundation; either version 2 of |
-             | the License, or (at your option) any later version|
+             | of the GNU Lesser General Public License, version |
+             | 2.1 as published by the Free Software Foundation. |
              |                                                   |
              | This program is distributed in the hope that it   |
              | will be useful, but WITHOUT ANY WARRANTY; without |
@@ -64,21 +63,20 @@
              | FITNESS FOR A PARTICULAR PURPOSE. See the GNU     |
              | General Public License for more details.          |
              |                                                   |
-             | You should have received a copy of the GNU General|
-             | Public License along with this program; if not,   |
-             | write to the Free Software Foundation, Inc.,      |
-             | 675 Mass Ave, Cambridge, MA 02139, USA.           |
+             | You should have received a copy of the GNU Lesser |
+             | General Public License along with this program;   |
+             | if not, write to the Free Software Foundation,    |
+             | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 16Jan2025 at 09:55:21     |
+             |    Execution started on 10Jul2026 at 15:59:31     |
              +---------------------------------------------------+
 
  ******************************************************************************
- * -> Using CODATA 2006 constant values                                       *
+ * -> Using CODATA 2022 constant values                                       *
  *    (http://physics.nist.gov/cuu/Constants/index.html)                      *
  * -> Using Bohr value from CODATA                                            *
  ******************************************************************************
-
 
  Running in serial (with parallel executable)
 
@@ -141,7 +139,7 @@
  |  Using global k-point set for interpolation                                |
  |  Adaptive refinement                       :              none             |
  *----------------------------------------------------------------------------*
- Time to read parameters        0.005 (sec)
+ Time to read parameters        0.007 (sec)
 
  *---------------------------------- K-MESH ----------------------------------*
  +----------------------------------------------------------------------------+
@@ -167,7 +165,7 @@
  |            16                   6.386882                     48            |
  |            17                   6.572048                     30            |
  |            18                   6.752137                     72            |
- |            19                   6.927547                     24            |
+ |            19                   6.927546                     24            |
  |            20                   7.098623                     48            |
  |            21                   7.265672                     24            |
  |            22                   7.428966                     48            |
@@ -187,7 +185,7 @@
  |            36                   9.548964                     24            |
  +----------------------------------------------------------------------------+
  | The b-vectors are chosen automatically                                     |
- | The following shells and their multiples are used:   1                     |
+ | The following shells are used:                       1                     |
  +----------------------------------------------------------------------------+
  |                        Shell   # Nearest-Neighbours                        |
  |                        -----   --------------------                        |
@@ -243,18 +241,18 @@
  |            12         2.190683    2.190683    0.000000                     |
  +----------------------------------------------------------------------------+
 
- Time to get kmesh              0.009 (sec)
+ Time to get kmesh              0.016 (sec)
  Reading restart information from file Fe.chk :
- written on 16Jan2025 at 09:53:40 ... done
+ written on 15Jan2026 at 12:22:22 ... done
 
 
- Time to read and process       0.029 (sec)
+ Time to read and process       0.052 (sec)
 
- Reading overlaps from Fe.mmn in get_AA_R   :  Created on 16Jan2025 at  9:53:16
+ Reading overlaps from Fe.mmn in get_AA_R   :  Created on 15Jan2026 at  8:54:19
 
- Reading overlaps from Fe.mmn in get_BB_R   :  Created on 16Jan2025 at  9:53:16
+ Reading overlaps from Fe.mmn in get_BB_R   :  Created on 15Jan2026 at  8:54:19
 
- Reading uHu overlaps from Fe.uHu in get_CC_R: Created on 16Jan2025 at  9:53:19
+ Reading uHu overlaps from Fe.uHu in get_CC_R: Created on 15Jan2026 at  8:54:20
 
 
  Properties calculated in module  b e r r y
@@ -269,16 +267,16 @@
 
 
  M_orb (bohr magn/cell)        x          y          z
- ======================      0.0000    -0.0000    -0.0617
+ ======================      0.0000     0.0000    -0.0617
 
- Total Execution Time           1.376 (sec)
+ Total Execution Time           1.725 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.009|
+ |kmesh: get                                        :         1         0.016|
  *---------------------------------------------------------------------------*
 
  All done: postw90 exiting

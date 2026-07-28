@@ -310,6 +310,8 @@ contains
                        num_bands, num_kpts, num_wann, w90_system%num_valence_bands, &
                        w90_system%num_elec_per_state, effective_model, have_disentangled, &
                        spin_decomp, seedname, stdout, timer, error, comm)
+    if (allocated(error)) return
+
     ! The TDF array contains now the TDF, or more precisely
     ! hbar^2 * TDF in units of eV * fs / angstrom
 

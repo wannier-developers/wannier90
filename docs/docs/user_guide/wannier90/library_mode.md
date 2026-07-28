@@ -53,7 +53,7 @@ the library in serial and parallel.  These examples are distributed in the
 directory `test-suite/library-mode-test`.
 
 Section [C-interface](#c-interface) lists the C interface functions and shows
-how to use them.
+how to use them.  A test is available in `test-suite/library-mode-test-C-interface`.
 
 $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}=\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle$
@@ -68,12 +68,12 @@ projections (Ref. [@marzari-prb97], Eq. (62); Ref. [@souza-prb01], Eq. (22))
 - the `distk` array communicates to Wannier90 how k-points are distributed over
 MPI ranks.  In particular this affects the decomposition of the $M$-matrix.
 
-- `total_bands` is provided for convenience when working with `excluded_bands`
+- `total_bands` is provided for convenience when working with `exclude_bands`
 when these determine the number of bands in the Wannier90 calculation instead
 of vice-versa.
 
 - `dump_inputs` writes a minimal .win file and .mmn, .amn and .eig files for
-use by standalone executable
+use by standalone executable.
 
 ## Using the Library
 
@@ -84,7 +84,7 @@ use by standalone executable
                           w90_get_gkpb, w90_get_proj, w90_get_centres, &
                           w90_get_spreads, w90_plot, w90_set_eigval, &
                           w90_set_u_opt, w90_set_m_local, w90_set_u_matrix, &
-                          w90_input_reader, input_print_details
+                          w90_input_reader, w90_transport
 ```
 
 The library exposes a number of functions via a Fortran module that should be
@@ -104,9 +104,11 @@ The library exposes a number of functions via a Fortran module that should be
    [w90_get_nnkp](#w90_get_nnkp)
 8. obtain the finite difference neighbour BZ offsets using
    [w90_get_gkpb](#w90_get_gkpb)
-9. (optionally) get projector definition corresponding to input string
-   [w90_get_proj](#w90_get_proj)
-10. calculate projections and overlap
+9. get projector definition corresponding to input string
+   [w90_get_proj](#w90_get_proj)  (your code may have its own mechanism for
+choosing projectors; this is a convenience function that uses Wannier90 to
+parse the .win projector string into a site,l,m,zaxis configuration)
+10. calculate projections and overlap matrices
 11. pass pointers to $U$, $M$, $U^{opt}$ and (if disentangling) eigenvalue
     matrices using [w90_set_eigval](#w90_set_eigval),
 [w90_set_u_matrix](#w90_set_u_matrix), etc
@@ -114,7 +116,8 @@ The library exposes a number of functions via a Fortran module that should be
 13. if disentangling is required, call [w90_disentangle](#w90_disentangle)
 14. prepare for MLWF algorithm by projecting $M$, $U^{opt}$ onto subspace by
     calling [w90_project_overlap](#w90_project_overlap)
-15. call [w90_wannierise](#w90_wannierise)
+15. call [w90_wannierise](#w90_wannierise) (this may be called multiple times
+    in order to test convergence)
 16. obtain centres and spreads with [w90_get_centres](#w90_get_centres) and
     [w90_get_spreads](#w90_get_spreads)
 
@@ -244,7 +247,7 @@ Must follow w90_input_setopt
 
 Returns tabulation of finite difference scheme k' indices.
 
-On entry, nnkp must be allocated with dimension(nn,num_kpts) where nn is the
+On entry, nnkp must be allocated with dimension(num_kpts,nn) where nn is the
 number of points in the FD scheme (returned by w90_get_nn) and num_kpts is the
 total number of k-points (FBZ).
 
@@ -262,7 +265,7 @@ Must follow w90_input_setopt
 
 Get BZ offsets corresponding to each k,k' pair described in nnkp.
 
-On entry, gkpb must be allocated with dimension(nn,num_kpts) where nn is the
+On entry, gkpb must be allocated with dimension(3,num_kpts,nn) where nn is the
 number of points in the FD scheme (returned by w90_get_nn) and num_kpts is the
 total number of k-points (FBZ).
 
@@ -350,7 +353,7 @@ Must follow w90_input_setopt
 Probe library for position of WF spreads.
 
 On entry, spreads must be a double precision array allocated with
-dimension(3,num_wannier)
+dimension(num_wannier).
 
 Must follow w90_input_setopt
 
@@ -371,6 +374,22 @@ value.  Successful optimisation returns ierr zero.
 
 ```fortran title="Fortran"
   subroutine w90_plot(common_data, istdout, istderr, ierr)
+
+    integer, intent(in) :: istdout, istderr
+    integer, intent(out) :: ierr
+    type(lib_common_type), intent(inout) :: common_data
+```
+
+### w90_transport
+
+Perform those transport property calculations that are implemented in the
+Wannier90 main executable (note that this is a much smaller functionality than
+that afforded by postw90.x).  Arguments are the Wannier90 library object,
+integer Fortran unit numbers for standard error and output streams and an
+integer status value.  Successful optimisation returns ierr zero.
+
+```fortran title="Fortran"
+  subroutine w90_transport(common_data, istdout, istderr, ierr)
 
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
@@ -405,37 +424,36 @@ This must be accomplished before calling w90_disentangle.
 This must follow w90_input_setopt.
 
 ```fortran title="Fortran"
-  subroutine w90_set_u_opt(common_data, u_opt)
+  subroutine w90_set_u_opt(common_data, u_matrix_opt)
 
     type(lib_common_type), intent(inout) :: common_data
-    complex(kind=dp), intent(inout), target :: u_opt(:, :, :)
+    complex(kind=dp), intent(inout), target :: u_matrix_opt(:, :, :)
 ```
 
 ### w90_set_m_local
 
 Pass a pointer to a preexisting double precision complex array of
-dimension(nbands, nbands, num_wannier, nklocal), where nklocal is the number of
-kpoints associated with this rank.  In serial, nklocal equals num_kpoints.
-The distribution of M across k-points is described by the `distk` array.
+dimension(nbands, nbands, nn, nklocal), where nklocal is the number of kpoints
+associated with this rank and nn is the number of finite difference k-point
+neighbours.  In serial, nklocal equals num_kpoints.  The distribution of M
+across k-points is described by the `distk` array.
 
-This must be accomplished before calling w90_disentangle or w90_wannierise.
-
-This must follow w90_input_setopt.
+This must be done before calling w90_disentangle or w90_wannierise and must
+follow w90_input_setopt.
 
 ```fortran title="Fortran"
-  subroutine w90_set_m_local(common_data, m_orig)
+  subroutine w90_set_m_local(common_data, m_matrix_local)
 
     type(lib_common_type), intent(inout) :: common_data
-    complex(kind=dp), intent(inout), target :: m_orig(:, :, :, :)
+    complex(kind=dp), intent(inout), target :: m_matrix_local(:, :, :, :)
 ```
 
 ### w90_set_u_matrix
 
 Pass a pointer to a preexisting double precision complex array of
-dimension(num_wannier, num_wannier, nklocal), where nklocal is the number of
-kpoints associated with this rank.  In serial, nklocal equals num_kpoints.
+dimension(num_wannier, num_wannier, num_kpoints).
 
-The U matrix is duplicated on all ranks.
+The full U matrix is duplicated on all ranks.
 
 This must be accomplished before calling w90_disentangle or w90_wannierise.
 
@@ -454,7 +472,7 @@ w90_input_reader provides an optional mechanism for passing additional flags to
 the library using the input (.win) file.  All valid input tokens of the main
 program may be specified in this way, except for variables listed in
 [w90_set_option](#w90_set_option), i.e. the most important variables defining the
-calculation must be specified by w90_set_input.
+calculation must be specified by w90_set_option.
 
 w90_input_reader must be called after w90_input_setopt.
 
@@ -509,6 +527,11 @@ must be added to your "include" path.
 
 The library should be compiled with the same compiler as the calling code.
 
+If you link to the parallel library, you must initialise the MPI system
+(mpi_init) and must pass a valid communicator to the library (failure to do
+this results in an error:  "Error: parallel Wannier90 library invoked with
+invalid communicator, exiting.  Use w90_set_comm()!" )
+
 ## Examples
 
 See directory: test-suite/library-mode-test/
@@ -528,13 +551,13 @@ directory test-suite/library-mode-test-C-interface/
 The directory `wrap/` in the sources contains an Python wrapping of the Fortran
 library.  It is constructed using the [f90wrap
 package](https://github.com/jameskermode/f90wrap) (See also DOI
-10.1088/1361-648X/ab82d2).
+10.1088/1361-648X/ab82d2).  Specifiy `F90WRAP` in the build configuration.
 
 ### Build instructions
 
 - Make sure f90wrap is installed
 - cd wrap
-- make -f Makefile.serial or Makefile.mpi
+- make -f Makefile
 
 Edit the makefiles as appropriate.
 
@@ -584,7 +607,8 @@ MPI libraries for Fortran may support both old style ('use mpi') and more
 modern interfaces ('use mpi_f08'); depending on the interface used to build the
 library, communicator objects may be specially typed or treated as integer and
 this must be consistent with what is used in the calling code.  This behaviour
-is driven when Wannier90 is compiled by the use of COMMS=MPI90 or COMMS=MPI08.
+can be adjusted by compiling Wannier90 with use of COMMS=MPI90 , MPI08 or MPIH,
+as needed.
 
 ```bash
 696 | call input_setopt(w90main, filename, stdout, stderr, ierr, comm)

@@ -232,7 +232,7 @@ contains
     !! Read MPI distribution of k-points
     !! The array to be read must have num_kpt entries, with each entry being
     !! the MPI rank to which each k-point is assigned
-    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_fatal
     use w90_comms, only: mpirank
     implicit none
 
@@ -243,7 +243,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer :: nk, ierr
+    integer :: ik, nk, ierr
     logical :: found
 
     found = .false.
@@ -268,17 +268,24 @@ contains
       end if
       call w90_readwrite_get_range_vector(settings, 'distk', found, nk, .false., error, comm, distk)
       if (allocated(error)) return
-    else
-      if (mpirank(comm) == 0) then !only print on root rank
-        write (stdout, '(a)') 'Note: no parallel distribution provided (option distk missing)'
-        write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
-        allocate (distk(nkin), stat=ierr)
-        if (ierr /= 0) then
-          call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
+
+      do ik = 1, nkin
+        if (distk(ik) < 0 .or. distk(ik) >= mpisize(comm)) then
+          call set_error_fatal(error, 'Rank in distk table outside of mpi_size in w90_readwrite_read_distk', comm)
           return
         end if
-        distk = 0 ! default to no distribution if not specified
+      end do
+    else
+      if (mpirank(comm) == 0) then
+        write (stdout, '(a)') 'Note: no parallel distribution provided (option distk missing)'
+        write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
       end if
+      allocate (distk(nkin), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
+        return
+      end if
+      distk = 0 ! default to no distribution if not specified
     end if
   end subroutine w90_readwrite_read_distk
 
@@ -739,7 +746,6 @@ contains
   subroutine w90_readwrite_read_eigvals(eig_found, eigval, num_bands, num_kpts, stdout, &
                                         seedname, error, comm)
     !! Read the eigenvalues from wannier.eig
-    ! fixme (jj) consider relocating to library_extra
     use w90_error, only: w90_error_type, set_error_file, set_error_file, set_error_alloc
 
     implicit none
@@ -2012,11 +2018,11 @@ contains
     write (stdout, *) '            |         Phys. Rev. B 65 035109 (2001)             |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            | Copyright (c) 1996-2020                           |'
+    write (stdout, *) '            | Copyright (c) 1996-2026                           |'
     write (stdout, *) '            |        The Wannier90 Developer Group and          |'
     write (stdout, *) '            |        individual contributors                    |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |      Release: ', adjustl(w90_version), '   5th March    2020      |'
+    write (stdout, *) '            |      Release: ', adjustl(w90_version), '   27th July    2026      |'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
@@ -2308,7 +2314,7 @@ contains
     real(kind=dp), intent(inout) :: omega_invariant
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
-    character(len=*), intent(inout) :: checkpoint
+    character(len=20), intent(inout) :: checkpoint
     character(len=*), intent(in)  :: seedname
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
@@ -2333,7 +2339,7 @@ contains
   subroutine w90_readwrite_read_chkpt_header(exclude_bands, kmesh_info, kpt_latt, real_lattice, &
                                              mp_grid, num_bands, num_exclude_bands, num_kpts, &
                                              num_wann, checkpoint, have_disentangled, ispostw90, &
-                                             seedname, io_unit, stdout, error, comm)
+                                             seedname, chk_unit, stdout, error, comm)
     !================================================!
     !! Read checkpoint file
     !! IMPORTANT! If you change the chkpt format, adapt
@@ -2363,19 +2369,19 @@ contains
     integer, intent(in) :: stdout
     integer, intent(in) :: mp_grid(3)
     integer, intent(in) :: num_exclude_bands
-    integer, intent(out) :: io_unit
+    integer, intent(inout) :: chk_unit
 
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     character(len=*), intent(in)  :: seedname
-    character(len=*), intent(inout) :: checkpoint
+    character(len=20), intent(inout) :: checkpoint
 
     logical, intent(in) :: ispostw90 ! Are we running postw90?
     logical, intent(out) :: have_disentangled
 
     ! local variables
     real(kind=dp) :: recip_lattice(3, 3), volume
-    integer :: chk_unit, nkp, i, j, ntmp
+    integer :: nkp, i, j, ntmp, stat
     character(len=33) :: header
     real(kind=dp) :: tmp_latt(3, 3), tmp_kpt_latt(3, num_kpts)
     integer :: tmp_excl_bands(1:num_exclude_bands), tmp_mp_grid(1:3)
@@ -2386,7 +2392,6 @@ contains
     if (on_root) write (stdout, '(1x,3a)') 'Reading restart information from file ', trim(seedname), '.chk :'
 
     open (newunit=chk_unit, file=trim(seedname)//'.chk', status='old', form='unformatted', err=121)
-    io_unit = chk_unit
 
     ! Read comment line
     read (chk_unit) header
@@ -2520,7 +2525,7 @@ contains
     logical, intent(in) :: have_disentangled
 
     ! local variables
-    integer :: nkp, i, j, k, l, ierr
+    integer :: nkp, i, j, k, l, ierr, stat
 
     if (have_disentangled) then
 
@@ -2558,7 +2563,8 @@ contains
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
-    read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
+    read (chk_unit, err=126) &
+      ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, kmesh_info%nntot), l=1, num_kpts)
 
     ! wannier_centres
     read (chk_unit, err=127) ((wannier_data%centres(i, j), i=1, 3), j=1, num_wann)
@@ -2631,7 +2637,7 @@ contains
     complex(kind=dp), intent(inout) :: m_matrix(:, :, :, :) !only alloc/assigned on root
     real(kind=dp), intent(inout) :: omega_invariant
 
-    character(len=*), intent(inout) :: checkpoint
+    character(len=20), intent(inout) :: checkpoint
     logical, intent(inout) :: have_disentangled
 
     ! local variables
@@ -4808,7 +4814,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
 
-    character(len=20) :: keyword
+    character(len=22) :: keyword
     integer           :: ic, in, ins, ine, loop, inner_loop, i, line_e, line_s, counter
     logical           :: found_e, found_s
     character(len=maxlen) :: dummy, end_st, start_st
@@ -5011,14 +5017,14 @@ contains
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%idata
 
       else if (allocated(entry_ptr%ldata)) then
-        if (entry_ptr%keyword == "dump_inputs") exit ! this is not valid .win input
+        if (entry_ptr%keyword == "dump_inputs") cycle ! this is not valid .win input
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%ldata
 
       else if (allocated(entry_ptr%rdata)) then
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%rdata
 
       else if (allocated(entry_ptr%i1d)) then
-        if (entry_ptr%keyword == "distk") exit ! this is not valid .win input
+        if (entry_ptr%keyword == "distk") cycle ! this is not valid .win input
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%i1d(:)
       end if
 
@@ -5058,19 +5064,6 @@ contains
     close (fu)
     return
 
-!     else
-!       write(*,'(a20,10l3)')entry_ptr%keyword,&
-!         allocated(entry_ptr%txtdata),&
-!         allocated(entry_ptr%c2d),&
-!         allocated(entry_ptr%i1d),&
-!         allocated(entry_ptr%i2d),&
-!         allocated(entry_ptr%idata),&
-!         allocated(entry_ptr%l1d),&
-!         allocated(entry_ptr%ldata),&
-!         allocated(entry_ptr%r1d),&
-!         allocated(entry_ptr%r2d),&
-!         allocated(entry_ptr%rdata)
-!     endif
 101 call set_error_fatal(error, 'Error: failed to open .win_dump output file', comm)
     return
   end subroutine w90_readwrite_write_win

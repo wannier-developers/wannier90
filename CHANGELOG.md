@@ -6,6 +6,44 @@
 
 - Automatic projectability thresholds for projectability disentanglement (PDWF): setting `dis_proj_auto = .true.` determines `dis_proj_min` and `dis_proj_max` at runtime by multi-level Otsu thresholding of the pooled projectability distribution (`dis_proj_auto_classes` classes, default 5), removing the need to choose them by hand.
 
+## v4.0.1 (28 July 2026)
+
+
+## New license
+
+- Wannier90 is now released under the Lesser GPL (LGPL v2.1)
+
+## New features
+
+- Higher order finite differences methods [[#504]](https://github.com/wannier-developers/wannier90/pull/504)
+
+- Projectability disentanglement [[#448]](https://github.com/wannier-developers/wannier90/pull/448)
+
+- Spin Hall conductivity according to Ji Hoon Ryoo's method (Phys. Rev. B 99, 235113) [[#353]](https://github.com/wannier-developers/wannier90/pull/353)
+
+- Stengel-Spalding spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
+
+- Tetrahedron integration for calculating spin Hall conductivity [[#431]](https://github.com/wannier-developers/wannier90/pull/431)
+
+- Translationally invariant formulation for position matrix elements [[#533]](https://github.com/wannier-developers/wannier90/pull/533)
+
+- Update to the CODATA standard version [[#649]](https://github.com/wannier-developers/wannier90/pull/649)
+
+- User specified lists of k-points for plotting [[#519]](https://github.com/wannier-developers/wannier90/pull/519)
+
+## Various improvements and bugfixes
+
+- Cmake support (see README.install)
+
+- Library interface supporting most Wannier90.x functionality with MPI decomposition over k-points
+
+- Markdown documentation replaces pdf files in the distribution
+
+- Significant code refactoring for data encapsulation, error handling, etc
+
+- Very large number of collected bug fixes and corrections, etc.
+
+
 ## v3.1.0 (5th March 2020)
 
 ### New features

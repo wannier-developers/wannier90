@@ -75,10 +75,10 @@ contains
     integer, intent(in) :: dist_k(:)
 
     complex(kind=dp), allocatable :: a_matrix(:, :, :)
-    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix(:, :, :, :)  !root only
     complex(kind=dp), allocatable :: m_matrix_local(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)
-    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)
+    complex(kind=dp), allocatable :: m_matrix_orig(:, :, :, :)  !root only
+    complex(kind=dp), allocatable :: m_matrix_orig_local(:, :, :, :)  !root only
     complex(kind=dp), allocatable :: u_matrix(:, :, :)
     complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
 
@@ -108,8 +108,6 @@ contains
           call set_error_alloc(error, 'Error in allocating m_matrix_orig in overlap_allocate', comm)
           return
         end if
-      else
-        allocate (m_matrix_orig(0, 0, 0, 0))
       end if
       allocate (m_matrix_orig_local(num_bands, num_bands, nntot, nkl), stat=ierr)
       if (ierr /= 0) then
@@ -118,9 +116,6 @@ contains
       end if
       m_matrix_orig = cmplx_0
       m_matrix_orig_local = cmplx_0
-    else
-      allocate (m_matrix_orig_local(0, 0, 0, 0))
-      allocate (m_matrix_orig(0, 0, 0, 0))
     end if
 
     if (on_root) then
@@ -130,8 +125,8 @@ contains
         return
       end if
       m_matrix = cmplx_0
-    else
-      allocate (m_matrix(0, 0, 0, 0))
+      !else
+      !allocate (m_matrix(0, 0, 0, 0))
     end if
     allocate (m_matrix_local(num_wann, num_wann, nntot, nkl), stat=ierr)
     if (ierr /= 0) then
@@ -414,13 +409,10 @@ contains
     return
 104 call set_error_file(error, 'Error: Problem reading input file '//trim(seedname)//'.amn', comm)
     return
-
-    !if (on_root) deallocate(m_matrix_orig)
-
   end subroutine overlap_read
 
   !================================================!
-  subroutine overlap_write(kmesh_info, au_matrix, m_matrix, eval, num_bands, num_kpts, num_wann, &
+  subroutine overlap_write(kmesh_info, au_matrix, m_matrix, eval, num_bands, num_kpts, &
                            num_proj, seedname, error, comm)
     !================================================!
     !! Write the Mmn and Amn from files
@@ -437,11 +429,11 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(inout) :: error
 
-    integer, intent(in) :: num_bands, num_kpts, num_wann, num_proj
+    integer, intent(in) :: num_bands, num_kpts, num_proj
 
     complex(kind=dp), intent(in) :: au_matrix(:, :, :)
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
-    real(kind=dp), intent(in) :: eval(:, :)
+    real(kind=dp), pointer, intent(in) :: eval(:, :)
 
     character(len=50), intent(in) :: seedname
 
@@ -485,18 +477,19 @@ contains
 
       close (fu)
 
-      ! dump evals
-      open (newunit=fu, file=trim(seedname)//'.eig_dump', err=203)
+      ! dump evals; eigenvalues are optional input (not required for wannierisation),
+      ! only write the file when the caller has supplied them
+      if (associated(eval)) then
+        open (newunit=fu, file=trim(seedname)//'.eig_dump', err=203)
 
-      if (num_bands > num_wann) then ! disentanglement condition
-      do ik = 1, num_kpts
-        do m = 1, num_bands
-          write (fu, '(2i5,f18.12)') m, ik, eval(m, ik)
+        do ik = 1, num_kpts
+          do m = 1, num_bands
+            write (fu, '(2i5,f18.12)') m, ik, eval(m, ik)
+          end do
         end do
-      end do
-      end if
 
-      close (fu)
+        close (fu)
+      end if
 
     end if ! on root
     return
