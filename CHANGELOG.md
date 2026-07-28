@@ -2,6 +2,7 @@
 
 ## v4.0.0 (28 July 2026)
 
+
 ## New license
 
 - Wannier90 is now released under the Lesser GPL (LGPL v2.1)
