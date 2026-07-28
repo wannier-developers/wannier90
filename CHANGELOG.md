@@ -1,6 +1,6 @@
 # CHANGELOG of Wannier90
 
-## v4.0.0 (28 July 2026)
+## v4.0.1 (28 July 2026)
 
 
 ## New license
