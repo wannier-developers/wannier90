@@ -8,6 +8,8 @@ auto_projections = .true.
 dis_froz_proj = .true.
 dis_proj_max =   0.85
 dis_proj_min =   0.01
+! or use the automatic thresholds
+! dis_proj_auto = .true.
 
 ! you can also enable energy window disentanglement, which
 ! will also freeze states inside inner window, so that those
