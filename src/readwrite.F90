@@ -810,7 +810,8 @@ contains
     type(settings_type), intent(inout) :: settings
 
     ! local
-    logical :: found, found2, found_auto, found_ac
+    logical :: found, found2
+    logical :: found_proj_min, found_proj_max, found_proj_auto, found_num_classes
 
     call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm, &
                                    r_value=dis_manifold%win_min)
@@ -856,62 +857,81 @@ contains
                                    l_value=dis_manifold%frozen_proj)
     if (allocated(error)) return
 
-    ! default values for proj_min and proj_max
-    dis_manifold%proj_min = 0.01_dp; dis_manifold%proj_max = 0.95_dp
-    call w90_readwrite_get_keyword(settings, 'dis_proj_min', found, error, comm, &
+    ! proj_min/proj_max have no defaults: they are set explicitly or determined
+    ! automatically (dis_proj_auto, on by default)
+    call w90_readwrite_get_keyword(settings, 'dis_proj_min', found_proj_min, error, comm, &
                                    r_value=dis_manifold%proj_min)
     if (allocated(error)) return
-    if (found) then
+    if (found_proj_min) then
       if ((dis_manifold%proj_min < 0.0_dp) .or. (dis_manifold%proj_min > 1.0_dp)) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_min < 0.0 or > 1.0', comm)
         return
       end if
     end if
-    call w90_readwrite_get_keyword(settings, 'dis_proj_max', found2, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'dis_proj_max', found_proj_max, error, comm, &
                                    r_value=dis_manifold%proj_max)
     if (allocated(error)) return
-    if (found2) then
+    if (found_proj_max) then
       if ((dis_manifold%proj_max < 0.0_dp) .or. (dis_manifold%proj_max > 1.0_dp)) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < 0.0 or > 1.0', comm)
         return
       end if
     end if
-    if (dis_manifold%proj_max < dis_manifold%proj_min) then
-      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < dis_proj_min', comm)
-      return
+    if (found_proj_min .and. found_proj_max) then
+      if (dis_manifold%proj_max < dis_manifold%proj_min) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: dis_proj_max < dis_proj_min', comm)
+        return
+      end if
     end if
-    call w90_readwrite_get_keyword(settings, 'dis_proj_auto', found_auto, error, comm, &
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto', found_proj_auto, error, comm, &
                                    l_value=dis_manifold%proj_auto)
     if (allocated(error)) return
-    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_classes', found_ac, error, comm, &
-                                   i_value=dis_manifold%proj_auto_classes)
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_num_classes', found_num_classes, error, comm, &
+                                   i_value=dis_manifold%proj_auto_num_classes)
     if (allocated(error)) return
-    if (found_ac .and. .not. dis_manifold%proj_auto) then
-      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
-                           'dis_proj_auto_classes set without dis_proj_auto', comm)
-      return
-    end if
-    if (dis_manifold%proj_auto) then
-      if (found .or. found2) then
-        call set_error_input(error, 'Error: dis_proj_auto is incompatible with '// &
+    if (found_proj_min .or. found_proj_max) then
+      ! explicit thresholds take precedence over the defaulted dis_proj_auto,
+      ! but contradict an explicit dis_proj_auto = .true.
+      if (found_proj_auto .and. dis_manifold%proj_auto) then
+        call set_error_input(error, 'Error: dis_proj_auto = .true. is incompatible with '// &
                              'explicit dis_proj_min/dis_proj_max', comm)
         return
       end if
-      if (dis_manifold%proj_auto_classes < 3) then
-        call set_error_input(error, 'Error: dis_proj_auto_classes must be >= 3', comm)
+      dis_manifold%proj_auto = .false.
+    end if
+    if (found_num_classes .and. .not. dis_manifold%proj_auto) then
+      call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
+                           'dis_proj_auto_num_classes set but automatic thresholds are disabled', comm)
+      return
+    end if
+    if (dis_manifold%proj_auto) then
+      if (dis_manifold%proj_auto_num_classes < 3) then
+        call set_error_input(error, 'Error: dis_proj_auto_num_classes must be >= 3', comm)
         return
       end if
-      if (dis_manifold%proj_auto_classes > 8) then
+      if (dis_manifold%proj_auto_num_classes > 8) then
         ! Exhaustive threshold search enumerates C(nbins-1, classes-1) tuples
         ! (nbins = 64), which explodes past classes = 8 (~5.5e8) -> classes = 9
         ! (~3.9e9); the cap bounds the worst-case cost.
-        call set_error_input(error, 'Error: dis_proj_auto_classes must be <= 8; '// &
+        call set_error_input(error, 'Error: dis_proj_auto_num_classes must be <= 8; '// &
                              'reduce it or set dis_proj_min/max', comm)
         return
       end if
-      if (.not. dis_manifold%frozen_proj) then
+    end if
+    if (dis_manifold%frozen_proj) then
+      if (found_proj_min .and. .not. found_proj_max) then
         call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
-                             'dis_proj_auto requires dis_froz_proj = .true.', comm)
+                             'found dis_proj_min but not dis_proj_max', comm)
+        return
+      end if
+      if (found_proj_max .and. .not. found_proj_min) then
+        call set_error_input(error, 'Error: w90_readwrite_read_dis_manifold: '// &
+                             'found dis_proj_max but not dis_proj_min', comm)
+        return
+      end if
+      if (.not. dis_manifold%proj_auto .and. .not. found_proj_min) then
+        call set_error_input(error, 'Error: dis_froz_proj with dis_proj_auto = .false. '// &
+                             'requires explicit dis_proj_min/dis_proj_max', comm)
         return
       end if
     end if
@@ -1369,7 +1389,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'dis_proj_min', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_proj_max', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_proj_auto', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_classes', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_num_classes', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_mix_ratio', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_num_iter', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_spheres_first_wann', found, error, comm)

@@ -220,15 +220,18 @@ module w90_types
     !! upper bound of the disentanglement inner (frozen) window
     logical :: frozen_states = .false.
     !! whether to use energy frozen window, i.e., froz_min/froz_max
-    real(kind=dp) :: proj_min
+    real(kind=dp) :: proj_min = -1.0_dp
     !! lower threshold of the projectability disentanglement, below are discarded
-    real(kind=dp) :: proj_max
+    !! (negative = unset: set explicitly or determined automatically via proj_auto)
+    real(kind=dp) :: proj_max = -1.0_dp
     !! upper threshold of the projectability disentanglement, equal and above are frozen
+    !! (negative = unset: set explicitly or determined automatically via proj_auto)
     logical :: frozen_proj
     !! whether to use projectability frozen window, i.e., proj_min/proj_max
-    logical :: proj_auto = .false.
+    logical :: proj_auto = .true.
     !! whether to determine proj_min/proj_max automatically via multi-Otsu thresholding
-    integer :: proj_auto_classes = 5
+    !! (ignored when proj_min/proj_max are set explicitly)
+    integer :: proj_auto_num_classes = 5
     !! number of classes for the automatic multi-Otsu projectability thresholds
     ! disentangle parameters
     ! Used by plot, hamiltonian, wannierise, postw90_common, get_oper - not read

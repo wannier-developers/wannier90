@@ -1326,13 +1326,13 @@ contains
         end do
       end do
 
-      allocate (otsu_thr(dis_manifold%proj_auto_classes - 1), stat=ierr)
+      allocate (otsu_thr(dis_manifold%proj_auto_num_classes - 1), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error allocating otsu_thr in dis_windows_proj', comm)
         return
       end if
       call dis_otsu_thresholds(pooled, otsu_lower_bound, otsu_upper_bound, otsu_nbins, &
-                               dis_manifold%proj_auto_classes, otsu_thr, nclasses_eff, degenerate)
+                               dis_manifold%proj_auto_num_classes, otsu_thr, nclasses_eff, degenerate)
       deallocate (pooled)
 
       if (degenerate) then
@@ -1344,10 +1344,10 @@ contains
       end if
       ! A class needs its own populated bin, so more classes than clusters is
       ! not resolvable; reduce and tell the user.
-      if (nclasses_eff < dis_manifold%proj_auto_classes .and. on_root) then
+      if (nclasses_eff < dis_manifold%proj_auto_num_classes .and. on_root) then
         write (stdout, '(1x,a,i0,a,i0,a,i0)') &
           ' dis_proj_auto: only ', nclasses_eff, ' distinct projectability clusters; reducing classes from ', &
-          dis_manifold%proj_auto_classes, ' to ', nclasses_eff
+          dis_manifold%proj_auto_num_classes, ' to ', nclasses_eff
       end if
       dis_manifold%proj_min = otsu_thr(1)
       dis_manifold%proj_max = otsu_thr(nclasses_eff - 1)
