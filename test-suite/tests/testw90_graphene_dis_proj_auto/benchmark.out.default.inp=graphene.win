@@ -48,11 +48,11 @@ Note: all k-points handled by MPI rank 0
              |         Phys. Rev. B 65 035109 (2001)             |
              |                                                   |
              |                                                   |
-             | Copyright (c) 1996-2020                           |
+             | Copyright (c) 1996-2026                           |
              |        The Wannier90 Developer Group and          |
              |        individual contributors                    |
              |                                                   |
-             |      Release: 3.1.0        5th March    2020      |
+             |      Release: 4.0.1        27th July    2026      |
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
@@ -71,11 +71,11 @@ Note: all k-points handled by MPI rank 0
              | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 13Jul2026 at 18:01:06     |
+             |    Execution started on 30Jul2026 at 12:03:55     |
              +---------------------------------------------------+
 
  ******************************************************************************
- * -> Using CODATA 2006 constant values                                       *
+ * -> Using CODATA 2022 constant values                                       *
  *    (http://physics.nist.gov/cuu/Constants/index.html)                      *
  * -> Using Bohr value from CODATA                                            *
  ******************************************************************************
@@ -250,7 +250,7 @@ Note: all k-points handled by MPI rank 0
  |                          -----------------------                           |
  |         Thresholds determined automatically (multi-Otsu,  5 classes)       |
  |               Discarded:    0.00000  to    0.03906                         |
- |            Disentangled:    0.03906  to    0.94531                         |
+ |            Disentangled:    0.03906  to    1.00000                         |
  |                  Frozen:    0.94531  to    1.00000                         |
  +----------------------------------------------------------------------------+
    Number of target bands to extract:    8
@@ -306,7 +306,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.224543,  0.805830, -0.000000 )     2.09406512
   Sum of centres and spreads (  4.922284,  8.576736, -0.000000 )    14.35499273
 
-      0     0.144E+02     0.0000000000       14.3549930578       0.01  <-- CONV
+      0     0.144E+02     0.0000000000       14.3549930578       0.00  <-- CONV
         O_D=      0.0702336 O_OD=      4.5779922 O_TOT=     14.3549931 <-- SPRD
  ------------------------------------------------------------------------------
  Cycle:      1
@@ -320,7 +320,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.216203,  0.873122, -0.000000 )     2.78922407
   Sum of centres and spreads (  4.684288,  8.081163, -0.000000 )    21.95364043
 
-      1     0.760E+01     0.6065709470       21.9536407389       0.01  <-- CONV
+      1     0.760E+01     0.6065709470       21.9536407389       0.00  <-- CONV
         O_D=      6.2837791 O_OD=      5.9630944 O_TOT=     21.9536407 <-- SPRD
  Delta: O_D=  0.6213545E+01 O_OD=  0.1385102E+01 O_TOT=  0.7598648E+01 <-- DLTA
  ------------------------------------------------------------------------------
@@ -395,7 +395,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.190589,  0.902064, -0.000000 )     1.92509549
   Sum of centres and spreads (  5.086909,  8.616120, -0.000000 )    15.10287450
 
-      6    -0.330E+00     1.3470196639       15.1028748256       0.02  <-- CONV
+      6    -0.330E+00     1.3470196639       15.1028748256       0.01  <-- CONV
         O_D=      0.3178118 O_OD=      5.0782957 O_TOT=     15.1028748 <-- SPRD
  Delta: O_D= -0.3324976E-01 O_OD= -0.2969127E+00 O_TOT= -0.3301624E+00 <-- DLTA
  ------------------------------------------------------------------------------
@@ -410,7 +410,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.208670,  0.964527, -0.000000 )     1.93937720
   Sum of centres and spreads (  4.936629,  8.651148, -0.000000 )    14.61706638
 
-      7    -0.486E+00     1.1013417848       14.6170667000       0.02  <-- CONV
+      7    -0.486E+00     1.1013417848       14.6170667000       0.01  <-- CONV
         O_D=      0.3767911 O_OD=      4.5335083 O_TOT=     14.6170667 <-- SPRD
  Delta: O_D=  0.5897929E-01 O_OD= -0.5447874E+00 O_TOT= -0.4858081E+00 <-- DLTA
  ------------------------------------------------------------------------------
@@ -425,7 +425,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.210271,  0.962885, -0.000000 )     1.92246621
   Sum of centres and spreads (  4.991006,  8.669666,  0.000000 )    14.45848024
 
-      8    -0.159E+00     2.4489688954       14.4584805651       0.02  <-- CONV
+      8    -0.159E+00     2.4489688954       14.4584805651       0.01  <-- CONV
         O_D=      0.2620269 O_OD=      4.4896864 O_TOT=     14.4584806 <-- SPRD
  Delta: O_D= -0.1147642E+00 O_OD= -0.4382195E-01 O_TOT= -0.1585861E+00 <-- DLTA
  ------------------------------------------------------------------------------
@@ -440,7 +440,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.212631,  0.961829, -0.000000 )     1.74308663
   Sum of centres and spreads (  4.975269,  8.614488,  0.000000 )    14.23219306
 
-      9    -0.226E+00     1.2106177468       14.2321933837       0.02  <-- CONV
+      9    -0.226E+00     1.2106177468       14.2321933837       0.01  <-- CONV
         O_D=      0.4417163 O_OD=      4.0837098 O_TOT=     14.2321934 <-- SPRD
  Delta: O_D=  0.1796893E+00 O_OD= -0.4059765E+00 O_TOT= -0.2262872E+00 <-- DLTA
  ------------------------------------------------------------------------------
@@ -455,7 +455,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread    8  (  1.211076,  0.964767, -0.000000 )     1.75291480
   Sum of centres and spreads (  5.051070,  8.626419, -0.000000 )    13.99753371
 
-     10    -0.235E+00     3.6178966326       13.9975340392       0.02  <-- CONV
+     10    -0.235E+00     3.6178966326       13.9975340392       0.01  <-- CONV
         O_D=      0.1812394 O_OD=      4.1095273 O_TOT=     13.9975340 <-- SPRD
  Delta: O_D= -0.2604768E+00 O_OD=  0.2581748E-01 O_TOT= -0.2346593E+00 <-- DLTA
  ------------------------------------------------------------------------------
@@ -485,7 +485,7 @@ Note: all k-points handled by MPI rank 0
 
  Calculating interpolated band-structure
 
- Time to calculate interpolated band structure       0.025 (sec)
+ Time to calculate interpolated band structure       0.022 (sec)
 
 
  *===========================================================================*
@@ -493,10 +493,10 @@ Note: all k-points handled by MPI rank 0
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.025|
- |overlap: read                                     :         1         0.124|
- |dis: main                                         :         1         0.015|
- |wann: main                                        :         1         0.017|
- |plot: main                                        :         1         0.025|
+ |kmesh: get                                        :         1         0.276|
+ |overlap: read                                     :         1         1.123|
+ |dis: main                                         :         1         0.008|
+ |wann: main                                        :         1         0.009|
+ |plot: main                                        :         1         0.022|
  *---------------------------------------------------------------------------*
  All done: wannier90 exiting

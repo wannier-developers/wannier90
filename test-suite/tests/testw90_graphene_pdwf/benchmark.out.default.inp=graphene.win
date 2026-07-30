@@ -263,7 +263,7 @@
  |                          Projectability  Windows                           |
  |                          -----------------------                           |
  |               Discarded:    0.00000  to    0.01000                         |
- |            Disentangled:    0.01000  to    0.85000                         |
+ |            Disentangled:    0.01000  to    1.00000                         |
  |                  Frozen:    0.85000  to    1.00000                         |
  +----------------------------------------------------------------------------+
    Number of target bands to extract:    8

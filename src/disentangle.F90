@@ -1386,7 +1386,7 @@ contains
       '|               Discarded: ', 0.0_dp, '  to ', dis_manifold%proj_min, &
       '                         |'
     if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
-      '|            Disentangled: ', dis_manifold%proj_min, '  to ', dis_manifold%proj_max, &
+      '|            Disentangled: ', dis_manifold%proj_min, '  to ', 1.0_dp, &
       '                         |'
     if (dis_manifold%frozen_proj) then
       if (on_root) write (stdout, '(1x,a,f10.5,a,f10.5,a)') &
