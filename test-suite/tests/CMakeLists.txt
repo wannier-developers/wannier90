@@ -74,6 +74,7 @@ set(test_names
                 testw90_example26
                 testw90_example36
                 testw90_gaas_disentanglement_issue192
+                testw90_graphene_dis_proj_auto
                 testw90_graphene_pdwf
                 testw90_guidingcentre_selectproj
                 testw90_knbo3_higher

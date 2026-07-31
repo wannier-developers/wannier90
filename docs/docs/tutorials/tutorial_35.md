@@ -176,7 +176,9 @@ For more details on the methodology, see Ref.[@Qiao2023-pdwf].
         "projectability window" to selectively freeze atomic-like states in
         the conduction region.
 
-3. The default `dis_proj_max = 0.95` might not freeze all the states
-    you want, try changing this value and see the band interpolation
-    results. For other materials, it might worth trying decreasing this
-    value to freeze more states.
+3. The `dis_proj_max = 0.95` chosen in `silicon.win` might not freeze
+    all the states you want, try changing this value and see the band
+    interpolation results. For other materials, it might worth trying
+    decreasing this value to freeze more states, or removing
+    `dis_proj_min/max` altogether to have the thresholds determined
+    automatically (see `dis_proj_auto`).

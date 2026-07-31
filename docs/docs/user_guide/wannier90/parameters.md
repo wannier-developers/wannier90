@@ -626,7 +626,9 @@ the case of inside the outer energy window.
 
 No unit.
 
-The default value is 0.95.
+There is no default value: either set both `dis_proj_min` and
+`dis_proj_max` explicitly (e.g. 0.01 and 0.95), or leave both unset to
+have them determined automatically (see `dis_proj_auto`).
 
 ### `real(kind=dp) :: dis_proj_max`
 
@@ -637,7 +639,42 @@ case of inside the inner energy window.
 
 No unit.
 
-The default value is 0.01.
+There is no default value: either set both `dis_proj_min` and
+`dis_proj_max` explicitly (e.g. 0.01 and 0.95), or leave both unset to
+have them determined automatically (see `dis_proj_auto`).
+
+### `logical :: dis_proj_auto`
+
+Determine the projectability thresholds `dis_proj_min` and `dis_proj_max`
+automatically at runtime, instead of setting them by hand. The pooled
+distribution of per-state projectabilities (over all bands and
+$\mathbf{k}$-points) is split into `dis_proj_auto_num_classes` classes by
+multi-level Otsu thresholding; `dis_proj_min` is set to the lowest
+threshold and `dis_proj_max` to the highest.
+
+Only has an effect when `dis_froz_proj = .true.`. If `dis_proj_min` and
+`dis_proj_max` are set explicitly, they take precedence and the automatic
+thresholding is disabled; explicitly setting `dis_proj_auto = .true.`
+together with explicit thresholds is an error.
+
+!!! note
+    As for projectability disentanglement in general (see `dis_froz_proj`),
+    this assumes the `amn` file uses orthonormal projectors, so that the
+    projectabilities $(A A^\dagger)_{nn}$ lie in $[0, 1]$. The pseudo-atomic
+    projection of `pw2wannier90` satisfies this by default
+    (`atom_proj_ortho = .true.`).
+
+The default value is `.true.`.
+
+### `integer :: dis_proj_auto_num_classes`
+
+The number of classes used by the multi-level Otsu thresholding when
+`dis_proj_auto = .true.`. A larger value widens the disentanglement window
+between `dis_proj_min` and `dis_proj_max`. Must be between 3 and 8. If it
+exceeds the number of populated histogram bins it is reduced to that
+number at runtime (with a printed note).
+
+The default value is 5.
 
 ### `integer :: dis_num_iter`
 

@@ -1,5 +1,11 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+### New features
+
+- Automatic thresholds for projectability disentanglement, enabled by default (`dis_proj_auto`) [[#650]](https://github.com/wannier-developers/wannier90/pull/650)
+
 ## v4.0.1 (28 July 2026)
 
 
