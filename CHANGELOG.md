@@ -11,7 +11,7 @@
 
 ## New license
 
-- Wannier90 is now released under the Lesser GPL (LGPL v2.1)
+- Wannier90 is now released under the Lesser GPL or later (LGPL v2.1 or later)
 
 ## New features
 
