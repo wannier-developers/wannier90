@@ -895,6 +895,39 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>explicit_kpath</name>
+    <types>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+    </types>
+    <description>Explicit k-point path for the interpolated band structure</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <dimensions>
+      <dim>*</dim>
+    </dimensions>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>explicit_kpath_labels</name>
+    <types>
+      <type>S</type>
+      <type>R</type>
+      <type>R</type>
+      <type>R</type>
+    </types>
+    <description>Labels for the explicit k-point path</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <dimensions>
+      <dim>*</dim>
+    </dimensions>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>bands_num_points</name>
     <type>I</type>
     <description>Number of points along the first section of the k-point path</description>
@@ -2250,7 +2283,7 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
-    <name optional_prefix="boltz_">smr_type</name>
+    <name optional_prefix="boltz_dos_">smr_type</name>
     <type>S</type>
     <description>Smearing type for the DOS</description>
     <groups>
@@ -2258,7 +2291,7 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
-    <name optional_prefix="boltz_">adpt_smr</name>
+    <name optional_prefix="boltz_dos_">adpt_smr</name>
     <type>L</type>
     <description>Use adaptive smearing for the DOS</description>
     <groups>
@@ -2266,7 +2299,7 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
-    <name optional_prefix="boltz_">adpt_smr_fac</name>
+    <name optional_prefix="boltz_dos_">adpt_smr_fac</name>
     <type>R</type>
     <description>Adaptive smearing prefactor</description>
     <groups>
@@ -2274,7 +2307,7 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
-    <name optional_prefix="boltz_">adpt_smr_max</name>
+    <name optional_prefix="boltz_dos_">adpt_smr_max</name>
     <type units="eV">P</type>
     <description>Maximum allowed value for the adaptive energy smearing</description>
     <groups>
@@ -2282,7 +2315,7 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
-    <name optional_prefix="boltz_">fixed_en_width</name>
+    <name optional_prefix="boltz_dos_">smr_fixed_en_width</name>
     <type units="eV">P</type>
     <description>Energy smearing (if non-adaptive) for the DOS</description>
     <groups>

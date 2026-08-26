@@ -36,3 +36,15 @@ repos:
     files: (?x)^(
         docs/.*
       )$
+- repo: local
+  hooks:
+  - id: check-generated-parameter-tables
+    name: check parameter table CSVs match parameters.xml
+    entry: bash -c 'cd docs/docs/parameters && python3 generate-parameter-tables.py && git diff --exit-code -- "*.csv"'
+    language: system
+    pass_filenames: false
+    files: (?x)^(
+        docs/docs/parameters/parameters\.xml
+      | docs/docs/parameters/generate-parameter-tables\.py
+      | docs/docs/parameters/.*\.csv
+      )$
