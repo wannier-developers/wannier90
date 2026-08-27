@@ -1,19 +1,23 @@
 # CHANGELOG of Wannier90
 
-## Unreleased
+## v4.0.2 (27 August 2026)
 
 ### New features
 
-- Automatic thresholds for projectability disentanglement, enabled by default (`dis_proj_auto`) [[#650]](https://github.com/wannier-developers/wannier90/pull/650)
+- Automatic thresholds for projectability disentanglement [[#650]](https://github.com/wannier-developers/wannier90/pull/650)
+
+### Various improvements and bugfixes
+
+- CHANGELOG correction/clarification in text relating to v4.0.1 release.
+
 
 ## v4.0.1 (28 July 2026)
 
-
-## New license
+### New license
 
 - Wannier90 is now released under the Lesser GPL version 2.1 or later (LGPL v2.1 or later)
 
-## New features
+### New features
 
 - Higher order finite differences methods [[#504]](https://github.com/wannier-developers/wannier90/pull/504)
 
@@ -31,7 +35,7 @@
 
 - User specified lists of k-points for plotting [[#519]](https://github.com/wannier-developers/wannier90/pull/519)
 
-## Various improvements and bugfixes
+### Various improvements and bugfixes
 
 - Cmake support (see README.install)
 
