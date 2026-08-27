@@ -585,7 +585,8 @@ contains
       ! for writing input m,a matrices
       call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
                          common_data%eigval, common_data%num_bands, common_data%num_kpts, &
-                         common_data%num_proj, common_data%seedname, error, common_data%comm)
+                         common_data%num_proj, common_data%dist_kpoints, common_data%seedname, error, &
+                         common_data%comm)
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
@@ -656,7 +657,8 @@ contains
       ! for writing input m,a matrices
       call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
                          common_data%eigval, common_data%num_bands, common_data%num_kpts, &
-                         common_data%num_proj, common_data%seedname, error, common_data%comm)
+                         common_data%num_proj, common_data%dist_kpoints, common_data%seedname, error, &
+                         common_data%comm)
     end if
 
     if (.not. common_data%have_disentangled) then
