@@ -1,37 +1,110 @@
                        =========
                        WANNIER90
-                       =========                            
-                                                            
- The Maximally-Localised Generalised Wannier Functions Code 
+                       =========
+
+ The Maximally-Localised Generalised Wannier Functions Code
 
 
+ In version Wannier90 version 4 there are two supported installation methods,
+ GNU Make and CMake.
 
- INSTALLATION
- ------------
 
- Requirements: A Fortran 95 compiler (most f90 compilers are really f95)
+ INSTALLATION USING CMAKE
+ ------------------------
+
+ Requirements: cmake version > 3.25
+               Fortran compiler (compliant with 2008 standard)
                LAPACK and BLAS libraries
-	       (Optional) MPI libraries for parallel execution of the
-                  postw90.x executable
+               MPI libraries and headers (optional)
+               Fortran f2018 compiler (optional for C interface)
+
+ Cmake will generally attempt to find a suitable configuration using internal defaults
+ and search methods to find the necessary compilers and numerical libraries.  On many
+ systems this will be sufficient to produce a working installation.
+
+ On a linux system, such a build may be accomplished by:
+
+        mkdir build
+        cd build
+        cmake ..
+        make
+
+ The resulting executables can be found in the build/bin directory.  System-wide installation
+ is achieved with (assuming appropriate privileges, for example using sudo):
+
+        make install
+
+ and you can run the tests using:
+
+        ctest
+
+ The installation directory defaults (on linux) to /usr/local/; this can be changed via
+
+        cmake ../ -DCMAKE_INSTALL_PREFIX=/path
+
+ See https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
+
+ Some options are available to steer compilation; to enable a parallel build:
+
+        cmake ../ -DWANNIER90_MPI=ON
+
+ If suitable MPI libraries are found, they will be reported in the output in, eg:
+
+        -- Found LAPACK: /usr/lib64/libopenblas.so;-lm;-ldl
+        -- Found MPI_Fortran: /usr/lib64/openmpi/lib/libmpi_usempif08.so (found version "3.1")
+
+ To choose a specific compiler, eg, the Intel LLVM compiler "ifx":
+
+        cmake ../ -DCMAKE_Fortran_COMPILER=ifx
+
+ This command will fail if the specified compiler is not available in your path.
+
+ To choose a specific LAPACK/BLAS library by vendor name:
+
+        cmake ../ -DBLA_VENDOR=OpenBLAS
+
+ The corresponding libraries must be findable in standard system directories, or paths in
+ your environment (such as LD_LIBRARY_PATH on linux).
+
+ Check that the result is what you intend:
+        -- Found BLAS: /usr/lib64/libopenblas.so
+        -- Found LAPACK: /usr/lib64/libopenblas.so;/usr/lib64/libopenblas.so
+
+ A common choice might be Intel10_64lp_seq: Intel MKL 64 bit, sequential code, lp64 model.
+ See https://cmake.org/cmake/help/latest/module/FindBLAS.html for more information.
+
+ To use the C interface to the Wannier90 library, it is necessary to have a f2018
+ capable compiler and to define WANNIER90_WITH_C:
+
+        cmake ../ -DWANNIER90_WITH_C=ON
+
+
+ INSTALLATION USING GNUMAKE
+ --------------------------
+
+
+ Requirements: A Fortran 2008 compiler (most recent f90 compilers support this standard)
+               LAPACK and BLAS libraries
+	       (Optional) MPI libraries for parallel execution
 
  Configuration:
    The system dependent parameters (e.g. compiler name) are contained in a file
    called 'make.inc'. Sample files may be found in the ./config/ directory.
-   Choose one that is nearest to your setup and copy it to make.inc. You may 
-   need to edit it, for example to give the correct library path for your 
+   Choose one that is nearest to your setup and copy it to make.inc. You may
+   need to edit it, for example to give the correct library path for your
    machine.
-   
+
     On a linux system with the intel compiler build Wannier90 by typing
 
          cp ./config/make.inc.ifort ./make.inc
-         make 
+         make
 
    IMPORTANT NOTE: a GNU version of the make utility is needed to compile
      Wannier90.
      To know if your make version is GNU, type
        make -v
      If you have a GNU make utility, the first line of the output should
-     read somethink like
+     read something like
        GNU Make 3.81
      Refer to your local system administrator for further information.
 
@@ -43,7 +116,7 @@
    make wannier    build the wannier90.x executable
    make post       build the postw90.x executable
    make default    (default) build wannier90.x and postw90.x
-   make lib        build the wannier90 library
+   make libs       build the wannier90 library (both static and dynamic version)
    make w90chk2chk build the w90chk2chk.x utility (see 'Utility' section of
                    the user guide)
    make w90vdw     build the van der Waals code
@@ -65,26 +138,51 @@
  The default DESTDIR is empty, and the default PREFIX is /usr.
 
  In order to compile the postw90.x executable in its parallel version, you have
- to specify 
+ to specify
   COMMS=mpi
  inside the make.inc file (some of the example files already contain this line)
  and moreover define the parallel compiler using the MPIF90 flag, for instance:
   MPIF90=mpiifort
- 
+
  Compiler: If your operating system came with a Fortran compiler or you have a
  commercial compiler (such as ifort) this should give the best performance.
-  
+
  Libraries: For Wannier90 to perform well a well optimised BLAS library should
  be used. Many commercial operating systems and compilers provide well optimised
  BLAS libraries.
   ATLAS is one of the fastest implementations
      http://math-atlas.sourceforge.net/
-  ACML AMD provides optimised BLAS for AMD processors 
-    http://developer.amd.com/acml.aspx  
-  LAPACK can be obtained from the netlib website. It also includes a 
+  ACML AMD provides optimised BLAS for AMD processors
+    http://developer.amd.com/acml.aspx
+  LAPACK can be obtained from the netlib website. It also includes a
   non-optimised BLAS.
      http://www.netlib.org/lapack/
 
+Parallel builds
+---------------
+
+ wannier90.x and postw90.x both support parallel execution using MPI.  wannier90
+ is paralellised over k-points: gamma-only mode is not currently parallelised.
+
+ There are three common ways for using MPI with fortran:
+ 1. "use mpi_f08" uses a complete fortran08 interface with custom types, this
+    allows detailed checking of arguments in MPI function calls
+ 2. "use mpi" uses a fortran90 style interface, limited checking
+ 3. "include 'mpif.h'" uses a legacy interface, no checking at all
+
+ Methods 1 and 2 require module files built by the same version of compiler that
+ is to be used to compile wannier90.
+
+ If you intend to link to libwannier90 from another program, then you may wish to
+ ensure that the MPI interface level (standard) used in compiling Wannier90
+ matches that of the calling program.  Three levels of Fortran MPI standard are
+ supported by Wannier90: Fortran90 (which uses a Fortran module), Fortran2008
+ (which uses a Fortran module that includes f2008 types for the different MPI
+ objects) and a legacy Fortran77 interface (which uses the 'mpi.h' include file).
+ To specify a particular interface set:
+  COMMS=mpi08
+  COMMS=mpi90  (default, same as COMMS=mpi)
+  COMMS=mpih
 
 Linux x86,x86-64
 ----------------
@@ -92,13 +190,13 @@ Linux x86,x86-64
   1- make.inc.ifort
      Compiler:  Intel (ifc,ifort,iforte)
      Libraries: Intel mkl
-                (ATLAS BLAS is faster for AMD processors) 
+                (ATLAS BLAS is faster for AMD processors)
 
   2- make.inc.pathscale
      Compiler:  Pathscale (pathf90)
-     Libraries: acml 
+     Libraries: acml
 
-  3- make.inc.nag   
+  3- make.inc.nag
      Compiler:  NAG (f95)
      Libraries: ATLAS + LAPACK (maybe acml)
  [note in our experience the NAG compiler does not produce well optimised code]
@@ -149,15 +247,15 @@ IBM PowerPC/power series. Linux or AIX
      Compiler:  xlf95
      Libraries: ESSL + LAPACK
        Note: ESSL does not provide a complete lapack installation.
-         If your machine does not have a full LAPACK install, 
+         If your machine does not have a full LAPACK install,
          download the netlib LAPACK. You might want to use
-         the essl wrappers from 
+         the essl wrappers from
          http://www.netlib.org/lapack/essl/
 
 Windows
 -------
  There are many commercial Fortran compilers for windows.
- We haven't included make.inc files for these as we don't 
+ We haven't included make.inc files for these as we don't
  have access to them. Wannier90 should compile just fine.
 
  I use cygwin (http://www.cygwin.com/) which provides a bash shell.
@@ -165,16 +263,16 @@ Windows
   1- make.inc.g95
      Compiler: g95  (within cygwin)
      Libraries: LAPACK and ATLAS (cygwin comes with a lapack and blas library,
-     but I think they have been compiled with g77. I had problems making 
+     but I think they have been compiled with g77. I had problems making
      a working executable. I suggest building your own)
 
  2- make.inc.pgf90
     Compiler: Portland Group (pgf90)
     Libaries: pg supplied lapack and blas
- 
+
 PREPROCESSOR FLAGS
 ------------------
-To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the 
+To add a preprocessor flag, add it to the FCOPTS and LDOPTS variables in the
 make.inc file.
 For instance, if the flag is called EXIT_FLAG, you can simply append
   -DEXIT_FLAG
@@ -192,18 +290,17 @@ at the end of the make.inc file, you can add the lines
 Flags
 -----
 
-* EXIT_FLAG 
+* EXIT_FLAG
   If defined (and if your compiler supports it), returns an exit status =/= 0
   when the code exits due to an error (while it returns 0 on correct
   completion).
   By default, when this flag is not present, the value of the exit code is
   not sensible.
 * CODATA2006
-  Use physical constants from 2006 version of CODATA tables
-  (http://physics.nist.gov/cuu/Constants/index.html)
-  (Note that this is the default choice if nothing is specified)
 * CODATA2010
-  Use physical constants from 2010 version of CODATA tables
+* CODATA2018
+* CODATA2022
+  Use physical constants from 2006,2010,2018 or 2022 (default) version of CODATA tables
   (http://physics.nist.gov/cuu/Constants/index.html)
 * USE_WANNIER90_V1_BOHR
   Use the value of the bohr radius (expressed in angstrom) that

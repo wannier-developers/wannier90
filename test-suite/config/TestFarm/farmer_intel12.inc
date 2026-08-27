@@ -5,7 +5,7 @@
 F90 = ifort
 #COMMS=mpi
 #MPIF90=ifort
-FCOPTS=-O2 -assume byterecl -g -traceback 
+FCOPTS=-O2 -assume byterecl -g -traceback
 LDOPTS=-O2
 
 #========================================================

@@ -2,13 +2,25 @@ ifndef ROOTDIR
 ROOTDIR=.
 endif
 
-REALMAKEFILE=../Makefile.2
+# include make.inc to determine if (last) build was serial or parallel via def/undef COMMS
+include make.inc
+
+# Contains definition of OBJS, OBJS_POST, LIBRARY, DYNLIBRARY, ...
+include Makefile.header
 
 TAR := $(shell if which gnutar 1>/dev/null 2> /dev/null; then echo gnutar; else echo tar; fi )
 
+.NOTPARALLEL:
 default: wannier post
 
 PREFIX ?= /usr
+
+VERSION_MAJOR = 3
+VERSION_MINOR = 1
+VERSION_PATCH = 0
+
+VERSION = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
+VERSION_SHORT = $(VERSION_MAJOR).$(VERSION_MINOR)
 
 install: default
 	install -d $(DESTDIR)$(PREFIX)/bin/
@@ -17,76 +29,96 @@ install: default
 	done
 	if [ -f "utility/w90pov/w90pov" ]; then install -m755 "utility/w90pov/w90pov" "$(DESTDIR)$(PREFIX)/bin/w90pov"; fi;
 	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -m755 "utility/w90vdw/w90vdw.x" "$(DESTDIR)$(PREFIX)/bin/w90vdw.x"; fi;
-	install -d $(DESTDIR)$(PREFIX)/lib/
-	if [ -f "libwannier.a" ]; then install -m644 "libwannier.a" "$(DESTDIR)$(PREFIX)/lib/libwannier.a"; fi;
 
-all: wannier lib post w90chk2chk w90pov w90vdw w90spn2spn
+	install -d $(DESTDIR)$(PREFIX)/include/
+	for m in src/obj/w90_library.mod src/obj/w90_library_extra.mod; do \
+		if [ -f "$$m" ]; then install -m644 "$$m" "$(DESTDIR)$(PREFIX)/include/"; fi; \
+	done
+	install -d $(DESTDIR)$(PREFIX)/lib/
+	if [ -f "$(STATICLIBRARY)" ]; then install -m644 "$(STATICLIBRARY)" "$(DESTDIR)$(PREFIX)/lib/$(STATICLIBRARY)"; fi;
+	if [ -f "$(DYNLIBRARY)" ]; then install -m644 "$(DYNLIBRARY)" "$(DESTDIR)$(PREFIX)/lib/$(DYNLIBRARY)"; fi;
+	if [ -f "$(STATICLIBRARY)" ]; then $(MAKE) pkgconfig; fi;
+
+all: wannier libs post w90chk2chk w90pov w90vdw w90spn2spn
 
 doc: thedoc
 
-serialobjs: objdir
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) serialobjs)
+w90chk2chk:
+	$(MAKE) -C src/obj w90chk2chk
 
-w90chk2chk: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90chk2chk)
+w90spn2spn:
+	$(MAKE) -C src/obj w90spn2spn
 
-w90spn2spn: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) w90spn2spn)
+wannier:
+	$(MAKE) -C src/obj wannier
 
-wannier: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) wannier)
+# General rule to make the wannier90.x, postw90.x, w90chk2chk.x and w90spn2spn.x executables
+# Internally it uses ../$@ because in the src/ directory, the executable is created one level up
+# (i.e. in the root directory)
+%.x:
+	$(MAKE) -C src/obj ../$@
 
-lib: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) libs)
+staticlib:
+	$(MAKE) -C src/obj staticlib
 
-dynlib: objdir serialobjs
-	(cd $(ROOTDIR)/src/obj && $(MAKE) -f $(REALMAKEFILE) dynlibs)
+dynlib:
+	$(MAKE) -C src/obj dynlib
 
 w90pov:
-	(cd $(ROOTDIR)/utility/w90pov && $(MAKE) )
+	$(MAKE) -C $(ROOTDIR)/utility/w90pov
 
 w90vdw:
-	(cd $(ROOTDIR)/utility/w90vdw && $(MAKE) )
+	$(MAKE) -C $(ROOTDIR)/utility/w90vdw
 
-libs: lib
+w90py: libs
+	$(MAKE) -C $(ROOTDIR)/wrap
 
-post: objdirp
-	(cd $(ROOTDIR)/src/objp && $(MAKE) -f $(REALMAKEFILE) post)
+libs: staticlib dynlib
+
+PKGCONFIG_FILENAME = $(DYNLIBBASE).pc
+pkgconfig:
+	{ \
+	  echo "prefix=$(DESTDIR)$(PREFIX)"; \
+	  echo "exec_prefix=$(DESTDIR)$(PREFIX)/bin"; \
+	  echo "libdir=$(DESTDIR)$(PREFIX)/lib"; \
+	  echo "includedir=$(DESTDIR)$(PREFIX)/include"; \
+	  echo ""; \
+	  echo "Name: $(DYNLIBBASE)"; \
+	  echo "Description: $(LIBDESCRIPTION)."; \
+	  echo "Requires: "; \
+	  echo "Version: $(VERSION)"; \
+	  echo 'Libs: -L$${libdir} -l'"$(DYNLIBBASE)"; \
+	  echo 'Cflags: -I$${includedir}'; \
+	} > "$(PKGCONFIG_FILENAME)"
+	install -d $(DESTDIR)$(PREFIX)/lib/pkgconfig/
+	install -D -m644 "$(PKGCONFIG_FILENAME)" "$(DESTDIR)$(PREFIX)/lib/pkgconfig/$(PKGCONFIG_FILENAME)"
+	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
+
+post:
+	$(MAKE) -C src/obj post
 
 clean:
 	cd $(ROOTDIR) && rm -f *~
 	cd $(ROOTDIR) && rm -f src/*~
-	@( cd $(ROOTDIR) && if [ -d src/obj ] ; \
-		then cd src/obj && \
-		$(MAKE) -f $(REALMAKEFILE) clean && \
-		cd ../ && rm -rf obj ; \
-	fi )
-	@( cd $(ROOTDIR) && if [ -d src/objp ] ; \
-		then cd src/objp && \
-		$(MAKE) -f $(REALMAKEFILE) clean && \
-		cd ../ && rm -rf objp ; \
-	fi )
-	$(MAKE) -C $(ROOTDIR)/doc/user_guide clean
-	$(MAKE) -C $(ROOTDIR)/doc/tutorial clean
+	cd $(ROOTDIR) && rm -f $(PKGCONFIG_FILENAME)
+	cd $(ROOTDIR) && $(MAKE) -C src/obj clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
 	cd $(ROOTDIR)/test-suite && ./clean_tests
 
+# Note: .x.dSYM are directories (hence the -r option to rm) and are only created on macOS (when compiling with certain flags, e.g. debug), so they are not always present
 veryclean: clean
-	cd $(ROOTDIR) && rm -f wannier90.x postw90.x libwannier.a w90chk2chk.x w90spn2spn.x
-	cd $(ROOTDIR)/doc && rm -f user_guide.pdf tutorial.pdf
-	cd $(ROOTDIR)/doc/user_guide && rm -f user_guide.ps
-	cd $(ROOTDIR)/doc/tutorial && rm -f tutorial.ps 
+	cd $(ROOTDIR) && rm -rf wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90_mpi.{a,so.4} *.{gcda,gcno} *.x.dSYM
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
-	$(MAKE) -C $(ROOTDIR)/doc/user_guide 
-	$(MAKE) -C $(ROOTDIR)/doc/tutorial 
+	@(echo "The latex user_guide and tutorials have been migrated to markdown \
+	format, for more details see 'docs/README.md' file.")
 
 # For now hardcoded to 3.1.0, and using HEAD
 # Better to get the version from the io.F90 file and use
 # the tag (e.g. v3.1.0) instead of HEAD
-dist: 
+dist:
 	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-3.1.0/ -o wannier90-3.1.0.tar.gz
 
 dist-legacy:
@@ -142,9 +174,6 @@ dist-legacy:
 		./examples/example2[1-2]/*/*.sym \
 		./examples/example2[1-2]/*/*.pw2wan \
 		./pseudo/*.UPF \
-		./pwscf/README \
-		./pwscf/v*/*.f90 \
-		./pwscf/v*/README \
 		./config/make.inc* \
 		./utility/*.pl \
 		./utility/PL_assessment/*.f90 \
@@ -182,14 +211,18 @@ dist-legacy:
 		./CHANGE.log \
 	)
 
-test-serial: w90chk2chk wannier post  
+test-serial: w90chk2chk wannier post
 	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
 
-test-parallel: w90chk2chk wannier post 
-	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default --numprocs=4 )
+test-parallel: w90chk2chk wannier post
+	(cd $(ROOTDIR)/test-suite && ./run_tests --category=par --numprocs=4 )
 
 # Alias
+ifdef COMMS
 tests: test-serial test-parallel
+else
+tests: test-serial
+endif
 
 dist-lite:
 	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
@@ -207,14 +240,4 @@ dist-lite:
 		./CHANGE.log \
 	)
 
-objdir: 
-	@( cd $(ROOTDIR) && if [ ! -d src/obj ] ; \
-		then mkdir src/obj ; \
-	fi ) ;
-
-objdirp: 
-	@( cd $(ROOTDIR) && if [ ! -d src/objp ] ; \
-		then mkdir src/objp ; \
-	fi ) ;
-
-.PHONY: wannier default all doc lib libs post clean veryclean thedoc dist test-serial test-parallel dist-lite objdir objdirp serialobjs tests w90spn2spn install
+.PHONY: wannier default all doc libs staticlib dynlib post clean veryclean thedoc dist test-serial test-parallel dist-lite tests w90spn2spn install pkgconfig

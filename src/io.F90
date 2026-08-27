@@ -1,222 +1,208 @@
 !-*- mode: F90 -*-!
 !------------------------------------------------------------!
-! This file is distributed as part of the Wannier90 code and !
-! under the terms of the GNU General Public License. See the !
-! file `LICENSE' in the root directory of the Wannier90      !
-! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+! Copyright (C) 2026 Wannier Developer Group                 !
 !                                                            !
-! The webpage of the Wannier90 code is www.wannier.org       !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
-! The Wannier90 code is hosted on GitHub:                    !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
 !                                                            !
-! https://github.com/wannier-developers/wannier90            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
+!------------------------------------------------------------!
+!                                                            !
+!  w90_io: file io and timing functions                      !
+!                                                            !
 !------------------------------------------------------------!
 
 module w90_io
+
   !! Module to handle operations related to file input and output.
 
   use w90_constants, only: dp
+
   implicit none
 
   private
 
-#ifdef MPI
-  include 'mpif.h'
-#endif
+  character(len=10), parameter, public :: w90_version = '4.0.1 ' !! Label for this version of wannier90
 
-  integer, public, save           :: stdout
-  !! Unit on which stdout is written
-  character(len=50), public, save :: seedname
-  !! The seedname for this run
-  integer, parameter, public      :: maxlen = 255
-  !! Max column width of input file
-  logical, public, save           :: post_proc_flag
-  !! Are we in post processing mode
-  character(len=10), public, parameter:: w90_version = '3.1.0 '
-  !! Label for this version of wannier90
-
-  type timing_data
-    !! Data about each stopwatch - for timing routines
-    integer :: ncalls
-    !! Number of times stopwatch has been called
-    real(kind=DP) :: ctime
-    !! Total time on stopwatch
-    real(kind=DP) :: ptime
-    !! Temporary record of time when watch is started
-    character(len=60) :: label
-    !! What is this stopwatch timing
-  end type timing_data
-
-  integer, parameter :: nmax = 100
-  !! Maximum number of stopwatches
-  type(timing_data) :: clocks(nmax)
-  !! Data for the stopwatches
-  integer, save     :: nnames = 0
-  !! Number of active stopwatches
-
-  public :: io_stopwatch
+  public :: io_stopwatch_start
+  public :: io_stopwatch_stop
   public :: io_commandline
+  public :: io_date
   public :: io_print_timings
-  public :: io_get_seedname
   public :: io_time
   public :: io_wallclocktime
-  public :: io_date
-  public :: io_error
-  public :: io_file_unit
+  public :: prterr
+  public :: print_error_halt
 
 contains
 
+  ! was io_stopwatch(tag, 1, error), acts on stopwatch 1
   !=====================================
-  subroutine io_stopwatch(tag, mode)
+  subroutine io_stopwatch_start(tag, timers)
     !=====================================
     !! Stopwatch to time parts of the code
     !=====================================
 
+    use w90_types, only: timer_list_type, nmax
+
     implicit none
+
+    ! arguments
+    type(timer_list_type), intent(inout) :: timers
 
     character(len=*), intent(in) :: tag
     !! Which stopwatch to act upon
-    integer, intent(in)          :: mode
+    !integer, intent(in)  :: mode
     !! Action  1=start 2=stop
 
+    ! local variables
     integer :: i
     real(kind=dp) :: t
 
     call cpu_time(t)
 
-    select case (mode)
+    do i = 1, timers%nnames
+      if (timers%clocks(i)%label .eq. tag) then
+        timers%clocks(i)%ptime = t
+        timers%clocks(i)%ncalls = timers%clocks(i)%ncalls + 1
+        return
+      end if
+    end do
 
-    case (1)
+    if (.not. timers%overflow) then
+      if (timers%nnames == nmax) then
+        timers%overflow = .true.
+      else
+        timers%nnames = timers%nnames + 1
 
-      do i = 1, nnames
-        if (clocks(i)%label .eq. tag) then
-          clocks(i)%ptime = t
-          clocks(i)%ncalls = clocks(i)%ncalls + 1
-          return
-        endif
-      enddo
-
-      nnames = nnames + 1
-      if (nnames .gt. nmax) call io_error('Maximum number of calls to io_stopwatch exceeded')
-
-      clocks(nnames)%label = tag
-      clocks(nnames)%ctime = 0.0_dp
-      clocks(nnames)%ptime = t
-      clocks(nnames)%ncalls = 1
-
-    case (2)
-
-      do i = 1, nnames
-        if (clocks(i)%label .eq. tag) then
-          clocks(i)%ctime = clocks(i)%ctime + t - clocks(i)%ptime
-          return
-        endif
-      end do
-
-      write (stdout, '(1x,3a)') 'WARNING: name = ', trim(tag), ' not found in io_stopwatch'
-
-    case default
-
-      write (stdout, *) ' Name = ', trim(tag), ' mode = ', mode
-      call io_error('Value of mode not recognised in io_stopwatch')
-
-    end select
+        timers%clocks(timers%nnames)%label = tag
+        timers%clocks(timers%nnames)%ctime = 0.0_dp
+        timers%clocks(timers%nnames)%ptime = t
+        timers%clocks(timers%nnames)%ncalls = 1
+      end if
+    end if
 
     return
 
-  end subroutine io_stopwatch
+  end subroutine io_stopwatch_start
 
+  ! was io_stopwatch(tag, 2, error), acts on stopwatch 2
   !=====================================
-  subroutine io_print_timings()
+  subroutine io_stopwatch_stop(tag, timers)
     !=====================================
-    !! Output timing information to stdout
+    !! Stopwatch to time parts of the code
     !=====================================
+    use w90_types, only: timer_list_type
 
     implicit none
 
+    ! arguments
+    character(len=*), intent(in) :: tag
+    type(timer_list_type), intent(inout) :: timers
+    !! Which stopwatch to act upon
+    !integer, intent(in)  :: mode
+    !! Action  1=start 2=stop
+
+    ! local variables
+    integer :: i
+    real(kind=dp) :: t
+
+    call cpu_time(t)
+
+    do i = 1, timers%nnames
+      if (timers%clocks(i)%label .eq. tag) then
+        timers%clocks(i)%ctime = timers%clocks(i)%ctime + t - timers%clocks(i)%ptime
+        return
+      end if
+    end do
+
+    return
+
+  end subroutine io_stopwatch_stop
+
+  !================================================
+  subroutine io_print_timings(timers, stdout)
+    !================================================
+    !
+    !! Output timing information to stdout
+    !
+    !================================================
+    use w90_types, only: timer_list_type
+
+    implicit none
+
+    type(timer_list_type), intent(in) :: timers
+    integer, intent(in) :: stdout
     integer :: i
 
+    if (timers%overflow) then
+      write (stdout, '(1x,a)') 'Warning: Timer array overflowed, some timing data has been lost'
+    end if
     write (stdout, '(/1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|                             TIMING INFORMATION                            |'
     write (stdout, '(1x,a)') '*===========================================================================*'
     write (stdout, '(1x,a)') '|    Tag                                                Ncalls      Time (s)|'
     write (stdout, '(1x,a)') '|---------------------------------------------------------------------------|'
-    do i = 1, nnames
+    do i = 1, timers%nnames
       write (stdout, '(1x,"|",a50,":",i10,4x,f10.3,"|")') &
-        clocks(i)%label, clocks(i)%ncalls, clocks(i)%ctime
-    enddo
+        timers%clocks(i)%label, timers%clocks(i)%ncalls, timers%clocks(i)%ctime
+    end do
     write (stdout, '(1x,a)') '*---------------------------------------------------------------------------*'
 
     return
 
   end subroutine io_print_timings
 
-  !=======================================
-  subroutine io_get_seedname()
-    !=======================================
-    !
-    !! Get the seedname from the commandline
-    !=======================================
-
-    implicit none
-
-    integer :: num_arg
-    character(len=50) :: ctemp
-
-    post_proc_flag = .false.
-
-    num_arg = command_argument_count()
-    if (num_arg == 0) then
-      seedname = 'wannier'
-    elseif (num_arg == 1) then
-      call get_command_argument(1, seedname)
-      if (index(seedname, '-pp') > 0) then
-        post_proc_flag = .true.
-        seedname = 'wannier'
-      end if
-    else
-      call get_command_argument(1, seedname)
-      if (index(seedname, '-pp') > 0) then
-        post_proc_flag = .true.
-        call get_command_argument(2, seedname)
-      else
-        call get_command_argument(2, ctemp)
-        if (index(ctemp, '-pp') > 0) post_proc_flag = .true.
-      end if
-
-    end if
-
-    ! If on the command line the whole seedname.win was passed, I strip the last ".win"
-    if (len(trim(seedname)) .ge. 5) then
-      if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".win") then
-        seedname = seedname(:len(trim(seedname)) - 4)
-      end if
-    end if
-
-  end subroutine io_get_seedname
-
-  !=======================================
-  subroutine io_commandline(prog, dryrun)
-    !=======================================
+  !================================================
+  subroutine io_commandline(prog, dryrun, post_proc_flag, seedname)
+    !================================================
     !
     !! Parse the commandline
-    !=======================================
+    !
+    !================================================
 
     implicit none
 
-    character(len=50), intent(in) :: prog
+    character(len=:), allocatable, intent(in) :: prog
     !! Name of the calling program
-    logical, intent(out) :: dryrun
+    logical, intent(out) :: dryrun, post_proc_flag
     !! Have we been asked for a dryrun
+    character(len=:), allocatable, intent(inout)  :: seedname
 
     integer :: num_arg, loop
     character(len=50), allocatable :: ctemp(:)
     logical :: print_help, print_version
     character(len=10) :: help_flag(3), version_flag(3), dryrun_flag(3)
 
-    help_flag(1) = '-h    '; help_flag(2) = '-help '; help_flag(3) = '--help '; 
-    version_flag(1) = '-v    '; version_flag(2) = '-version '; version_flag(3) = '--version '; 
-    dryrun_flag(1) = '-d    '; dryrun_flag(2) = '-dryrun '; dryrun_flag(3) = '--dryrun '; 
+    help_flag(1) = '-h    '
+    help_flag(2) = '-help '
+    help_flag(3) = '--help '
+
+    version_flag(1) = '-v    '
+    version_flag(2) = '-version '
+    version_flag(3) = '--version '
+
+    dryrun_flag(1) = '-d    '
+    dryrun_flag(2) = '-dryrun '
+    dryrun_flag(3) = '--dryrun '
+
     post_proc_flag = .false.
     print_help = .false.
     print_version = .false.
@@ -242,7 +228,7 @@ contains
         print_help = .true.
       else  ! must be the seedname
         seedname = trim(ctemp(1))
-      endif
+      end if
     else ! not 2 - as mpi call might add commands to argument list
       if (any(index(ctemp(1), help_flag(:)) > 0)) then
         print_help = .true.
@@ -259,8 +245,8 @@ contains
       else  ! must be the seedname
         seedname = trim(ctemp(1))
         if (seedname(1:1) == '-') print_help = .true.
-      endif
-    endif
+      end if
+    end if
 
     ! If on the command line the whole seedname.win was passed, I strip the last ".win"
     if (len(trim(seedname)) .ge. 5) then
@@ -290,85 +276,56 @@ contains
         write (6, '(a)') '  postw90.x [-h|--help]              : print this help message'
       end if
       stop
-    endif
+    end if
 
     if (print_version) then
       if (prog == 'wannier90') then
         write (6, '(a,a)') 'Wannier90: ', trim(w90_version)
       elseif (prog == 'postw90') then
         write (6, '(a,a)') 'Postw90: ', trim(w90_version)
-      endif
+      end if
       stop
     end if
 
   end subroutine io_commandline
 
-  !========================================
-  subroutine io_error(error_msg)
-    !========================================
-    !! Abort the code giving an error message
-    !========================================
+!  !================================================
+!  subroutine io_error(error_msg, stdout, seedname)
+!    !================================================
+!    !
+!    !! Abort the code giving an error message
+!    !
+!    !================================================
+!
+!    implicit none
+!
+!    character(len=*), intent(in) :: error_msg
+!    character(len=50), intent(in)  :: seedname
+!    integer :: stdout
+!
+!    ! calls mpi_abort on mpi_comm_world iff compiled with MPI support
+!    call comms_abort(seedname, error_msg, stdout)
+!    close (stdout)
+!
+!    write (*, '(1x,a)') trim(error_msg)
+!    write (*, '(A)') "Error: examine the output/error file for details"
+!
+!#ifdef EXIT_FLAG
+!    call exit(1)
+!#else
+!    STOP
+!#endif
+!
+!  end subroutine io_error
 
-    implicit none
-    character(len=*), intent(in) :: error_msg
-
-#ifdef MPI
-    character(len=50) :: filename
-    integer           :: stderr, ierr, whoami, num_nodes
-
-    call mpi_comm_rank(mpi_comm_world, whoami, ierr)
-    call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
-    if (num_nodes > 1) then
-      if (whoami > 99999) then
-        write (filename, '(a,a,I0,a)') trim(seedname), '.node_', whoami, '.werr'
-      else
-        write (filename, '(a,a,I5.5,a)') trim(seedname), '.node_', whoami, '.werr'
-      endif
-      stderr = io_file_unit()
-      open (unit=stderr, file=trim(filename), form='formatted', err=105)
-      write (stderr, '(1x,a)') trim(error_msg)
-      close (stderr)
-    end if
-
-105 write (*, '(1x,a)') trim(error_msg)
-106 write (*, '(1x,a,I0,a)') "Error on node ", &
-      whoami, ": examine the output/error files for details"
-
-    if (whoami == 0) then
-      write (stdout, *) 'Exiting.......'
-      write (stdout, '(1x,a)') trim(error_msg)
-      close (stdout)
-    end if
-
-    call MPI_abort(MPI_comm_world, 1, ierr)
-
-#else
-
-    write (stdout, *) 'Exiting.......'
-    write (stdout, '(1x,a)') trim(error_msg)
-
-    close (stdout)
-
-    write (*, '(1x,a)') trim(error_msg)
-    write (*, '(A)') "Error: examine the output/error file for details"
-#endif
-
-#ifdef EXIT_FLAG
-    call exit(1)
-#else
-    STOP
-#endif
-
-  end subroutine io_error
-
-  !=======================================================
+  !================================================
   subroutine io_date(cdate, ctime)
-    !=======================================================
+    !================================================
     !
     !! Returns two strings containing the date and the time
     !! in human-readable format. Uses a standard f90 call.
     !
-    !=======================================================
+    !================================================
     implicit none
     character(len=9), intent(out) :: cdate
     !! The date
@@ -387,14 +344,14 @@ contains
 
   end subroutine io_date
 
-  !===========================================================
+  !================================================
   function io_time()
-    !===========================================================
+    !================================================
     !
     !! Returns elapsed CPU time in seconds since its first call.
     !! Uses standard f90 call
     !
-    !===========================================================
+    !================================================
     use w90_constants, only: dp
     implicit none
 
@@ -414,18 +371,19 @@ contains
       first = .false.
     else
       io_time = t1 - t0
-    endif
+    end if
     return
   end function io_time
 
-  !==================================================================!
+  !================================================!
   function io_wallclocktime()
-    !==================================================================!
-    !                                                                  !
+    !================================================!
     ! Returns elapsed wall clock time in seconds since its first call  !
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
+
     use w90_constants, only: dp, i64
+
     implicit none
 
     real(kind=dp) :: io_wallclocktime
@@ -443,33 +401,83 @@ contains
     else
       call system_clock(c1)
       io_wallclocktime = real(c1 - c0)/real(rate)
-    endif
+    end if
     return
   end function io_wallclocktime
 
-  !===========================================
-  function io_file_unit()
-    !===========================================
-    !
-    !! Returns an unused unit number
-    !! so we can later open a file on that unit.
-    !
-    !===========================================
-    implicit none
+  subroutine prterr(error, ie, istdout, istderr, comm)
+    use w90_comms, only: comms_no_sync_send, comms_no_sync_recv, w90_comm_type, mpirank, mpisize
+    use w90_error_base, only: code_deactivated, code_remote, w90_error_type
 
-    integer :: io_file_unit, unit
-    logical :: file_open
+    ! arguments
+    integer, intent(inout) :: ie ! global error value to be returned
+    integer, intent(in) :: istderr, istdout
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(inout) :: error
 
-    unit = 9
-    file_open = .true.
-    do while (file_open)
-      unit = unit + 1
-      inquire (unit, OPENED=file_open)
-    end do
+    ! local variables
+    type(w90_error_type), allocatable :: le ! unchecked error state for calls made in this routine
+    integer :: je ! error value on remote ranks
+    integer :: j ! rank index
+    integer :: failrank ! lowest rank reporting an error
+    character(len=128) :: mesg ! only print 128 chars of error
 
-    io_file_unit = unit
+    ie = 0
+    mesg = 'not set'
 
-    return
-  end function io_file_unit
+    if (mpirank(comm) == 0) then
+      ! currently this printout will list only the lowest failing rank, not all failing ranks
+      do j = mpisize(comm) - 1, 1, -1
+        call comms_no_sync_recv(je, 1, j, le, comm)
 
+        if (je /= code_remote .and. je /= 0) then
+          failrank = j
+          ie = je
+          call comms_no_sync_recv(mesg, 128, j, le, comm)
+        end if
+      end do
+      ! if the error is on rank0
+      if (error%code /= code_remote .and. error%code /= 0) then
+        failrank = 0
+        ie = error%code
+        mesg = error%message
+      end if
+
+      write (istdout, *) 'Exiting.......'
+      write (istdout, '(1x,a)') trim(mesg)
+      write (istdout, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+
+      write (istderr, *) 'Exiting.......'
+      write (istderr, '(1x,a)') trim(mesg)
+      write (istderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
+      !write (istderr, '(1x,a)') 'error encountered; check .wout log'
+
+    else ! non 0 ranks
+      je = error%code
+      call comms_no_sync_send(je, 1, 0, le, comm)
+      if (je /= code_remote .and. je /= 0) then
+        ie = je ! also set failed status on non 0 ranks
+        mesg = error%message
+        call comms_no_sync_send(mesg, 128, 0, le, comm)
+      end if
+    end if
+    flush (istdout)
+    flush (istderr)
+
+    error%code = code_deactivated
+    deallocate (error) ! else allocated error trips uncaught error mechanism (ifdef W90DEV, see io.F90)
+  end subroutine prterr
+
+  subroutine print_error_halt(error, ie, istdout, istderr, comm)
+    use w90_comms, only: w90_comm_type
+    use w90_error_base, only: w90_error_type
+    ! arguments
+    integer, intent(inout) :: ie ! global error value to be returned
+    integer, intent(in) :: istderr, istdout
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(inout) :: error
+
+    call prterr(error, ie, istdout, istderr, comm)
+    stop
+  end subroutine print_error_halt
 end module w90_io

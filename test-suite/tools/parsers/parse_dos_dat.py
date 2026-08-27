@@ -23,7 +23,7 @@ def parse(fname):
         lines = f.readlines()
 
     for lno, l in enumerate(lines):
-        
+
         if l.strip().startswith('#'):
             # Skip headers
             continue
@@ -34,12 +34,17 @@ def parse(fname):
             # skip blank line
             continue
 
-        if len(pieces) == 2 : 
+        if len(pieces) == 2 :
             retdict['energy'].append(float(pieces[0]))
             retdict['dos'].append(float(pieces[1]))
+        elif len(pieces) == 4 :
+            retdict['energy'].append(float(pieces[0]))
+            retdict['dos'].append(float(pieces[1]))
+            retdict['dos_spin1'].append(float(pieces[2]))
+            retdict['dos_spin2'].append(float(pieces[3]))
         else:
             raise ValueError("Wrong line length ({}, instead of 2); line content: {}".format(
-                len(pieces)), l)
+                len(pieces), l))
 
 
     retdict = dict(retdict)

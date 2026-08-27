@@ -35,7 +35,7 @@ The code that calculates the van der Waals energy is called
 \wvdw\ and should be run separately after a \wannier\ run.\\
 
 Please report comments, bugs or suggestions to the \wannier\ mailing
-list. 
+list.
 
 \section{Compilation}
 
@@ -51,19 +51,19 @@ or equivalent.
 \section{Additional parameters in \wannier}
 
 \subsection{$\tt{logical :: write\_vdw\_data}$}
- 
+
 Default value is $\tt{false}$. If $\tt{true}$, then \wannier\ will
 write a prototype input file, $\tt{seedname.vdw}$, for
-\wvdw. 
+\wvdw.
 
-Dependencies: 
+Dependencies:
 \begin{itemize}
 \item Gamma-only sampling
 \item If disentanglement is being used, then $\tt{num\_valance\_bands}$, the
   total number of valence bands in the calculation,
   must be set in $\tt{seedname.win}$.
 \item If the system is spin-polarised, then
-  $\tt{num\_elec\_per\_state}$, the number of electrons per band/state, 
+  $\tt{num\_elec\_per\_state}$, the number of electrons per band/state,
   should be set to $\tt{1}$ in
   $\tt{seedname.win}$. The default value is $\tt{2}$.
 \end{itemize}
@@ -73,17 +73,17 @@ Dependencies:
 The \wvdw\ utility can be used to calculate the van der Waals energy
 using the centres, spreads and diagonal occupations obtained from
 \wannier. This information is written by \wannier\ to
-$\tt{seedname.vdw}$ if $\tt{write\_vdw\_data = true}$. 
- 
+$\tt{seedname.vdw}$ if $\tt{write\_vdw\_data = true}$.
+
 With only a few required modifications by the user (see below),
-\wvdw\ reads $\tt{seedname.vdw}$ as an input file and outputs 
+\wvdw\ reads $\tt{seedname.vdw}$ as an input file and outputs
 the vdW energy and $C_{6\rm {eff}}$ of the system in atomic units (Ha
 and Ha~a$_0^6$, respectively).
 
 \subsection{Input file}
 
 \wvdw\ reads the input file line by line, so care must be taken with
-the ordering of the keywords and values! 
+the ordering of the keywords and values!
 
 The format of the input file is
 
@@ -116,28 +116,28 @@ Each line is described in more detail below:
   not
 \item $\tt{amalgamate}$: logical; allowed values $\tt{T}$ or
   $\tt{F}$; whether to amalgamate co-centric MLWFs into a single MLWF
-  with averaged centre and spread 
+  with averaged centre and spread
 \item $\tt{degeneracy}$: real; for spin-polarised systems should be 1,
   for spin-degenerate systems 2
 \item $\tt{num\_frag}$: integer; the number of molecular fragments in
     the system
-\item $\tt{num\_wann}$: the following line contains 
+\item $\tt{num\_wann}$: the following line contains
   a list of $\tt{num\_frag}$ integers that
   specify the number of MLWFs in each molecular fragment
 \item $\tt{tol\_occ}$: real; MLWFs with occupancy less than this value
   will be assumed to be $p$-like atomic orbitals and will be split
   into two separate $s$-like orbitals. Only used if $\tt{disentangle
-    T}$. 
+    T}$.
 \item $\tt{pxyz}$: $\tt{num\_frag}$ following lines,
   each on a separate line, that specify the direction in which
   $p$-splitting should be performed for each molecular fragment. Each line
-  is a logical vector of length 3. For example,  
+  is a logical vector of length 3. For example,
   ``$\tt{F\ F\ T}$" corresponds to the z-direction; `$\tt{T\ F\ F}$" to the x-direction,
   etc. Only used if $\tt{disentangle
     T}$.
 \item $\tt{tol\_dist}$: real; distance threshold (in bohr) determining whether
   MLWFs are co-centric. Only used if $\tt{amalgamate T}$.
-\item $\tt{centres\_spreads\_occ}$: the first following line 
+\item $\tt{centres\_spreads\_occ}$: the first following line
    specifies the units in which the subsequent entries
   and are specified. Allowed values are $\tt{ang}$,
   $\tt{bohr}$. The next lines, one line for each MLWF,
@@ -152,13 +152,13 @@ automatically, a number of the parameters must checked and modified by hand
 prior to running \wvdw. In particular, $\tt{amalgamate}$,
 $\tt{num\_frag}$, $\tt{num\_wann}$, $\tt{tol\_occ}$, $\tt{pxyz}$,
   $\tt{tol\_dist}$ and the ordering of the
-  $\tt{centres\_spreads\_occ}$ block of data. 
+  $\tt{centres\_spreads\_occ}$ block of data.
 
 The programme is then run simply as
 
 $\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.vdw}$
 
-and the output is written to a file $\tt{seedname.vdw.out}$. 
+and the output is written to a file $\tt{seedname.vdw.out}$.
 
 \section{Example: benzene dimer}
 
@@ -173,7 +173,7 @@ Each benzene molecule has 15 valence MLWFs (see Fig.~8 of AHM11).  The
 $\tt{.mmn}$, $\tt{.amn}$, $\tt{.eig}$ and $\tt{.win}$ files are
 provided. The $\tt{.mmn}$ file will need to be gunzipped.
 
-First, run 
+First, run
 
 $\tt{\$>}$ \wannier\ $\tt{seedname}$
 
@@ -184,9 +184,9 @@ $\tt{\$> cp\ seedname.vdw\ seedname.in.vdw}$
 
 and edit $\tt{seedname.in.vdw}$ to ensure that the two molecular
 fragments are specified correctly, and to group the data corresponding
-to the MLWF centres, spreads and occupancies by molecular fragment. 
+to the MLWF centres, spreads and occupancies by molecular fragment.
 
-Then run 
+Then run
 
 $\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.in.vdw}$
 
@@ -202,9 +202,9 @@ Directory for files: $\tt{utility/wvdw/examples/benzene\_s\_cond/}$
 If we now consider higher-lying states (keeping the valence manifold
 explicitly included using a frozen window), we may disentangle 18
 partially occupied MLWFs per molecule that, unlike the valence-only
-case, retain the symmetry of the molecule. 
+case, retain the symmetry of the molecule.
 
-First, run 
+First, run
 
 $\tt{\$>}$ \wannier\ $\tt{seedname}$
 
@@ -215,22 +215,22 @@ $\tt{\$> cp\ seedname.vdw\ seedname.in.vdw}$
 
 and edit $\tt{seedname.in.vdw}$ to ensure that the two molecular
 fragments are specified correctly and to group the data corresponding
-to the MLWF centres, spreads and occupancies by molecular fragment. 
+to the MLWF centres, spreads and occupancies by molecular fragment.
 
 In addition, as disentanglement is being used, the direction for
 $p$-orbital splitting for each fragment and occupancy threshold for
-applying the splitting on MLWFs will need to be set appropriately. 
+applying the splitting on MLWFs will need to be set appropriately.
 
-The MLWFs centred on the C atoms are of atomic $p$-like character and, 
+The MLWFs centred on the C atoms are of atomic $p$-like character and,
 according to the methods described in AHM11, they are split into two
-lobes of $s$-like character, which is done by specifying in the input file 
-the direction in which the $p$-orbital lobes point. 
+lobes of $s$-like character, which is done by specifying in the input file
+the direction in which the $p$-orbital lobes point.
 
 In this particular example, the benzene molecules are in
 the $x$-$y$ plane and the $p$-orbitals point along the $z$-direction,
 hence this is the direction in which all the $p$-orbitals must be
-split. Hence, the lines following $\tt{pxyz}$ in the input file 
-should read $\tt{F\ F\ T}$. 
+split. Hence, the lines following $\tt{pxyz}$ in the input file
+should read $\tt{F\ F\ T}$.
 
 The orbitals that need to be split are easily identified in
 $\tt{seedname.vdw}$ by their occupancies, which will be around
@@ -242,36 +242,36 @@ Once $\tt{seedname.in.vdw}$ has been correctly modified, run
 
 $\tt{\$>}$ \wvdw$\tt{.x}$ $\tt{seedname.in.vdw}$
 
-As before, the output is written to a file $\tt{seedname.in.vdw.out}$ 
-and the van der Waals energy and effective $C_6$ coefficient appears 
+As before, the output is written to a file $\tt{seedname.in.vdw.out}$
+and the van der Waals energy and effective $C_6$ coefficient appears
 towards the bottom.
 
-Reference output files can be found in  
+Reference output files can be found in
 $\tt{utility/wvdw/examples/benzene\_s\_cond/ref/}$.
 
 
-\subsection{Spin polarised systems} 
+\subsection{Spin polarised systems}
 
-For spin-polarised systems, two separate W90 runs are required for 
+For spin-polarised systems, two separate W90 runs are required for
 each spin channel (up/down), so care must be taken with the following:
 
 \begin{itemize}
-\item The number of electrons per cell, $\tt{num\_valence\_bands}$, 
+\item The number of electrons per cell, $\tt{num\_valence\_bands}$,
 may differ in the up/down cases.
 
-\item The number of electrons per state, $\tt{num\_elec\_per\_state}$, 
+\item The number of electrons per state, $\tt{num\_elec\_per\_state}$,
 has to be set to $\tt{1}$ ($\tt{2}$ is the default value).
 
-\item There will be two input files generated, namely 
+\item There will be two input files generated, namely
 $\tt{seedname\_up.vdw}$ and $\tt{seedname\_dn.vdw}$.
-These have to be merged into one input file for the 
-vdW utility, and the centres sorted by fragment as before. 
+These have to be merged into one input file for the
+vdW utility, and the centres sorted by fragment as before.
 
-\item The $\tt{amalgamate}$ keyword in the input file has to be set 
+\item The $\tt{amalgamate}$ keyword in the input file has to be set
 to $\tt{T}$ so that cocentric MLWFs are amalgamated into one.
 
-\item The number of MLWFs per fragment, $\tt{num\_wann}$, should 
-be changed in the input file to the original number of MLWFs used 
+\item The number of MLWFs per fragment, $\tt{num\_wann}$, should
+be changed in the input file to the original number of MLWFs used
 in Wannier90 for both up/down calculations.
 \end{itemize}
 

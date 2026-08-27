@@ -1,12 +1,25 @@
-wannier90.x
-postw90.x
 .DS_Store
+libwannier*.a
+libwannier*.so.*
 make.inc
+postw90.x
 w90chk2chk.x
 w90spn2spn.x
-libwannier.a
-libwannier.so
-libwannier.dylib
+wannier90.x
 *~
 *.x.dSYM
+*.mod
+*.gcno
+*.gcda
+
+### Build system
+cmake-build-*/
+build/
+_deps
+
+### IDE files
 .vscode
+/.idea
+
+### Project files
+/CMakeUserPresets.json

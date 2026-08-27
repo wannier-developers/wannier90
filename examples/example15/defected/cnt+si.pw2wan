@@ -1,9 +1,0 @@
-&inputpp 
-   outdir         = './'
-   prefix         = 'cnt+si'
-   seedname       = 'cnt+si'
-   write_mmn      = .true.
-   write_amn      = .true.
-   write_unkg     = .true.
-/
-

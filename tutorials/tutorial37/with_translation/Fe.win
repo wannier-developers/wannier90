@@ -1,0 +1,49 @@
+num_wann = 18
+num_bands = 28
+num_iter = 0
+conv_window = 3
+
+dis_froz_max = 30.0000
+dis_num_iter = 50000
+guiding_centres = T
+use_ws_distance = T
+
+spinors = .true.
+
+begin unit_cell_cart
+bohr
+     2.710000000     2.710000000     2.710000000
+    -2.710000000     2.710000000     2.710000000
+    -2.710000000    -2.710000000     2.710000000
+end unit_cell_cart
+
+begin atoms_frac
+Fe      0.000000000     0.000000000     0.250000000
+end atoms_frac
+
+begin projections
+Fe:dxz;dyz;dxy
+Fe:sp3d2
+end projections
+
+mp_grid = 2 2 2
+
+kmesh = 10 10 10
+
+berry = T
+berry_task = morb
+fermi_energy = 12.6631
+
+transl_inv = F
+transl_inv_full = T
+
+begin kpoints
+  0.00000000  0.00000000  0.00000000
+  0.00000000  0.00000000  0.50000000
+  0.00000000  0.50000000  0.00000000
+  0.00000000  0.50000000  0.50000000
+  0.50000000  0.00000000  0.00000000
+  0.50000000  0.00000000  0.50000000
+  0.50000000  0.50000000  0.00000000
+  0.50000000  0.50000000  0.50000000
+end kpoints

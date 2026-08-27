@@ -51,7 +51,7 @@ def extract_tagged_data(data_tag, filename):
     # Data tag is the first non-space character in the line.
     # e.g. extract data from lines:
     # data_tag      Energy:    1.256743 a.u.
-    data_tag_regex = re.compile('^ *%s' % (re.escape(data_tag)))
+    data_tag_regex = re.compile(r'^ *%s' % (re.escape(data_tag)))
     data = {}
     for line in data_file.readlines():
         if data_tag_regex.match(line):

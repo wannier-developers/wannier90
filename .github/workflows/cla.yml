@@ -1,0 +1,55 @@
+name: "CLA Assistant"
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+# explicitly configure permissions, in case your GITHUB_TOKEN workflow permissions are set to read-only in repository settings
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  CLAAssistant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ vars.CLA_APP_ID }}
+          private-key: ${{ secrets.CLA_PRIVATE_KEY }}
+
+      - uses: contributor-assistant/github-action@v2.6.1
+        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby accept the CLA') || github.event_name == 'pull_request_target'
+        env:
+          # the default github token does not allow github action to create & push commit,
+          # instead, we need to use a github app to generate a token
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          # the below token should have repo scope and must be manually added by you in the repository's secret
+          # This token is required only if you have configured to store the signatures in a remote repository/organization
+          # PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          path-to-signatures: ".cla/version1/signatures.json"
+          path-to-document: "https://github.com/wannier-developers/wannier90/blob/develop/.cla/version1/CLA.md"
+          # branch should not be protected
+          branch: "develop"
+          allowlist: bot*
+
+          # the followings are the optional inputs - If the optional inputs are not given, then default values will be taken
+          #remote-organization-name: enter the remote organization name where the signatures should be stored (Default is storing the signatures in the same repository)
+          #remote-repository-name: enter the  remote repository name where the signatures should be stored (Default is storing the signatures in the same repository)
+          #create-file-commit-message: 'For example: Creating file for storing CLA Signatures'
+          #signed-commit-message: 'For example: $contributorName has signed the CLA in $owner/$repo#$pullRequestNo'
+          custom-notsigned-prcomment: 'Thank you for your submission, we really appreciate it. Like many open-source projects, we ask that you accept our [Contributor License Agreement](https://github.com/wannier-developers/wannier90/blob/develop/.cla/version1/CLA.md) before we can merge your contribution. You can accept the CLA by just copying the sentence below and posting it as a Pull Request Comment.'
+          custom-pr-sign-comment: 'I have read the CLA Document and I hereby accept the CLA'
+          custom-allsigned-prcomment: |
+            All contributors have accepted the CLA ✅
+
+            ---
+            <sub>You might need to click the "Update/Rebase branch" button to update the pull request and rerun the GitHub actions to pass the CLA check.</sub>
+          lock-pullrequest-aftermerge: false - if you don't want this bot to automatically lock the pull request after merging (default - true)
+          #use-dco-flag: true - If you are using DCO instead of CLA

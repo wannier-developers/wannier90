@@ -1,6 +1,0 @@
-Quantum ESPRESSO 5.1.x already contains the most up-to-date version
-of the pw2wannier90.f90 interface. 
-
-Just compile the post-processing tools of Quantum ESPRESSO (make pp)
-and use the interface that is provided in the official distribution.
-

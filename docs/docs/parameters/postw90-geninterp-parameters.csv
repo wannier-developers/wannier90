@@ -1,0 +1,4 @@
+Keyword,Type,Description
+geninterp,L,"Calculate bands for given set of \\(k\\) points"
+geninterp_alsofirstder,L,"Calculate also first derivatives"
+geninterp_single_file,L,"Write a single file or one for each process"

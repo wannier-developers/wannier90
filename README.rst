@@ -2,23 +2,28 @@
 Wannier90
 =========
 
-The Maximally-Localised Generalised Wannier Functions Code 
+The Maximally-Localised Generalised Wannier Functions Code
 ----------------------------------------------------------
 
-The homepage of the Wannier90 code is http://www.wannier.org
+The homepage of the Wannier90 code is https://www.wannier.org
 
-The code is hosted on 
+The code is hosted on
 GitHub_.
 
+The documentation of the code can be found
+here_.
+
 .. _GitHub: https://github.com/wannier-developers/wannier90
+
+.. _here: https://wannier90.readthedocs.io/
 
 How to contribute
 +++++++++++++++++
 
 Discussions about development, roadmap, and further information of interest
-to developers and contributors can be found on the 
+to developers and contributors can be found on the
 `GitHub wiki`_.
-In particular, if you want to contribute, you should first read the 
+In particular, if you want to contribute, you should first read the
 `guide to contributors`_ section.
 
 .. _GitHub wiki: https://github.com/wannier-developers/wannier90/wiki/ContributorsGuide
@@ -26,42 +31,42 @@ In particular, if you want to contribute, you should first read the
 
 How to cite
 +++++++++++
-Please cite the following paper in any publications arising from the use of 
+Please cite the following paper in any publications arising from the use of
 this code:
 
-  G. Pizzi, V. Vitale, R. Arita, S. Blügel, F. Freimuth, G. Géranton, M. Gibertini, 
-  D. Gresch, C. Johnson, T. Koretsune, J Ibañez-Azpiroz, H. Lee, J.M. Lihm, 
-  D. Marchand, A. Marrazzo, Y. Mokrousov, J.I. Mustafa, Y. Nohara, Y. Nomura, 
-  L. Paulatto, S. Poncé, T. Ponweiser, J. Qiao, F. Thöle, S.S. Tsirkin, 
-  M. Wierzbowska, N. Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates, 
-  Wannier90 as a community code: new features and applications, 
+  G. Pizzi, V. Vitale, R. Arita, S. Blügel, F. Freimuth, G. Géranton, M. Gibertini,
+  D. Gresch, C. Johnson, T. Koretsune, J Ibañez-Azpiroz, H. Lee, J.M. Lihm,
+  D. Marchand, A. Marrazzo, Y. Mokrousov, J.I. Mustafa, Y. Nohara, Y. Nomura,
+  L. Paulatto, S. Poncé, T. Ponweiser, J. Qiao, F. Thöle, S.S. Tsirkin,
+  M. Wierzbowska, N. Marzari, D. Vanderbilt, I. Souza, A.A. Mostofi, J.R. Yates,
+  Wannier90 as a community code: new features and applications,
   `J. Phys. Cond. Matt. 32, 165902`_ (2020)
 
 .. _J. Phys. Cond. Matt. 32, 165902: https://doi.org/10.1088/1361-648X/ab51ff
 
 If you are using versions 2.x of the code, cite instead:
-                                                         
-  A.A. Mostofi, J.R. Yates, G. Pizzi, Y.S. Lee, I. Souza, 
-  D Vanderbilt, N Marzari, *An updated version of wannier90: A tool for 
-  obtaining maximally-localised Wannier functions*, 
-  `Comput. Phys. Commun. 185, 2309 (2014)`_ 
+
+  A.A. Mostofi, J.R. Yates, G. Pizzi, Y.S. Lee, I. Souza,
+  D Vanderbilt, N Marzari, *An updated version of wannier90: A tool for
+  obtaining maximally-localised Wannier functions*,
+  `Comput. Phys. Commun. 185, 2309 (2014)`_
 
 .. _Comput. Phys. Commun. 185, 2309 (2014): http://doi.org/10.1016/j.cpc.2014.05.003
 
 For the method please cite:
 
   N. Marzari and D. Vanderbilt,
-  *Maximally Localized Generalised Wannier Functions for Composite Energy Bands*,    
+  *Maximally Localized Generalised Wannier Functions for Composite Energy Bands*,
   `Phys. Rev. B 56 12847 (1997)`_
-                                                  
+
   I. Souza, N. Marzari and D. Vanderbilt,
-  *Maximally Localized Wannier Functions for Entangled Energy Bands*, 
+  *Maximally Localized Wannier Functions for Entangled Energy Bands*,
   `Phys. Rev. B 65 035109 (2001)`_
 
-  Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, Ivo Souza, 
+  Nicola Marzari, Arash A. Mostofi, Jonathan R. Yates, Ivo Souza,
   David Vanderbilt,
-  *Maximally localized Wannier functions: Theory and applications*, 
-  `Rev. Mod. Phys. 84, 1419 (2012)`_ 
+  *Maximally localized Wannier functions: Theory and applications*,
+  `Rev. Mod. Phys. 84, 1419 (2012)`_
 
 .. _Phys. Rev. B 56 12847 (1997): http://dx.doi.org/10.1103/PhysRevB.56.12847
 .. _Phys. Rev. B 65 035109 (2001): http://dx.doi.org/10.1103/PhysRevB.65.035109
@@ -71,8 +76,8 @@ For the method please cite:
 Licence
 +++++++
 
-The Wannier90 code is licensed under GPLv2. 
-You can read the licence text in the LICENSE file in the root directory 
+The Wannier90 code is licensed under LGPLv2.1 or later.
+You can read the licence text in the LICENSE file in the root directory
 of the Wannier90 distribution.
 
 FAQ
@@ -87,13 +92,24 @@ Authors and contributors
 
 The Wannier90 Developer Group includes:
 
-* Giovanni Pizzi    (EPFL, CH)
-* Valerio Vitale    (Cambridge, GB)
+* Giovanni Pizzi    (Paul Scherrer Institute, CH)
+* Valerio Vitale    (University of Trieste, IT)
 * David Vanderbilt  (Rutgers University, US)
-* Nicola Marzari    (EPFL, CH)
+* Nicola Marzari    (EPFL, CH and University of Cambridge, GB)
 * Ivo Souza         (Universidad del Pais Vasco, ES)
 * Arash A. Mostofi  (Imperial College London, GB)
 * Jonathan R. Yates (University of Oxford, GB)
+
+In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.4.x are:
+
+* Jerome Jackson    (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
+* Leon Petit        (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
+* Barry G. Searle   (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design, python interface
+
+Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Minsu Ghim,
+Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik Jochym,
+Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm,
+Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin.
 
 In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
 
@@ -117,6 +133,7 @@ In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3
 * Lorenzo Paulatto (Sorbonne Paris, FR): Improvements to the interpolation routines, non-collinear spin with ultrasoft in pw2wannier90
 * Samuel Poncé (Oxford University, GB): Test suite for Wannier90
 * Thomas Ponweiser (RISC Software GmbH, AT): performance optimizations for postw90
+* Junfeng Qiao (EPFL, CH): spin Hall conductivity
 * Florian Thöle (ETHZ, CH): non-collinear spin with ultrasoft in pw2wannier90
 * Stepan Tsirkin (Universidad del Pais Vasco, ES): GW bands interpolation, gyrotropic module, shift-current calculation, bug fixes in the berry module
 * Małgorzata Wierzbowska (Polish Academy of Science, PL): performance optimizations for postw90
@@ -175,4 +192,3 @@ Wannier90 is based on the [Wannier Fortran 77 code](http://www.wannier.org/histo
 * Nicola Marzari (EPFL, CH)
 * Ivo Souza (Universidad del Pais Vasco, ES)
 * David Vanderbilt (Rutgers University, US)
-

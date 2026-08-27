@@ -1,17 +1,31 @@
 !-*- mode: F90 -*-!
 !------------------------------------------------------------!
-! This file is distributed as part of the Wannier90 code and !
-! under the terms of the GNU General Public License. See the !
-! file `LICENSE' in the root directory of the Wannier90      !
-! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+! Copyright (C) 2026 Wannier Developer Group                 !
 !                                                            !
-! The webpage of the Wannier90 code is www.wannier.org       !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
-! The Wannier90 code is hosted on GitHub:                    !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
 !                                                            !
-! https://github.com/wannier-developers/wannier90            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
 !------------------------------------------------------------!
 !                                                            !
+! ws_distance:                                               !
 ! Original implementation by Lorenzo Paulatto, with later    !
 ! modifications by Marco Gibertini, Dominik Gresch           !
 ! and Giovanni Pizzi                                         !
@@ -19,32 +33,31 @@
 !------------------------------------------------------------!
 
 module w90_ws_distance
+
   !! This module computes the optimal Wigner-Seitz cell around each Wannier
   !! function to use for interpolation.
+
+  ! Short documentation follows, for a longer explanation see the documentation
+  ! of the use_ws_distance variable in the user guide.
+  !
+  ! Some comments:
+  ! 1. This computation is done independently on all processors (when run in
+  !    parallel). I think this shouldn't do a problem as the math is fairly simple
+  !    and uses data already broadcasted (integer values, and the
+  !    wannier_centres), but if there is the risk of having different
+  !    degeneracies or similar things on different MPI processors, we should
+  !    probably think to do the math on node 0, and then broadcast results.
+
   use w90_constants, only: dp
-  use w90_parameters, only: use_ws_distance, ws_distance_tol, ws_search_size
+  use w90_error
 
   implicit none
 
   private
-  !
-  public :: ws_translate_dist, clean_ws_translate, ws_write_vec
-  !
-  integer, public, save, allocatable :: irdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-  !! The integer number of unit cells to shift Wannier function j to put its centre
-  !! inside the Wigner-Seitz of wannier function i. If several shifts are
-  !! equivalent (i.e. they take the function on the edge of the WS) they are
-  !! all listed. First index: xyz, second index: number of degenerate shifts,
-  !! third and fourth indices: i,j; fifth index: index on the R vector.
-  real(DP), public, save, allocatable :: crdist_ws(:, :, :, :, :)!(3,ndegenx,num_wann,num_wann,nrpts)
-  !! Cartesian version of irdist_ws, in angstrom
-  integer, public, save, allocatable :: wdist_ndeg(:, :, :)!(num_wann,num_wann,nrpts)
-  !! The number of equivalent vectors for each set of (i,j,R) (that is, loops on
-  !! the second index of irdist_ws(:,:,i,j,R) go from 1 to wdist_ndeg(i,j,R))
-  !
-  logical, public, save :: done_ws_distance = .false.
-  !! Global variable to know if the properties were already calculated, and avoid
-  !! recalculating them when the [[ws_translate_dist]] function is called multiple times
+
+  public :: clean_ws_translate
+  public :: ws_translate_dist
+  public :: ws_write_vec
 
   integer, parameter :: ndegenx = 8
   !! max number of unit cells that can touch
@@ -52,18 +65,11 @@ module w90_ws_distance
 
 contains
 
-! Short documentation follows, for a longer explanation see the documentation
-! of the use_ws_distance variable in the user guide.
-!
-! Some comments:
-! 1. This computation is done independently on all processors (when run in
-!    parallel). I think this shouldn't do a problem as the math is fairly simple
-!    and uses data already broadcasted (integer values, and the
-!    wannier_centres), but if there is the risk of having different
-!    degeneracies or similar things on different MPI processors, we should
-!    probably think to do the math on node 0, and then broadcast results.
+  !================================================!
 
-  subroutine ws_translate_dist(nrpts, irvec, force_recompute)
+  subroutine ws_translate_dist(ws_distance, ws_region, num_wann, wannier_centres, real_lattice, &
+                               mp_grid, nrpts, irvec, error, comm, force_recompute)
+    !================================================!
     !! Find the supercell translation (i.e. the translation by a integer number of
     !! supercell vectors, the supercell being defined by the mp_grid) that
     !! minimizes the distance between two given Wannier functions, i and j,
@@ -72,20 +78,30 @@ contains
     !! We also look for the number of equivalent translation, that happen when w_j,R
     !! is on the edge of the WS of w_i,0. The results are stored in global
     !! arrays wdist_ndeg, irdist_ws, crdist_ws.
+    !================================================!
 
-    use w90_parameters, only: num_wann, wannier_centres, real_lattice, &
-      recip_lattice, iprint
-    !translation_centre_frac, automatic_translation,lenconfac
-    use w90_io, only: stdout, io_error
-    use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
+    use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart, utility_inverse_mat
+    use w90_types, only: ws_region_type, ws_distance_type
 
     implicit none
 
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(ws_region_type), intent(in) :: ws_region
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: num_wann
     integer, intent(in) :: nrpts
-    integer, intent(in) :: irvec(3, nrpts)
+    integer, intent(in) :: irvec(:, :)
+
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(:, :)
+
     logical, optional, intent(in):: force_recompute ! set to true to force recomputing everything
 
-    ! <<<local variables>>>
+    ! local variables
+    real(kind=dp) :: inv_lattice(3, 3)
     integer  :: iw, jw, ideg, ir, ierr
     integer :: shifts(3, ndegenx)
     real(DP) :: irvec_cart(3), tmp(3), tmp_frac(3), R_out(3, ndegenx)
@@ -94,28 +110,40 @@ contains
     ! not be the best thing if you invoke it while the WFs are moving
     if (present(force_recompute)) then
       if (force_recompute) then
-        call clean_ws_translate()
-      endif
-    endif
-    if (done_ws_distance) return
-    done_ws_distance = .true.
+        call clean_ws_translate(ws_distance, error, comm)
+        if (allocated(error)) return
+      end if
+    end if
+    if (ws_distance%done) return
+    ws_distance%done = .true.
 
     if (ndegenx*num_wann*nrpts <= 0) then
-      call io_error("unexpected dimensions in ws_translate_dist")
+      call set_error_fatal(error, "unexpected dimensions in ws_translate_dist", comm)
+      return
     end if
 
-    allocate (irdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating irdist_ws in ws_translate_dist')
-    allocate (crdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating crdist_ws in ws_translate_dist')
-    allocate (wdist_ndeg(num_wann, num_wann, nrpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error in allocating wcenter_ndeg in ws_translate_dist')
+    allocate (ws_distance%irdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating irdist_ws in ws_translate_dist', comm)
+      return
+    end if
+    allocate (ws_distance%crdist(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating crdist_ws in ws_translate_dist', comm)
+      return
+    end if
+    allocate (ws_distance%ndeg(num_wann, num_wann, nrpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating wcenter_ndeg in ws_translate_dist', comm)
+      return
+    end if
 
     !translation_centre_frac = 0._dp
-    wdist_ndeg = 0
-    irdist_ws = 0
-    crdist_ws = 0
+    ws_distance%ndeg = 0
+    ws_distance%irdist = 0
+    ws_distance%crdist = 0
 
+    call utility_inverse_mat(real_lattice, inv_lattice)
     do ir = 1, nrpts
       do jw = 1, num_wann
         do iw = 1, num_wann
@@ -129,36 +157,54 @@ contains
           ! calculate instead crdist_ws, that is the Bravais lattice vector
           ! between two supercell lattices, that is the only one we need
           ! later for interpolation etc.
-          CALL R_wz_sc(-wannier_centres(:, iw) &
+          call r_wz_sc(-wannier_centres(:, iw) &
                        + (irvec_cart + wannier_centres(:, jw)), (/0._dp, 0._dp, 0._dp/), &
-                       wdist_ndeg(iw, jw, ir), R_out, shifts)
-          do ideg = 1, wdist_ndeg(iw, jw, ir)
-            irdist_ws(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
-            tmp_frac = REAL(irdist_ws(:, ideg, iw, jw, ir), kind=dp)
+                       ws_distance%ndeg(iw, jw, ir), R_out, shifts, mp_grid, real_lattice, &
+                       inv_lattice, ws_region%ws_search_size, ws_region%ws_distance_tol, &
+                       error, comm)
+          if (allocated(error)) return
+
+          do ideg = 1, ws_distance%ndeg(iw, jw, ir)
+            ws_distance%irdist(:, ideg, iw, jw, ir) = irvec(:, ir) + shifts(:, ideg)
+            tmp_frac = REAL(ws_distance%irdist(:, ideg, iw, jw, ir), kind=dp)
             CALL utility_frac_to_cart(tmp_frac, tmp, real_lattice)
-            crdist_ws(:, ideg, iw, jw, ir) = tmp
-          enddo
-        enddo
-      enddo
-    enddo
+            ws_distance%crdist(:, ideg, iw, jw, ir) = tmp
+          end do
+        end do
+      end do
+    end do
   end subroutine ws_translate_dist
 
-  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts)
+  !================================================!
+  subroutine R_wz_sc(R_in, R0, ndeg, R_out, shifts, mp_grid, real_lattice, inv_lattice, &
+                     ws_search_size, ws_distance_tol, error, comm)
+    !================================================!
     !! Put R_in in the Wigner-Seitz cell centered around R0,
     !! and find all equivalent vectors to this (i.e., with same distance).
     !! Return their coordinates and the degeneracy, as well as the integer
     !! shifts needed to get the vector (these are always multiples of
     !! the mp_grid, i.e. they are supercell displacements in the large supercell)
-    use w90_parameters, only: real_lattice, recip_lattice, mp_grid
+    !================================================!
+
     use w90_utility, only: utility_cart_to_frac, utility_frac_to_cart
-    use w90_io, only: stdout, io_error
+
     implicit none
+
+    ! arguments
+    integer, intent(in) :: mp_grid(3)
+    integer, intent(in) :: ws_search_size(3)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: inv_lattice(3, 3)
+    real(kind=dp), intent(in) :: ws_distance_tol
     real(DP), intent(in) :: R_in(3)
     real(DP), intent(in) :: R0(3)
     integer, intent(out) :: ndeg
     real(DP), intent(out) :: R_out(3, ndegenx)
     integer, intent(out) :: shifts(3, ndegenx)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
+    ! local variables
     real(DP) :: R(3), R_f(3), R_in_f(3), R_bz(3), mod2_R_bz
     integer :: i, j, k
 
@@ -170,7 +216,7 @@ contains
     mod2_R_bz = SUM((R_bz - R0)**2)
     !
     ! take R_bz to cryst(frac) coord for translating
-    call utility_cart_to_frac(R_bz, R_in_f, recip_lattice)
+    call utility_cart_to_frac(R_bz, R_in_f, inv_lattice)
 
     ! In this first loop, I just look for the shortest vector that I obtain
     ! by trying to displace the second Wannier function by all
@@ -200,10 +246,10 @@ contains
             shifts(1, :) = i*mp_grid(1)
             shifts(2, :) = j*mp_grid(2)
             shifts(3, :) = k*mp_grid(3)
-          endif
-        enddo
-      enddo
-    enddo
+          end if
+        end do
+      end do
+    end do
 
     ! Now, second loop to find the list of R_out that differ from R_in
     ! by a large-supercell lattice vector and are equally distant from R0
@@ -220,24 +266,25 @@ contains
       R_out(:, 1) = R0
       ! I can safely return as 'shifts' is already set
       return
-    endif
+    end if
     !
     ! take R_bz to cryst(frac) coord for translating
-    call utility_cart_to_frac(R_bz, R_in_f, recip_lattice)
+    call utility_cart_to_frac(R_bz, R_in_f, inv_lattice)
 
     do i = -ws_search_size(1) - 1, ws_search_size(1) + 1
       do j = -ws_search_size(2) - 1, ws_search_size(2) + 1
         do k = -ws_search_size(3) - 1, ws_search_size(3) + 1
 
-          R_f = R_in_f + REAL((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
+          r_f = r_in_f + real((/i*mp_grid(1), j*mp_grid(2), k*mp_grid(3)/), &
                               kind=DP)
           call utility_frac_to_cart(R_f, R, real_lattice)
 
-          if (ABS(SQRT(SUM((R - R0)**2)) - SQRT(mod2_R_bz)) < ws_distance_tol) then
+          if (abs(sqrt(sum((r - r0)**2)) - sqrt(mod2_r_bz)) < ws_distance_tol) then
             ndeg = ndeg + 1
-            IF (ndeg > ndegenx) then
-              call io_error("surprising ndeg, I wouldn't expect a degeneracy larger than 8...")
-            END IF
+            if (ndeg > ndegenx) then
+              call set_error_fatal(error, "surprising ndeg, I wouldn't expect a degeneracy larger than 8...", comm)
+              return
+            end if
             R_out(:, ndeg) = R
             ! I return/update also the shifts. Note that I have to sum these
             ! to the previous value since in this second loop I am using
@@ -246,39 +293,51 @@ contains
             shifts(1, ndeg) = shifts(1, ndeg) + i*mp_grid(1)
             shifts(2, ndeg) = shifts(2, ndeg) + j*mp_grid(2)
             shifts(3, ndeg) = shifts(3, ndeg) + k*mp_grid(3)
-          endif
+          end if
 
-        enddo
-      enddo
-    enddo
-    !====================================================!
+        end do
+      end do
+    end do
+    !================================================!
   end subroutine R_wz_sc
-  !====================================================!
+  !================================================!
 
-  !====================================================!
-  subroutine ws_write_vec(nrpts, irvec)
+  !================================================!
+  subroutine ws_write_vec(ws_distance, nrpts, irvec, num_wann, use_ws_distance, seedname, error, &
+                          comm)
+    !================================================!
     !! Write to file the lattice vectors of the superlattice
     !! to be added to R vector in seedname_hr.dat, seedname_rmn.dat, etc.
     !! in order to have the second Wannier function inside the WS cell
     !! of the first one.
+    !================================================!
 
-    use w90_io, only: io_error, io_stopwatch, io_file_unit, &
-      seedname, io_date
-    use w90_parameters, only: num_wann
+    use w90_io, only: io_date
+    use w90_types, only: ws_distance_type
 
     implicit none
 
+    type(ws_distance_type), intent(in) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
+    integer, intent(in) :: num_wann
+    logical, intent(in) :: use_ws_distance
+    character(len=50), intent(in)  :: seedname
+    type(w90_comm_type), intent(in) :: comm
+
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(3, nrpts)
-    integer:: irpt, iw, jw, ideg, file_unit
+    integer:: irpt, iw, jw, ideg, file_unit, ierr
     character(len=100) :: header
     character(len=9)  :: cdate, ctime
 
-    file_unit = io_file_unit()
     call io_date(cdate, ctime)
 
-    open (file_unit, file=trim(seedname)//'_wsvec.dat', form='formatted', &
-          status='unknown', err=101)
+    open (newunit=file_unit, file=trim(seedname)//'_wsvec.dat', form='formatted', &
+          status='unknown', iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat', comm)
+      return
+    end if
 
     if (use_ws_distance) then
       header = '## written on '//cdate//' at '//ctime//' with use_ws_distance=.true.'
@@ -288,9 +347,9 @@ contains
         do iw = 1, num_wann
           do jw = 1, num_wann
             write (file_unit, '(5I5)') irvec(:, irpt), iw, jw
-            write (file_unit, '(I5)') wdist_ndeg(iw, jw, irpt)
-            do ideg = 1, wdist_ndeg(iw, jw, irpt)
-              write (file_unit, '(5I5,2F12.6,I5)') irdist_ws(:, ideg, iw, jw, irpt) - &
+            write (file_unit, '(I5)') ws_distance%ndeg(iw, jw, irpt)
+            do ideg = 1, ws_distance%ndeg(iw, jw, irpt)
+              write (file_unit, '(5I5,2F12.6,I5)') ws_distance%irdist(:, ideg, iw, jw, irpt) - &
                 irvec(:, irpt)
             end do
           end do
@@ -313,21 +372,48 @@ contains
     end if
 
     close (file_unit)
-    return
-
-101 call io_error('Error: ws_write_vec: problem opening file '//trim(seedname)//'_ws_vec.dat')
-    !====================================================!
+    !================================================!
   end subroutine ws_write_vec
-  !====================================================!
-  !====================================================!
-  subroutine clean_ws_translate()
-    !====================================================!
+
+  !================================================!
+  subroutine clean_ws_translate(ws_distance, error, comm)
+    !================================================!
+    use w90_types, only: ws_distance_type
+    use w90_comms, only: w90_comm_type
+    use w90_error, only: w90_error_type, set_error_dealloc
+
     implicit none
-    done_ws_distance = .false.
-    if (allocated(irdist_ws)) deallocate (irdist_ws)
-    if (allocated(wdist_ndeg)) deallocate (wdist_ndeg)
-    if (allocated(crdist_ws)) deallocate (crdist_ws)
-    !====================================================!
+
+    type(ws_distance_type), intent(inout) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    integer :: ierr
+
+    ws_distance%done = .false.
+    if (allocated(ws_distance%irdist)) then
+      deallocate (ws_distance%irdist, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ws_distance%irdist in clean_ws_translate', comm)
+        return
+      end if
+    end if
+    if (allocated(ws_distance%ndeg)) then
+      deallocate (ws_distance%ndeg, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ws_distance%ndeg in clean_ws_translate', comm)
+        return
+      end if
+    end if
+    if (allocated(ws_distance%crdist)) then
+      deallocate (ws_distance%crdist, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating ws_distance%crdist in clean_ws_translate', comm)
+        return
+      end if
+    end if
+
+    !================================================!
   end subroutine clean_ws_translate
 
 end module w90_ws_distance

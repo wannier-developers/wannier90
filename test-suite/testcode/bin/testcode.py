@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''testcode [options] [action1 [action2...]]
 
 testcode is a simple framework for comparing output from (principally numeric)
@@ -189,7 +189,7 @@ actions: list of testcode2 actions to run.
     parser.add_option('-p', '--processors', type='int', default=-1,
             dest='nprocs', help='Set the number of processors to run each test '
             'on.  Default: use settings in configuration files.')
-    parser.add_option('-q', '--quiet', action='store_const', const=0, 
+    parser.add_option('-q', '--quiet', action='store_const', const=0,
             dest='verbose', default=1, help='Print only minimal output.  '
             'Default: False.')
     parser.add_option('-s', '--submit', dest='queue_system', default=None,
@@ -209,7 +209,7 @@ actions: list of testcode2 actions to run.
             default=[], nargs=3, help='Override/add setting to userconfig.  '
             'Takes three arguments.  Format: section_name option_name value.  '
             'Default: none.')
-    parser.add_option('-v', '--verbose', default=1, action="count", 
+    parser.add_option('-v', '--verbose', default=1, action="count",
             dest='verbose', help='Increase verbosity of output.  Can be '
             'specified multiple times.')
 
@@ -351,7 +351,7 @@ run_test_args: arguments to pass to test.run_test method.
         # patterns in the output file--otherwise we can't figure out which
         # output file belongs to which test.  We might be able to for some
         # wildcards, but let's err on the side of caution.
-        wildcards = re.compile('.*(\*|\?|\[.*\]).*')
+        wildcards = re.compile(r'.*(\*|\?|\[.*\]).*')
         serialized_tests = []
         test_store = {}
         for test in tests:
@@ -380,7 +380,7 @@ run_test_args: arguments to pass to test.run_test method.
             try:
                 job.setDaemon(True)
             except AttributeError:
-                job.daemon = True  
+                job.daemon = True
             job.start()
 
         # We avoid .join() which is blocking making it unresponsive to TERM

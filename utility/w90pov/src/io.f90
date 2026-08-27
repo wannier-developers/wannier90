@@ -1,10 +1,28 @@
 !-*- mode: F90 -*-!
+!------------------------------------------------------------!
+! Copyright (C) 2012 Daniel Aberg                            !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
+!                                                            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
 !------------------------------------------------------------!
 ! Code to enable use of the POV-Ray ray-tracing software for !
 ! the rendering of Wannier function isosurfaces from .xsf    !
@@ -55,7 +73,7 @@ contains
       tot_num_lines = tot_num_lines + 1
       if (.not. dummy(1:1) == '!' .and. .not. dummy(1:1) == '#') then
         if (len(trim(dummy)) > 0) num_lines = num_lines + 1
-      endif
+      end if
 
     end do
 
@@ -126,7 +144,7 @@ contains
       if (found) then
         print *, 'Error: Found keyword ', trim(keyword), ' more than once in input file'
         stop
-      endif
+      end if
       found = .true.
       dummy = in_data(loop) (kl + 1:)
       in_data(loop) (1:maxlen) = ' '
@@ -147,8 +165,8 @@ contains
         else
           print *, 'Error: Problem reading logical keyword ', trim(keyword)
           stop
-        endif
-      endif
+        end if
+      end if
       if (present(i_value)) read (dummy, *, err=220, end=220) i_value
       if (present(r_value)) read (dummy, *, err=220, end=220) r_value
     end if
@@ -193,7 +211,7 @@ contains
       if (found) then
         print *, 'Error: Found keyword ', trim(keyword), ' more than once in input file'
         stop
-      endif
+      end if
       found = .true.
       dummy = in_data(loop) (kl + 1:)
       in_data(loop) (1:maxlen) = ' '
@@ -209,7 +227,7 @@ contains
       if (present(l_value)) then
         ! I don't think we need this. Maybe read into a dummy charater
         ! array and convert each element to logical
-      endif
+      end if
       if (present(i_value)) read (dummy, *, err=230, end=230) (i_value(i), i=1, length)
       if (present(r_value)) read (dummy, *, err=230, end=230) (r_value(i), i=1, length)
     end if
@@ -247,7 +265,7 @@ contains
       ilett = ichar(string(ipos:ipos))
       if ((ilett .ge. iA) .and. (ilett .le. iZ)) &
         utility_lowercase(ipos:ipos) = char(ilett - idiff)
-    enddo
+    end do
 
     utility_lowercase = trim(adjustl(utility_lowercase))
 

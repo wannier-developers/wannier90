@@ -57,7 +57,7 @@ name: name of status (unknown, skipped, passed, partial, failed) to use.
     def failed(self):
         '''Return true if stored status is failed.'''
         return self.status == self._failed
-    def print_status(self, msg=None, verbose=1, vspace=True):
+    def print_status(self, msg=None, verbose=1, vspace=False):
         '''Print status.
 
 msg: optional message to print out after status.
@@ -229,7 +229,7 @@ def compare_data(benchmark, test, default_tolerance, tolerances,
     comparable = comparable and compat.compat_all(kc == 0 for kc in key_counts.values())
     status = Status()
     msg = []
-    
+
     if not comparable:
         status = Status([False])
         bench_only = bench_params - test_params

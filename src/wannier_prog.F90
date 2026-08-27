@@ -37,244 +37,345 @@
 ! see the README file in the root directory of the           !
 ! distribution.                                              !
 !                                                            !
-! This file is distributed as part of the Wannier90 code and !
-! under the terms of the GNU General Public License. See the !
-! file `LICENSE' in the root directory of the Wannier90      !
-! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+! Copyright (C) 2026 Wannier Developer Group                 !
 !                                                            !
-! The webpage of the Wannier90 code is www.wannier.org       !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
-! The Wannier90 code is hosted on GitHub:                    !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
 !                                                            !
-! https://github.com/wannier-developers/wannier90            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
 !------------------------------------------------------------!
 
 program wannier
   !! The main Wannier90 program
 
-  use w90_constants
-  use w90_parameters
-  use w90_io
-  use w90_hamiltonian
-  use w90_kmesh
-  use w90_disentangle
-  use w90_overlap
-  use w90_wannierise
-  use w90_plot
-  use w90_transport
-  use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id
-  use w90_sitesym !YN:
+#ifdef MPI08
+  use mpi_f08
+#endif
+#ifdef MPI90
+  use mpi
+#endif
+
+  use w90_library
+  use w90_library_extra ! for input_reader_special, overlaps, etc
+
+  use w90_comms, only: w90_comm_type, comms_sync_error
+  use w90_io, only: io_commandline, io_date, io_time, prterr
+  use w90_sitesym, only: sitesym_read
+  use w90_error, only: w90_error_type, set_error_input
 
   implicit none
 
-  real(kind=dp) time0, time1, time2
-  character(len=9) :: stat, pos, cdate, ctime
-  logical :: wout_found, dryrun
-  integer :: len_seedname
-  character(len=50) :: prog
-
-  call comms_setup
-
-  library = .false.
-
-  time0 = io_time()
-
-  if (on_root) then
-    prog = 'wannier90'
-    call io_commandline(prog, dryrun)
-    len_seedname = len(seedname)
-  end if
-  call comms_bcast(len_seedname, 1)
-  call comms_bcast(seedname, len_seedname)
-  call comms_bcast(dryrun, 1)
-
-  if (on_root) then
-    stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.werr')
-    call io_date(cdate, ctime)
-    write (stdout, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
-
-    call param_read
-    close (stdout, status='delete')
-
-    if (restart .eq. ' ') then
-      stat = 'replace'
-      pos = 'rewind'
-    else
-      inquire (file=trim(seedname)//'.wout', exist=wout_found)
-      if (wout_found) then
-        stat = 'old'
-      else
-        stat = 'replace'
-      endif
-      pos = 'append'
-    endif
-
-    stdout = io_file_unit()
-    open (unit=stdout, file=trim(seedname)//'.wout', status=trim(stat), position=trim(pos))
-    call param_write_header()
-    if (num_nodes == 1) then
-#ifdef MPI
-      write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
-#else
-      write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'
+#ifdef MPIH
+  include 'mpif.h'
 #endif
-    else
-      write (stdout, '(/,1x,a,i3,a/)') &
-        'Running in parallel on ', num_nodes, ' CPUs'
-    endif
-    call param_write()
 
-    time1 = io_time()
-    write (stdout, '(1x,a25,f11.3,a)') 'Time to read parameters  ', time1 - time0, ' (sec)'
+! nvfortran fails to correctly handle the dp private attribute in module w90_library
+!       nvfortran 25.7-0 64-bit target on x86-64 Linux -tp znve
+! if needed in practice, use "only" or rename dp in use directive
+#ifndef __NVCOMPILER
+  integer, parameter :: dp = kind(0.d0)
+#endif
 
-    if (.not. explicit_nnkpts) call kmesh_get
-    time2 = io_time()
-    write (stdout, '(1x,a25,f11.3,a)') &
-      'Time to get kmesh        ', time2 - time1, ' (sec)'
+  character(len=:), allocatable :: seedname, progname
+  character(len=20) :: cpstatus ! checkpoint file status
+  character(len=:), pointer :: restart
+  complex(kind=dp), allocatable :: m_matrix_loc(:, :, :, :)
+  complex(kind=dp), allocatable :: u_matrix(:, :, :)
+  complex(kind=dp), allocatable :: u_matrix_opt(:, :, :)
+  real(kind=dp), allocatable :: eigval(:, :)
+  integer, allocatable :: dist_k(:)
+  integer :: mpisize, rank, ierr, nkl
+  integer, pointer :: nb, nk, nw, nn
+  integer :: stdout, stderr
+  logical, pointer :: pp
+  logical :: ld, lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
+  type(lib_common_type), target :: common_data
+  type(w90_error_type), allocatable :: error
+  character(len=9) :: cdate, ctime
 
-    call param_memory_estimate
+  pp => common_data%w90_calculation%postproc_setup
+  restart => common_data%w90_calculation%restart
+  nw => common_data%num_wann
+  nb => common_data%num_bands
+  nk => common_data%num_kpts
+  nn => common_data%kmesh_info%nntot
+
+  progname = 'wannier90' ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
+  call io_commandline(progname, ld, pp, seedname)
+
+  call w90_get_fortran_stderr(stderr) ! for early error cases; maybe overwritten later
+#ifdef MPI
+  call mpi_init(ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: mpi_init() returned an error!'
+    stop
+  end if
+  call mpi_comm_rank(mpi_comm_world, rank, ierr) ! the type of comm_world depends on interface used
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: mpi_comm_rank() returned an error!'
+    stop
+  end if
+  call mpi_comm_size(mpi_comm_world, mpisize, ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: mpi_comm_size() returned an error!'
+    stop
+  end if
+  call w90_set_comm(common_data, mpi_comm_world)
+#else
+  rank = 0
+  mpisize = 1
+#endif
+
+  ! open main output file
+  if (rank == 0) open (newunit=stdout, file=seedname//'.wout', status="replace")
+
+  ! open main error file
+  if (rank == 0) open (newunit=stderr, file=seedname//'.werr', status="replace")
+
+  call io_date(cdate, ctime)
+  if (rank == 0) write (stderr, *) 'Wannier90: Execution started on ', cdate, ' at ', ctime
+
+  ! read key parameters from .win file
+  call input_reader_special(common_data, seedname, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! read all remaining parameters from .win file
+  call w90_input_reader(common_data, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! write useful info (includes jazzy header info)
+  call w90_print_info(common_data, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! special branch for writing nnkp file
+  ! exit immediately after writing the nnkp file
+  if (pp) then
+    call write_kmesh(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    if (rank == 0) close (unit=stderr, status='delete')
+    if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
+    if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
+#ifdef MPI
+    call mpi_finalize(ierr)
+#endif
+    stop
   end if
 
-  if (dryrun) then
-    if (on_root) then
-      write (stdout, *) ' '
-      write (stdout, *) '                       ==============================='
-      write (stdout, *) '                                   DRYRUN             '
-      write (stdout, *) '                       No problems found with win file'
-      write (stdout, *) '                       ==============================='
-    endif
-    stop
-  endif
-
-  ! We now distribute the parameters to the other nodes
-  call param_dist
-  if (gamma_only .and. num_nodes > 1) &
-    call io_error('Gamma point branch is serial only at the moment')
-
-  if (transport .and. tran_read_ht) goto 3003
-
-  ! Sort out restarts
-  if (restart .eq. ' ') then  ! start a fresh calculation
-    if (on_root) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
-  else                      ! restart a previous calculation
-    if (on_root) call param_read_chkpt()
-    call param_chkpt_dist
-    if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
-
-    select case (restart)
-    case ('default')    ! continue from where last checkpoint was written
-      if (on_root) write (stdout, '(/1x,a)', advance='no') 'Resuming a previous Wannier90 calculation '
-      if (checkpoint .eq. 'postdis') then
-        if (on_root) write (stdout, '(a/)') 'from wannierisation ...'
-        goto 1001         ! go to wann_main
-      elseif (checkpoint .eq. 'postwann') then
-        if (on_root) write (stdout, '(a/)') 'from plotting ...'
-        goto 2002         ! go to plot_main
-      else
-        if (on_root) write (stdout, '(/a/)')
-        call io_error('Value of checkpoint not recognised in wann_prog')
-      endif
-    case ('wannierise') ! continue from wann_main irrespective of value of last checkpoint
-      if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
-      goto 1001
-    case ('plot')       ! continue from plot_main irrespective of value of last checkpoint
-      if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
-      goto 2002
-    case ('transport')   ! continue from tran_main irrespective of value of last checkpoint
-      if (on_root) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
-      goto 3003
-    case default        ! for completeness... (it is already trapped in param_read)
-      call io_error('Value of restart not recognised in wann_prog')
-    end select
-  endif
-
-  if (postproc_setup) then
-    if (on_root) call kmesh_write()
-    call kmesh_dealloc()
-    call param_dealloc()
-    if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
-    if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
-    call comms_end
-    stop
-  endif
-
-  if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
-  call overlap_allocate()
-  call overlap_read()
-
-  time1 = io_time()
-  if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
-
-  have_disentangled = .false.
-
-  if (disentanglement) then
-    call dis_main()
-    have_disentangled = .true.
-    time2 = io_time()
-    if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, ' (sec)'
-  endif
-
-  if (on_root) call param_write_chkpt('postdis')
-!~  call param_write_um
-
-1001 time2 = io_time()
-
-  if (.not. gamma_only) then
-    call wann_main()
+  ! test mpi error handling using "unlucky" input token
+  if (rank == -common_data%print_output%timing_level) then
+    call set_error_input(error, 'received unlucky_rank', common_data%comm)
   else
-    call wann_main_gamma()
+    ! this is necessary since non-root may never enter an mpi collective if root has exited here
+    call comms_sync_error(common_data%comm, error, 0)
+  end if
+  if (allocated(error)) then ! applies (is t) for all ranks now
+    call prterr(error, ierr, stdout, stderr, common_data%comm)
+#ifdef MPI
+    call mpi_finalize(ierr) ! let's be nice
+#endif
+    stop
+  end if
+  ! end unlucky code
+
+  ! setup kpoint distribution
+  allocate (dist_k(nk), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate dist_k array!'
+    stop
+  end if
+  ! get a basic k-point/rank distribution
+  call w90_distribute_kpts(common_data, nk, mpisize, dist_k, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! copy distribution to library
+  call set_kpoint_distribution(common_data, dist_k, stdout, stderr, ierr)
+  if (ierr /= 0) stop
+
+  ! setup SAWF data
+  if (common_data%lsitesymmetry) then
+    call sitesym_read(common_data%sitesym, nb, nk, nw, seedname, error, common_data%comm) ! (not a library call)
+    if (allocated(error)) then
+      write (stderr, *) 'Wannier90: failed to setup symmetry!'
+      deallocate (error)
+      stop
+    end if
   end if
 
-  time1 = io_time()
-  if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time1 - time2, ' (sec)'
+  call w90_get_nn(common_data, nn, stdout, stderr, ierr)
+  nkl = count(dist_k == rank) ! number of kpoints this rank
+  !write (*, *) 'rank, nw, nb, nk, nn, nk(rank): ', rank, nw, nb, nk, nn, nkl
 
-  if (on_root) call param_write_chkpt('postwann')
+  allocate (m_matrix_loc(nb, nb, nn, nkl), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate m_matrix_loc!'
+    stop
+  end if
+  call w90_set_m_local(common_data, m_matrix_loc)  ! we don't need global m
 
-2002 continue
-  if (on_root) then
-    ! I call the routine always; the if statements to decide if/what
-    ! to plot are inside the function
-    time2 = io_time()
-    call plot_main()
-    time1 = io_time()
-    ! Now time is always printed, even if no plotting is done/required, but
-    ! it shouldn't be a problem.
-    write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
-  endif
+  allocate (u_matrix(nw, nw, nk), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate u_matrix!'
+    stop
+  end if
+  call w90_set_u_matrix(common_data, u_matrix)
 
-3003 continue
-  if (on_root) then
-    time2 = io_time()
-    if (transport) then
-      call tran_main()
-      time1 = io_time()
-      write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
-      if (tran_read_ht) goto 4004
+  allocate (u_matrix_opt(nb, nw, nk), stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to allocate u_matrix_opt!'
+    stop
+  end if
+  call w90_set_u_opt(common_data, u_matrix_opt)
+
+! restart system
+  lovlp = .true.
+  ldsnt = .true.
+  lwann = .true.
+  lplot = .true.
+  ltran = .false.
+
+  if (restart == '') then
+    if (rank == 0) write (stdout, '(1x,a/)') 'Starting a new Wannier90 calculation ...'
+  else
+    cpstatus = ''
+    call read_chkpt(common_data, cpstatus, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+
+    if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .true.
+      lplot = .true.
+      ltran = .false.
+    elseif (restart == 'plot' .or. (restart == 'default' .and. cpstatus == 'postwann')) then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from plotting routines ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .false.
+      lplot = .true.
+      ltran = .false.
+    elseif (restart == 'transport') then
+      if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from transport routines ...'
+      lovlp = .false.
+      ldsnt = .false.
+      lwann = .false.
+      lplot = .false.
+      ltran = .true.
+      !else
+      ! illegitimate restart choice, should declaim the acceptable choices
     end if
-  endif
+  end if
+  ltran = (ltran .or. common_data%w90_calculation%transport)
+  ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
 
-  call tran_dealloc()
-  call hamiltonian_dealloc()
-  call overlap_dealloc()
-  call kmesh_dealloc()
-  call param_dealloc()
-  if (lsitesymmetry) call sitesym_dealloc() !YN:
+  ! circumstances where eigenvalues are needed are a little overcomplicated
+  need_eigvals = .false.
+  need_eigvals = common_data%w90_calculation%bands_plot
+  need_eigvals = (need_eigvals .or. common_data%w90_calculation%fermi_surface_plot)
+  need_eigvals = (need_eigvals .or. common_data%output_file%write_hr)
+  need_eigvals = (need_eigvals .or. common_data%output_file%write_tb)
+  need_eigvals = (need_eigvals .or. ldsnt) ! disentanglement anyway requires evals
 
-4004 continue
+  if (need_eigvals) then
+    allocate (eigval(nb, nk), stat=ierr)
+    if (ierr /= 0) then
+      write (stderr, *) 'Wannier90: failed to allocate eigval array!'
+      stop
+    end if
+    call read_eigvals(common_data, eigval, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call w90_set_eigval(common_data, eigval)
+  end if
 
-  if (on_root) then
-    write (stdout, '(1x,a25,f11.3,a)') 'Total Execution Time     ', io_time(), ' (sec)'
+  ! ends setup
 
-    if (timing_level > 0) call io_print_timings()
+  if (lovlp) then
+    call overlaps(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  end if
 
-    write (stdout, *)
+  if (ldsnt) then
+    call w90_disentangle(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call write_chkpt(common_data, 'postdis', stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  end if
+
+  if (lwann) then
+    call w90_project_overlap(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call w90_wannierise(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+    call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  end if
+
+  if (lplot) then
+    call w90_plot(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  end if
+
+  if (ltran) then
+    call w90_transport(common_data, stdout, stderr, ierr)
+    if (ierr /= 0) stop
+  end if
+
+  ! cleanup
+
+  if (need_eigvals) then
+    deallocate (eigval, stat=ierr)
+    if (ierr /= 0) then
+      write (stderr, *) 'Wannier90: failed to deallocate eigval array!'
+      stop
+    end if
+  end if
+  deallocate (dist_k, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate dist_k array!'
+    stop
+  end if
+  deallocate (m_matrix_loc, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate m_matrix_loc!'
+    stop
+  end if
+  deallocate (u_matrix, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate u_matrix!'
+    stop
+  end if
+  deallocate (u_matrix_opt, stat=ierr)
+  if (ierr /= 0) then
+    write (stderr, *) 'Wannier90: failed to deallocate u_matrix_opt!'
+    stop
+  end if
+
+  call print_times(common_data, stdout)
+
+  if (rank == 0) then
+    close (unit=stderr, status='delete')
     write (stdout, '(1x,a)') 'All done: wannier90 exiting'
+    close (unit=stdout)
+  end if
 
-    close (stdout)
-  endif
-
-  call comms_end
-
+#ifdef MPI
+  call mpi_finalize(ierr)
+#endif
 end program wannier
-

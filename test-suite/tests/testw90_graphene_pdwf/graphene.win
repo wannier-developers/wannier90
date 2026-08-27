@@ -1,0 +1,57 @@
+num_wann = 8
+num_bands = 20
+
+! use pseudo-atomic orbital projection
+auto_projections = .true.
+
+! enable projectability disentanglement
+dis_froz_proj = .true.
+dis_proj_max =   0.85
+dis_proj_min =   0.01
+
+! you can also enable energy window disentanglement, which
+! will also freeze states inside inner window, so that those
+! states are always reproduced.
+fermi_energy =  -2.3043
+! dis_froz_max =  0.5
+
+! cannot run too many steps: the numerics will differ by > 1e-6
+! between serial and parallel executions
+num_iter = 10
+dis_num_iter = 10
+
+mp_grid = 3 3 1
+
+! restart = plot
+bands_plot = .true.
+
+begin unit_cell_cart
+ang
+      2.4600000000       0.0000000000       0.0000000000
+     -1.2300000000       2.1304224933       0.0000000000
+      0.0000000000       0.0000000000      20.0000000000
+end unit_cell_cart
+
+begin atoms_cart
+ang
+C         0.0000000000       1.4202816622       0.0000000000
+C         1.2300000000       0.7101408311       0.0000000000
+end atoms_cart
+
+begin kpoint_path
+G       0.0000000000       0.0000000000       0.0000000000  M       0.5000000000       0.0000000000       0.0000000000
+M       0.5000000000       0.0000000000       0.0000000000  K       0.3333333333       0.3333333333       0.0000000000
+K       0.3333333333       0.3333333333       0.0000000000  G       0.0000000000       0.0000000000       0.0000000000
+end kpoint_path
+
+begin kpoints
+  0.00000000  0.00000000  0.00000000  1.111111e-01
+  0.00000000  0.33333333  0.00000000  1.111111e-01
+  0.00000000  0.66666667  0.00000000  1.111111e-01
+  0.33333333  0.00000000  0.00000000  1.111111e-01
+  0.33333333  0.33333333  0.00000000  1.111111e-01
+  0.33333333  0.66666667  0.00000000  1.111111e-01
+  0.66666667  0.00000000  0.00000000  1.111111e-01
+  0.66666667  0.33333333  0.00000000  1.111111e-01
+  0.66666667  0.66666667  0.00000000  1.111111e-01
+end kpoints

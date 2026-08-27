@@ -1,23 +1,50 @@
+repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.2.3
+  rev: v6.0.0
   hooks:
-  - id: trailing-whitespace
+  - id: check-yaml
+    exclude: (?x)^(
+        docs/mkdocs.yml
+      )$
+  - id: check-yaml
+    name: check yaml unsafe
+    args: ['--unsafe']
     files: (?x)^(
-        config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+        docs/mkdocs.yml
+      )$
+  - id: trailing-whitespace
+    exclude: (?x)^(
+        LICENSE
+      | .cla/.*
       )$
   - id: end-of-file-fixer
-    files: (?x)^(
-        config/make[.]inc[.\w]*|
-        examples/example\d\d[-]?\w*/.+win
+    exclude: (?x)^(
+        LICENSE
+      | .cla/.*
       )$
-- repo: git://github.com/pseewald/fprettify
-  sha: v0.3.3
+- repo: https://github.com/fortran-lang/fprettify
+  rev: v0.3.7
   hooks:
   - id: fprettify
     args: ['--indent', '2']
-    exclude: (?x)^(
-        pwscf/.*
-      )$
     verbose: true
-    entry: ./test-suite/tools/fprettify-wrapper.py
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.12.1
+  hooks:
+  - id: markdownlint-cli2
+    args: ['--fix']
+    files: (?x)^(
+        docs/.*
+      )$
+- repo: local
+  hooks:
+  - id: check-generated-parameter-tables
+    name: check parameter table CSVs match parameters.xml
+    entry: bash -c 'cd docs/docs/parameters && python3 generate-parameter-tables.py && git diff --exit-code -- "*.csv"'
+    language: system
+    pass_filenames: false
+    files: (?x)^(
+        docs/docs/parameters/parameters\.xml
+      | docs/docs/parameters/generate-parameter-tables\.py
+      | docs/docs/parameters/.*\.csv
+      )$

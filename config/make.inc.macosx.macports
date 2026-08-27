@@ -57,6 +57,9 @@ FCOPTS=-O2 -ff2c
 LDOPTS=-O2 -ff2c
 LIBS   =  -framework Accelerate
 
+# f90wrap location
+F90WRAP = f90wrap
+
 # other options: do not use -ff2c but instead:
 # port vecLibfort (wrapper to Accelerate): LIBS = -L/opt/local/lib -lvecLibFort
 # port atlas: LIBS = -L/opt/local/lib -lsatlas

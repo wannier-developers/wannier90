@@ -1,9 +1,0 @@
-&inputpp 
-   outdir = './tempdir/'
-   prefix = 'Pt'
-   seedname = 'Pt'
-   write_mmn = .true.
-   write_amn = .true.
-   write_spn = .true.
-   write_unk = .false.
-/

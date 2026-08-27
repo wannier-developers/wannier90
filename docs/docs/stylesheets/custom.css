@@ -1,0 +1,22 @@
+.md-typeset ul ul {
+    list-style-type: circle;
+}
+
+.md-typeset ul ul ul {
+    list-style-type: square;
+}
+
+.highlight span.filename {
+    background-color: #afadad;
+    line-height: 0.4;
+}
+
+.md-typeset h1 {
+    color: black;
+}
+
+:root {
+    --md-primary-fg-color:        #1a3852;
+    /* --md-primary-fg-color--light: #ECB7B7; */
+    /* --md-primary-fg-color--dark:  #90030C; */
+}

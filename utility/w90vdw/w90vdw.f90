@@ -1,5 +1,5 @@
 !-*- mode: F90 -*-!
-!                                                            !
+!------------------------------------------------------------!
 ! Copyright (C) 2012 Lampros Andrinopoulos, Nicholas Hine,   !
 !                    and Arash A Mostofi                     !
 !                                                            !
@@ -11,11 +11,27 @@
 ! The methodology coded here is based on the original work   !
 ! of PL Silvestrelli, Phys Rev Lett 100, 053002 (2008)       !
 !                                                            !
-! This file is distributed under the terms of the GNU        !
-! General Public License. See the file `LICENSE' in          !
-! the root directory of the present distribution, or         !
-! http://www.gnu.org/copyleft/gpl.txt .                      !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
+!                                                            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
 !------------------------------------------------------------!
 ! Code to calculate vdW energies from MLWFs                  !
 !------------------------------------------------------------!
@@ -72,17 +88,17 @@ program vdw
   write (2, '(a)', advance='no') ' num_wann   : '
   do n = 1, num_frag
     write (2, '(i4,1x)', advance='no') num_wann(n)
-  enddo
+  end do
   read (1, *) dummy, tol_occ ! tolerance for splitting p-orbitals
   write (2, '(/a,f6.3)') ' tol_occ    : ', tol_occ
   if (.not. disentangle) write (2, '(a)') ' [disentanglement not used; ignoring tol_occ]'
   read (1, '(12x)')
   do ifrag = 1, num_frag
     read (1, '(l1,1x,l1,1x,l1)') p(ifrag, 1:3) ! directions in which to split p-orbitals
-  enddo
+  end do
   do ifrag = 1, num_frag
     write (2, '(a,i2,1x,l2,1x,l2,1x,l2)') ' pxyz       : ', ifrag, (p(ifrag, n), n=1, 3)
-  enddo
+  end do
   if (.not. disentangle) write (2, '(a)') ' [disentanglement not used; ignoring pxyz]'
   ! tolerance for amalgamating cocentric MLWFs
   ! not used unless amalgamate = T
@@ -105,12 +121,12 @@ program vdw
     write (2, '(a,a)') ' units      :  ', adjustl(trim(units))
   else
     write (2, '(a)') ' units      :   bohr (assumed)'
-  endif
+  end if
   do ifrag = 1, num_frag
     do iwann = 1, num_wann(ifrag)
       read (1, *) r(ifrag, 1:3, iwann), s(ifrag, iwann), fw(ifrag, iwann)
-    enddo
-  enddo
+    end do
+  end do
   close (1)
   ! end read input parameters
 
@@ -124,15 +140,15 @@ program vdw
   if (adjustl(trim(units)) == 'ang') then
     r(:, :, :) = r(:, :, :)/ang2a0
     s(:, :) = s(:, :)/ang2a0
-  endif
+  end if
 
   write (2, '(a)') ' centres, sqrt(quadratic spreads) [in Ang], and electronic occupancies:'
   do ifrag = 1, num_frag
     do iwann = 1, num_wann(ifrag)
       write (2, '(i3,1x,i3,1x,3f13.8,f12.8,f12.8)') &
         ifrag, iwann, r(ifrag, 1:3, iwann)*ang2a0, s(ifrag, iwann)*ang2a0, fw(ifrag, iwann)
-    enddo
-  enddo
+    end do
+  end do
 
   write (2, '(/a)') ' done reading input file'
 
@@ -165,17 +181,17 @@ program vdw
               fw(ifrag, iwann) = fw(ifrag, iwann) + fw(ifrag, iwann2)
               fw(ifrag, iwann2:num_wann(ifrag)) = fw(ifrag, iwann2 + 1:num_wann(ifrag) + 1)
               exit iwannloop
-            endif
-          enddo
-        enddo iwannloop
+            end if
+          end do
+        end do iwannloop
         if (num_wann(ifrag) == num_wann_old) exit
-      enddo
+      end do
 
-    enddo
+    end do
 
     write (2, '(a)') ' ... done'
 
-  endif
+  end if
 
   num_orb(:) = 0
   do ifrag = 1, num_frag
@@ -192,17 +208,17 @@ program vdw
             r(ifrag, l, num_wann(ifrag) + num_orb(ifrag)) = r(ifrag, l, iwann) - 2.0d0*shift
             fw(ifrag, iwann) = 0.5d0*fw(ifrag, iwann)
             fw(ifrag, num_wann(ifrag) + num_orb(ifrag)) = fw(ifrag, iwann)
-          endif
-        enddo
-      endif
-    enddo
+          end if
+        end do
+      end if
+    end do
     num_wann(ifrag) = num_wann(ifrag) + num_orb(ifrag)
-  enddo
+  end do
 
   num_wann_tot = 0
   do ifrag = 1, num_frag
     num_wann_tot = num_wann_tot + num_wann(ifrag)
-  enddo
+  end do
 
   !Cutoff radius
   rc_coeff = 1.0_dp
@@ -249,10 +265,10 @@ program vdw
           evdw = evdw - 1.0d0/(1.0d0 + exp(-20.0d0*(rnl/(rvdw(ifrag, iwann) + rvdw(ifrag2, iwann2)) - 1))) &
                  *c6nl/(rnl**(6.0d0))
 
-        enddo
-      enddo
-    enddo
-  enddo
+        end do
+      end do
+    end do
+  end do
 
 !  close(3)
   write (2, '(/a)') repeat('=', 50)

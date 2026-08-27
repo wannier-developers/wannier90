@@ -1,5 +1,53 @@
 # CHANGELOG of Wannier90
 
+## v4.0.2 (27 August 2026)
+
+### New features
+
+- Automatic thresholds for projectability disentanglement [[#650]](https://github.com/wannier-developers/wannier90/pull/650)
+
+### Various improvements and bugfixes
+
+- CHANGELOG correction/clarification in text relating to v4.0.1 release.
+
+
+## v4.0.1 (28 July 2026)
+
+### New license
+
+- Wannier90 is now released under the Lesser GPL version 2.1 or later (LGPL v2.1 or later)
+
+### New features
+
+- Higher order finite differences methods [[#504]](https://github.com/wannier-developers/wannier90/pull/504)
+
+- Projectability disentanglement [[#448]](https://github.com/wannier-developers/wannier90/pull/448)
+
+- Spin Hall conductivity according to Ji Hoon Ryoo's method (Phys. Rev. B 99, 235113) [[#353]](https://github.com/wannier-developers/wannier90/pull/353)
+
+- Stengel-Spalding spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
+
+- Tetrahedron integration for calculating spin Hall conductivity [[#431]](https://github.com/wannier-developers/wannier90/pull/431)
+
+- Translationally invariant formulation for position matrix elements [[#533]](https://github.com/wannier-developers/wannier90/pull/533)
+
+- Update to the CODATA standard version [[#649]](https://github.com/wannier-developers/wannier90/pull/649)
+
+- User specified lists of k-points for plotting [[#519]](https://github.com/wannier-developers/wannier90/pull/519)
+
+### Various improvements and bugfixes
+
+- Cmake support (see README.install)
+
+- Library interface supporting most Wannier90.x functionality with MPI decomposition over k-points
+
+- Markdown documentation replaces pdf files in the distribution
+
+- Significant code refactoring for data encapsulation, error handling, etc
+
+- Very large number of collected bug fixes and corrections, etc.
+
+
 ## v3.1.0 (5th March 2020)
 
 ### New features
@@ -64,7 +112,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 ### New postw90 features, optimizations and new post-processing codes
 
 - Calculation of nonlinear shift currents according to the formalism given in J. Ibañez-Azpiroz, S. S. Tsirkin and I. Souza, arXiv:1804.04030 (2018) + example 25 [[#181]](https://github.com/wannier-developers/wannier90/pull/181) [[#180]](https://github.com/wannier-developers/wannier90/pull/180)
-  
+
 - New gyrotropic module implementing the method described in S. S. Tsirkin, P. Aguado Puente and I. Souza, arXiv:1710.03204 [[#160]](https://github.com/wannier-developers/wannier90/pull/160)
 
 - G0W0 interface for Wannier90 (tested with QE and Yambo) and documentation [[#102]](https://github.com/wannier-developers/wannier90/pull/102) [[#96]](https://github.com/wannier-developers/wannier90/pull/96)
@@ -115,7 +163,7 @@ Moreover, it generates a new file `seedname_band.labelinfo.dat` with information
 - Added pre-commit hooks to fix indentation and trailing whitespace [[#203]](https://github.com/wannier-developers/wannier90/pull/203)
 
 - Add support for dynamic library compilation [[#188]](https://github.com/wannier-developers/wannier90/pull/188)
-  
+
 - Added config file for Mac OS X using HomeBrew [[#118]](https://github.com/wannier-developers/wannier90/pull/118)
 
 - Small fix to have some compilers (NAG) not to complain [[#93]](https://github.com/wannier-developers/wannier90/pull/93)

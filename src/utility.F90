@@ -1,62 +1,83 @@
 !-*- mode: F90 -*-!
 !------------------------------------------------------------!
-! This file is distributed as part of the Wannier90 code and !
-! under the terms of the GNU General Public License. See the !
-! file `LICENSE' in the root directory of the Wannier90      !
-! distribution, or http://www.gnu.org/copyleft/gpl.txt       !
+! Copyright (C) 2026 Wannier Developer Group                 !
 !                                                            !
-! The webpage of the Wannier90 code is www.wannier.org       !
+! This library is free software; you can redistribute it     !
+! and/or modify it under the terms of the GNU Lesser General !
+! Public License as published by the Free Software           !
+! Foundation; either version 2.1 of the License, or (at your !
+! option) any later version.                                 !
 !                                                            !
-! The Wannier90 code is hosted on GitHub:                    !
+! This library is distributed in the hope that it will be    !
+! useful,but WITHOUT ANY WARRANTY; without even the implied  !
+! warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR    !
+! PURPOSE.  See the GNU Lesser General Public License for    !
+! more details.                                              !
 !                                                            !
-! https://github.com/wannier-developers/wannier90            !
+! You should have received a copy of the GNU Lesser General  !
+! Public License along with this library; if not, see        !
+! <https://www.gnu.org/licenses/>.                           !
+!                                                            !
+! The webpage of the Wannier90 code is                       !
+! <https://www.wannier.org>.                                 !
+!                                                            !
+! The Wannier90 code is hosted on GitHub                     !
+! <https://github.com/wannier-developers/wannier90>          !
+!------------------------------------------------------------!
+!                                                            !
+!  w90_utility: blas wrappers and other basic routines       !
+!                                                            !
 !------------------------------------------------------------!
 
 module w90_utility
+
   !! Module contains lots of useful general routines
 
   use w90_constants, only: dp
+  use w90_comms, only: w90_comm_type
 
   implicit none
 
   private
 
-  public :: utility_inv3
-  public :: utility_inv2
-  public :: utility_det3
-  public :: utility_recip_lattice
-  public :: utility_metric
-  public :: utility_compar
   public :: utility_cart_to_frac
-  public :: utility_frac_to_cart
-  public :: utility_string_to_coord
-  public :: utility_lowercase
-  public :: utility_strip
-  public :: utility_zgemm
-  public :: utility_zgemm_new
-  public :: utility_zgemmm
-  public :: utility_translate_home
-  public :: utility_rotate
-  public :: utility_rotate_new
-  public :: utility_matmul_diag
-  public :: utility_rotate_diag
   public :: utility_commutator_diag
-  public :: utility_re_tr
-  public :: utility_re_tr_prod
+  public :: utility_compar
+  public :: utility_det3
+  public :: utility_diagonalize
+  public :: utility_frac_to_cart
   public :: utility_im_tr
   public :: utility_im_tr_prod
+  public :: utility_inv2
+  public :: utility_inv3
+  public :: utility_inverse_mat
+  public :: utility_lowercase
+  public :: utility_matmul_diag
+  public :: utility_metric
+  public :: utility_recip_lattice
+  public :: utility_recip_lattice_base
+  public :: utility_re_tr
+  public :: utility_re_tr_prod
+  public :: utility_rotate
+  public :: utility_rotate_diag
+  public :: utility_rotate_new
+  public :: utility_string_to_coord
+  public :: utility_strip
+  public :: utility_translate_home
   public :: utility_w0gauss
   public :: utility_w0gauss_vec
   public :: utility_wgauss
   public :: utility_zdotu
-  public :: utility_diagonalize
+  public :: utility_zgemm
+  public :: utility_zgemmm
+  public :: utility_zgemm_new
 
 contains
 
-  !=============================================================!
+  !================================================!
   subroutine utility_zgemm(c, a, transa, b, transb, n)
-    !=============================================================!
-    !                                                             !
+    !================================================!
+    !
     !! Return matrix product of complex n x n matrices a and b:
     !!
     !!                       C = Op(A) Op(B)
@@ -66,8 +87,8 @@ contains
     !! transa = 'C'  ==> Op(A) = congj(transpose(A))
     !!
     !! similarly for B
-    !                                                             !
-    !=============================================================!
+    !
+    !================================================!
 
     use w90_constants, only: cmplx_0, cmplx_1
 
@@ -86,13 +107,13 @@ contains
 
   end subroutine utility_zgemm
 
-  !===================================================================
-  function utility_det3(A)                   !
-    !==================================================================!
-    !                                                                  !
-    !    Return determinant of a  3x3 matrix A                         !
-    !                                                                  !
-    !===================================================================
+  !================================================
+  function utility_det3(A)
+    !================================================!
+    !
+    !    Return determinant of a  3x3 matrix A
+    !
+    !================================================
 
     real(kind=dp), intent(in)  :: a(3, 3)
     real(kind=dp)  :: utility_det3
@@ -102,7 +123,7 @@ contains
     return
   end function utility_det3
 
-  !=============================================================!
+  !================================================!
   subroutine utility_zgemm_new(a, b, c, transa_opt, transb_opt)
     !=============================================================!
     !                                                             !
@@ -156,37 +177,34 @@ contains
     call zgemm(transa, transb, m, n, k, cmplx_1, a, size(a, 1), b, size(b, 1), cmplx_0, c, m)
 
   end subroutine utility_zgemm_new
-  !=============================================================!
+  !================================================!
   function utility_zdotu(a, b)
-    complex(kind=dp), intent(in), dimension(:)  :: a, b
+    complex(kind=dp), intent(in) :: a(:), b(:)
     complex(kind=dp) :: utility_zdotu
     utility_zdotu = sum(a*b)
     return
   end function utility_zdotu
 
-  !=============================================================!
-  subroutine utility_zgemmm(a, transa, b, transb, c, transc, &
-                            prod1, eigval, prod2)
-    !===============================================================!
-    ! Returns the complex matrix-matrix-matrix product              !
-    ! --> prod1 = op(a).op(b).op(c),                                !
-    ! where op(a/b/c) are defined according to transa/transb/transc !
-    ! (see also documentation of utility_zgemm above)               !
-    !                                                               !
-    ! If eigval and prod2 are present, also                         !
-    ! --> prod2 = op(a).diag(eigval).op(b).op(c)                    !
-    ! is returned.                                                  !
-    !===============================================================!
+  !================================================!
+  subroutine utility_zgemmm(a, transa, b, transb, c, transc, prod1, eigval, prod2)
+    !================================================!
+    ! Returns the complex matrix-matrix-matrix product
+    ! --> prod1 = op(a).op(b).op(c),
+    ! where op(a/b/c) are defined according to transa/transb/transc
+    ! (see also documentation of utility_zgemm above)
+    !
+    ! If eigval and prod2 are present, also
+    ! --> prod2 = op(a).diag(eigval).op(b).op(c)
+    ! is returned.
+    !================================================!
 
-    complex(kind=dp), dimension(:, :), intent(in)  :: a, b, c
-    character(len=1), intent(in)                  :: transa, transb, transc
-    real(kind=dp), dimension(:), optional, &
-      intent(in)       :: eigval
-    complex(kind=dp), dimension(:, :), optional, &
-      intent(out) :: prod1, prod2
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :), c(:, :)
+    character(len=1), intent(in) :: transa, transb, transc
+    real(kind=dp), intent(in), optional :: eigval(:)
+    complex(kind=dp), intent(out), optional :: prod1(:, :), prod2(:, :)
 
-    complex(kind=dp), dimension(:, :), allocatable :: tmp
-    integer                                       :: nb, mc, i, j
+    complex(kind=dp), allocatable :: tmp(:, :)
+    integer :: nb, mc, i, j, ierr
 
     ! query matrix sizes
     ! naming convention:
@@ -204,7 +222,13 @@ contains
     end if
 
     ! tmp = op(b).op(c)
-    allocate (tmp(nb, mc))
+    allocate (tmp(nb, mc), stat=ierr)
+    ! only called in postw90 - should propagate the errors
+    !   if (ierr /= 0) then
+    !     call set_error_alloc(error, 'Error in allocating tmp in utility_zgemmm', comm)
+    !     return
+    !   end if
+
     call utility_zgemm_new(b, c, tmp, transb, transc)
 
     ! prod1 = op(a).tmp
@@ -214,75 +238,58 @@ contains
 
     if (present(prod2) .and. present(eigval)) then
       ! tmp = diag(eigval).tmp
-      forall (i=1:nb, j=1:mc)
-      tmp(i, j) = eigval(i)*tmp(i, j)
-      end forall
+      do j = 1, mc
+        do i = 1, nb
+          tmp(i, j) = eigval(i)*tmp(i, j)
+        end do
+      end do
       ! prod2 = op(a).tmp
       call utility_zgemm_new(a, tmp, prod2, transa, 'N')
     end if
   end subroutine
 
-  !===================================================================
-  subroutine utility_inv3(a, b, det)                   !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_inv3(a, b, det)
+    !================================================!
+    !
     !! Return in b the adjoint of the 3x3 matrix a, and its
     !! determinant.
-    !! The inverse is defined as the adjoind divided by the
+    !! The inverse is defined as the adjoint divided by the
     !! determinant, so that inverse(a) = b/det
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     implicit none
     real(kind=dp), intent(in)  :: a(3, 3)
     real(kind=dp), intent(out) :: b(3, 3)
     real(kind=dp), intent(out) :: det
 
-    real(kind=dp):: work(6, 6)
-    integer :: i, j, k, l, ll, kk
+    b(1, 1) = a(2, 2)*a(3, 3) - a(3, 2)*a(2, 3)
+    b(1, 2) = a(2, 3)*a(3, 1) - a(3, 3)*a(2, 1)
+    b(1, 3) = a(2, 1)*a(3, 2) - a(3, 1)*a(2, 2)
+    b(2, 1) = a(3, 2)*a(1, 3) - a(1, 2)*a(3, 3)
+    b(2, 2) = a(3, 3)*a(1, 1) - a(1, 3)*a(3, 1)
+    b(2, 3) = a(3, 1)*a(1, 2) - a(1, 1)*a(3, 2)
+    b(3, 1) = a(1, 2)*a(2, 3) - a(2, 2)*a(1, 3)
+    b(3, 2) = a(1, 3)*a(2, 1) - a(2, 3)*a(1, 1)
+    b(3, 3) = a(1, 1)*a(2, 2) - a(2, 1)*a(1, 2)
 
-    do i = 1, 2
-      do j = 1, 2
-        do k = 1, 3
-          do l = 1, 3
-            kk = 3*(i - 1) + k
-            ll = 3*(j - 1) + l
-            work(kk, ll) = a(k, l)
-          end do
-        end do
-      end do
-    end do
-
-    det = 0.0_dp
-    do i = 1, 3
-      det = det + work(1, i)*work(2, i + 1)*work(3, i + 2)
-    end do
-
-    do i = 4, 6
-      det = det - work(1, i)*work(2, i - 1)*work(3, i - 2)
-    end do
-
-    do j = 1, 3
-      do i = 1, 3
-        b(j, i) = (work(i + 1, j + 1)*work(i + 2, j + 2) - work(i + 1, j + 2) &
-                   *work(i + 2, j + 1))
-      end do
-    end do
+    det = a(1, 1)*b(1, 1) + a(1, 2)*b(1, 2) + a(1, 3)*b(1, 3)
 
     return
 
   end subroutine utility_inv3
 
-  !===================================================================
-  subroutine utility_inv2(a, b, det)                   !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_inv2(a, b, det)
+    !================================================!
+    !
     !! Return in b the adjoint of the 2x2 matrix
     !! a, together with the determinant of a.
     !! The inverse is defined as the adjoind divided by the
     !! determinant, so that inverse(a) = b/det
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     implicit none
     real(kind=dp), intent(in)  :: a(2, 2)
@@ -300,54 +307,90 @@ contains
 
   end subroutine utility_inv2
 
-  !===================================================================
-  subroutine utility_recip_lattice(real_lat, recip_lat, volume)  !
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_inverse_mat(a, b)
+    !================================================!
+    !
+    !! Return in b int inverse of a. Uses utility_inv3
+    !
+    !================================================
+
+    implicit none
+    real(kind=dp), intent(in)  :: a(3, 3)
+    real(kind=dp), intent(out) :: b(3, 3)
+
+    real(kind=dp) :: det
+
+    call utility_inv3(a, b, det)
+    b = b/det
+
+    return
+
+  end subroutine utility_inverse_mat
+
+  !================================================
+  subroutine utility_recip_lattice_base(real_lat, recip_lat, volume)
+    !================================================!
+    !
     !!  Calculates the reciprical lattice vectors and the cell volume
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
 
     use w90_constants, only: dp, twopi, eps5
-    use w90_io, only: io_error
 
     implicit none
     real(kind=dp), intent(in)  :: real_lat(3, 3)
     real(kind=dp), intent(out) :: recip_lat(3, 3)
     real(kind=dp), intent(out) :: volume
 
-    recip_lat(1, 1) = real_lat(2, 2)*real_lat(3, 3) - real_lat(3, 2)*real_lat(2, 3)
-    recip_lat(1, 2) = real_lat(2, 3)*real_lat(3, 1) - real_lat(3, 3)*real_lat(2, 1)
-    recip_lat(1, 3) = real_lat(2, 1)*real_lat(3, 2) - real_lat(3, 1)*real_lat(2, 2)
-    recip_lat(2, 1) = real_lat(3, 2)*real_lat(1, 3) - real_lat(1, 2)*real_lat(3, 3)
-    recip_lat(2, 2) = real_lat(3, 3)*real_lat(1, 1) - real_lat(1, 3)*real_lat(3, 1)
-    recip_lat(2, 3) = real_lat(3, 1)*real_lat(1, 2) - real_lat(1, 1)*real_lat(3, 2)
-    recip_lat(3, 1) = real_lat(1, 2)*real_lat(2, 3) - real_lat(2, 2)*real_lat(1, 3)
-    recip_lat(3, 2) = real_lat(1, 3)*real_lat(2, 1) - real_lat(2, 3)*real_lat(1, 1)
-    recip_lat(3, 3) = real_lat(1, 1)*real_lat(2, 2) - real_lat(2, 1)*real_lat(1, 2)
+    call utility_inv3(real_lat, recip_lat, volume)
 
-    volume = real_lat(1, 1)*recip_lat(1, 1) + &
-             real_lat(1, 2)*recip_lat(1, 2) + &
-             real_lat(1, 3)*recip_lat(1, 3)
-
-    if (abs(volume) < eps5) then
-      call io_error(' Found almost zero Volume in utility_recip_lattice')
+    if (abs(volume) > eps5) then
+      recip_lat = twopi*recip_lat/volume
+      volume = abs(volume)
     end if
 
-    recip_lat = twopi*recip_lat/volume
-    volume = abs(volume)
+    return
+
+  end subroutine utility_recip_lattice_base
+
+  subroutine utility_recip_lattice(real_lat, recip_lat, volume, error, comm)
+    !================================================!
+    !
+    !!  Calculates the reciprical lattice vectors and the cell volume
+    !!  Includes a check that the volume isn't almost 0
+    !!  Use the first time the lattice is read to check its sensible
+    !
+    !================================================
+
+    use w90_constants, only: dp, eps5
+    use w90_error, only: w90_error_type, set_error_fatal
+
+    implicit none
+    type(w90_error_type), allocatable :: error
+    real(kind=dp), intent(in)  :: real_lat(3, 3)
+    real(kind=dp), intent(out) :: recip_lat(3, 3)
+    real(kind=dp), intent(out) :: volume
+    type(w90_comm_type), intent(in) :: comm
+
+    call utility_recip_lattice_base(real_lat, recip_lat, volume)
+
+    if (abs(volume) < eps5) then
+      call set_error_fatal(error, ' Found almost zero Volume in utility_recip_lattice', comm)
+      return
+    end if
 
     return
 
   end subroutine utility_recip_lattice
 
-  !===================================================================
+  !================================================
   subroutine utility_compar(a, b, ifpos, ifneg)
-    !==================================================================!
-    !                                                                  !
+    !================================================!
+    !
     !! Compares two vectors
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
     use w90_constants, only: eps8
 
     implicit none
@@ -369,47 +412,42 @@ contains
 
   end subroutine utility_compar
 
-  !===================================================================
-  subroutine utility_metric(real_lat, recip_lat, &
-                            real_metric, recip_metric)
-    !==================================================================!
-    !                                                                  !
-    !!  Calculate the real and reciprical space metrics
-    !                                                                  !
-    !===================================================================
+  !================================================
+  subroutine utility_metric(lattice, metric)
+    !================================================!
+    !
+    !!  Calculate the  metric for a lattice
+    !
+    !================================================
     implicit none
 
-    real(kind=dp), intent(in)  :: real_lat(3, 3)
-    real(kind=dp), intent(in)  :: recip_lat(3, 3)
-    real(kind=dp), intent(out) :: real_metric(3, 3)
-    real(kind=dp), intent(out) :: recip_metric(3, 3)
+    real(kind=dp), intent(in)  :: lattice(3, 3)
+    real(kind=dp), intent(out) :: metric(3, 3)
 
     integer :: i, j, l
 
-    real_metric = 0.0_dp; recip_metric = 0.0_dp
+    metric = 0.0_dp
 
     do j = 1, 3
       do i = 1, j
         do l = 1, 3
-          real_metric(i, j) = real_metric(i, j) + real_lat(i, l)*real_lat(j, l)
-          recip_metric(i, j) = recip_metric(i, j) + recip_lat(i, l)*recip_lat(j, l)
-        enddo
+          metric(i, j) = metric(i, j) + lattice(i, l)*lattice(j, l)
+        end do
         if (i .lt. j) then
-          real_metric(j, i) = real_metric(i, j)
-          recip_metric(j, i) = recip_metric(i, j)
-        endif
-      enddo
-    enddo
+          metric(j, i) = metric(i, j)
+        end if
+      end do
+    end do
 
   end subroutine utility_metric
 
-  !===================================================================
+  !================================================
   subroutine utility_frac_to_cart(frac, cart, real_lat)
-    !==================================================================!
-    !                                                                  !
+    !================================================!
+    !
     !!  Convert from fractional to Cartesian coordinates
-    !                                                                  !
-    !===================================================================
+    !
+    !================================================
     implicit none
 
     real(kind=dp), intent(in)  :: real_lat(3, 3)
@@ -426,41 +464,39 @@ contains
 
   end subroutine utility_frac_to_cart
 
-  !===================================================================
-  subroutine utility_cart_to_frac(cart, frac, recip_lat)
-    !==================================================================!
-    !                                                                  !
+  !================================================
+  subroutine utility_cart_to_frac(cart, frac, inv_lat)
+    !================================================!
+    !
     !!  Convert from Cartesian to fractional coordinates
-    !                                                                  !
-    !===================================================================
-    use w90_constants, only: twopi
+    !
+    !================================================
+
     implicit none
 
-    real(kind=dp), intent(in)  :: recip_lat(3, 3)
-    real(kind=dp), intent(out)  :: frac(3)
-    real(kind=dp), intent(in)  :: cart(3)
+    real(kind=dp), intent(in) :: inv_lat(3, 3)
+    real(kind=dp), intent(out) :: frac(3)
+    real(kind=dp), intent(in) :: cart(3)
 
     integer :: i
 
     do i = 1, 3
-      frac(i) = recip_lat(i, 1)*cart(1) + recip_lat(i, 2)*cart(2) + recip_lat(i, 3)*cart(3)
+      frac(i) = inv_lat(i, 1)*cart(1) + inv_lat(i, 2)*cart(2) + inv_lat(i, 3)*cart(3)
     end do
-
-    frac = frac/twopi
 
     return
 
   end subroutine utility_cart_to_frac
 
-  !=============================!
+  !================================================!
   function utility_strip(string)!
-    !=============================!
-    !                             !
+    !================================================!
+    !
     !! Strips string of all blank spaces
-    !                             !
-    !=============================!
+    !
+    !================================================!
 
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
 
     implicit none
 
@@ -479,8 +515,8 @@ contains
       if (ilett .ne. ispc) then
         icount = icount + 1
         utility_strip(icount:icount) = string(ipos:ipos)
-      endif
-    enddo
+      end if
+    end do
 
     utility_strip = trim(utility_strip)
 
@@ -488,16 +524,16 @@ contains
 
   end function utility_strip
 
-  !=================================!
+  !================================================!
   function utility_lowercase(string)!
-    !=================================!
-    !                                 !
+    !================================================!
+    !
     !! Takes a string and converts to
     !!  lowercase characters
-    !                                 !
-    !=================================!
+    !
+    !================================================!
 
-    use w90_io, only: maxlen
+    use w90_constants, only: maxlen
 
     implicit none
 
@@ -516,7 +552,7 @@ contains
       ilett = ichar(string(ipos:ipos))
       if ((ilett .ge. iA) .and. (ilett .le. iZ)) &
         utility_lowercase(ipos:ipos) = char(ilett - idiff)
-    enddo
+    end do
 
     utility_lowercase = trim(adjustl(utility_lowercase))
 
@@ -524,28 +560,35 @@ contains
 
   end function utility_lowercase
 
-  !====================================================!
-  subroutine utility_string_to_coord(string_tmp, outvec)!
-    !====================================================!
-    !                                                    !
+  !================================================!
+  subroutine utility_string_to_coord(string_tmp, outvec, error, comm)
+    !================================================!
+    !
     !! Takes a string in the form 0.0,1.0,0.5
     !! and returns an array of the real num
-    !                                                    !
-    !====================================================!
-    use w90_io, only: io_error, maxlen
+    !
+    !================================================!
+    use w90_constants, only: maxlen
+    use w90_error, only: w90_error_type, set_error_input
 
     implicit none
 
     character(len=maxlen), intent(in)  :: string_tmp
     real(kind=dp), intent(out) :: outvec(3)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
     integer :: pos
-    character(len=maxlen)  :: ctemp
-    character(len=maxlen)  :: ctemp2
+    character(len=maxlen) :: ctemp
+    character(len=maxlen) :: ctemp2
 
     ctemp = string_tmp
     pos = index(ctemp, ',')
-    if (pos <= 0) call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
+    if (pos <= 0) then
+      call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
+      return
+    end if
+
     ctemp2 = ctemp(1:pos - 1)
     read (ctemp2, *, err=100, end=100) outvec(1)
     ctemp = ctemp(pos + 1:)
@@ -557,57 +600,26 @@ contains
 
     return
 
-100 call io_error('utility_string_to_coord: Problem reading string into real number '//trim(string_tmp))
+100 call set_error_input(error, 'utility_string_to_coord: Problem reading string into real number '//trim(string_tmp), comm)
+    return ! this is kinda ugly, JJ
 
   end subroutine utility_string_to_coord
 
-!~  !===========================================!
-!~  function utility_string_to_coord(string_tmp)!
-!~  !===========================================!
-!~  !                                           !
-!~  !  Takes a string in the form 0.0,1.0,0.5   !
-!~  !   and returns an array of the real num    !
-!~  !                                           !
-!~  !===========================================!
-!~
-!~    implicit none
-!~
-!~    character(len=80), intent(in)  :: string_tmp
-!~    real(kind=dp) :: utility_string_to_coord(3)
-!~
-!~    integer :: pos,pos2
-!~    character(len=80)  :: ctemp
-!~    character(len=80)  :: ctemp2
-!~
-!~
-!~    ctemp=string_tmp
-!~    pos2=index(ctemp,',')
-!~    ctemp2=ctemp(1:pos2-1)
-!~    read(ctemp2,*) utility_string_to_coord(1)
-!~    ctemp=ctemp(pos2+1:)
-!~    pos2=index(ctemp,',')
-!~    ctemp2=ctemp(1:pos2-1)
-!~    read(ctemp2,*) utility_string_to_coord(2)
-!~    ctemp=ctemp(pos2+1:)
-!~    read(ctemp,*) utility_string_to_coord(3)
-!~
-!~  end function utility_string_to_coord
-
-  !========================================================!
-  subroutine utility_translate_home(vec, real_lat, recip_lat)
-    !========================================================!
-    !                                                        !
+  !================================================!
+  subroutine utility_translate_home(vec, real_lat)
+    !================================================!
+    !
     !! Translate a vector to the home unit cell
-    !                                                        !
-    !========================================================!
+    !
+    !================================================!
 
     implicit none
 
     real(kind=dp), intent(inout) :: vec(3)
     real(kind=dp), intent(in)    :: real_lat(3, 3)
-    real(kind=dp), intent(in)    :: recip_lat(3, 3)
 
     ! <<<local variables>>>
+    real(kind=dp) :: recip_lat(3, 3), volume
     integer       :: ind
     real(kind=dp) :: r_home(3), r_frac(3)
     real(kind=dp) :: shift
@@ -615,18 +627,19 @@ contains
     r_home = 0.0_dp; r_frac = 0.0_dp
 
     ! Cartesian --> fractional
+    call utility_recip_lattice_base(real_lat, recip_lat, volume)
     call utility_cart_to_frac(vec, r_frac, recip_lat)
     ! Rationalise to interval [0,1]
     do ind = 1, 3
       if (r_frac(ind) .lt. 0.0_dp) then
         shift = real(ceiling(abs(r_frac(ind))), kind=dp)
         r_frac(ind) = r_frac(ind) + shift
-      endif
+      end if
       if (r_frac(ind) .gt. 1.0_dp) then
         shift = -real(int(r_frac(ind)), kind=dp)
         r_frac(ind) = r_frac(ind) + shift
-      endif
-    enddo
+      end if
+    end do
     ! Fractional --> Cartesian
     call utility_frac_to_cart(r_frac, r_home, real_lat)
 
@@ -635,55 +648,61 @@ contains
     return
   end subroutine utility_translate_home
 
-  !============================================================!
-  subroutine utility_diagonalize(mat, dim, eig, rot)
-    !============================================================!
-    !                                                            !
+  !================================================!
+  subroutine utility_diagonalize(mat, dim, eig, rot, error, comm)
+    !================================================!
+    !
     !! Diagonalize the dim x dim  hermitian matrix 'mat' and
     !! return the eigenvalues 'eig' and the unitary rotation 'rot'
-    !                                                            !
-    !============================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
-    use w90_io, only: io_error, stdout
+    use w90_error, only: w90_error_type, set_error_fatal
 
-    integer, intent(in)           :: dim
-    complex(kind=dp), intent(in)  :: mat(dim, dim)
-    real(kind=dp), intent(out)    :: eig(dim)
+    integer, intent(in) :: dim
+    complex(kind=dp), intent(in) :: mat(dim, dim)
+    real(kind=dp), intent(out) :: eig(dim)
     complex(kind=dp), intent(out) :: rot(dim, dim)
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
 
-    complex(kind=dp)   :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
-    real(kind=dp)      :: rwork(7*dim)
-    integer            :: i, j, info, nfound, iwork(5*dim), ifail(dim)
+    complex(kind=dp) :: mat_pack((dim*(dim + 1))/2), cwork(2*dim)
+    real(kind=dp) :: rwork(7*dim)
+    integer :: i, j, info, nfound, iwork(5*dim), ifail(dim)
+    character(len=120) :: errormsg
 
     do j = 1, dim
       do i = 1, j
         mat_pack(i + ((j - 1)*j)/2) = mat(i, j)
-      enddo
-    enddo
+      end do
+    end do
     rot = cmplx_0; eig = 0.0_dp; cwork = cmplx_0; rwork = 0.0_dp; iwork = 0
     call ZHPEVX('V', 'A', 'U', dim, mat_pack, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
                 nfound, eig(1), rot, dim, cwork, rwork, iwork, ifail, info)
     if (info < 0) then
-      write (stdout, '(a,i3,a)') 'THE ', -info, &
+      write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: THE ', -info, &
         ' ARGUMENT OF ZHPEVX HAD AN ILLEGAL VALUE'
-      call io_error('Error in utility_diagonalize')
-    endif
+      call set_error_fatal(error, errormsg, comm)
+      return
+    end if
     if (info > 0) then
-      write (stdout, '(i3,a)') info, ' EIGENVECTORS FAILED TO CONVERGE'
-      call io_error('Error in utility_diagonalize')
-    endif
+      write (errormsg, '(a,i3,a)') 'Error in utility_diagonalize: ', info, &
+        ' EIGENVECTORS FAILED TO CONVERGE'
+      call set_error_fatal(error, errormsg, comm)
+      return
+    end if
 
   end subroutine utility_diagonalize
 
-  !===========================================================!
+  !================================================!
   function utility_rotate(mat, rot, dim)
-    !==========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Rotates the dim x dim matrix 'mat' according to
     !! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -696,17 +715,17 @@ contains
 
   end function utility_rotate
 
-  !===========================================================!
+  !================================================!
   subroutine utility_rotate_new(mat, rot, N, reverse)
-    !==============================================================!
-    !                                                              !
-    ! Rotates the N x N matrix 'mat' according to                  !
-    ! * (rot)^dagger.mat.rot (reverse = .false. or not present) OR !
-    ! * rot.mat.(rot)^dagger (reverse = .true.),                   !
-    ! where 'rot' is a unitary matrix.                             !
-    ! The matrix 'mat' is overwritten.                             !
-    !                                                              !
-    !==============================================================!
+    !================================================!
+    !
+    ! Rotates the N x N matrix 'mat' according to
+    ! * (rot)^dagger.mat.rot (reverse = .false. or not present) OR
+    ! * rot.mat.(rot)^dagger (reverse = .true.),
+    ! where 'rot' is a unitary matrix.
+    ! The matrix 'mat' is overwritten.
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -733,13 +752,13 @@ contains
 
   end subroutine utility_rotate_new
 
-  !===========================================================!
+  !================================================!
   function utility_matmul_diag(mat1, mat2, dim)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Computes the diagonal elements of the matrix mat1.mat2
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
 
@@ -759,15 +778,15 @@ contains
 
   end function utility_matmul_diag
 
-  !===========================================================!
+  !================================================!
   function utility_rotate_diag(mat, rot, dim)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Rotates the dim x dim matrix 'mat' according to
     !! (rot)^dagger.mat.rot, where 'rot' is a unitary matrix.
     !! Computes only the diagonal elements of rotated matrix.
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -782,14 +801,14 @@ contains
 
   end function utility_rotate_diag
 
-  !===========================================================!
+  !================================================!
   function utility_commutator_diag(mat1, mat2, dim)
-    !===========================================================!
-    !                                                           !
+    !================================================!
+    !
     !! Computes diagonal elements of
     !! [mat1,mat2]=mat1.mat2-mat2.mat1
-    !                                                           !
-    !===========================================================!
+    !
+    !================================================!
 
     use w90_constants, only: dp
 
@@ -802,17 +821,17 @@ contains
 
   end function utility_commutator_diag
 
-  !===================================================!
+  !================================================!
   function utility_re_tr_prod(a, b)
     !================================================!
-    !                                                !
-    ! Return Re(tr(a.b)), i.e. the real part of the  !
-    ! trace of the matrix product of a and b.        !
-    !                                                !
+    !
+    ! Return Re(tr(a.b)), i.e. the real part of the
+    ! trace of the matrix product of a and b.
+    !
     !================================================!
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    use w90_constants, only: dp
 
-    complex(kind=dp), dimension(:, :), intent(in) :: a, b
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :)
     real(kind=dp) :: utility_re_tr_prod
     real(kind=dp) :: s
     integer       :: i, j, n, m
@@ -829,17 +848,17 @@ contains
     utility_re_tr_prod = s
   end function
 
-  !===================================================!
+  !================================================!
   function utility_im_tr_prod(a, b)
-    !====================================================!
-    !                                                    !
-    ! Return Im(tr(a.b)), i.e. the imaginary part of the !
-    ! trace of the matrix product of a and b.            !
-    !                                                    !
-    !====================================================!
-    use w90_constants, only: dp, cmplx_0, cmplx_i
+    !================================================!
+    !
+    ! Return Im(tr(a.b)), i.e. the imaginary part of the
+    ! trace of the matrix product of a and b.
+    !
+    !================================================!
+    use w90_constants, only: dp
 
-    complex(kind=dp), dimension(:, :), intent(in) :: a, b
+    complex(kind=dp), intent(in) :: a(:, :), b(:, :)
 
     real(kind=dp) :: utility_im_tr_prod
     real(kind=dp) :: s
@@ -857,18 +876,18 @@ contains
     utility_im_tr_prod = s
   end function
 
-  !===================================================!
+  !================================================!
   function utility_re_tr(mat)
-    !========================!
-    !                        !
+    !================================================!
+    !
     !! Real part of the trace
-    !                        !
-    !========================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0, cmplx_i
 
-    real(kind=dp)                    :: utility_re_tr
-    complex(kind=dp), dimension(:, :) :: mat
+    real(kind=dp) :: utility_re_tr
+    complex(kind=dp) :: mat(:, :)
 
     integer          :: i, mydim
     complex(kind=dp) :: cdum
@@ -878,22 +897,22 @@ contains
     cdum = cmplx_0
     do i = 1, mydim
       cdum = cdum + mat(i, i)
-    enddo
+    end do
     utility_re_tr = aimag(cmplx_i*cdum)
 
   end function utility_re_tr
 
   function utility_im_tr(mat)
-    !=============================!
-    !                             !
+    !================================================!
+    !
     !! Imaginary part of the trace
-    !                             !
-    !=============================!
+    !
+    !================================================!
 
     use w90_constants, only: dp, cmplx_0
 
-    real(kind=dp)                    :: utility_im_tr
-    complex(kind=dp), dimension(:, :) :: mat
+    real(kind=dp) :: utility_im_tr
+    complex(kind=dp) :: mat(:, :)
 
     integer          :: i, mydim
     complex(kind=dp) :: cdum
@@ -903,7 +922,7 @@ contains
     cdum = cmplx_0
     do i = 1, mydim
       cdum = cdum + mat(i, i)
-    enddo
+    end do
     utility_im_tr = aimag(cdum)
 
   end function utility_im_tr
@@ -924,15 +943,15 @@ contains
     use w90_constants, only: dp, pi
 
     implicit none
+
+    ! arguments
     real(kind=dp) :: utility_wgauss, x
     !! output: the value of the function
     !! input: the argument of the function
     integer :: n
     !! input: the order of the function
-    !
-    !    the local variables
-    !
 
+    ! local variables
     real(kind=dp) :: a, hp, arg, hd, xp
     ! the coefficient a_n
     ! the hermitean function
@@ -942,7 +961,7 @@ contains
     integer :: i, ni
     ! counter on the n indices
     ! counter on 2n
-!    real(kind=dp), external :: gauss_freq, qe_erf
+    !real(kind=dp), external :: gauss_freq, qe_erf
     real(kind=dp), parameter :: maxarg = 200.0_dp
     ! maximum value for the argument of the exponential
 
@@ -954,10 +973,10 @@ contains
         utility_wgauss = 1.0_dp
       else
         utility_wgauss = 1.00_dp/(1.00_dp + exp(-x))
-      endif
+      end if
       return
 
-    endif
+    end if
     ! Cold smearing
     if (n .eq. -1) then
       xp = x - 1.00_dp/sqrt(2.00_dp)
@@ -966,7 +985,7 @@ contains
                                                                          arg) + 0.50_dp
       return
 
-    endif
+    end if
     ! Methfessel-Paxton
     utility_wgauss = gauss_freq(x*sqrt(2.00_dp))
     if (n .eq. 0) return
@@ -982,11 +1001,11 @@ contains
       utility_wgauss = utility_wgauss - a*hd
       hp = 2.00_dp*x*hd - 2.00_dp*DBLE(ni)*hp
       ni = ni + 1
-    enddo
+    end do
     return
   end function utility_wgauss
 
-  function utility_w0gauss(x, n)
+  function utility_w0gauss(x, n, error, comm)
     !-----------------------------------------------------------------------
     !
     !! the derivative of utility_wgauss:  an approximation to the delta function
@@ -999,17 +1018,21 @@ contains
     !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
     !
     use w90_constants, only: dp, pi
-    use w90_io, only: io_error
-    implicit none
-    real(kind=dp) :: utility_w0gauss, x
-    !! output: the value of the function
-    !! input: the point where to compute the function
+    use w90_error, only: w90_error_type, set_error_input
 
-    integer :: n
+    implicit none
+
+    ! arguments
+    real(kind=dp) :: utility_w0gauss
+    !! output: the value of the function
+    real(kind=dp), intent(in) :: x
+    !! input: the point where to compute the function
+    integer, intent(in) :: n
     !! input: the order of the smearing function
-    !
-    !    here the local variables
-    !
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    ! local variables
     real(kind=dp) :: a, arg, hp, hd, sqrtpm1
     ! the coefficients a_n
     ! the argument of the exponential
@@ -1020,8 +1043,9 @@ contains
     ! counter on n values
     ! counter on 2n values
 
-    ! Fermi-Dirac smearing
+    utility_w0gauss = 0.d0 ! in case of error return
 
+    ! Fermi-Dirac smearing
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
@@ -1030,20 +1054,22 @@ contains
         ! in order to avoid problems for large values of x in the e
       else
         utility_w0gauss = 0.0_dp
-      endif
+      end if
       return
 
-    endif
+    end if
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
       arg = min(200.0_dp, (x - 1.00_dp/sqrt(2.00_dp))**2)
       utility_w0gauss = sqrtpm1*exp(-arg)*(2.00_dp - sqrt(2.00_dp)*x)
       return
 
-    endif
+    end if
 
-    if (n .gt. 10 .or. n .lt. 0) &
-      call io_error('utility_w0gauss higher order smearing is untested and unstable')
+    if (n .gt. 10 .or. n .lt. 0) then
+      call set_error_input(error, 'utility_w0gauss higher order (n>10) smearing is untested and unstable', comm)
+      return
+    end if
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
@@ -1060,11 +1086,11 @@ contains
       hp = 2.00_dp*x*hd - 2.00_dp*DBLE(ni)*hp
       ni = ni + 1
       utility_w0gauss = utility_w0gauss + a*hp
-    enddo
+    end do
     return
   end function utility_w0gauss
 
-  function utility_w0gauss_vec(x, n) result(res)
+  function utility_w0gauss_vec(x, n, error, comm) result(res)
     !-----------------------------------------------------------------------
     !  Stepan Tsirkin: a vectorized version of the outine, gets x as an array.
     !
@@ -1078,43 +1104,63 @@ contains
     !! (n=-99): derivative of Fermi-Dirac function: 0.5/(1.0+cosh(x))
     !
     use w90_constants, only: dp, pi
-    use w90_io, only: io_error
-    implicit none
-    real(kind=dp), intent(in)   ::  x(:)
-    real(kind=dp), allocatable  :: res(:), arg(:)
+    use w90_error, only: w90_error_type, set_error_input, set_error_alloc
 
+    implicit none
+
+    ! arguments
+    type(w90_error_type), allocatable, intent(out) :: error
+    real(kind=dp), intent(in) ::  x(:)
+    real(kind=dp), allocatable  :: res(:), arg(:)
     !! output: the value of the function
     !! input: the point where to compute the function
-
     integer :: n
     !! input: the order of the smearing function
-    !
-    !    here the local variables
-    !
+    type(w90_comm_type), intent(in) :: comm
+    integer :: ierr
+
+    ! local variables
     real(kind=dp) :: sqrtpm1
 
-    allocate (res(size(x)))
-    allocate (arg(size(x)))
+    allocate (res(size(x)), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating res in utility_w0gauss_vec', comm)
+      return
+    end if
+    allocate (arg(size(x)), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating arg in utility_w0gauss_vec', comm)
+      return
+    end if
+
     sqrtpm1 = 1.0_dp/sqrt(pi)
 
     if (n .eq. -99) then
-      call io_error('utility_w0gauss_vec not implemented for n == 99')
-    endif
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == 99', comm)
+      return
+    end if
 
     ! cold smearing  (Marzari-Vanderbilt)
     if (n .eq. -1) then
-      call io_error('utility_w0gauss_vec not implemented for n == -1')
-    endif
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n == -1', comm)
+      return
+    end if
 
-    if (n .gt. 10 .or. n .lt. 0) &
-      call io_error('utility_w0gauss higher order smearing is untested and unstable')
+    if (n .gt. 10 .or. n .lt. 0) then
+      call set_error_input(error, 'utility_w0gauss higher order smearing is untested and unstable', comm)
+      return
+    end if
 
     ! Methfessel-Paxton
     arg = min(200.0_dp, x**2)
     res = exp(-arg)*sqrtpm1
-    if (n .eq. 0) return
-    call io_error('utility_w0gauss_vec not implemented for n >0 ')
-    return
+
+    if (n .eq. 0) then
+      return
+    else
+      call set_error_input(error, 'utility_w0gauss_vec not implemented for n >0 ', comm)
+      return
+    end if
   end function utility_w0gauss_vec
 
   function qe_erf(x)
@@ -1149,8 +1195,8 @@ contains
                  /(q1(1) + x2*(q1(2) + x2*(q1(3) + x2*q1(4))))
       else
         qe_erf = 1.0_dp - qe_erfc(x)
-      endif
-    endif
+      end if
+    end if
     !
     return
   end function qe_erf
@@ -1201,7 +1247,7 @@ contains
                 (q2(1) + ax*(q2(2) + ax*(q2(3) + ax*(q2(4) + ax*(q2(5) + ax*(q2(6) + ax*(q2(7) + ax*q2(8))))))))
     else
       qe_erfc = 1.0_dp - qe_erf(ax)
-    endif
+    end if
     !
     ! erf(-x)=-erf(x)  =>  erfc(-x) = 2-erfc(x)
     !

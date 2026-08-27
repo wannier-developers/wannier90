@@ -1,0 +1,26 @@
+tag: [ cmake ]
+require:
+  - cmake
+  - rsync
+  - gcc
+  - gcc-c++
+  - gcc-fortran
+  - pkgconf
+  - git
+  # For test-suite
+  - bzip2
+  # For testing FetchContent
+  - flexiblas-devel
+framework: beakerlib
+path: /
+test: ./ctest.sh
+
+/serial:
+  environment:
+    MPI_VARIANT: serial
+/OpenMPI:
+  environment:
+    MPI_VARIANT: openmpi
+/MPICH:
+  environment:
+    MPI_VARIANT: mpich

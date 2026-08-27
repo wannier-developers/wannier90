@@ -1,0 +1,15 @@
+&INPUTPP
+  atom_proj = .true.
+  ! use external projectors
+  atom_proj_ext = .true.
+  ! dir for external projectors
+  atom_proj_dir = './ext_proj'
+  outdir = './out/'
+  prefix = 'silicon'
+  seedname = 'silicon'
+  ! for excluding specific projectors
+  ! this excludes 3d projectors, then the results are similar
+  ! to that of using UPF file, i.e., project onto Si s+p orbitals
+  ! for the indices of orbitals, see the pw2wan stdout
+  ! atom_proj_exclude = 5 6 7 8 9 14 15 16 17 18
+/

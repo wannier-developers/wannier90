@@ -1,0 +1,5 @@
+Keyword,Type,Description
+kpath,L,"Calculate properties along a piecewise linear path in the BZ"
+kpath_task,L,"List of properties to evaluate"
+kpath_num_points,I,"Number of points in the first kpath segment"
+kpath_bands_colour,S,"Property used to colour the energy bands along the path"

@@ -11,6 +11,9 @@ F90 = pgf90
 FCOPTS = -fast
 LDOPTS =
 
+# f90wrap location
+F90WRAP = f90wrap
+
 # Debug options
 #FCOPTS  = -g -Mbounds -Mchkptr -Minform=warn -Mstandard
 #LDOPTS = -g -Mbounds -Mchkptr -Minform=warn -Mstandard

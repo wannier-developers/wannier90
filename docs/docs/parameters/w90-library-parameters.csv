@@ -1,0 +1,4 @@
+Keyword,Type,Description
+total_bands,I,"Number of bands passed to the library: num_bands = total_bands - num_exclude_bands"
+distk,I,"MPI k-point decomposition: distk(i) is the MPI rank handling k-point i"
+dump_inputs,L,"Flag to dump .amn, .mmn, .eig and minimal .win file"

@@ -1,0 +1,57 @@
+# Do this before Makefile.header so we can annotate dynlib with COMMS
+# COMMS undefined for serial case
+ifdef COMMS
+COMMS := $(strip $(COMMS))
+endif
+
+POSTDIR = postw90/
+
+ifeq ($(COMMS),mpi08)
+USEMPI=y
+TEMP1 = -DMPI -DMPI08
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpih)
+USEMPI=y
+TEMP1 = -DMPI -DMPIH
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpi90)
+USEMPI=y
+TEMP1 = -DMPI -DMPI90
+TEMP2 = $(MPIF90)
+else ifeq ($(COMMS),mpi)
+USEMPI=y
+# default to f90 style "use mpi"
+TEMP1 = -DMPI -DMPI90
+TEMP2 = $(MPIF90)
+else
+TEMP1 =
+TEMP2 = $(F90)
+endif
+
+POSTOPTS = $(TEMP1)
+COMPILER = $(TEMP2)
+
+
+
+
+## Dynamic library section
+## Define some defaults (good for linux) if none is defined in the make.inc
+## Different flags are needed depending on the compiler and on the OS
+## (e.g. on Mac, it's -dynamiclib and the extension if .dylib - even if
+## calling it .so and using -shared often works equally well)
+## NOTE: if you want to compile the dynamic library, you have to compile
+## everything with -fPIC usually, on 64bit systems
+SHAREDLIBFLAGS ?=-shared -Wl,-soname,libwannier90.so.4 -fPIC
+
+## Define the filename
+ifdef USEMPI
+  LIBSUFFIX=_mpi
+  LIBDESCRIPTION = Compute maximally-localised Wannier functions (MPI version)
+else
+  LIBSUFFIX=
+  LIBDESCRIPTION = Compute maximally-localised Wannier functions
+endif
+
+DYNLIBBASE = wannier90$(LIBSUFFIX)
+STATICLIBRARY = lib$(DYNLIBBASE).a
+DYNLIBRARY = lib$(DYNLIBBASE).so.4
