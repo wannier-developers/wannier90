@@ -413,7 +413,7 @@ contains
 
   !================================================!
   subroutine overlap_write(kmesh_info, au_matrix, m_matrix, eval, num_bands, num_kpts, &
-                           num_proj, seedname, error, comm)
+                           num_proj, dist_k, seedname, error, comm)
     !================================================!
     !! Write the Mmn and Amn from files
     !
@@ -435,10 +435,33 @@ contains
     complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
     real(kind=dp), pointer, intent(in) :: eval(:, :)
 
+    integer, intent(in) :: dist_k(:)
+
     character(len=50), intent(in) :: seedname
 
+    complex(kind=dp), allocatable, dimension(:,:,:,:) :: m_mat_global
+
     ! local variables
-    integer :: fu, ik, in, ip, n, m
+    integer :: fu, ik, in, ip, n, m, ierr, ikp_loc
+
+    allocate (m_mat_global(num_bands, num_bands, kmesh_info%nntot, num_kpts), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating m_mat_global in overlap_write', comm)
+      return
+    end if
+
+    m_mat_global = cmplx(0.0_dp,0.0_dp,kind=dp)
+
+    ikp_loc = 1
+    do ik = 1, num_kpts
+      if (dist_k(ik) == mpirank(comm)) then
+        m_mat_global(:,:,:,ik) = m_matrix(1:num_bands,1:num_bands,1:kmesh_info%nntot,ikp_loc)
+        ikp_loc = ikp_loc + 1
+      end if
+    end do
+
+    call comms_allreduce(m_mat_global(1, 1, 1, 1), num_bands*num_bands*kmesh_info%nntot*num_kpts, 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (mpirank(comm) == 0) then
 
@@ -453,7 +476,7 @@ contains
           write (fu, *) ik, kmesh_info%nnlist(ik, in), kmesh_info%nncell(:, ik, in)
           do n = 1, num_bands
             do m = 1, num_bands
-              write (fu, '(2f18.12)') m_matrix(m, n, in, ik)
+              write (fu, '(2f18.12)') m_mat_global(m, n, in, ik)
             end do
           end do
         end do
@@ -492,6 +515,15 @@ contains
       end if
 
     end if ! on root
+
+    if (allocated(m_mat_global)) then
+      deallocate (m_mat_global, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating m_mat_global in overlap_write', comm)
+        return
+      end if
+    end if
+
     return
 
 201 call set_error_file(error, 'Error: Problem opening output file '//trim(seedname)//'.mmn_dump', comm)
