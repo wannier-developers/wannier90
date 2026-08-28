@@ -1,0 +1,12 @@
+# testw90_read_ibz_write
+
+description: "Copper via read_ibz, also writing the expanded copper.mmn, copper.amn and copper.eig (write_ibz_expanded)"
+profile: wannier90_wout
+runs:
+  - input: copper.win
+    output: copper.wout
+prepare:
+  - bunzip2: "*.isym.bz2"
+  - bunzip2: "*.immn.bz2"
+  - bunzip2: "*.iamn.bz2"
+  - bunzip2: "*.ieig.bz2"

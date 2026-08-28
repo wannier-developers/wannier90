@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Read the irreducible-Brillouin-zone files written by `pw2wannier90.x` (`read_ibz`)
+
+With `read_ibz = .true.`, `wannier90.x` reads the overlaps, projections and eigenvalues
+computed on the irreducible wedge only (`seedname.isym`, `seedname.immn`, `seedname.iamn`,
+`seedname.ieig`, written by `pw2wannier90.x` with `irr_bz = .true.`) and expands them
+internally onto the full Monkhorst-Pack mesh, so that `seedname.mmn`, `seedname.amn` and
+`seedname.eig` are no longer needed. The expansion follows the symWannier package
+(T. Koretsune, Comput. Phys. Commun. 285, 108645 (2023)). With `write_ibz_expanded = .true.`
+the expanded files are also written out, e.g. for `postw90.x`.
+
 ### More digits in the `M_orb` summary printed by `postw90.x`
 
 The `berry_task = morb` summary is printed with `f16.10` instead of `f10.4`; in bohr
@@ -68,7 +78,6 @@ The core of the test suite previously used `testcode` by J. Spencer
 ### Various improvements and bugfixes
 
 - CHANGELOG correction/clarification in text relating to v4.0.1 release.
-
 
 ## v4.0.1 (28 July 2026)
 

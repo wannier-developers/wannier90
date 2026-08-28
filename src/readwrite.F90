@@ -1373,7 +1373,7 @@ contains
                                                   'num_dump_cycles', 'num_elec_per_state', 'num_guide_cycles', 'num_iter', &
                                            'num_no_guide_iter', 'num_print_cycles', 'num_shells', 'num_valence_bands', 'num_wann', &
                                                  'use_ss_functional', 'one_dim_axis', 'optimisation', 'postproc_setup', 'precond', &
-                                              'restart', 'search_shells', 'search_supcell_size', 'site_symmetry', 'skip_b1_tests', &
+                                  'read_ibz', 'restart', 'search_shells', 'search_supcell_size', 'site_symmetry', 'skip_b1_tests', &
                                  'slwf_constrain', 'slwf_lambda', 'slwf_num', 'spin', 'spinors', 'symmetrize_eps', 'timing_level', &
                                                   'total_bands', 'tran_easy_fix', 'tran_energy_step', 'tran_group_threshold', &
                                            'tran_num_bandc', 'tran_num_bb', 'tran_num_cc', 'tran_num_cell_ll', 'tran_num_cell_rr', &
@@ -1382,7 +1382,8 @@ contains
                                                   'tran_win_min', 'tran_write_ht', 'trial_step', 'unlucky', 'use_bloch_phases', &
                                                   'use_ws_distance', 'wannier_plot_format', 'wannier_plot', 'wannier_plot_mode', &
                                                   'wannier_plot_radius', 'wannier_plot_scale', 'wannier_plot_spinor_mode', &
-                                             'wannier_plot_spinor_phase', 'write_bvec', 'write_hr_diag', 'write_hr', 'write_proj', &
+                                             'wannier_plot_spinor_phase', 'write_bvec', 'write_hr_diag', 'write_hr', &
+                                                  'write_ibz_expanded', 'write_proj', &
                                          'write_r2mn', 'write_rmn', 'write_tb', 'write_u_matrices', 'write_vdw_data', 'write_xyz', &
                                                   'ws_distance_tol', 'wvfn_formatted', 'adpt_smr_fac', 'adpt_smr', 'adpt_smr_max', &
                                               'berry_curv_adpt_kmesh', 'berry_curv_adpt_kmesh_thresh', 'berry_curv_unit', 'berry', &
