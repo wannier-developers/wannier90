@@ -40,6 +40,7 @@ target_sources(Wannier90_lib PRIVATE
 		plot.F90
 		readwrite.F90
 		sitesym.F90
+		sym_ibz.F90
 		transport.F90
 		types.F90
 		utility.F90

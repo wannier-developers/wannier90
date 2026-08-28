@@ -11,7 +11,7 @@ include ../../Makefile.header
 VPATH=..
 
 OBJS  = constants.o io.o utility.o types.o hamiltonian.o overlap.o kmesh.o disentangle.o \
-		ws_distance.o wannierise.o plot.o transport.o sitesym.o comms.o wannier90_types.o \
+		ws_distance.o wannierise.o plot.o transport.o sitesym.o sym_ibz.o comms.o wannier90_types.o \
 		wannier90_readwrite.o readwrite.o error.o error_base.o library_interface.o \
 		library_extra.o
 ifdef WANNIER90_WITH_C
@@ -82,7 +82,7 @@ library_interface.o : library_interface.F90 \
 	types.o wannier90_readwrite.o wannier90_types.o wannierise.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
-library_extra.o : library_extra.F90 io.o library_interface.o
+library_extra.o : library_extra.F90 io.o library_interface.o sym_ibz.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 c_interface.o : c_interface.F90 \
@@ -145,6 +145,9 @@ transport.o: transport.F90 constants.o io.o types.o hamiltonian.o wannier90_type
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 sitesym.o : sitesym.F90 utility.o types.o constants.o wannier90_types.o
+	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
+
+sym_ibz.o : sym_ibz.F90 comms.o constants.o error.o types.o wannier90_types.o
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c $<
 
 comms.o: comms.F90 constants.o error_base.o ../../make.inc
