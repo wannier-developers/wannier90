@@ -39,7 +39,7 @@ module w90_io
 
   private
 
-  character(len=10), parameter, public :: w90_version = '4.0.1 ' !! Label for this version of wannier90
+  character(len=10), parameter, public :: w90_version = '4.0.3 ' !! Label for this version of wannier90
 
   public :: io_stopwatch_start
   public :: io_stopwatch_stop
@@ -248,13 +248,6 @@ contains
       end if
     end if
 
-    ! If on the command line the whole seedname.win was passed, I strip the last ".win"
-    if (len(trim(seedname)) .ge. 5) then
-      if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".win") then
-        seedname = seedname(:len(trim(seedname)) - 4)
-      end if
-    end if
-
     if (print_help) then
       if (prog == 'wannier90') then
         write (6, '(a)') 'Wannier90: The Maximally Localised Wannier Function Code'
@@ -285,6 +278,13 @@ contains
         write (6, '(a,a)') 'Postw90: ', trim(w90_version)
       end if
       stop
+    end if
+
+    ! If on the command line the whole seedname.win was passed, I strip the last ".win"
+    if (len(trim(seedname)) .ge. 5) then
+      if (seedname(len(trim(seedname)) - 4 + 1:) .eq. ".win") then
+        seedname = seedname(:len(trim(seedname)) - 4)
+      end if
     end if
 
   end subroutine io_commandline
