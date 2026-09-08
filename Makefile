@@ -108,7 +108,7 @@ clean:
 
 # Note: .x.dSYM are directories (hence the -r option to rm) and are only created on macOS (when compiling with certain flags, e.g. debug), so they are not always present
 veryclean: clean
-	cd $(ROOTDIR) && rm -rf wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90_mpi.{a,so.4} *.{gcda,gcno} *.x.dSYM
+	cd $(ROOTDIR) && rm -rf wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90.{a,so.4} *.{gcda,gcno} *.x.dSYM
 	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
