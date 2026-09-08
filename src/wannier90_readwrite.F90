@@ -989,6 +989,10 @@ contains
                                    l_value=output_file%write_rmn)
     if (allocated(error)) return
 
+    call w90_readwrite_get_keyword(settings, 'transl_inv_full', found, error, comm, &
+                                   l_value=output_file%transl_inv_full)
+    if (allocated(error)) return
+
     call w90_readwrite_get_keyword(settings, 'write_tb', found, error, comm, &
                                    l_value=output_file%write_tb)
     if (allocated(error)) return

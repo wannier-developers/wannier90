@@ -66,6 +66,7 @@ module w90_wannier90_types
     logical :: write_u_matrices = .false.
     logical :: write_bvec = .false.
     logical :: write_rmn = .false.
+    logical :: transl_inv_full = .false. !translation-equivariant position matrix elements
     logical :: write_tb = .false.
     logical :: write_xyz = .false. !wannierise and transport
     logical :: svd_omega = .false. !print svd omega invormation (if iprint >= 2)

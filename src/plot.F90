@@ -300,6 +300,7 @@ contains
     if (output_file%write_rmn) then
       ! parallel write_rmn
       call plot_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, num_wann, &
+                          wannier_data%centres, real_lattice, output_file%transl_inv_full, &
                           seedname, dist_k, error, comm)
       if (allocated(error)) return
     end if
@@ -2691,10 +2692,13 @@ contains
 
   !================================================!
   subroutine plot_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
-                            num_wann, seedname, dist_k, error, comm)
+                            num_wann, wannier_centres, real_lattice, transl_inv_full, &
+                            seedname, dist_k, error, comm)
     !================================================!
     !
     !! Write out the matrix elements of r
+    !! With transl_inv_full, use the centre- and R-dependent overlap phases
+    !! of postw90's get_AA_R, retaining the usual _r.dat Wigner-Seitz layout.
     !
     !================================================!
 
@@ -2717,6 +2721,8 @@ contains
     integer, intent(in) :: num_kpts
     integer, intent(in) :: dist_k(:) ! MPI k-point distribution
     real(kind=dp), intent(in)     :: kpt_latt(:, :)
+    real(kind=dp), intent(in)     :: wannier_centres(3, num_wann), real_lattice(3, 3)
+    logical, intent(in)          :: transl_inv_full
     complex(kind=dp), intent(in)  :: m_matrix(:, :, :, :)
     character(len=50), intent(in) :: seedname
 
@@ -2725,7 +2731,8 @@ contains
     integer :: my_node_id, nkp_rank
     ! nkp_rank is the rank-local kpoint index for m_matrix decomposition
     real(kind=dp) :: rdotk
-    complex(kind=dp) :: fac
+    real(kind=dp) :: r_cart(3), phase_origin(3)
+    complex(kind=dp) :: fac, phase
     complex(kind=dp) :: position(3)
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
@@ -2751,9 +2758,13 @@ contains
     end if
 
     do loop_rpt = 1, nrpts
+      if (transl_inv_full) r_cart = matmul(real(irvec(:, loop_rpt), dp), real_lattice)
       do m = 1, num_wann
         do n = 1, num_wann
 
+          if (transl_inv_full) then
+            phase_origin = 0.5_dp*(wannier_centres(:, n) + wannier_centres(:, m) - r_cart)
+          end if
           position(:) = 0._dp
           nkp_rank = 1
           do nkp = 1, num_kpts
@@ -2761,27 +2772,41 @@ contains
 
             rdotk = twopi*dot_product(kpt_latt(:, nkp), real(irvec(:, loop_rpt), dp))
             fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
-            do ind = 1, 3
+            if (transl_inv_full) then
+              ! Combine the two phases in get_AA_R: exp(i b.(r_n+r_m-R)/2).
+              ! Use each k-point's actual b vector, so no neighbour reordering is needed.
               do nn = 1, kmesh_info%nntot
-                if (m .eq. n) then
-                  ! For loop_rpt==rpt_origin, this reduces to
-                  ! Eq.(32) of Marzari and Vanderbilt PRB 56,
-                  ! 12847 (1997). Otherwise, is is Eq.(44)
-                  ! Wang, Yates, Souza and Vanderbilt PRB 74,
-                  ! 195118 (2006), modified according to
-                  ! Eqs.(27,29) of Marzari and Vanderbilt
-                  position(ind) = position(ind) - kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
-                                  *aimag(log(m_matrix(n, m, nn, nkp_rank)))*fac
-                else
-                  ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
-                  position(ind) = position(ind) + cmplx_i*kmesh_info%wb(nn) &
-                                  *kmesh_info%bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp_rank)*fac
-                end if
+                phase = exp(cmplx_i*dot_product(kmesh_info%bk(:, nn, nkp), phase_origin))
+                position(:) = position(:) + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(:, nn, nkp) &
+                              *m_matrix(n, m, nn, nkp_rank)*phase*fac
               end do
-            end do
+            else
+              do ind = 1, 3
+                do nn = 1, kmesh_info%nntot
+                  if (m .eq. n) then
+                    ! For loop_rpt==rpt_origin, this reduces to
+                    ! Eq.(32) of Marzari and Vanderbilt PRB 56,
+                    ! 12847 (1997). Otherwise, is is Eq.(44)
+                    ! Wang, Yates, Souza and Vanderbilt PRB 74,
+                    ! 195118 (2006), modified according to
+                    ! Eqs.(27,29) of Marzari and Vanderbilt
+                    position(ind) = position(ind) - kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
+                                    *aimag(log(m_matrix(n, m, nn, nkp_rank)))*fac
+                  else
+                    ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
+                    position(ind) = position(ind) + cmplx_i*kmesh_info%wb(nn) &
+                                    *kmesh_info%bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp_rank)*fac
+                  end if
+                end do
+              end do
+            end if
             nkp_rank = nkp_rank + 1
           end do ! global k list
           call comms_reduce(position(1), 3, 'SUM', error, comm)
+          if (allocated(error)) return
+          if (transl_inv_full .and. m == n .and. all(irvec(:, loop_rpt) == 0)) then
+            position(:) = cmplx(wannier_centres(:, n), 0._dp, kind=dp)
+          end if
           if (on_root) write (file_unit, '(5I5,6F12.6)') irvec(:, loop_rpt), n, m, position(:)
         end do
       end do
