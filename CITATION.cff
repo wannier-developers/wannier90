@@ -1,0 +1,111 @@
+cff-version: 1.2.0
+message: >-
+  If you use Wannier90 in your research, please cite the preferred-citation
+  article below. Additional references (for versions 2.x of the code and for
+  the underlying method) are listed in the README. The top-level authors below
+  are the Wannier90 Developer Group; the full list of authors and contributors
+  to the code is given in AUTHORS.md.
+title: Wannier90
+abstract: >-
+  Wannier90 is an open-source code for generating maximally-localised
+  generalised Wannier functions and using them to compute advanced electronic
+  properties of materials with high efficiency and accuracy.
+type: software
+version: 4.0.3
+license: LGPL-2.1-or-later
+repository-code: https://github.com/wannier-developers/wannier90
+url: https://www.wannier.org
+authors:
+  - given-names: Giovanni
+    family-names: Pizzi
+    affiliation: Paul Scherrer Institute, CH
+  - given-names: Valerio
+    family-names: Vitale
+    affiliation: University of Trieste, IT
+  - given-names: David
+    family-names: Vanderbilt
+    affiliation: Rutgers University, US
+  - given-names: Nicola
+    family-names: Marzari
+    affiliation: EPFL, CH and University of Cambridge, GB
+  - given-names: Ivo
+    family-names: Souza
+    affiliation: Universidad del Pais Vasco, ES
+  - given-names: Arash A.
+    family-names: Mostofi
+    affiliation: Imperial College London, GB
+  - given-names: Jonathan R.
+    family-names: Yates
+    affiliation: University of Oxford, GB
+preferred-citation:
+  type: article
+  title: "Wannier90 as a community code: new features and applications"
+  journal: "Journal of Physics: Condensed Matter"
+  volume: 32
+  issue: 16
+  start: 165902
+  year: 2020
+  doi: 10.1088/1361-648X/ab51ff
+  authors:
+    - given-names: Giovanni
+      family-names: Pizzi
+    - given-names: Valerio
+      family-names: Vitale
+    - given-names: Ryotaro
+      family-names: Arita
+    - given-names: Stefan
+      family-names: Blügel
+    - given-names: Frank
+      family-names: Freimuth
+    - given-names: Guillaume
+      family-names: Géranton
+    - given-names: Marco
+      family-names: Gibertini
+    - given-names: Dominik
+      family-names: Gresch
+    - given-names: Charles
+      family-names: Johnson
+    - given-names: Takashi
+      family-names: Koretsune
+    - given-names: Julen
+      family-names: Ibañez-Azpiroz
+    - given-names: Hyungjun
+      family-names: Lee
+    - given-names: Jae-Mo
+      family-names: Lihm
+    - given-names: Daniel
+      family-names: Marchand
+    - given-names: Antimo
+      family-names: Marrazzo
+    - given-names: Yuriy
+      family-names: Mokrousov
+    - given-names: Jamal I.
+      family-names: Mustafa
+    - given-names: Yoshiro
+      family-names: Nohara
+    - given-names: Yusuke
+      family-names: Nomura
+    - given-names: Lorenzo
+      family-names: Paulatto
+    - given-names: Samuel
+      family-names: Poncé
+    - given-names: Thomas
+      family-names: Ponweiser
+    - given-names: Junfeng
+      family-names: Qiao
+    - given-names: Florian
+      family-names: Thöle
+    - given-names: Stepan S.
+      family-names: Tsirkin
+    - given-names: Małgorzata
+      family-names: Wierzbowska
+    - given-names: Nicola
+      family-names: Marzari
+    - given-names: David
+      family-names: Vanderbilt
+    - given-names: Ivo
+      family-names: Souza
+    - given-names: Arash A.
+      family-names: Mostofi
+    - given-names: Jonathan R.
+      family-names: Yates
