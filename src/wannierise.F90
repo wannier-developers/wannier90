@@ -599,7 +599,19 @@ contains
       if (allocated(error)) return
 
       if (lsitesymmetry) then
+        ! symmetrize_graident requires all k (IBZ and related FBZ points for each op)
+        cdq(:, :, :) = 0.0_dp
+        do nkp_loc = 1, nkrank
+          nkp = global_k(nkp_loc)
+          cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
+        end do
+        call comms_allreduce(cdq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+
+        ! called in parallel; alternatively broadcast
         call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann, error, comm)
+        do nkp_loc = 1, nkrank
+          cdq_loc(:, :, nkp_loc) = cdq(:, :, global_k(nkp_loc))
+        end do
       end if
 
       ! save search direction
@@ -2414,7 +2426,7 @@ contains
     ! Radu Miron at Imperial College London
     !================================================
 
-    use w90_comms, only: comms_gatherv, comms_bcast, comms_allreduce, w90_comm_type, mpirank
+    use w90_comms, only: comms_gatherv, comms_allreduce, w90_comm_type, mpirank
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_sitesym, only: sitesym_symmetrize_gradient
