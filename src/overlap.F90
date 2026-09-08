@@ -439,7 +439,7 @@ contains
 
     character(len=50), intent(in) :: seedname
 
-    complex(kind=dp), allocatable, dimension(:,:,:,:) :: m_mat_global
+    complex(kind=dp), allocatable, dimension(:, :, :, :) :: m_mat_global
 
     ! local variables
     integer :: fu, ik, in, ip, n, m, ierr, ikp_loc
@@ -450,12 +450,12 @@ contains
       return
     end if
 
-    m_mat_global = cmplx(0.0_dp,0.0_dp,kind=dp)
+    m_mat_global = cmplx(0.0_dp, 0.0_dp, kind=dp)
 
     ikp_loc = 1
     do ik = 1, num_kpts
       if (dist_k(ik) == mpirank(comm)) then
-        m_mat_global(:,:,:,ik) = m_matrix(1:num_bands,1:num_bands,1:kmesh_info%nntot,ikp_loc)
+        m_mat_global(:, :, :, ik) = m_matrix(1:num_bands, 1:num_bands, 1:kmesh_info%nntot, ikp_loc)
         ikp_loc = ikp_loc + 1
       end if
     end do
