@@ -477,7 +477,11 @@ c_{\mathbf{b}} \mathbf{b} \, e^{i\mathbf{b} \cdot
 $$
 
 where $\bar{\mathbf{r}}_{ij;\mathbf{R}} =
-(\mathbf{r}_i + \mathbf{r}_j + \mathbf{R}) / 2$.
+(\mathbf{r}_i + \mathbf{r}_j - \mathbf{R}) / 2$, consistent with the
+$e^{-i\mathbf{k} \cdot \mathbf{R}}$ convention used above. Equivalently,
+$\bar{\mathbf{r}}_{ij;\mathbf{R}} = \mathbf{c}_{ij;\mathbf{R}} - \mathbf{R}$,
+where $\mathbf{c}_{ij;\mathbf{R}} = (\mathbf{r}_i + \mathbf{r}_j + \mathbf{R}) / 2$
+is the midpoint between the centres of $w_{i\mathbf{0}}$ and $w_{j\mathbf{R}}$.
 The needed wannier centres are computed using
 the Marzari-Vanderbilt formula.
 
