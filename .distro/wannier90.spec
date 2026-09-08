@@ -118,7 +118,7 @@ done
 
 
 %files
-%doc README.rst
+%doc README.md AUTHORS.md CITATION.cff CHANGELOG.md
 %license LICENSE
 %{_libdir}/libwannier90.so.*
 %{_bindir}/wannier90.x
