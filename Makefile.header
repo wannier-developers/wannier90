@@ -43,15 +43,13 @@ COMPILER = $(TEMP2)
 ## everything with -fPIC usually, on 64bit systems
 SHAREDLIBFLAGS ?=-shared -Wl,-soname,libwannier90.so.4 -fPIC
 
-## Define the filename
+## Define the filename: the file name is the same in MPI and serial
 ifdef USEMPI
-  LIBSUFFIX=_mpi
   LIBDESCRIPTION = Compute maximally-localised Wannier functions (MPI version)
 else
-  LIBSUFFIX=
   LIBDESCRIPTION = Compute maximally-localised Wannier functions
 endif
 
-DYNLIBBASE = wannier90$(LIBSUFFIX)
+DYNLIBBASE = wannier90
 STATICLIBRARY = lib$(DYNLIBBASE).a
 DYNLIBRARY = lib$(DYNLIBBASE).so.4

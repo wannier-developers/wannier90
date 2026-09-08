@@ -47,7 +47,7 @@ program ok
   integer :: i, ib, ic, ik, nkl
   integer :: ika, ikb, ikc, nkabc(3)
   integer :: mpisize, mpirank
-  integer :: nb, nk, nn, nw
+  integer :: nb, nk, nn, nw, nkloc
   real(8), allocatable :: eval(:, :), kpt(:, :)
   real(8) :: uccart(3, 3) ! cartesian unit cell
   type(lib_common_type) :: w90main
@@ -104,6 +104,7 @@ program ok
   do i = 1, nk
     distk(i) = (i - 1)/nkl ! contiguous blocks with potentially fewer processes on last rank
   end do
+  nkloc = count(distk(:) == mpirank)
 
   ! wannier interface starts
   ! stdout/err
@@ -137,7 +138,7 @@ program ok
   call w90_get_nn(w90main, nn, stdout, stderr, ierr)
   allocate (nnkp(nk, nn))
   call w90_get_nnkp(w90main, nnkp, stdout, stderr, ierr)
-  allocate (m_matrix(nb, nb, nn, nk))
+  allocate (m_matrix(nb, nb, nn, nkloc))
   allocate (u_matrix_opt(nb, nw, nk))
   call w90_set_m_local(w90main, m_matrix) ! m_matrix_local_orig
   call w90_set_u_opt(w90main, u_matrix_opt)
