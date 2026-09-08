@@ -74,6 +74,7 @@ nav:
       - "35: Silicon — Projectability-disentangled Wannier functions with custom projectors": "tutorials/tutorial_35.md"
       - "36: Silicon - Comparison of Marzari-Vanderbilt and Stengel-Spaldin functionals": "tutorials/tutorial_36.md"
       - "37: Iron — Translationally-invariant Wannier Interpolation": "tutorials/tutorial_37.md"
+  - Tutorial solutions: "tutorial_solutions/tutorial_solutions.md"
 
 theme:
   name: material
