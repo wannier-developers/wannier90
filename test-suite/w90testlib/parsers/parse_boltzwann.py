@@ -1,8 +1,6 @@
 """
 Parser function parse() to parse the <seedname>_geninerp.dat output file of postw90.x.
 """
-from __future__ import print_function
-
 import inspect
 import re
 from collections import defaultdict
@@ -31,7 +29,7 @@ def parse_elcond(fname):
         pieces = l.split()
         if len(pieces) != 8:
             raise ValueError("Wrong line length ({}, instead of 5 or 8); line content: {}".format(
-                len(pieces)), l)
+                len(pieces), l))
         retdict['mu'].append(float(pieces[0]))
         retdict['temp'].append(float(pieces[1]))
         retdict['elcond_xx'].append(float(pieces[2]))

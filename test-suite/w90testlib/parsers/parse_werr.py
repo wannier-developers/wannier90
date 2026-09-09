@@ -1,8 +1,6 @@
 """
 Parser function parse() to parse the .werr output file of Wannier90.
 """
-from __future__ import print_function
-
 import inspect
 import re
 from collections import defaultdict

@@ -1,8 +1,6 @@
 """
 Parser function parse() to parse the _band.labelinfo.dat output file of Wannier90 (info on high-symmetry labels and k-points).
 """
-from __future__ import print_function
-
 import inspect
 import re
 from collections import defaultdict

@@ -1,8 +1,6 @@
 """
 Parser function parse() to parse the <seedname>_00001.cube output file of Wannier90 (Gaussian cube format).
 """
-from __future__ import print_function, unicode_literals
-
 import inspect
 import re
 from collections import defaultdict

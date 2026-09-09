@@ -1,8 +1,6 @@
 """
 Parser function parse() to parse the <seedname>_geninerp.dat output file of postw90.x.
 """
-from __future__ import print_function
-
 import inspect
 import re
 from collections import defaultdict
