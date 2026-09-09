@@ -5,5 +5,3 @@ profile: wannier90_wout
 runs:
   - input: silicon.win
     output: silicon.wout
-status: skip
-status_reason: "CI's old/unfortunate intel/flexiblas versions give too large numerical fuzz"

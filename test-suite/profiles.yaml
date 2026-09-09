@@ -77,10 +77,6 @@ postw90_gyro:
     gyro_z: {abs: 0.0001, rel: null}
     imcond: {abs: 0.0001, rel: 100.0}
 
-postw90_higher:
-  # TODO(review): the old userconfig said 'To do: add extract_fn, tolerance'. No test uses this profile; it cannot check anything until a parser is set.
-  program: postw90
-  parser: null
 
 postw90_jdos:
   program: postw90
