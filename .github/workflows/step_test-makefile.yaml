@@ -48,7 +48,7 @@ jobs:
         env:
           W90BINARYPARALLEL: ${{ matrix.w90-binary-parallel }}
         run: |
-          ./.github/workflows/run_tests.sh
+          ./.github/workflows/run-tests.sh
       - name: compute coverage
         uses: codecov/codecov-action@v1
       - name: archive test results
