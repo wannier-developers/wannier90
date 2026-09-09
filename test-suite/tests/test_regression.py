@@ -41,26 +41,21 @@ def test_regression(case, profiles, executables, run_options, work_dir,
     )
 
     for spec, result in zip(case.runs, results):
-        # An `expect_failure` test is supposed to abort. TODO(review): the migration brief
-        # asked for a strictly stronger rule than testcode's `can_fail` -- treat a zero exit
-        # code as a failure, on the grounds that the code was meant to abort and did not.
-        # That rule is not implementable as written: serial wannier90.x ends a fatal error
-        # with a bare Fortran `stop` (wannier_prog.F90), which exits 0. Only the MPI path
-        # aborts nonzero, via MPI_Abort. Asserting a nonzero exit would make nnkpt4 and
-        # nnkpt5 fail permanently on every serial build.
+        # An `expect_failure` test must actually abort, and is checked strictly: a zero exit
+        # code means the code was supposed to fail and did not. This is stronger than
+        # testcode's `can_fail`, which merely tolerated a nonzero exit.
         #
-        # The intent is preserved by a more reliable signal: a run that aborted writes its
-        # <seedname>.werr, and a run that wrongly succeeded writes a .wout instead. The
-        # output-existence check below therefore catches "was supposed to abort and did
-        # not", and the comparison then checks the error message itself.
-        if not case.expect_failure:
+        # This depends on the exit-code fix that accompanied the migration: fatal errors
+        # used to end in a bare Fortran `stop`, which exits 0, so a failed run was
+        # indistinguishable from a successful one to any caller.
+        if case.expect_failure:
+            assert result.returncode != 0, _describe_run_failure(case, result, True)
+        else:
             assert result.returncode == 0, _describe_run_failure(case, result, False)
 
         output = work_dir / spec.output
-        missing_hint = (" -- an expect_failure test that did not abort writes its .wout "
-                        "instead" if case.expect_failure else "")
         assert output.is_file(), (
-            f"{case.name}: the run produced no {spec.output!r}{missing_hint}\n"
+            f"{case.name}: the run produced no {spec.output!r}\n"
             f"  command:  {result.command}\n"
             f"  exit code: {result.returncode}\n"
             f"  stderr:   {result.stderr_log}\n"

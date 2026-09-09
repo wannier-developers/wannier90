@@ -7,5 +7,3 @@ runs:
     output: wannier.werr
 min_nprocs: 2
 expect_failure: true
-status: skip
-status_reason: test is intended to fail; disabled in CI

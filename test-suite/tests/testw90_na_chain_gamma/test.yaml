@@ -6,5 +6,3 @@ runs:
   - input: Na_chain.win
     output: Na_chain.wout
 serial_only: true
-status: skip
-status_reason: flaky

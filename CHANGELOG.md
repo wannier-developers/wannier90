@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### `wannier90.x`, `postw90.x` and the utilities now exit nonzero on a fatal error
+
+Previously a fatal error ended in a bare Fortran `stop`, which exits with status **0**. A
+failed run was therefore indistinguishable from a successful one to any caller: shell
+scripts, Makefiles and CI steps all saw success. Fatal errors now exit with status 1 (an
+MPI abort still yields the MPI runtime's own status, typically 2). Successful runs, including
+the `-pp` postprocessing-setup path, still exit 0.
+
+This affects `wannier90.x`, `postw90.x`, `w90chk2chk.x` and `w90spn2spn.x`. **Scripts that
+relied on Wannier90 always returning 0 will now see a failure reported.** That is the point
+of the change, but it may surface in existing pipelines.
+
+Relatedly, `prterr` now broadcasts the failure code from the root rank, so every MPI rank
+reports the same error. A non-root rank whose own error code was `code_remote` previously
+returned 0, meaning a library caller saw rank 0 fail while the other ranks reported success.
+
 ### Test suite migrated from testcode to pytest
 
 The functional/regression test suite is now driven by [pytest](https://docs.pytest.org/)
@@ -23,6 +39,9 @@ since 2017. What this means for developers:
   `benchmark/<output filename>`. Contents are unchanged.
 - New `pytest --update-benchmarks` regenerates reference files, for the whole suite or any
   subset, refusing to write one when the parser extracts nothing.
+- `expect_failure` tests are now checked strictly: a test declared to abort must actually
+  exit nonzero. testcode's `can_fail` merely tolerated a nonzero exit, so a test that
+  silently stopped failing went unnoticed. This relies on the exit-code fix above.
 - An output that parses to nothing is now a **failure**. Previously testcode reported "no
   data extracted" as a pass, which let a test keep passing after a parser stopped matching
   its output format.
