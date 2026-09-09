@@ -45,6 +45,7 @@ Run everything from the `test-suite` directory:
 | `pytest --workdir=/tmp/w90 ` | run in a fixed location and keep the results |
 | `pytest -x --ff` | stop at the first failure, failed tests first |
 | `ctest --test-dir build -L wannier90` | the same tests through CTest |
+| `pytest w90testlib` | unit tests for the harness itself, not the physics |
 
 Markers are derived from the directory name: `testw90_*` are `wannier90`, `testpostw90_*`
 are `postw90`, `checkpoint*` are `checkpoint`, `partest*` are `parallel`. Tests that must
