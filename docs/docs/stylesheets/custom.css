@@ -20,3 +20,16 @@
     /* --md-primary-fg-color--light: #ECB7B7; */
     /* --md-primary-fg-color--dark:  #90030C; */
 }
+
+/* Row of sub-panels for multi-panel figures (former LaTeX \subfloat groups) */
+.grid-figure {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 0.6em;
+}
+
+.grid-figure img {
+    display: block;
+}
