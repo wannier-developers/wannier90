@@ -55,7 +55,7 @@ things, that linking the dynamic library with your code does not impose the GPL 
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — coding style, documentation requirements, and how pull requests are handled
 - [`test-suite/README.md`](test-suite/README.md) — how to run the tests and how to add new ones
-- [Code overview](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/code_overview/) · [FORD source-code documentation](https://wannier.org/ford/index.html)
+- [Code overview](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/code_overview/) · [FORD source-code documentation](https://wannier-developers.github.io/wannier90/)
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## How to cite
