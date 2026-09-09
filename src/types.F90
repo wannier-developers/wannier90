@@ -190,7 +190,7 @@ module w90_types
     integer, allocatable :: nnlist(:, :)      ! list of neighbours for each k-point
     integer, allocatable :: neigh(:, :)
     integer, allocatable :: nncell(:, :, :)   ! gives BZ of each neighbour of each k-point
-    ! JJ the following two arrays allow the Stengel-Spalding method to be used without sorting b-vectors globally
+    ! JJ the following two arrays allow the Stengel-Spaldin method to be used without sorting b-vectors globally
     ! the order of b-vectors is explicit in ".mmn" files, but unfortunately not in ".uHu" files
     ! these arrays could replace sorting bk(:,:, ik), but this is not exploited now
     ! these are alloc'd and assigned only in the use_ss_functional=t case
