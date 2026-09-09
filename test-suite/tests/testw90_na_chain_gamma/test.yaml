@@ -1,6 +1,6 @@
 # testw90_na_chain_gamma
 
-description: "Silane, valence states, Gamma only"
+description: "Sodium chain, valence states, Gamma only"
 profile: wannier90_wout
 runs:
   - input: Na_chain.win

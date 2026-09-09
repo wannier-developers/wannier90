@@ -1841,7 +1841,7 @@ contains
     logical, intent(in) :: spinors
 
     ! local variables
-    character(len=1) :: one_dim_axis
+    character(len=4) :: one_dim_axis
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     logical :: disentanglement
     real(kind=dp) :: ccentres_frac(3)
@@ -1850,6 +1850,11 @@ contains
 
     disentanglement = (num_bands > num_wann)
 
+    ! `one_dim_axis` is only meaningful when the system is treated as reduced-
+    ! dimensional, but it is printed unconditionally below (for any run with
+    ! transport enabled or iprint > 2). Without a default it would be written
+    ! while undefined whenever the input does not set `one_dim_axis`.
+    one_dim_axis = 'none'
     if (real_space_ham%one_dim_dir == 1) one_dim_axis = 'x'
     if (real_space_ham%one_dim_dir == 2) one_dim_axis = 'y'
     if (real_space_ham%one_dim_dir == 3) one_dim_axis = 'z'
@@ -2183,9 +2188,11 @@ contains
             write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
               real_space_ham%system_dim, '|'
             if (real_space_ham%system_dim .eq. 1) &
-              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', one_dim_axis, '|'
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+              adjustr(one_dim_axis), '|'
             if (real_space_ham%system_dim .eq. 2) &
-              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', one_dim_axis, '|'
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
+              adjustr(one_dim_axis), '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
               real_space_ham%hr_cutoff, '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
@@ -2248,7 +2255,8 @@ contains
         !
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :', 'F', '|'
 
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', one_dim_axis, '|'
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+          adjustr(one_dim_axis), '|'
         !
       end if
 

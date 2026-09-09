@@ -80,3 +80,12 @@ jobs:
         with:
           workflowPreset: "${{ matrix.toolchain }}-ci"
         continue-on-error: ${{ matrix.experimental && inputs.mask-experimental}}
+      - name: Upload test work directory on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: >-
+            work-${{ matrix.os || 'fedora' }}-${{ matrix.toolchain }}-${{ matrix.mpi || 'serial' }}
+          path: cmake-build-ci-*/test-suite/tests/work/
+          retention-days: 7
+          if-no-files-found: warn
