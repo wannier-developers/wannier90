@@ -98,9 +98,8 @@ For the method please cite:
 
 </details>
 
-<br>
 **Note**: **BibTeX** entries for all the references above can be downloaded from the
-["Please cite" section of the Wannier90 homepage](https://www.wannier.org), e.g.
+["Please cite" section of the Wannier90 homepage](https://www.wannier.org), e.g.,
 [this BibTeX file](https://wannier.org/bibtex/Pizzi2020.bib) for the main citation above.
 
 ## Licence
