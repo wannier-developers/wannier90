@@ -1,0 +1,8 @@
+# testw90_readin_b_vec
+
+description: Test kmesh_shell_from_file = T functionality (issue 436)
+profile: wannier90_nnkp
+runs:
+  - input: GaP.win
+    args: [-pp]
+    output: GaP.nnkp

@@ -1,0 +1,10 @@
+# testpostw90_fe_dos_spin
+
+description: Test of spin density of states for bcc iron
+profile: postw90_dos
+runs:
+  - input: Fe.win
+    output: Fe-dos.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"

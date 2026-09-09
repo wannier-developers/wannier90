@@ -1,0 +1,8 @@
+# testw90_benzene_gamma_val
+
+description: "Benzene, valence bands"
+profile: wannier90_wout
+runs:
+  - input: benzene.win
+    output: benzene.wout
+serial_only: true

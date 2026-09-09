@@ -1,0 +1,11 @@
+# testpostw90_fe_kpathcurv
+
+description: Test of KPATH Berry Curvature  for bcc iron
+profile: postw90_curv_dat
+runs:
+  - input: Fe.win
+    output: Fe-curv.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.uHu.bz2"

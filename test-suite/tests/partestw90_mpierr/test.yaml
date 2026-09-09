@@ -1,0 +1,11 @@
+# partestw90_mpierr
+
+description: Test of MPI error handling implementation
+profile: wannier90_werr
+runs:
+  - input: wannier.win
+    output: wannier.werr
+min_nprocs: 2
+expect_failure: true
+status: skip
+status_reason: test is intended to fail; disabled in CI

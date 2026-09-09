@@ -98,3 +98,22 @@ def test_a_missing_parser_module_is_reported_clearly():
     profile = profile_from_dict("p", {"program": "wannier90", "parser": "parse_nonexistent"})
     with pytest.raises(ProfileError, match="cannot import parser module"):
         profile.load_parser()
+
+
+def test_a_tolerance_yaml_parsed_as_a_string_is_refused(tmp_path):
+    """`1e-6` without a decimal point loads as a str in YAML 1.1; that must not pass.
+
+    Silently accepting it would disable the check entirely, which is exactly the kind of
+    failure this suite exists to catch.
+    """
+    path = write_profiles(tmp_path, "p:\n  program: wannier90\n  parser: x\n"
+                                    "  tolerances:\n    k: {abs: 1e-6, rel: null}\n")
+    with pytest.raises(ProfileError, match="not a number"):
+        load_profiles(path)
+
+
+def test_the_error_says_how_to_write_it_correctly(tmp_path):
+    path = write_profiles(tmp_path, "p:\n  program: wannier90\n  parser: x\n"
+                                    "  tolerances:\n    k: {abs: 1e-6}\n")
+    with pytest.raises(ProfileError, match=r"1\.0e-6"):
+        load_profiles(path)

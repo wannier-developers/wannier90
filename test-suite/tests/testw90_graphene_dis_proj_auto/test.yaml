@@ -1,0 +1,7 @@
+# testw90_graphene_dis_proj_auto
+
+description: "Graphene, PDWF with automatic multi-Otsu projectability thresholds"
+profile: wannier90_proj_auto_wout
+runs:
+  - input: graphene.win
+    output: graphene.wout

@@ -1,0 +1,7 @@
+# testw90_example21_As_sp
+
+description: "Testing symmetry-adapted WFs, from example21, case of As with s and p"
+profile: wannier90_wout
+runs:
+  - input: GaAs.win
+    output: GaAs.wout

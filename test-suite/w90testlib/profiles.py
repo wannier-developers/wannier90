@@ -87,6 +87,16 @@ def _tolerance_from_yaml(profile_name: str, key: str, raw: Any) -> Tolerance:
     # absent entirely means "leave it at the default".  These are different things.
     abs_tol = raw["abs"] if "abs" in raw else DEFAULT_TOLERANCE.abs_tol
     rel_tol = raw["rel"] if "rel" in raw else DEFAULT_TOLERANCE.rel_tol
+    for field, value in (("abs", abs_tol), ("rel", rel_tol)):
+        # A tolerance written as `1e-6` rather than `1.0e-6` loads as a *string*, because
+        # YAML 1.1 wants a decimal point and a signed exponent.  Silently accepting that
+        # would disable the check, so refuse it loudly and say how to fix it.
+        if value is not None and not isinstance(value, (int, float)):
+            raise ProfileError(
+                f"profile {profile_name!r}, tolerance {key!r}: {field} is {value!r}, which "
+                f"YAML parsed as {type(value).__name__}, not a number. Write it with a "
+                f"decimal point and a signed exponent, e.g. 1.0e-6 rather than 1e-6."
+            )
     return Tolerance(abs_tol=abs_tol, rel_tol=rel_tol, strict=bool(raw.get("strict", True)))
 
 

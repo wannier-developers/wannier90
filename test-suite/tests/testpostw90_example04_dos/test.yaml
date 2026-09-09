@@ -1,0 +1,9 @@
+# testpostw90_example04_dos
+
+description: Test of DOS for Cu
+profile: postw90_dos
+runs:
+  - input: copper.win
+    output: copper-dos.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"

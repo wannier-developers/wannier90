@@ -1,0 +1,7 @@
+# testw90_example04
+
+description: "Copper, states around the Fermi level; Fermi surface"
+profile: wannier90_wout
+runs:
+  - input: copper.win
+    output: copper.wout

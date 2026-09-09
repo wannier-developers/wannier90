@@ -1,0 +1,12 @@
+# testpostw90_pt_kpathbandsshc
+
+description: Test of kpath with SHC as color for fcc platinum
+profile: postw90_shc_kpath_bands_dat
+runs:
+  - input: Pt.win
+    output: Pt-bands.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.amn.bz2"
+  - bunzip2: "*.spn.bz2"

@@ -1,0 +1,7 @@
+# testw90_example02
+
+description: "Lead, 4 lowest states; Fermi surface"
+profile: wannier90_wout
+runs:
+  - input: lead.win
+    output: lead.wout

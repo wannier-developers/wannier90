@@ -1,0 +1,7 @@
+# testw90_basic1
+
+description: Basic wannier
+profile: wannier90_wout
+runs:
+  - input: wannier.win
+    output: wannier.wout

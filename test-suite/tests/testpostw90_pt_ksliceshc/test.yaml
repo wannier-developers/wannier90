@@ -1,0 +1,12 @@
+# testpostw90_pt_ksliceshc
+
+description: Test of kslice SHC for fcc platinum
+profile: postw90_shc_kslice_dat
+runs:
+  - input: Pt.win
+    output: Pt-kslice-shc.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.amn.bz2"
+  - bunzip2: "*.spn.bz2"

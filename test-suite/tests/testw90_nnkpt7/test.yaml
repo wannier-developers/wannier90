@@ -1,0 +1,8 @@
+# testw90_nnkpt7
+
+description: "Test for the higher-order bvectors and bweights, using the nearest-shells method"
+profile: wannier90_nnkp
+runs:
+  - input: wannier.win
+    args: [-pp]
+    output: wannier.nnkp

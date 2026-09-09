@@ -1,0 +1,9 @@
+# testpostw90_gaas_sc_eta_corr
+
+description: Test of shift current finite-eta correction for GaAs
+profile: postw90_sc
+runs:
+  - input: gaas.win
+    output: gaas-sc_xyz.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
