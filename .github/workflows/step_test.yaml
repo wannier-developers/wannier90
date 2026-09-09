@@ -40,7 +40,7 @@ jobs:
 #            experimental: false
     steps:
       - name: Install missing packages
-        run: sudo dnf install -y bzip2 python-unversioned-command which diff
+        run: sudo dnf install -y bzip2 python-unversioned-command which diff python3-pytest python3-pyyaml
       - name: Load mpi module ${{ matrix.mpi || '' }}
         run: |
           # Get interactive profile to be able to load modules
