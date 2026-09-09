@@ -64,7 +64,7 @@ module w90_types
     !!==================================================
     !! Contains physical information about the material being calculated.
     !!==================================================
-    integer :: num_valence_bands !**no sensibe default**
+    integer :: num_valence_bands ! **no sensible default**
     integer :: num_elec_per_state = 2 ! used in: wannierise and postw90 dos and boltzwann
     logical :: spinors = .false.  !are our WF spinors? !kmesh, plot, wannier_lib, postw90/gyrotropic
   end type w90_system_type
