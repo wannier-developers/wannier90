@@ -65,10 +65,10 @@
 program wannier
   !! The main Wannier90 program
 
-#ifdef MPI08
+#ifdef W90_MPI08
   use mpi_f08
 #endif
-#ifdef MPI90
+#ifdef W90_MPI90
   use mpi
 #endif
 
@@ -82,7 +82,7 @@ program wannier
 
   implicit none
 
-#ifdef MPIH
+#ifdef W90_MPIH
   include 'mpif.h'
 #endif
 
@@ -121,7 +121,7 @@ program wannier
   call io_commandline(progname, ld, pp, seedname)
 
   call w90_get_fortran_stderr(stderr) ! for early error cases; maybe overwritten later
-#ifdef MPI
+#ifdef W90_MPI
   call mpi_init(ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: mpi_init() returned an error!'
@@ -172,7 +172,7 @@ program wannier
     if (rank == 0) close (unit=stderr, status='delete')
     if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
-#ifdef MPI
+#ifdef W90_MPI
     call mpi_finalize(ierr)
 #endif
     stop
@@ -187,7 +187,7 @@ program wannier
   end if
   if (allocated(error)) then ! applies (is t) for all ranks now
     call prterr(error, ierr, stdout, stderr, common_data%comm)
-#ifdef MPI
+#ifdef W90_MPI
     call mpi_finalize(ierr) ! let's be nice
 #endif
     stop
@@ -375,7 +375,7 @@ program wannier
     close (unit=stdout)
   end if
 
-#ifdef MPI
+#ifdef W90_MPI
   call mpi_finalize(ierr)
 #endif
 end program wannier

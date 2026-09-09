@@ -75,7 +75,7 @@ void w90_wannierise(w90_data w90_obj, int* ierr);
 void w90_get_centres(w90_data w90_obj, double* centres);
 void w90_get_spreads(w90_data w90_obj, double* spreads);
 
-#ifdef MPI
+#ifdef W90_MPI
 #include <mpi.h>
 
 void w90_set_comm_f(w90_data blob, int* comm);
