@@ -76,7 +76,7 @@ The core of the test suite previously used `testcode` by J. Spencer
 
 - Spin Hall conductivity according to Ji Hoon Ryoo's method (Phys. Rev. B 99, 235113) [[#353]](https://github.com/wannier-developers/wannier90/pull/353)
 
-- Stengel-Spalding spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
+- Stengel-Spaldin spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
 
 - Tetrahedron integration for calculating spin Hall conductivity [[#431]](https://github.com/wannier-developers/wannier90/pull/431)
 
