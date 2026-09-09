@@ -23,7 +23,26 @@ enable_testing()
 #                              External packages                              #
 ]=============================================================================]
 
-find_package(Python 3.8 REQUIRED)
+# 3.10 is the floor: it gives every syntax feature the harness uses and is available on
+# RHEL/Rocky 9 via appstream, Debian bookworm and Ubuntu 22.04. Raising it further is a
+# one-line change.
+find_package(Python 3.10 REQUIRED COMPONENTS Interpreter)
+
+# The regression suite is driven by pytest and reads YAML. Rather than failing the whole
+# configure for someone who only wants the binaries, warn and skip registering the tests.
+execute_process(
+		COMMAND ${Python_EXECUTABLE} -c "import pytest, yaml"
+		RESULT_VARIABLE _w90_pytest_missing
+		OUTPUT_QUIET ERROR_QUIET
+)
+if (_w90_pytest_missing)
+	message(WARNING
+			"Python packages 'pytest' and/or 'PyYAML' not found for ${Python_EXECUTABLE}.\n"
+			"The regression tests will NOT be registered. To enable them:\n"
+			"    pip install -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\n"
+			"then re-run cmake."
+	)
+endif ()
 
 #[=============================================================================[
 #                               Main definition                               #
@@ -114,20 +133,13 @@ function(Wannier90_add_test test)
 	)
 endfunction()
 
-## Prepare test environment
-foreach (extra_file IN ITEMS
-		checkpoints
-		run_tests
-		testcode
-		tests
-		tools
-)
-	# TODO: Use `PYTHONPATH` to avoid needing to copy and setting workdir
-	file(COPY ${extra_file} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endforeach ()
-
-## Add unit tests
-add_subdirectory(tests)
+## Add regression tests
+# Nothing is copied into the build tree: pytest reads the source tree directly and runs
+# each test in its own work directory under the build tree. The previous file(COPY ...)
+# block duplicated ~240 MB on every configure.
+if (NOT _w90_pytest_missing)
+	add_subdirectory(tests)
+endif ()
 
 ## Functional tests
 set(functional_tests
