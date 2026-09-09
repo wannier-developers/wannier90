@@ -949,16 +949,9 @@ contains
         !
         ! SINGULAR VALUE DECOMPOSITION
         !
-        write(77,*) 'pre - nkp: ',nkp
-        write(77,*) u_matrix(:, :, nkp)
-        write(77,*)
-
 
         call zgesvd('A', 'A', num_bands, num_bands, u_matrix(1, 1, nkp), num_bands, svals, cz, &
                     num_bands, cvdag, num_bands, cwork, 4*num_bands, rwork, info)
-        write(77,*) 'nkp: ',nkp
-        write(77,*) u_matrix(:, :, nkp)
-        write(77,*)
         if (info .ne. 0) then
           write (stdout, *) ' ERROR: IN ZGESVD IN overlap_project'
           write (stdout, *) ' K-POINT NKP=', nkp, ' INFO=', info
