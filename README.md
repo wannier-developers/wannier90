@@ -36,14 +36,14 @@ materials with high efficiency and accuracy.**
 Since version 4.0, the functionality of the standalone `wannier90.x` executable is
 also available through a library interface and an electronic-structure code can
 drive Wannierisation in memory instead of writing and re-reading files. The
-calling code sets options, then passes pointers to its own overlap, projection and 
+calling code sets options, then passes pointers to its own overlap, projection and
 eigenvalue arrays (no large matrix is duplicated) and calls disentanglement, MLWF
-optimisation, plotting and transport directly. The library runs in parallel with MPI 
-with the same performance as the standalone code (the overlap matrices are distributed 
-over k-points), and every library call returns an error code instead of aborting, so 
+optimisation, plotting and transport directly. The library runs in parallel with MPI
+with the same performance as the standalone code (the overlap matrices are distributed
+over k-points), and every library call returns an error code instead of aborting, so
 the host code keeps control of its own error handling.
 
-**Note**: Wannier90 is distributed under **LGPLv2.1-or-later** (meaning, among other 
+**Note**: Wannier90 is distributed under **LGPLv2.1-or-later** (meaning, among other
 things, that linking the dynamic library with your code does not impose the GPL on it).
 
 - **Documentation:** [Library mode](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/) — [Using the library](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#using-the-library) · [Compiling and linking](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#compiling-and-linking)
