@@ -71,7 +71,7 @@ contains
     close (stdout)
     write (*, '(1x,a)') trim(error_msg)
     write (*, '(A)') "Error: examine the output/error file for details"
-    stop
+    stop 1
   end subroutine io_error
 
   !================================================!

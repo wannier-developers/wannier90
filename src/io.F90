@@ -406,7 +406,8 @@ contains
   end function io_wallclocktime
 
   subroutine prterr(error, ie, istdout, istderr, comm)
-    use w90_comms, only: comms_no_sync_send, comms_no_sync_recv, w90_comm_type, mpirank, mpisize
+    use w90_comms, only: comms_no_sync_bcast, comms_no_sync_send, comms_no_sync_recv, &
+                         w90_comm_type, mpirank, mpisize
     use w90_error_base, only: code_deactivated, code_remote, w90_error_type
 
     ! arguments
@@ -461,6 +462,12 @@ contains
         call comms_no_sync_send(mesg, 128, 0, le, comm)
       end if
     end if
+
+    ! Every rank must report the same failure. A non-root rank whose own error is
+    ! code_remote (the error originated elsewhere) leaves ie at 0 above and would
+    ! otherwise return "success" to a library caller while root returns the failure.
+    call comms_no_sync_bcast(ie, 1, le, comm)
+
     flush (istdout)
     flush (istderr)
 
@@ -478,6 +485,6 @@ contains
     type(w90_error_type), allocatable, intent(inout) :: error
 
     call prterr(error, ie, istdout, istderr, comm)
-    stop
+    stop 1
   end subroutine print_error_halt
 end module w90_io
