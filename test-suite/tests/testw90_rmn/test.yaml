@@ -1,0 +1,7 @@
+# testw90_rmn
+
+description: "Diamond, valence states - test of the R_mn printout"
+profile: wannier90_rmn
+runs:
+  - input: diamond.win
+    output: diamond_r.dat

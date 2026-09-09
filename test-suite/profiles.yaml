@@ -1,0 +1,308 @@
+# Test profiles: which program runs a test, which parser reads its output, and to
+# what tolerance its values are compared.
+#
+# Migrated from the old tests/userconfig. Tolerances are reproduced exactly; do not
+# adjust one to make a test pass. A key not listed here is still checked, against the
+# default tolerance of abs=1.0e-10 with no relative check.
+#
+# 'rel: null' means the relative check is switched off for that key (used where values
+# pass through zero); it is not the same as omitting the key.
+
+postw90_boltzwann_elcond:
+  program: postw90
+  parser: parse_boltzwann
+  function: parse_elcond
+  tolerances:
+    elcond_xx: {abs: 10.0, rel: 0.0001}
+    elcond_xy: {abs: 10.0, rel: 0.0001}
+    elcond_yy: {abs: 10.0, rel: 0.0001}
+    elcond_xz: {abs: 10.0, rel: 0.0001}
+    elcond_yz: {abs: 10.0, rel: 0.0001}
+    elcond_zz: {abs: 10.0, rel: 0.0001}
+
+postw90_curv_dat:
+  program: postw90
+  parser: parse_curv_dat
+  tolerances:
+    bandpath: {abs: 1.0e-6, rel: 5.0e-6}
+    bandcurvx: {abs: 1.0e-6, rel: 1000.0}
+    bandcurvy: {abs: 1.0e-6, rel: 1000.0}
+    bandcurvz: {abs: 1.0e-6, rel: 1000.0}
+
+postw90_dos:
+  program: postw90
+  parser: parse_dos_dat
+  tolerances:
+    energy: {abs: 1.0e-6, rel: 5.0e-6}
+    dos: {abs: 0.0001, rel: 0.0001}
+    dos_spin1: {abs: 0.0001, rel: 0.0001}
+    dos_spin2: {abs: 0.0001, rel: 0.0001}
+
+postw90_fermiscan:
+  program: postw90
+  parser: parse_fermiscan_dat
+  tolerances:
+    fermienergy: {abs: 1.0e-6, rel: 5.0e-6}
+    ahc_x: {abs: 0.0001, rel: 0.0002}
+    ahc_y: {abs: 0.0001, rel: 0.0002}
+    ahc_z: {abs: 0.0001, rel: 0.0002}
+
+postw90_geninterp_dat:
+  program: postw90
+  parser: parse_geninterp_dat
+  tolerances:
+    bandenergy: {abs: 0.001, rel: 0.005}
+    bandkptx: {abs: 1.0e-6, rel: null}
+    bandkpty: {abs: 1.0e-6, rel: null}
+    bandkptz: {abs: 1.0e-6, rel: null}
+    bandderivx: {abs: 0.01, rel: 0.01}
+    bandderivy: {abs: 0.01, rel: 0.01}
+    bandderivz: {abs: 0.01, rel: 0.01}
+    bandidx: {abs: 1.0e-6, rel: null}
+
+postw90_gyro:
+  program: postw90
+  parser: parse_gyro_dat
+  tolerances:
+    energy: {abs: 1.0e-6, rel: 5.0e-6}
+    omega: {abs: 0.0001, rel: 0.01}
+    gyro_xx: {abs: 0.0001, rel: 0.01}
+    gyro_yy: {abs: 0.0001, rel: 0.01}
+    gyro_zz: {abs: 0.0001, rel: 0.01}
+    gyro_xy: {abs: 0.0001, rel: 0.01}
+    gyro_xz: {abs: 0.0001, rel: 0.01}
+    gyro_yz: {abs: 0.0001, rel: 0.01}
+    gyro_x: {abs: 0.0001, rel: null}
+    gyro_y: {abs: 0.0001, rel: null}
+    gyro_z: {abs: 0.0001, rel: null}
+    imcond: {abs: 0.0001, rel: 100.0}
+
+postw90_higher:
+  # TODO(review): the old userconfig said 'To do: add extract_fn, tolerance'. No test uses this profile; it cannot check anything until a parser is set.
+  program: postw90
+  parser: null
+
+postw90_jdos:
+  program: postw90
+  parser: parse_jdos_dat
+  tolerances:
+    energy: {abs: 1.0e-6, rel: 5.0e-6}
+    jdos: {abs: 0.0001, rel: 0.0001}
+
+postw90_kdotp:
+  program: postw90
+  parser: parse_kdotp_dat
+  tolerances:
+    real_part: {abs: 0.0001, rel: 100.0}
+    imag_part: {abs: 0.0001, rel: 100.0}
+
+postw90_kubo:
+  program: postw90
+  parser: parse_kubo_dat
+  tolerances:
+    energy: {abs: 1.0e-6, rel: 5.0e-6}
+    recond: {abs: 0.0001, rel: 100.0}
+    imcond: {abs: 0.0001, rel: 100.0}
+
+postw90_morb_dat:
+  program: postw90
+  parser: parse_morb_dat
+  tolerances:
+    bandpath: {abs: 1.0e-6, rel: 5.0e-6}
+    bandmorbx: {abs: 0.0001, rel: 0.0001}
+    bandmorby: {abs: 0.0001, rel: 0.0001}
+    bandmorbz: {abs: 0.0001, rel: 0.0001}
+
+postw90_sc:
+  program: postw90
+  parser: parse_sc_dat
+  tolerances:
+    energy: {abs: 1.0e-6, rel: 5.0e-6}
+    shiftcurr: {abs: 1.0e-6, rel: 100.0}
+
+postw90_shc_fermi_dat:
+  program: postw90
+  parser: parse_shc_dat
+  tolerances:
+    energy: {abs: 1.0e-6, rel: 5.0e-6}
+    shc: {abs: 0.1, rel: 0.1}
+
+postw90_shc_freq_dat:
+  program: postw90
+  parser: parse_shc_dat
+  tolerances:
+    frequency: {abs: 1.0e-6, rel: 5.0e-6}
+    shc_re: {abs: 10.0, rel: 10.0}
+    shc_im: {abs: 0.1, rel: 0.1}
+
+postw90_shc_kpath_bands_dat:
+  program: postw90
+  parser: parse_shc_kpath_bandsdat
+  tolerances:
+    path: {abs: 1.0e-6, rel: 5.0e-6}
+    energy: {abs: 0.001, rel: 0.002}
+    shc: {abs: 0.1, rel: null}
+
+postw90_shc_kpath_dat:
+  program: postw90
+  parser: parse_shc_kpath_dat
+  tolerances:
+    path: {abs: 1.0e-6, rel: 5.0e-6}
+    shc: {abs: 0.1, rel: null}
+
+postw90_shc_kslice_dat:
+  program: postw90
+  parser: parse_shc_kslice_dat
+  tolerances:
+    shc: {abs: 0.1, rel: null}
+
+postw90_wpout:
+  program: postw90
+  parser: parse_wpout
+  tolerances:
+    ahc_x: {abs: 0.001, rel: 0.002}
+    ahc_y: {abs: 0.001, rel: 0.002}
+    ahc_z: {abs: 0.001, rel: 0.002}
+    morb_x: {abs: 0.001, rel: 0.002}
+    morb_y: {abs: 0.001, rel: 0.002}
+    morb_z: {abs: 0.001, rel: 0.002}
+    spin_x: {abs: 0.001, rel: 0.002}
+    spin_y: {abs: 0.001, rel: 0.002}
+    spin_z: {abs: 0.001, rel: 0.002}
+    spin_p: {abs: 0.01, rel: 0.02}
+    spin_a: {abs: 0.01, rel: 0.02}
+
+wannier90_band_kpt:
+  program: wannier90
+  parser: parse_w90_band_kpt
+  tolerances:
+    kpath: {abs: 1.0e-6, rel: 1.0e-6}
+    weight: {abs: 1.0e-6, rel: 1.0e-6}
+    nkp: {abs: 1.0e-6, rel: 1.0e-6}
+
+wannier90_bands_plot:
+  program: wannier90
+  parser: parse_w90_bands_dat
+  tolerances:
+    kpath: {abs: 1.0e-6, rel: 1.0e-6}
+    eigval: {abs: 1.0e-5, rel: 1.0e-5}
+
+wannier90_bvec:
+  program: wannier90
+  parser: parse_bvec
+  tolerances:
+    size: {abs: 1.0e-10, rel: 1.0e-10}
+
+wannier90_cube:
+  program: wannier90
+  parser: parse_cube
+  tolerances:
+    origin: {abs: 1.0e-5, rel: 1.0e-5}
+
+wannier90_disentanglement_sawfs:
+  program: wannier90
+  parser: parse_wout
+  tolerances:
+    omegaI: {abs: 1.0e-6, rel: 1.0e-6}
+
+wannier90_labelinfo:
+  program: wannier90
+  parser: parse_labelinfo
+
+wannier90_nnkp:
+  program: wannier90
+  parser: parse_nnkp
+  tolerances:
+    nnkpts_g1: {abs: 1.0e-6, rel: 1.0e-6}
+    nnkpts_g2: {abs: 1.0e-6, rel: 1.0e-6}
+    nnkpts_g3: {abs: 1.0e-6, rel: 1.0e-6}
+    nnkpts_k1: {abs: 1.0e-6, rel: 1.0e-6}
+    nnkpts_k2: {abs: 1.0e-6, rel: 1.0e-6}
+    kpoints_k1: {abs: 1.0e-6, rel: 1.0e-6}
+    kpoints_k2: {abs: 1.0e-6, rel: 1.0e-6}
+
+wannier90_proj_auto_wout:
+  program: wannier90
+  parser: parse_wout
+  tolerances:
+    final_centres_x: {abs: 1.0e-5, rel: 1.0e-5}
+    final_centres_y: {abs: 1.0e-5, rel: 1.0e-5}
+    final_centres_z: {abs: 1.0e-5, rel: 1.0e-5}
+    final_spreads: {abs: 3.0e-6, rel: 3.0e-6}
+    omegaI: {abs: 5.0e-6, rel: 5.0e-6}
+    omegaD: {abs: 1.0e-6, rel: 5.0e-6}
+    omegaOD: {abs: 5.0e-6, rel: 5.0e-6}
+    omegaTotal: {abs: 1.0e-6, rel: 1.0e-6}
+    near_neigh_dist: {abs: 1.0e-6, rel: 1.0e-6}
+    near_neigh_mult: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_x: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_y: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_z: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_weight: {abs: 1.0e-6, rel: 1.0e-6}
+
+wannier90_rmn:
+  program: wannier90
+  parser: parse_rmn
+  tolerances:
+    irvec_a: {abs: 1.0e-10, rel: 1.0e-10}
+    irvec_b: {abs: 1.0e-10, rel: 1.0e-10}
+    irvec_c: {abs: 1.0e-10, rel: 1.0e-10}
+    index_i: {abs: 1.0e-10, rel: 1.0e-10}
+    index_j: {abs: 1.0e-10, rel: 1.0e-10}
+    real_x: {abs: 2.0e-6, rel: 1.0}
+    imag_x: {abs: 2.0e-6, rel: 1.0}
+    real_y: {abs: 2.0e-6, rel: 1.0}
+    imag_y: {abs: 2.0e-6, rel: 1.0}
+    real_z: {abs: 2.0e-6, rel: 1.0}
+    imag_z: {abs: 2.0e-6, rel: 1.0}
+
+wannier90_slwfc_wout:
+  program: wannier90
+  parser: parse_wout
+  tolerances:
+    final_centres_x: {abs: 1.0e-5, rel: 1.0e-5}
+    final_centres_y: {abs: 1.0e-5, rel: 1.0e-5}
+    final_centres_z: {abs: 1.0e-5, rel: 1.0e-5}
+    final_spreads: {abs: 3.1e-6, rel: 3.1e-6}
+    omegaIOD_C: {abs: 1.0e-6, rel: 1.0e-6}
+    omegaD: {abs: 1.0e-6, rel: 5.0e-6}
+    omegaRest: {abs: 1.0e-5, rel: 1.0e-5}
+    penaltyfunc: {abs: 1.0e-5, rel: 1.0e-5}
+    omegaTotal_C: {abs: 1.0e-6, rel: 1.0e-6}
+    near_neigh_dist: {abs: 1.0e-6, rel: 1.0e-6}
+    near_neigh_mult: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_x: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_y: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_z: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_weight: {abs: 1.0e-6, rel: 1.0e-6}
+
+wannier90_umat:
+  program: wannier90
+  parser: parse_umat
+  tolerances:
+    size: {abs: 1.0e-5, rel: 1.0e-5}
+
+wannier90_werr:
+  program: wannier90
+  parser: parse_werr
+  tolerances:
+    warning_msg: {abs: 0.1, rel: 0.01}
+
+wannier90_wout:
+  program: wannier90
+  parser: parse_wout
+  tolerances:
+    final_centres_x: {abs: 1.0e-5, rel: 1.0e-5}
+    final_centres_y: {abs: 1.0e-5, rel: 1.0e-5}
+    final_centres_z: {abs: 1.0e-5, rel: 1.0e-5}
+    final_spreads: {abs: 3.0e-6, rel: 3.0e-6}
+    omegaI: {abs: 1.0e-6, rel: 1.0e-6}
+    omegaD: {abs: 1.0e-6, rel: 5.0e-6}
+    omegaOD: {abs: 1.0e-6, rel: 1.0e-6}
+    omegaTotal: {abs: 1.0e-6, rel: 1.0e-6}
+    near_neigh_dist: {abs: 1.0e-6, rel: 1.0e-6}
+    near_neigh_mult: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_x: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_y: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_z: {abs: 1.0e-6, rel: 1.0e-6}
+    completeness_weight: {abs: 1.0e-6, rel: 1.0e-6}

@@ -1,0 +1,10 @@
+# testpostw90_fe_ahc
+
+description: Test of AHC for bcc iron
+profile: postw90_wpout
+runs:
+  - input: Fe.win
+    output: Fe.wpout
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"

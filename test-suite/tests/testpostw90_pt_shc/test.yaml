@@ -1,0 +1,12 @@
+# testpostw90_pt_shc
+
+description: Test of SHC for fcc platinum
+profile: postw90_shc_fermi_dat
+runs:
+  - input: Pt.win
+    output: Pt-shc-fermiscan.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.amn.bz2"
+  - bunzip2: "*.spn.bz2"

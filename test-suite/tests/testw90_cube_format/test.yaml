@@ -1,0 +1,7 @@
+# testw90_cube_format
+
+description: GaAs - this verifies the plotting routine for Gaussian cube format
+profile: wannier90_cube
+runs:
+  - input: gaas.win
+    output: gaas_00001.cube

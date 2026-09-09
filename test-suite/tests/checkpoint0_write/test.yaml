@@ -1,0 +1,7 @@
+# checkpoint0_write
+
+description: Test of W90 main output; use to setup checkpoint for test above
+profile: wannier90_wout
+runs:
+  - input: copper.win
+    output: copper.wout

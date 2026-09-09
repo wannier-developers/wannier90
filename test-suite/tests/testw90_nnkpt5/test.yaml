@@ -1,0 +1,8 @@
+# testw90_nnkpt5
+
+description: Testing crash when nnkpt is set in non postproc_setup mode
+profile: wannier90_werr
+runs:
+  - input: wannier.win
+    output: wannier.werr
+expect_failure: true

@@ -1,0 +1,10 @@
+# testpostw90_si_geninterp_wsdistance
+
+description: Test of disentanglement in spheres in k-space
+profile: postw90_geninterp_dat
+runs:
+  - input: silicon.win
+    output: silicon_geninterp.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"

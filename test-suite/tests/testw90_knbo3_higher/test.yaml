@@ -1,0 +1,10 @@
+# testw90_knbo3_higher
+
+description: Test for the wannier position matrix elements and spreads using higher-order finite difference
+profile: wannier90_wout
+runs:
+  - input: knbo3.win
+    output: knbo3.wout
+prepare:
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.amn.bz2"
