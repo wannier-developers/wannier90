@@ -18,7 +18,7 @@ This documentation contains the following sections:
 
 - [User guide](user_guide/introduction.md)
 - [Tutorials](tutorials/preliminaries.md)
-- [Tutorial solutions](tutorial_solutions/tutorial_solutions.md)
+- [Tutorial solutions](tutorial_solutions/index.md)
 
 
 For historical reference, the old latex PDF documentation of Wannier90 v3.1
