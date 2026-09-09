@@ -23,7 +23,7 @@ There are a number of different types of documentation associated with the distr
 * `/doc/user_guide/` is the main User Guide for the code, where new variables, input parameters, functionality and file formats should be described
 * `/doc/tutorial/` is the tutorial guide for the examples in /examples/ and should be updated whenever a new example is added
 * `/examples/README` provides a very brief description of each example and the associated functionality that it covers
-FORD annotations should be included in all code that is developed
+FORD annotations should be included in all code that is developed; the resulting documentation is published at <https://wannier-developers.github.io/wannier90/>
 
 ## Test suite
 A set of tests is provided with Wannier90, in the folder `test-suite`.
