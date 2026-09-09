@@ -1,0 +1,46 @@
+name: 📗 autodoc
+
+# Publishes the FORD developer documentation to GitHub Pages on every push to
+# develop, and on demand.
+#
+# Pull requests do not deploy: they are built as a regression check by the
+# 📗 autodoc job in ci.yaml, which calls the same reusable build workflow.
+#
+# One-time manual setup is required before the deploy job can succeed: repo
+# Settings -> Pages -> Build and deployment -> Source = "GitHub Actions", and
+# the github-pages environment must allow deployment from develop.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ develop ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: 📗 autodoc
+    uses: ./.github/workflows/step_autodoc.yaml
+    with:
+      upload: true
+
+  deploy:
+    name: 🚀 deploy
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    # Elevated beyond the read-only default, which is why deployment lives in
+    # this workflow rather than in ci.yaml.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
