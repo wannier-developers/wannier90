@@ -1,6 +1,8 @@
 # Authors and contributors
 
-The Wannier90 Developer Group includes:
+The Wannier Developers Group is responsible for the long-term strategy and sustainability of the Wannier90 software project. This includes new version releases, licensing decisions, and management of the GitHub repository and website. The Wannier Developers Group will always endeavour to act in the best interests of the broader Wannier community and maximise the widespread adoption of the code.
+
+The Wannier Developers Group includes:
 
 * Giovanni Pizzi    (Paul Scherrer Institute, CH)
 * Valerio Vitale    (University of Trieste, IT)
@@ -10,7 +12,7 @@ The Wannier90 Developer Group includes:
 * Arash A. Mostofi  (Imperial College London, GB)
 * Jonathan R. Yates (University of Oxford, GB)
 
-In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.4.x are:
+In addition to the Wannier Developers Group, the other authors of Wannier90 v.4.x are:
 
 * Jerome Jackson    (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
 * Leon Petit        (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
@@ -21,7 +23,7 @@ Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik Joch
 Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm,
 Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin.
 
-In addition to the Wannier90 Developer Group, the other authors of Wannier90 v.3.x are:
+In addition to the Wannier Developers Group, the other authors of Wannier90 v.3.x are:
 
 * Ryotaro Arita (Riken and U. Tokyo, JP): Symmetry-adapted Wannier functions
 * Stefan Blügel (FZ  Jülich, DE): Parallelization of the core routines
