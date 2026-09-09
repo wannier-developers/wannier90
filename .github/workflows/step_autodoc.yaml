@@ -13,6 +13,10 @@ on:
         type: boolean
         default: false
         description: Upload the built site as a GitHub Pages artifact
+      graphs:
+        type: boolean
+        default: true
+        description: Draw the call and dependency graphs
 
 permissions:
   contents: read
@@ -47,9 +51,19 @@ jobs:
       - name: Install FORD
         run: pip install "ford==7.0.13"
 
+      # Drawing the graphs takes about ten times as long as the rest of the
+      # build, so the pull request check skips them. project.md always asks for
+      # them, so the published documentation is unaffected.
       - name: Build documentation
         working-directory: ./autodoc
-        run: ford project.md 2>&1 | tee ford.log
+        env:
+          GRAPHS: ${{ inputs.graphs }}
+        run: |
+          if [ "$GRAPHS" = "true" ]; then
+            ford project.md 2>&1 | tee ford.log
+          else
+            ford --config "graph = false" project.md 2>&1 | tee ford.log
+          fi
 
       # FORD exits 0 even when it fails to parse a source file and drops it from
       # the output. That is how the whole w90_types module went missing from the
