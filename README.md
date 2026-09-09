@@ -13,16 +13,16 @@
 Wannier functions and using them to compute advanced electronic properties of
 materials with high efficiency and accuracy.**
 
-| I want to… | Go to |
-| --- | --- |
+| I want to…                | Go to |
+| ------------------------- | --- |
 | Learn what Wannier90 does | [wannier.org](https://www.wannier.org) · [Features](https://wannier.org/features/) |
-| **Install it** | [README.install](README.install) — CMake or GNU Make |
-| **Read the manual** | [wannier90.readthedocs.io](https://wannier90.readthedocs.io/) |
-| **Follow the tutorials** | [Tutorial instructions](https://wannier90.readthedocs.io/en/latest/tutorials/preliminaries/) · [Tutorial files](tutorials/) |
-| See what changed | [CHANGELOG.md](CHANGELOG.md) |
-| Ask a question | [Mailing list](https://lists.quantum-espresso.org/mailman/listinfo/wannier) (subscribe before posting) · [Archives](https://www.mail-archive.com/wannier@lists.quantum-espresso.org/maillist.html) · [More support resources](https://wannier.org/support/) |
-| Report a bug | [Issues](https://github.com/wannier-developers/wannier90/issues) · [FAQ](https://github.com/wannier-developers/wannier90/wiki/FAQ) |
-| Contribute code | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Install it**            | [README.install](README.install) — CMake or GNU Make |
+| **Read the manual**       | [wannier90.readthedocs.io](https://wannier90.readthedocs.io/) |
+| **Follow the tutorials**  | [Tutorial instructions](https://wannier90.readthedocs.io/en/latest/tutorials/preliminaries/) · [Tutorial files](tutorials/) |
+| See what changed          | [CHANGELOG.md](CHANGELOG.md) |
+| Ask a question            | [Mailing list](https://lists.quantum-espresso.org/mailman/listinfo/wannier) (subscribe before posting) · [Archives](https://www.mail-archive.com/wannier@lists.quantum-espresso.org/maillist.html) · [More support resources](https://wannier.org/support/) |
+| Report a bug              | [Issues](https://github.com/wannier-developers/wannier90/issues) · [FAQ](https://github.com/wannier-developers/wannier90/wiki/FAQ) |
+| Contribute code           | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ## Documentation
 
@@ -33,19 +33,18 @@ materials with high efficiency and accuracy.**
 
 ## Using Wannier90 as a library
 
-Since version 4.0, everything the standalone `wannier90.x` executable does is
-also available through a library interface, so an electronic-structure code can
+Since version 4.0, the functionality of the standalone `wannier90.x` executable is
+also available through a library interface and an electronic-structure code can
 drive Wannierisation in memory instead of writing and re-reading files. The
-calling code sets options, then passes pointers to its own overlap, projection and eigenvalue arrays (no large matrix is duplicated) and calls
-disentanglement, MLWF optimisation, plotting and transport directly. The library
-runs in parallel with MPI at the same performance as the standalone code (the
-overlap matrices are distributed over k-points), and every library call returns
-an error code instead of aborting, so the host code keeps
-control of its own error handling.
+calling code sets options, then passes pointers to its own overlap, projection and 
+eigenvalue arrays (no large matrix is duplicated) and calls disentanglement, MLWF
+optimisation, plotting and transport directly. The library runs in parallel with MPI 
+with the same performance as the standalone code (the overlap matrices are distributed 
+over k-points), and every library call returns an error code instead of aborting, so 
+the host code keeps control of its own error handling.
 
-**Note**: Wannier90 is distributed under
-**LGPLv2.1-or-later**, so linking the library into your code does not impose the
-GPL on it.
+**Note**: Wannier90 is distributed under **LGPLv2.1-or-later** (meaning, among other 
+things, that linking the dynamic library with your code does not impose the GPL on it).
 
 - **Documentation:** [Library mode](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/) — [Using the library](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#using-the-library) · [Compiling and linking](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#compiling-and-linking)
 - **Fortran:** serial and MPI examples in [`test-suite/library-mode-test/`](test-suite/library-mode-test/) ([`demo.F90`](test-suite/library-mode-test/demo.F90))
