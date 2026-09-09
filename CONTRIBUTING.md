@@ -33,7 +33,14 @@ Try to add only tests that run within a few seconds. In most cases, this is poss
 
 Before committing, please check that the code compiles and that the tests run for you. To know how to write a test, and how to run them, read the README file inside the `test-suite` folder.
 
-Also, when you create a pull request, Travis-CI will run the same tests and show a green tick or a red cross depending on whether all the tests (that do not require the interface) pass. This typically takes just a few minutes, so after you create a pull request please check that all tests have passed.
+The tests are run with [pytest](https://docs.pytest.org/) and need Python 3.10 or newer:
+
+```bash
+pip install -r test-suite/requirements.txt
+cd test-suite && pytest
+```
+
+Also, when you create a pull request, GitHub Actions will run the same tests and show a green tick or a red cross depending on whether all the tests (that do not require the interface) pass. This typically takes just a few minutes, so after you create a pull request please check that all tests have passed.
 
 # GitHub repository and management of pull requests
 

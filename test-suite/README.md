@@ -1,205 +1,265 @@
- Wannier90 test suite
+# Wannier90 test suite
 
-## Dependencies
+Functional/regression tests for `wannier90.x` and `postw90.x`. Each test runs the code on a
+small input and compares selected values from one output file against a stored reference,
+within per-quantity tolerances.
 
-The code needs the `configparser` module, that can be installed e.g. via
-`pip install --user configparser`.
+The suite is driven by [pytest](https://docs.pytest.org/).
 
-## How to write a new test
+## Requirements
 
-### Writing a new test for wannier90.x
+- Python **3.10** or newer
+- `pytest` and `PyYAML`; `pytest-xdist` and `pytest-timeout` are optional but recommended:
 
-1. Create a new folder for the test inside `test-suite/tests`,
-   with a short but meaningful name.
-   The name *must* start with the prefix `testw90_` if it is a Wannier90
-   test, or `testpostw90_` if it is a postw90.x test. This is needed to properly
-   group tests in categories.
-
-2. modify the file `test-suite/tests/jobconfig` adding a new section,
-   following the template of existing tests. E.g.:
-   ```
-   # Testing preconditioner
-   [testw90_precond_1]
-   program = WANNIER90_WOUT_OK
-   inputs_args = ('gaas1.win', '')
-   output = gaas1.wout
-   ```
-   where:
-   - Line 1: comment on what the test is supposed to do or test;
-     feel free to write a long description spanning multiple lines;
-   - Line 2: test folder name created above, in square brackets
-   - Line 3: name of a program that you want to run to test.
-      The possible program names are defined in `test-suite/tests/userconfig`, discussed
-      below. The "program" defines which executable to use to run the program,
-      which parser needs to be used, and which custom tolerances should be used to
-      compare results of the test with reference results. It also defines if the test
-      is expected to have the code fail (e.g. to check the code stops for unexpected
-      inputs).
-   - Line 4: comma-separated list of tuples of length 2, containing the
-     `('inputfile', 'cmdline-params')` for each subtest to run. Typically, you
-     will have only one subtest. The first string is the name of the input file within
-     the test folder, the second are the command line parameters to pass to the
-     executable (use an empty string `''` if you don't have any custom parameter).
-   - Line 5: defines the name of the file to parse.
-
-   Additional parameters can be specified: check the
-   [testcode documentation](http://testcode.readthedocs.io/).
-
-   One additional parameter is worth mentioning here:
-
-   - `max_nprocs = 0`: this specifies the max number of CPUs that this test
-     is allowed to run on. Zero means to never call the test with `mpirun`,
-     a larger number indicates the max number of MPI processes to use. Setting to
-     zero is useful for tests that can only run in serial (e.g. for the gamma-only
-     runs).
-
-3. Enter the directory name to the "test_names" list found at the top fo CMakeLists.txt to
-   make the test visible to cmake.
-
-4. Put all needed input files in the folder (`.win`, `.amn`, `.mmn`, ...), making sure
-   that the input file has the name you specified above in the `jobconfig` file.
-   Add the files to the git repository.
-   Also, add a `.gitignore` file in your test folder for those files that are dynamically
-   created at runtime and should be ignored. The content of this file is also used by
-   the `clean_tests` code (described later) to decide if a file can be safely deleted.
-
-5. Compile the code in its most recent version.
-
-6. Run the code (with the same parameters as defined in `jobconfig`)
-   in the test folder to create a reference output.
-
-   `TODO: MAKE THIS AND THE NEXT POINT EASIER TO DO`
-
-7. Open the file in point 5 above, verify that it is the actual expected output,
-   and copy/move the output file to a file named `benchmark.out.default.inp=<inputfilename>`
-   (or `benchmark.out.default.inp=<inputfilename>.args=<cmdline_args>` if you have
-   some command line parameters in your `input_args`). Add this to the git repo.
-
-8. If you have chosen to use one of the existing "programs" already present in `userconfig`,
-   you are probably already ok: just run the test again to check that the test now passes
-   without errors.
-
-   **STRONG SUGGESTION**: To make sure the tests is working, try to change in the
-   reference/benchmark file one of the values that should be checked, to verify that
-   the tests actually fails if the value is unexpected. Remember to put back the correct
-   value afterwards!
-
-9. If instead you need to parse a different file, or parse additional data:
-   * for an additional value, edit/improve the python parsing functions;
-   * to parse a different file, create a new section in the `userconfig` file.
-   In both cases, see the description below in the `userconfig` section.
-
-### Writing a new test for postw90.x
-To write a test for `postw90.x`, you can follow all the steps for a `wannier90.x`
-test above. We outline here only the changes/additional steps needed.
-- Name your test folder with a `testpostw90_` prefix
-- Use the proper "program" in the `jobconfig` file
-- You need to start from a checkpoint file. Don't commit directly a .chk file
-  (as these are in machine-dependent format, so might not be usable on a
-  different computer). Instead:
-  * create a new folder inside `test-suite/checkpoints` with a sensible name
-  * put in the folder all needed inputs for the Wannier90 run. Make sure you
-    only have one `.win` file
-  * copy the Makefile from another folder (e.g. `si_geninterp`) in the folder
-    you created
-  * if you didn't do already, compile wannier90.x and postw90.x. Moreover,
-    please also compile `w90chk2chk.x`. To do this, run `make w90chk2chk`
-    in the top Wannier90 folder.
-  * Run `make` in the folder you created to run Wannier90, convert the
-    checkpoint file in a formatted format, and bzip it.
-  * Go now in your test folder `test-suite/tests/testpostw90_...`.
-  * Symlink the `<seedname>.chk.fmt.bz2` file that was created in the step
-    before in here (`ln -s ../checkpoints/<foldername>/<seedname>.chk.fmt.bz2`).
-  * You will probably need also to copy the other Wannier90 files like the
-    `.amn`, the `.mmn`, ...
-  * Copy the `Makefile` file in the `test-suite/tests/testpostw90_si_geninterp`
-    folder into your test folder. In this way, before running the tests, the
-   `./run_tests` script will run `make` on all test folders containing a
-   Makefile. The one we suggest to copy is already ready to do the right job
-   if you have only one symlink, whose name ends with `.chk.fmt.bz2`.
-
-This should be enough. When you will run the tests with `./run_tests`,
-the checkpoint file will be prepared, and then `postw90.x` will be run.
-
-# Parsing new files: the `userconfig` file
-The `userconfig` file defines the "programs" to run. Each section
-defines (at least) an executable to run and a function to parse the output.
-Moreover, additional options can be provided like some custom tolerances.
-
-An example program section looks like this:
-```
-[POSTW90_GENINTERPDAT_OK]
-exe = ../../postw90.x
-extract_fn = tools parsers.parse_geninterp_dat.parse
-tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
-	             (1.0e-6, 1.0e-6, 'bandidx')))
-```
-Each line defines the following:
-* Line 1: the name of the program in square brackets (that will be used in the `jobconfig` file)
-  Try to comply to the following syntax: `<CODENAME>_<FILETOPARSE>_<SHOULDFAIL>` where:
-  * `<CODENAME>` is `POSTW90` or `WANNIER90`
-  * `<FILETOPARSE>` is a short string defining the type of file that is expected to be
-    parsed/checked (e.g. `WOUT` or `NNKP`)
-  * `<SHOULDFAIL>` is `OK` if this is a standard run that should end with error code zero,
-    or `FAIL` if you expect the code to fail.
-* Line 2: specify the executable to run. Typically this is either `../../postw90.x` or
-  `../../wannier90.x` (the location is with respect to the folder in which `userconfig` is
-  located)
-* Line 3: define the (python) function to parse the output files. In the example above,
-  the two parameters indicate that the python modules live in the folder `tools` and,
-  within it, the function `parse` will be called, defined inside
-  `parsers/parse_geninterp_dat.py`.
-  To parse a new file, define a new file inside `tools/parsers`, and within it define
-  a `parse(fname)` python function that accepts a python function and returns
-  a dictionary in the form `{'testvaluekey': [value1, value2, ...]}` for the values
-  to test. We strongly suggest that you take inspiration from existing parsers (also
-  for the logic to manage verbose output).
-* Line 4-...: custom tolerances, using the format specified in the
-  [testcode documentation](http://testcode.readthedocs.io/). In particular, for each
-  value, the first number is a absolute tolarance, the second a relative tolerance, and
-  the third is the `testvaluekey` returned by the parser.
-  *Note*: if you don't specify a `testvaluekey` here, this is still checked with a fairly
-  strict tolerance. We still suggest to define explicitly all the `testvaluekey`s returned
-  by the parser for clarity.
-
-* the case `<SHOULDFAIL>=FAIL` is useful if you want to test an expected failure: e.g.
-  if you want to check that the code fails if you provide an unexpected input.
-  In this case, you have to add an option to the section:
+  ```bash
+  pip install -r test-suite/requirements.txt
   ```
-  can_fail = true
+
+- The binaries under test, built from the repository root:
+
+  ```bash
+  make wannier post w90chk2chk
   ```
-  to make sure that `testcode` does not mark the test as failed because the error code is
-  non-zero.
 
-Additional parameters can be specified: check the
-[testcode documentation](http://testcode.readthedocs.io/).
+  `w90chk2chk.x` is needed by the `postw90.x` tests, which start from a checkpoint file.
 
-# How to run the tests
-In the `test-suite` folder, run `./run_tests`. It will prompt you for the test
-you want to run, and then run them.
-The code has a number of command-line options to run in non-interactive mode, or
-to specify some options (number of MPI processors for parallel runs, verbose mode).
-Run `./run_tests -h` for further info.
+By default the harness looks for `wannier90.x`, `postw90.x` and `w90chk2chk.x` in the
+repository root. Point it elsewhere with `--wannier90-exe`, `--postw90-exe` and
+`--w90chk2chk-exe`, or the environment variables `W90_EXE`, `POSTW90_EXE` and
+`W90CHK2CHK_EXE`. It never falls back to `PATH`, so it cannot accidentally test a
+system-installed Wannier90 instead of your build.
 
-**Note**: you will need to have compiled `wannier90.x` and `postw90.x` to be able
-to run the tests. Moreover, please also compile `w90chk2chk.x`, needed to run the
-`postw90.x` tests. To do this, run `make w90chk2chk` in the top Wannier90 folder.
+## Running the tests
 
-## Cleaning up
-When running tests, a number of temporary files are created. While these should not
-create problems when the test is run multiple times, sometimes it is better to remove
-these files.
-To do this, run `./clean_tests` in the `test-code` folder. This will delete files
-that are for sure an output of the test code. If you want a deeper clean-up
-of files that are ignored by git (see also the output of the code for further info),
-you can run `./clean_tests -i`. This is typically safe, but double check (especially if
-you are creating a new test, to avoid the unexpected deletion of files).
-For this reason, we strongly suggest that you commit a `.gitignore` file
-inside your testfolder for files you know might be generated during the run.
+Run everything from the `test-suite` directory:
 
-# Acknowledgements
-The core of the test suite uses `testcode` by J. Spencer, hosted
-on [this GitHub repository](https://github.com/jsspencer/testcode).
+| Command | What it does |
+|---|---|
+| `pytest` | run the whole suite, serially |
+| `pytest -k testw90_example01` | run tests whose name matches |
+| `pytest tests/testw90_example01` | run one test by directory |
+| `pytest -m postw90` | run only the `postw90.x` tests |
+| `pytest -m "wannier90 or checkpoint"` | combine markers |
+| `pytest --nprocs=2` | run each test under `mpirun -np 2` |
+| `pytest -n auto` | run tests in parallel across CPUs (needs `pytest-xdist`) |
+| `pytest --workdir=/tmp/w90 ` | run in a fixed location and keep the results |
+| `pytest -x --ff` | stop at the first failure, failed tests first |
+| `ctest --test-dir build -L wannier90` | the same tests through CTest |
 
-We also acknowledge S. Poncé for the first implementation of the test-suite
-in Wannier90.
+Markers are derived from the directory name: `testw90_*` are `wannier90`, `testpostw90_*`
+are `postw90`, `checkpoint*` are `checkpoint`, `partest*` are `parallel`. Tests that must
+always run serially are additionally marked `serial`.
+
+`--nprocs=N` selects a parallel run; without it, the binary is invoked directly rather than
+through `mpirun -np 1`, which is not the same thing. Change the launcher for your MPI with
+`--mpi-launcher`, e.g. `--mpi-launcher="srun -n {nprocs}"`.
+
+### Where tests run
+
+Every test runs in its own **work directory outside the source tree**, into which the test's
+inputs are copied. Nothing is written back into `tests/`, so `git status` stays clean and
+runs cannot contaminate one another.
+
+By default that is a pytest temporary directory; pytest keeps the last three runs under
+`/tmp/pytest-of-<user>/`, which is usually what you want for a post-mortem. Use
+`--workdir=PATH` to put them somewhere predictable (CI does this so it can upload them).
+
+## Adding a test for `wannier90.x`
+
+1. Create `tests/<name>/`. The name **must** start with `testw90_` so it is grouped
+   correctly.
+2. Put the inputs in it (`.win`, `.amn`, `.mmn`, …) and `git add` them. Large inputs are
+   stored bzip2-compressed and decompressed at run time; see `prepare:` below.
+3. Write `tests/<name>/test.yaml`:
+
+   ```yaml
+   description: |
+     Gallium Arsenide, valence bands
+   profile: wannier90_wout
+   runs:
+     - input: gaas.win
+       output: gaas.wout
+   ```
+
+   `profile` picks the program, parser and tolerances from `profiles.yaml` (see below).
+   `output` is the file the code writes and the harness parses.
+4. Generate the reference and inspect it:
+
+   ```bash
+   pytest --update-benchmarks -k <name>
+   git diff --stat
+   ```
+
+5. Run `pytest -k <name>` and confirm it passes. Commit the inputs, the `test.yaml` and
+   `benchmark/<output>`.
+
+**There is no second place to register the test.** CMake discovers tests by globbing
+`tests/*/test.yaml`, so creating the directory is enough.
+
+**Strong suggestion.** Once the test passes, deliberately change one of the checked values
+in the reference file and confirm the test *fails*. A test that cannot fail is worse than no
+test. Put the correct value back afterwards.
+
+### The full `test.yaml` schema
+
+Everything except `profile` and `runs` is optional.
+
+```yaml
+description: |                     # free text; shown in the file, not by pytest
+  What this test covers
+profile: wannier90_wout            # required; key into profiles.yaml
+runs:                              # required; a list, currently always of length one
+  - input: gaas.win
+    args: ["-pp"]                  # command-line arguments, default none
+    output: gaas.wout              # file the code writes and we parse
+    benchmark: benchmark/gaas.wout # default: benchmark/<output>
+serial_only: false                 # never run under mpirun, even with --nprocs
+min_nprocs: 2                      # skip unless --nprocs is at least this
+expect_failure: false              # the run is expected to abort
+timeout: 600                       # seconds for one run
+tags: []                           # extra pytest markers
+depends_on: []                     # tests whose artefacts this one consumes
+prepare: []                        # input preparation, see below
+status: enabled                    # enabled | skip | xfail
+status_reason: ""                  # required when status is not "enabled"
+```
+
+`prepare:` replaces the per-test `Makefile`s that used to do this work:
+
+```yaml
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"  # decompress, w90chk2chk.x -f2u, drop the intermediate
+  - bunzip2: "*.mmn.bz2"           # plain decompression
+```
+
+A `status: skip` test is skipped by pytest with its reason shown in the summary, and marked
+`DISABLED` in CTest, so the two agree.
+
+## Adding a test for `postw90.x`
+
+Follow the steps above, with `testpostw90_` as the prefix and a `postw90_*` profile. A
+`postw90.x` run starts from a checkpoint, which needs preparing first.
+
+**Never commit a binary `.chk` file.** The format is compiler- and machine-dependent, so it
+would not be usable on another computer. Commit the *formatted and compressed* `.chk.fmt.bz2`
+instead, and let `prepare:` convert it at run time.
+
+1. Create `checkpoints/<name>/` and put the Wannier90 inputs in it, with exactly one `.win`.
+2. Copy the `Makefile` from a sibling (e.g. `checkpoints/si_geninterp`) and run `make` there.
+   That runs `wannier90.x`, converts the checkpoint to formatted form and bzips it.
+   (`checkpoints/` still uses Makefiles; only the per-test ones under `tests/` were removed.)
+3. In your test directory, symlink the result:
+
+   ```bash
+   ln -s ../../checkpoints/<name>/<seedname>.chk.fmt.bz2
+   ```
+
+   You will usually need the `.amn`, `.mmn` and similar files too.
+4. Declare the preparation in `test.yaml`:
+
+   ```yaml
+   prepare:
+     - chk_from_bz2: "*.chk.fmt.bz2"
+     - bunzip2: "*.mmn.bz2"
+   ```
+
+Symlinks are materialised into real files when the work directory is populated, so they may
+point outside the test directory.
+
+## Regenerating the reference files
+
+```bash
+pytest --update-benchmarks              # regenerate everything
+git diff --stat                         # see what moved
+git diff -- tests/testw90_example01     # inspect one
+```
+
+This runs each test exactly as normal, then copies the produced output over the reference
+instead of comparing. It refuses to write a reference when the parser extracts nothing, and
+it still checks the return code, so a crashed or unparseable run cannot be promoted. At the
+end it reports how many references were updated, unchanged, or failed to run.
+
+It works with any subset: `pytest --update-benchmarks -k testw90_example01`,
+`pytest --update-benchmarks -m postw90`.
+
+Two caveats:
+
+- **Regenerate serially.** MPI runs can differ in ordering and in the low-order digits, so
+  `--update-benchmarks` together with `--nprocs` is refused unless you also pass
+  `--allow-parallel-update`.
+- **Expect cosmetic diffs.** A `.wout` contains timings, dates and paths, so a regenerated
+  reference will differ in those regions even when nothing physical changed. The parsers
+  extract specific keys and ignore the rest, so those diffs are harmless — but do read the
+  diff rather than committing it blind.
+
+## Profiles
+
+`profiles.yaml` says, for each class of test, which program to run, which parser reads its
+output, and to what tolerance values are compared:
+
+```yaml
+wannier90_wout:
+  program: wannier90            # wannier90 | postw90
+  parser: parse_wout            # module in w90testlib/parsers/
+  tolerances:
+    final_spreads: {abs: 3.0e-6, rel: 3.0e-6}
+    omegaD:        {abs: 1.0e-6, rel: 5.0e-6}
+```
+
+A value passes when its error is **strictly less** than the tolerance. The relative error is
+normalised by the benchmark value. With both tolerances set, both must be satisfied.
+
+A key not listed is **still checked**, against a default of `abs: 1.0e-10` with no relative
+check — so listing a key can only loosen the comparison, never tighten it. Listing every key
+your parser returns is good practice anyway, because it documents what the test is for.
+
+`rel: null` switches the relative check off for that key, which is what you want for
+quantities that pass through zero. Note that tolerances must be written so YAML reads them
+as numbers: `1.0e-6`, not `1e-6` — the latter parses as a *string* and would be rejected.
+
+To parse a file no existing parser handles, add `w90testlib/parsers/parse_<something>.py`
+exporting
+
+```python
+def parse(filename) -> dict[str, list]:
+    ...
+```
+
+returning `{'key': [value, ...]}` for the values to check, then reference it from a new
+profile. Take inspiration from the existing parsers, including how they handle verbose
+output (`W90VERBOSETESTS=true`).
+
+Choosing tolerances: start from a similar existing profile. Values that are large in
+magnitude usually need a loose absolute tolerance and a tight relative one; values near zero
+need the opposite, and often `rel: null`.
+
+## Debugging a failure
+
+The assertion message names the test, every value that fell outside tolerance — with its
+key, index, both values, and both errors against both thresholds — and the **work
+directory**.
+
+```bash
+pytest -k testw90_example01 --workdir=/tmp/w90   # keep the run around
+cd /tmp/w90/testw90_example01
+cat stderr.log            # why the run died, if it did
+cat stdout.log
+diff gaas.wout <path-to>/tests/testw90_example01/benchmark/gaas.wout
+```
+
+Useful flags: `-x` stops at the first failure, `-ra` (on by default) lists skip reasons,
+`-v` shows each test name, `--tb=short` shortens tracebacks, and `-n auto` speeds up a full
+run once you are not debugging.
+
+If a test fails with "the parser extracted nothing", the run probably produced no useful
+output, or an output-format change stopped the parser matching. That case is deliberately a
+failure rather than a pass.
+
+## Running the library-mode tests
+
+`library-mode-test*/` are self-contained CMake projects, not part of the pytest suite. They
+are built and run by CTest as part of a normal `cmake`/`ctest` cycle.
+
+## Acknowledgements
+
+We acknowledge S. Poncé for the first implementation of the test-suite in Wannier90.

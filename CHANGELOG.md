@@ -1,5 +1,37 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+### Test suite migrated from testcode to pytest
+
+The functional/regression test suite is now driven by [pytest](https://docs.pytest.org/)
+instead of the vendored copy of `testcode2` that had been carried in `test-suite/testcode/`
+since 2017. What this means for developers:
+
+- **Python 3.10 or newer is now required to run the tests**, along with `pytest` and
+  `PyYAML`: `pip install -r test-suite/requirements.txt`.
+- `./run_tests` and `./clean_tests` are gone. Run `pytest` from `test-suite/`, or
+  `make tests` from the repository root, or `ctest` as before. `clean_tests` is obsolete
+  because tests no longer run in the source tree.
+- Tests now run in a work directory **outside the source tree**, so a test run no longer
+  leaves generated files behind and `git status` stays clean.
+- `tests/jobconfig` and `tests/userconfig` are replaced by one `tests/<name>/test.yaml` per
+  test plus a shared `test-suite/profiles.yaml`. Adding a test no longer means registering
+  it in three places: CMake discovers tests by globbing `tests/*/test.yaml`.
+- The per-test `Makefile`s are replaced by a declarative `prepare:` key.
+- Reference files are renamed from `benchmark.out.default.inp=<input>.win[.args=…]` to
+  `benchmark/<output filename>`. Contents are unchanged.
+- New `pytest --update-benchmarks` regenerates reference files, for the whole suite or any
+  subset, refusing to write one when the parser extracts nothing.
+- An output that parses to nothing is now a **failure**. Previously testcode reported "no
+  data extracted" as a pass, which let a test keep passing after a parser stopped matching
+  its output format.
+- The test-suite CMake no longer copies ~240 MB of test data into the build directory on
+  every configure.
+
+The core of the test suite previously used `testcode` by J. Spencer
+(<https://github.com/jsspencer/testcode>), which we gratefully acknowledge.
+
 ## v4.0.2 (27 August 2026)
 
 ### New features
