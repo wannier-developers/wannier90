@@ -104,12 +104,10 @@ clean:
 	cd $(ROOTDIR) && $(MAKE) -C src/obj clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
-	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 # Note: .x.dSYM are directories (hence the -r option to rm) and are only created on macOS (when compiling with certain flags, e.g. debug), so they are not always present
 veryclean: clean
 	cd $(ROOTDIR) && rm -rf wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90.{a,so.4} *.{gcda,gcno} *.x.dSYM
-	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
 	@(echo "The latex user_guide and tutorials have been migrated to markdown \
@@ -211,11 +209,17 @@ dist-legacy:
 		./CHANGE.log \
 	)
 
+# The test suite is driven by pytest; see test-suite/README.md.
+# Requires Python >= 3.10 with pytest and PyYAML:
+#   pip install -r test-suite/requirements.txt
+PYTHON ?= python3
+
 test-serial: w90chk2chk wannier post
-	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
+	(cd $(ROOTDIR)/test-suite && $(PYTHON) -m pytest tests )
 
 test-parallel: w90chk2chk wannier post
-	(cd $(ROOTDIR)/test-suite && ./run_tests --category=par --numprocs=4 )
+	(cd $(ROOTDIR)/test-suite && $(PYTHON) -m pytest tests --nprocs=4 \
+		-m "wannier90 or postw90 or checkpoint or parallel" )
 
 # Alias
 ifdef COMMS
