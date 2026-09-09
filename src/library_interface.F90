@@ -227,6 +227,8 @@ module w90_library
   !! transform overlaps and initial projections
   public :: w90_set_comm
   !! setup MPI communicator in parallel case
+  public :: w90_set_comm_integer
+  !! setup MPI communicator in parallel case via integer handle to MPI comm
   public :: w90_set_constant_bohr_to_ang
   !! set value of Bohr/Angstrom conversion
   public :: w90_set_eigval
@@ -1177,6 +1179,22 @@ contains
 #endif
     common_data%comm%comm = comm
   end subroutine w90_set_comm
+
+  subroutine w90_set_comm_integer(common_data, comm)
+    implicit none
+
+    type(lib_common_type), intent(inout) :: common_data
+    integer, intent(in) :: comm
+#ifdef MPI08
+    ! MPI_VAL is the internal integer component used within MPI handle derived types
+    ! This can safely be set by a passed in integer and allows greater freedom in the
+    ! interoperability between a higher level program compiled with any version of
+    ! MPI library support, mpif.h or mpi.f90 or mpif08.
+    common_data%comm%comm%MPI_VAL = comm
+#else
+    common_data%comm%comm = comm
+#endif
+  end subroutine w90_set_comm_integer
 
   subroutine w90_print_info(common_data, istdout, istderr, ierr)
     use w90_error_base, only: w90_error_type
