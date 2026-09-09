@@ -1,7 +1,6 @@
 """
 Parser function parse() to parse the seedname_r.dat output file of Wannier90 (<i|r|j> matrix elements).
 """
-from __future__ import print_function, unicode_literals
 import inspect
 import re
 from collections import defaultdict

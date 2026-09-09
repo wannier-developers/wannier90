@@ -1,7 +1,6 @@
 """
 Parser function parse() to parse the .bvec output file of Wannier90 (bvec matrices).
 """
-from __future__ import print_function, unicode_literals
 import inspect
 import re
 from collections import defaultdict
