@@ -28,7 +28,7 @@
 program ok
 
 ! fallback to f90 mpi interface for this test's simplified cmake setup
-#ifdef MPI08
+#ifdef W90_MPI08
   use mpi_f08
 #else
   use mpi

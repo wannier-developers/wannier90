@@ -51,7 +51,7 @@ void reade(string, int, int, double*);
 
 int main(int argc, char* argv[]) {
 
-#ifdef MPI
+#ifdef W90_MPI
         // before argv parsing: MPI_Init may consume launcher-added arguments
         MPI_Init(&argc, &argv);
 #endif
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 
         w90_data w90glob;
         w90_create(&w90glob);
-#ifdef MPI
+#ifdef W90_MPI
         w90_set_comm(w90glob, MPI_COMM_WORLD);
 #endif
 
@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
         w90_get_spreads(w90glob, wannier_spr);
         w90_delete(&w90glob);
 
-#ifdef MPI
+#ifdef W90_MPI
         MPI_Finalize();
 #endif
         return 0;

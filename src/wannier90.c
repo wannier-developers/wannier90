@@ -109,7 +109,7 @@ void w90_input_setopt(w90_data blob, const char* seed, int* ierr) {
     w90_input_setopt_f(blob, &desc, ierr);
 }
 
-#ifdef MPI
+#ifdef W90_MPI
 void w90_set_comm(w90_data blob, MPI_Comm comm) {
     MPI_Fint fcomm = MPI_Comm_c2f(comm);
     w90_set_comm_f(blob, &fcomm);
