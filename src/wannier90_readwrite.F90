@@ -280,7 +280,7 @@ contains
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                   stdout, error, comm)
+                                                   stdout, print_output%iprint, error, comm)
       if (allocated(error)) return
 
       call w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
@@ -609,7 +609,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                     stdout, error, comm)
+                                                     stdout, iprint, error, comm)
     !================================================!
     ! Wannierise
     !================================================!
@@ -619,6 +619,7 @@ contains
     ! arguments
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: iprint
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
@@ -683,6 +684,15 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm, &
                                    i_value=wann_control%conv_window)
     if (allocated(error)) return
+
+    if (.not. found .and. wann_control%conv_noise_amp <= 0.0_dp) then
+      if (iprint > 0) then
+        write (stdout, '(a)') ' Warning: conv_window is not set, so conv_tol is ignored and &
+          &wannierisation will always run for num_iter iterations. Set conv_window (e.g. to 3) &
+          &if you want the minimisation to stop early once the spread change is below conv_tol &
+          &for that many consecutive iterations.'
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm, &
                                    i_value=wann_control%conv_noise_num)
