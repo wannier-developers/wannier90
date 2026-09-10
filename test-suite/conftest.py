@@ -8,7 +8,25 @@ import os
 import shutil
 from pathlib import Path
 
-import pytest
+import sys
+import warnings
+
+if sys.version_info < (3, 10):
+    warnings.warn(
+        "The Wannier90 test suite requires Python 3.10 or newer. "
+        f"Detected Python {sys.version.split()[0]}.",
+        RuntimeWarning,
+        stacklevel=1,
+    )
+
+    import pytest
+
+    pytest.exit(
+        "Unsupported Python version. Please run pytest with Python 3.10 or newer.",
+        returncode=2,
+    )
+
+
 
 from w90testlib.case import discover_cases
 from w90testlib.executables import resolve as resolve_executables
