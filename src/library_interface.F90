@@ -1484,4 +1484,11 @@ contains
       end if
     end do
   end subroutine w90_distribute_kpts
+
+  subroutine w90_free(common_data)
+    type(lib_common_type), intent(inout) :: common_data
+    type(lib_common_type) :: blank   ! default-initialised, nothing allocated
+    common_data = blank
+  end subroutine
+
 end module w90_library
