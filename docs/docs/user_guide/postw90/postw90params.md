@@ -250,6 +250,61 @@ The units are Å$^{-1}$.
 If you use a module which needs a k-mesh, either `kmesh_spacing` or
 `kmesh` must be defined.
 
+### `logical :: effective_model`
+
+If `true`, `postw90` does not read `seedname.chk`, but takes the matrix
+elements of the operators in the Wannier basis directly from text files:
+the Hamiltonian $H(\mathbf{R})$ from `seedname_HH_R.dat` and, for the
+modules that need it, the position operator
+$\mathbf{A}(\mathbf{R})$ from `seedname_AA_R.dat`. The number of
+Wigner--Seitz points and `num_wann` are read from the header of
+`seedname_HH_R.dat`, and the input keywords `num_bands`, `mp_grid` and
+`kpoints` are then neither required nor used. This makes it possible to
+run the interpolation machinery of `postw90` on a tight-binding model
+that did not come from a Wannierisation.
+
+Only these two operators can be supplied this way: there is no
+file-reading path for $B(\mathbf{R})$, $C(\mathbf{R})$,
+$S(\mathbf{R})$ or the spin-current matrices, so only the tasks that
+need no more than $H$ and $\mathbf{A}$ can be run in this mode.
+`scissors_shift` is not implemented either, and stops the run if given.
+Note finally that `seedname.eig` is still opened if it is present; its
+contents are simply not used.
+
+The default value is `false`.
+
+### `logical :: wanint_kpoint_file`
+
+If `true`, the interpolation is carried out on an explicit list of
+k-points with weights, read from a file named `kpoint.dat`, instead of
+on the uniform mesh generated from `kmesh`. Note that this file name is
+fixed and does not depend on the seedname.
+
+The intended use is to sample only the irreducible wedge of the
+Brillouin zone, giving each k-point the weight of its symmetry star, so
+that fewer points are needed for the same accuracy. The first line of
+the file contains the number of k-points; each of the following lines
+contains the three reduced coordinates of a k-point followed by its
+weight. The weights should add up to the same total as on a full uniform
+mesh, where each of the $N_{1}N_{2}N_{3}$ points carries a weight of
+$1/(N_{1}N_{2}N_{3})$. The k-points are distributed over the MPI ranks
+in the order in which they appear in the file.
+
+The flag is honoured by the `berry`, `dos` and `spin` modules. It cannot
+be combined with `tetrahedron_method`. Note that `berry_kmesh` (or
+`kmesh`) must still be given even when the k-points come from the file,
+because its nominal value is what sets up the adaptive smearing in the
+`kubo` part of the `berry` module.
+
+The default value is `false`.
+
+!!! warning
+    Sampling the irreducible wedge is safe for the density of states,
+    but not in general: the code itself warns that "IBZ implementation is
+    currently limited to simple cases" and asks you to check the results
+    against a full Brillouin-zone calculation. Treat anything other than
+    a `dos` run with this flag as something to validate.
+
 ### `logical :: adpt_smr`
 
 Determines whether to use an adaptive scheme for broadening the DOS and
@@ -308,6 +363,22 @@ The units are eV. The default value is 0 eV. Note that if the width is
 smaller than twice the energy step (e.g. `dos_energy_step` for the `dos`
 module), the DOS will be unsmeared (thus the default is to have an
 unsmeared properties when `adpt_smr` is set to `false`.).
+
+### `real(kind=dp) :: smr_max_arg`
+
+Cut-off on the argument of the broadened delta function. A state whose
+energy $\epsilon$ satisfies
+$|\epsilon-\epsilon_{F}|/\eta >$ `smr_max_arg`, where $\eta$ is the
+smearing width, gives a negligible contribution and is skipped. This is
+purely a way of saving time and does not change the result appreciably,
+provided the value is not made too small.
+
+The default value is 5.0.
+
+!!! note
+    Although this is a global variable, the cut-off is at present
+    implemented only in the `gyrotropic` module, where it may also be set
+    separately through `gyrotropic_smr_max_arg`. The other modules ignore it.
 
 ### `integer :: num_elec_per_state`
 
@@ -377,6 +448,18 @@ The units are degrees. The default value is 0.
 Determines whether to evaluate the spin moment.
 
 The default value is `false`.
+
+### `integer :: spin_kmesh(:)`
+
+Overrides the `kmesh` global variable (see
+Sec. [Global variables](#global-variables)) for the evaluation of the
+spin moment.
+
+### `real(kind=dp) :: spin_kmesh_spacing`
+
+Overrides the `kmesh_spacing` global variable (see
+Sec. [Global variables](#global-variables)) for the evaluation of the
+spin moment.
 
 ### `logical :: uHu_formatted`
 
@@ -486,6 +569,27 @@ and converges faster. The formula is also manifestly translationally-invariant,
 that is, the results are the same if the system is translated by a whole.
 
 The default value is `false`.
+
+### `logical :: use_degen_pert`
+
+If `true`, the band gradients needed for the Berry-phase, gyrotropic and
+BoltzWann calculations are obtained, within each group of degenerate
+bands, by diagonalising the matrix of $\partial H/\partial k$ over that
+group (degenerate perturbation theory, Eq. (31) of
+[@yates-prb07]), instead of simply taking the
+diagonal elements. This removes the spurious band gradients that the
+naive expression gives at degeneracies.
+
+The default value is `false`.
+
+### `real(kind=dp) :: degen_thr`
+
+Two consecutive bands are treated as degenerate, when `use_degen_pert`
+is `true`, if their energies differ by less than `degen_thr`. Groups of
+more than two degenerate bands are built by applying the same criterion
+to successive pairs.
+
+Units are eV. The default value is $10^{-4}$.
 
 ## DOS
 
@@ -1131,6 +1235,46 @@ Energy shift of the conduction bands.
 The units are eV. No default value; if `shc_bandshift` is `true`, this
 flag must be provided.
 
+### `logical :: tetrahedron_method`
+
+If `true`, the Brillouin-zone integral for the spin Hall conductivity is
+evaluated by the tetrahedron method of Ghim and Park,
+Phys. Rev. B 106, 075126 (2022), instead of by a smeared sum over the
+uniform mesh. The mesh defined by `berry_kmesh` (or `kmesh`) is divided
+into tetrahedra following the optimised scheme of Kawamura *et al.*,
+Phys. Rev. B 89, 094515 (2014), and the contribution of each tetrahedron
+is then integrated analytically.
+
+This is implemented for the spin Hall conductivity only: `berry_task`
+must contain `shc`, otherwise the run stops with an error. It also
+cannot be combined with `wanint_kpoint_file`.
+
+The default value is `false`.
+
+### `real(kind=dp) :: tetrahedron_cutoff`
+
+Relative threshold used to regularise the analytic integral over a
+tetrahedron. If two of the four band-energy differences at the corners of
+a tetrahedron lie closer together than this fraction of
+$|\bar{D}+\hbar\omega|$, where $\bar{D}$ is their mean, they are moved
+apart to exactly that separation. This avoids the near-cancellation that
+would otherwise appear in the denominators of the non-dissipative part of
+the Kubo formula. The parameter is dimensionless, and is used only if
+`tetrahedron_method = true`.
+
+The default value is $10^{-4}$.
+
+### `real(kind=dp) :: tetrahedron_avoid_degeneracy`
+
+Threshold below which a band splitting at a corner of a tetrahedron is
+treated as an accidental degeneracy rather than a real one. The splitting
+is then replaced by `tetrahedron_avoid_degeneracy`, keeping its sign, and
+the corresponding matrix element is set to zero so that the pair of bands
+does not contribute. This is applied to the zero-frequency contribution
+only, and is used only if `tetrahedron_method = true`.
+
+Units are eV. The default value is $3\times10^{-4}$.
+
 ### `real(kind=dp) :: sc_eta`
 
 The width $\eta$ used to broaden energy differences in denominators of
@@ -1336,6 +1480,11 @@ maximum energy eigenvalue stored in `seedname.eig` plus 0.6667.
 
 Overrides the `smr_fixed_en_width` global variable (see
 Sec. [Global variables](#global-variables)).
+
+### `real(kind=dp) :: gyrotropic_smr_max_arg`
+
+Overrides the `smr_max_arg` global variable (see
+Sec. [Global variables](#global-variables)).
 
 ### `character(len=120) :: gyrotropic_smr_type`
 
