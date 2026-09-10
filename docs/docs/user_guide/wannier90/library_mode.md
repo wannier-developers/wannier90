@@ -513,16 +513,12 @@ A demonstration of repeated use is in test_suite/library/fortran-free/.
 Depending on whether a serial or MPI compilation has happened, different
 library files are produced:
 
-| filename              | description               |
-|-----------------------|---------------------------|
-| libwannier90.a        | static library, serial    |
-| libwannier90_mpi.a    | static library, parallel  |
-| libwannier90.so.4     | dynamic library, serial   |
-| libwannier90_mpi.so.4 | dynamic library, parallel |
-| w90_library.mod       | fortran module            |
+| filename              | description                                 |
+|-----------------------|---------------------------------------------|
+| libwannier90.a        | static library                              |
+| libwannier90.so.4     | dynamic library                             |
+| w90_library.mod       | fortran module                              |
 | wannier90.h           | C header (compile with WANNIER90_WITH_C=ON) |
-
-MPI operations are only supported by "libwannier90_mpi".
 
 To generate dynamic libraries using GNU make, you need to build the target
 "dynlib"

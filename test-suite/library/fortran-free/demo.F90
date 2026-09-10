@@ -110,7 +110,6 @@ program ok
   end do
   nkloc = count(distk(:) == mpirank)
 
-
   ! stdout/err
   call w90_get_fortran_stdout(stdout)
   call w90_get_fortran_stderr(stderr)
