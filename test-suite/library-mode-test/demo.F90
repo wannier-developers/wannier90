@@ -47,7 +47,7 @@ program ok
   integer :: i, ib, ic, ik, nkl
   integer :: ika, ikb, ikc, nkabc(3)
   integer :: mpisize, mpirank
-  integer :: nb, nk, nn, nw, nkloc
+  integer :: nb, nk, nn, nw, nkloc, ifu
   real(8), allocatable :: eval(:, :), kpt(:, :)
   real(8) :: uccart(3, 3) ! cartesian unit cell
   type(lib_common_type) :: w90main
@@ -158,10 +158,15 @@ program ok
   call w90_disentangle(w90main, stdout, stderr, ierr)
   call w90_wannierise(w90main, stdout, stderr, ierr)
 
+  call w90_print_info(w90main, stdout, stderr, ierr)
+  call w90_print_timings(w90main, stdout) ! print timing information
+
   if (mpirank == 0) then
+    open(newunit=ifu, file="results.dat")
     do ib = 1, nw
-      write (stdout, '(4f20.10)') (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
+      write (ifu, '(4f20.10)') (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
     end do
+    close(ifu)
   end if
   call mpi_finalize(ierr)
 end program

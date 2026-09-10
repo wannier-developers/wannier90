@@ -188,6 +188,8 @@ module w90_library
 
   public :: w90_print_info
   !! prints a wide variety of simulation parameters to stdout
+  public :: w90_print_timings
+  !! prints a decorative summary of disentanglement/mlwf/plot timings
   public :: w90_create_kmesh
   ! trigers the generation of k-mesh info (as do get_nn*)
   ! this is called by get_nnkp and get_gkpb
@@ -1231,6 +1233,23 @@ contains
     end if
   end subroutine w90_print_info
 
+  subroutine w90_print_timings(common_data, istdout)
+    use w90_comms, only: mpisize, mpirank
+    use w90_io, only: io_print_timings
+
+    implicit none
+
+    ! arguments
+    integer, intent(in) :: istdout
+    type(lib_common_type), intent(inout) :: common_data
+
+    ! io_print_timings does not test for iprint or rank being root
+    ! adopt latter condition here--iprint irrelevant when this function is explicitly requested
+    if (mpirank(common_data%comm) == 0) then
+      call io_print_timings(common_data%timer, istdout)
+    endif
+  end subroutine w90_print_timings
+
   subroutine w90_set_option_text(common_data, keyword, text)
     use w90_readwrite, only: init_settings, expand_settings
 
@@ -1465,5 +1484,4 @@ contains
       end if
     end do
   end subroutine w90_distribute_kpts
-
 end module w90_library
