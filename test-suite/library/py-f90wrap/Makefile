@@ -1,7 +1,7 @@
 
-include ../make.inc
+include ../../../make.inc
 
-include ../Makefile.header
+include ../../../Makefile.header
 
 ifdef COMMS
 COMMS := $(strip $(COMMS))
@@ -16,12 +16,12 @@ endif
 F90WRAP ?= f90wrap
 F2PY ?= f2py-f90wrap
 
-WRAPSRC = ../src/constants.F90 ../src/types.F90 ../src/wannier90_readwrite.F90 \
-        ../src/wannier90_types.F90 ../src/comms.F90 ../src/library_interface.F90 \
-        ../src/library_extra.F90
+WRAPSRC = ../../../src/constants.F90 ../../../src/types.F90 ../../../src/wannier90_readwrite.F90 \
+        ../../../src/wannier90_types.F90 ../../../src/comms.F90 ../../../src/library_interface.F90 \
+        ../../../src/library_extra.F90
 
 # location of modules from main code
-BUILD = $(realpath ../src/obj)
+BUILD = $(realpath ../../../src/obj)
 
 all: wrap python
 

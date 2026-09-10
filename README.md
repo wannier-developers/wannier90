@@ -47,9 +47,9 @@ the host code keeps control of its own error handling.
 things, that linking the dynamic library with your code does not impose the GPL on it).
 
 - **Documentation:** [Library mode](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/) — [Using the library](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#using-the-library) · [Compiling and linking](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#compiling-and-linking)
-- **Fortran:** serial and MPI examples in [`test-suite/library-mode-test/`](test-suite/library-mode-test/) ([`demo.F90`](test-suite/library-mode-test/demo.F90))
-- **C / C++:** [C interface](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#c-interface), header [`src/wannier90.h`](src/wannier90.h), example in [`test-suite/library-mode-test-C-interface/`](test-suite/library-mode-test-C-interface/)
-- **Python:** [Python interface](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#python-interface) generated with [f90wrap](https://github.com/jameskermode/f90wrap); examples in [`wrap/`](wrap/) (`serial-example.py`, `mpi-example.py`, `example-dos.py`)
+- **Fortran:** serial and MPI examples in [`test-suite/library/fortran/`](test-suite/library/fortran/) ([`demo.F90`](test-suite/library/fortran/demo.F90))
+- **C / C++:** [C interface](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#c-interface), header [`src/wannier90.h`](src/wannier90.h), example in [`test-suite/library/C-interface/`](test-suite/library/C-interface/)
+- **Python:** [Python interface](https://wannier90.readthedocs.io/en/latest/user_guide/wannier90/library_mode/#python-interface) generated with [f90wrap](https://github.com/jameskermode/f90wrap); examples in [`test-suite/library/py-f90wrap/`](test-suite/library/py-f90wrap/) (`serial-example.py`, `mpi-example.py`, `example-dos.py`)
 
 ## For developers
 

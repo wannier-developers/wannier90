@@ -142,23 +142,18 @@ if (NOT _w90_pytest_missing)
 endif ()
 
 ## Functional tests
-set(functional_tests
-)
 if (WANNIER90_WITH_C)
-	# These test requires that the C interface is built
-        # (which requires a --std=f2018 compliant compiler
-	list(APPEND functional_tests
-			library-mode-test-C-interface
-        )
+	# This test requires that the C interface is built
+	# (which requires a --std=f2018 compliant compiler)
+	Wannier90_add_test(library/C-interface
+			TEST_NAME library-mode-test-C-interface)
 endif ()
 if (WANNIER90_MPI)
 	# These tests require MPI interface
-	list(APPEND functional_tests
-			library-mode-test-proj-overflow
-			library-mode-test
-			library-mode-test-projections
-	)
+	Wannier90_add_test(library/fortran-test-proj-overflow
+			TEST_NAME library-mode-test-proj-overflow)
+	Wannier90_add_test(library/fortran
+			TEST_NAME library-mode-test)
+	Wannier90_add_test(library/fortran-test-proj
+			TEST_NAME library-mode-test-projections)
 endif ()
-foreach (test IN LISTS functional_tests)
-	Wannier90_add_test(${test})
-endforeach ()

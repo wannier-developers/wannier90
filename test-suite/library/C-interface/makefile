@@ -1,4 +1,4 @@
-ROOT = ../..
+ROOT = ../../..
 include $(ROOT)/make.inc
 # COMPILER (F90 or MPIF90), POSTOPTS and DYNLIBBASE (serial/MPI library name) per COMMS
 include $(ROOT)/Makefile.header

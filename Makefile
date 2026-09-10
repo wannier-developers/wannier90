@@ -71,7 +71,7 @@ w90vdw:
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw
 
 w90py: libs
-	$(MAKE) -C $(ROOTDIR)/wrap
+	$(MAKE) -C $(ROOTDIR)/test-suite/library/py-f90wrap
 
 libs: staticlib dynlib
 

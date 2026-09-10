@@ -50,10 +50,10 @@ and link to the Wannier90 library, including the names of the library files.
 
 Section [Examples](#examples) documents some minimal Fortran examples that use
 the library in serial and parallel.  These examples are distributed in the
-directory `test-suite/library-mode-test`.
+directory `test-suite/library/fortran`.
 
 Section [C-interface](#c-interface) lists the C interface functions and shows
-how to use them.  A test is available in `test-suite/library-mode-test-C-interface`.
+how to use them.  A test is available in `test-suite/library/C-interface`.
 
 $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}=\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle$
@@ -534,7 +534,7 @@ invalid communicator, exiting.  Use w90_set_comm()!" )
 
 ## Examples
 
-See directory: test-suite/library-mode-test/
+See directory: test-suite/library/fortran/
 
 ## C Interface
 
@@ -544,11 +544,11 @@ fortran interface except for the passing of multi-dimensional arrays as options,
 where different functions must be called for 1-d and 2-d data.
 
 An example that re-implements the main wannier90 executable is given in
-directory test-suite/library-mode-test-C-interface/
+directory test-suite/library/C-interface/
 
 ## Python interface
 
-The directory `wrap/` in the sources contains an Python wrapping of the Fortran
+The directory `test-suite/library/py-f90wrap/` in the sources contains an Python wrapping of the Fortran
 library.  It is constructed using the [f90wrap
 package](https://github.com/jameskermode/f90wrap) (See also DOI
 10.1088/1361-648X/ab82d2).  Specifiy `F90WRAP` in the build configuration.
@@ -556,7 +556,7 @@ package](https://github.com/jameskermode/f90wrap) (See also DOI
 ### Build instructions
 
 - Make sure f90wrap is installed
-- cd wrap
+- cd test-suite/library/py-f90wrap
 - make -f Makefile
 
 Edit the makefiles as appropriate.
@@ -564,10 +564,10 @@ Edit the makefiles as appropriate.
 ### Use
 
 - if wannier90 is installed in e.g. W90DIR then export
-  PYTHONPATH=$(W90DIR)/wrap
+  PYTHONPATH=$(W90DIR)/test-suite/library/py-f90wrap
 
 - since the wannier90 wrapper is built as a separate shared lib, also export
-  LD_LIBRARY_PATH=$(W90DIR)/wrap
+  LD_LIBRARY_PATH=$(W90DIR)/test-suite/library/py-f90wrap
 
 - run python3 and type commands or 'python3 script.py' (the mpi version is
   something like 'mpirun -np n python3 script.py')
