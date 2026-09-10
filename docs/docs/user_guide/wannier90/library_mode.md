@@ -502,6 +502,8 @@ optimisation returns ierr zero.
 Deallocates all memory used by the library object and nullifies pointers to
 external matrices.  Call this function to re-use a library data object.
 
+A demonstration of repeated use is in test_suite/library/fortran-free/.
+
 ```fortran title="Fortran"
   subroutine w90_free(common_data)
 ```
