@@ -1,0 +1,7 @@
+# testw90_example11_2
+
+description: "Silicon, valence and conduction states"
+profile: wannier90_wout
+runs:
+  - input: silicon.win
+    output: silicon.wout

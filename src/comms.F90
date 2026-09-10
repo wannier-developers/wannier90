@@ -37,24 +37,24 @@ module w90_comms
   use w90_constants, only: dp
   use w90_error_base
 
-#ifdef MPI
-#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#ifdef W90_MPI
+#  if !(defined(W90_MPI08) || defined(W90_MPI90) || defined(W90_MPIH))
 #    error "You need to define which MPI interface you are using"
 #  endif
 #else
 #define MPI_COMM_NULL -1
 #endif
 
-#ifdef MPI08
+#ifdef W90_MPI08
   use mpi_f08 ! use f08 interface if possible
 #endif
-#ifdef MPI90
+#ifdef W90_MPI90
   use mpi ! next best, use fortran90 interface
 #endif
 
   implicit none
 
-#ifdef MPIH
+#ifdef W90_MPIH
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
@@ -91,7 +91,7 @@ module w90_comms
   public :: comms_no_sync_send       ! send data from one node to another
 
   type, public :: w90_comm_type
-#ifdef MPI08
+#ifdef W90_MPI08
     type(mpi_comm) :: comm = MPI_COMM_NULL ! f08 mpi interface
 #else
     integer :: comm = MPI_COMM_NULL ! f90 mpi or no mpi
@@ -99,9 +99,9 @@ module w90_comms
   end type
 
   type, private :: w90stat_type
-#ifdef MPI08
+#ifdef W90_MPI08
     type(mpi_status) :: stat ! f08 mpi interface
-#elif MPI90
+#elif W90_MPI90
     integer :: stat(MPI_STATUS_SIZE)
 #else
     integer :: stat ! not used
@@ -240,7 +240,7 @@ contains
 
   logical function valid_communicator(comm)
     type(w90_comm_type), intent(in) :: comm
-#ifdef MPI
+#ifdef W90_MPI
     if (comm%comm == MPI_COMM_NULL) then
       valid_communicator = .false.
     else
@@ -255,7 +255,7 @@ contains
   integer function mpirank(comm)
     type(w90_comm_type), intent(in) :: comm
     integer :: ierr
-#ifdef MPI
+#ifdef W90_MPI
     call mpi_comm_rank(comm%comm, mpirank, ierr)
 #else
     mpirank = 0
@@ -266,7 +266,7 @@ contains
   integer function mpisize(comm)
     type(w90_comm_type), intent(in) :: comm
     integer :: ierr
-#ifdef MPI
+#ifdef W90_MPI
     call mpi_comm_size(comm%comm, mpisize, ierr)
 #else
     mpisize = 1
@@ -280,7 +280,7 @@ contains
     type(w90_error_type), allocatable, intent(inout) :: error
     integer :: ierr, mpiierr, abserr
 
-#if defined(MPI) && !defined(DISABLE_ERROR_SYNC)
+#if defined(W90_MPI) && !defined(DISABLE_ERROR_SYNC)
     abserr = abs(ierr) ! possibility of -ve values, use abs for safety
     call mpi_allreduce(MPI_IN_PLACE, abserr, 1, MPI_INTEGER, MPI_SUM, comm%comm, mpiierr)
     ! you could check mpiierr here, but truly all bets are off in that case
@@ -334,7 +334,7 @@ contains
     implicit none
     type(w90_comm_type), intent(in) :: comm
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_barrier(comm%comm, ierr)
@@ -351,7 +351,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_bcast(array, size, MPI_INTEGER, root_id, comm%comm, ierr)
@@ -372,7 +372,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_bcast(array, size, MPI_DOUBLE_PRECISION, root_id, comm%comm, ierr)
@@ -394,7 +394,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_bcast(array, size, MPI_LOGICAL, root_id, comm%comm, ierr)
@@ -416,7 +416,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_bcast(array, size, MPI_CHARACTER, root_id, comm%comm, ierr)
@@ -439,7 +439,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_bcast(array, size, MPI_DOUBLE_COMPLEX, root_id, comm%comm, ierr)
@@ -465,7 +465,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_send(array, size, MPI_LOGICAL, to, mpi_send_tag, comm%comm, ierr)
@@ -488,7 +488,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_send(array, size, MPI_INTEGER, to, mpi_send_tag, comm%comm, ierr)
@@ -511,7 +511,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_send(array, size, MPI_CHARACTER, to, mpi_send_tag, comm%comm, ierr)
@@ -534,7 +534,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_send(array, size, MPI_DOUBLE_PRECISION, to, mpi_send_tag, comm%comm, ierr)
@@ -557,7 +557,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_send(array, size, MPI_DOUBLE_COMPLEX, to, mpi_send_tag, comm%comm, ierr)
@@ -582,7 +582,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     type(w90stat_type) :: status
     integer :: ierr
 
@@ -606,7 +606,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     type(w90stat_type) :: status
     integer :: ierr
 
@@ -630,7 +630,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     type(w90stat_type) :: status
     integer :: ierr
 
@@ -654,7 +654,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     type(w90stat_type) :: status
     integer :: ierr
 
@@ -679,7 +679,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     type(w90stat_type) :: status
     integer :: ierr
 
@@ -704,7 +704,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
@@ -757,7 +757,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
@@ -821,7 +821,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
     integer :: rank
     rank = mpirank(comm)
@@ -870,7 +870,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     select case (op)
@@ -911,7 +911,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     select case (op)
@@ -948,7 +948,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
@@ -977,7 +977,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
@@ -1006,7 +1006,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, &
@@ -1036,7 +1036,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_PRECISION, rootglobalarray, counts, displs, &
@@ -1072,7 +1072,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
@@ -1102,7 +1102,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
@@ -1132,7 +1132,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
@@ -1162,7 +1162,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
@@ -1192,7 +1192,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_DOUBLE_COMPLEX, rootglobalarray, counts, displs, &
@@ -1222,7 +1222,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_gatherv(array, localcount, MPI_LOGICAL, rootglobalarray, counts, displs, &
@@ -1250,7 +1250,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
@@ -1280,7 +1280,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
@@ -1310,7 +1310,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_PRECISION, array, localcount, &
@@ -1340,7 +1340,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, array, localcount, &
@@ -1370,7 +1370,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_DOUBLE_COMPLEX, array, localcount, &
@@ -1400,7 +1400,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
@@ -1431,7 +1431,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &
@@ -1462,7 +1462,7 @@ contains
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-#ifdef MPI
+#ifdef W90_MPI
     integer :: ierr
 
     call mpi_scatterv(rootglobalarray, counts, displs, MPI_INTEGER, array, localcount, &

@@ -1,0 +1,9 @@
+# testw90_example03_labelinfo
+
+description: "Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure, checking the labelinfo.dat file"
+profile: wannier90_labelinfo
+runs:
+  - input: silicon.win
+    output: silicon_band.labelinfo.dat
+prepare:
+  - bunzip2: "*.mmn.bz2"

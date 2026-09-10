@@ -2072,7 +2072,7 @@ contains
 
     ! show parallel/serial execution
     if (mpi_size == 1) then
-#ifdef MPI
+#ifdef W90_MPI
       write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
 #else
       write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'

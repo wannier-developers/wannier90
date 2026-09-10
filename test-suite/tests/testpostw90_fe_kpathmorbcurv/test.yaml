@@ -1,0 +1,11 @@
+# testpostw90_fe_kpathmorbcurv
+
+description: Test of KPATH Berry Curvature plus Orbital Magnetisation for bcc iron
+profile: postw90_morb_dat
+runs:
+  - input: Fe.win
+    output: Fe-morb.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.uHu.bz2"

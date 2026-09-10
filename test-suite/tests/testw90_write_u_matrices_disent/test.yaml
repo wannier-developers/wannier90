@@ -1,0 +1,6 @@
+# testw90_write_u_matrices_disent
+
+profile: wannier90_umat
+runs:
+  - input: wannier.win
+    output: wannier_u_dis.mat

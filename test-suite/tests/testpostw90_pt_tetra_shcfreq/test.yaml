@@ -1,0 +1,12 @@
+# testpostw90_pt_tetra_shcfreq
+
+description: Test of tetrahedron method for spin Hall conductivity of Pt
+profile: postw90_shc_freq_dat
+runs:
+  - input: Pt.win
+    output: Pt-shc-freqscan.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.amn.bz2"
+  - bunzip2: "*.spn.bz2"

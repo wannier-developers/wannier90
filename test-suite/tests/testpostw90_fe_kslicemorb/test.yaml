@@ -1,0 +1,11 @@
+# testpostw90_fe_kslicemorb
+
+description: Test of KSLICE Morb  for bcc iron
+profile: postw90_morb_dat
+runs:
+  - input: Fe.win
+    output: Fe-kslice-morb.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.uHu.bz2"

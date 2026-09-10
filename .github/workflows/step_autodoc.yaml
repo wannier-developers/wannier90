@@ -1,0 +1,90 @@
+name: 📗 test-autodoc
+
+# Builds the FORD developer documentation from autodoc/project.md.
+#
+# Reusable: called by ci.yaml as a regression check on every pull request, and
+# by autodoc.yaml on a push to develop, where the built site is also uploaded
+# as a Pages artifact for the deploy job in that workflow to publish.
+
+on:
+  workflow_call:
+    inputs:
+      upload:
+        type: boolean
+        default: false
+        description: Upload the built site as a GitHub Pages artifact
+      graphs:
+        type: boolean
+        default: true
+        description: Draw the call and dependency graphs
+
+permissions:
+  contents: read
+
+jobs:
+  autodoc:
+    name: Build FORD documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # pinned rather than "3.x", so a new Python release cannot break the
+          # build independently of the FORD version pinned below
+          python-version: "3.11"
+          cache: "pip"
+
+      # Required by `graph: true` in project.md. Present on ubuntu-latest today,
+      # but installed explicitly so a runner image change cannot silently turn
+      # the call and dependency graphs off.
+      - name: Install graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      # NOTE: FORD pins `markdown ~= 3.4` while mkdocs-material in
+      # docs/requirements.txt requires `markdown >= 3.6`. The two cannot be
+      # installed together, so this job must keep its own environment and must
+      # not be merged with the 📘 test-docs job.
+      #
+      # The version is pinned deliberately. FORD releases a few times a year;
+      # bump this by hand so a regression shows up in a pull request build
+      # rather than in a deployment.
+      - name: Install FORD
+        run: pip install "ford==7.0.13"
+
+      # Drawing the graphs takes about ten times as long as the rest of the
+      # build, so the pull request check skips them. project.md always asks for
+      # them, so the published documentation is unaffected.
+      - name: Build documentation
+        working-directory: ./autodoc
+        env:
+          GRAPHS: ${{ inputs.graphs }}
+        run: |
+          if [ "$GRAPHS" = "true" ]; then
+            ford project.md 2>&1 | tee ford.log
+          else
+            ford --config "graph = false" project.md 2>&1 | tee ford.log
+          fi
+
+      # FORD exits 0 even when it fails to parse a source file and drops it from
+      # the output. That is how the whole w90_types module went missing from the
+      # published documentation unnoticed, so treat it as a build failure.
+      - name: Fail on parse errors
+        working-directory: ./autodoc
+        run: |
+          if grep -q "Error parsing" ford.log; then
+            echo "::error::FORD failed to parse one or more source files, which are silently missing from the documentation:"
+            grep -B2 -A2 "Error parsing" ford.log
+            exit 1
+          fi
+
+      # Non-fatal: keeps other regressions visible in the log without blocking.
+      - name: Report remaining warnings
+        working-directory: ./autodoc
+        continue-on-error: true
+        run: grep -i "warning" ford.log || echo "No warnings."
+
+      - name: Upload Pages artifact
+        if: inputs.upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./autodoc/build

@@ -14,7 +14,7 @@ if (Wannier90_MPI)
   # under MPI the demo initialises MPI and hands mpi_comm_world to the library
   find_package(MPI REQUIRED COMPONENTS CXX)
   target_link_libraries(demo PRIVATE MPI::MPI_CXX)
-  target_compile_definitions(demo PRIVATE MPI)
+  target_compile_definitions(demo PRIVATE W90_MPI)
 endif ()
 set_target_properties(demo PROPERTIES
         LINKER_LANGUAGE Fortran

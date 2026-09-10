@@ -39,9 +39,16 @@ jobs:
     needs: [ pre-commit ]
     uses: ./.github/workflows/step_docs.yaml
 
+  autodoc:
+    name: 📗 autodoc
+    needs: [ pre-commit ]
+    uses: ./.github/workflows/step_autodoc.yaml
+    with:
+      graphs: false
+
   pass:
     name: ✅ Pass
-    needs: [ pre-commit, tests, tests-makefile, docs ]
+    needs: [ pre-commit, tests, tests-makefile, docs, autodoc ]
     runs-on: ubuntu-latest
     steps:
       - name: Check all CI jobs

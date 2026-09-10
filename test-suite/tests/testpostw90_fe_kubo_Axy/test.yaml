@@ -1,0 +1,11 @@
+# testpostw90_fe_kubo_Axy
+
+description: Test of Kubo Axy  for bcc iron
+profile: postw90_kubo
+runs:
+  - input: Fe.win
+    output: Fe-kubo_A_xy.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.uHu.bz2"

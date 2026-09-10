@@ -1,0 +1,8 @@
+# testw90_na_chain_gamma
+
+description: "Sodium chain, valence states, Gamma only"
+profile: wannier90_wout
+runs:
+  - input: Na_chain.win
+    output: Na_chain.wout
+serial_only: true

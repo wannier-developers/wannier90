@@ -468,17 +468,17 @@ contains
     call w90_set_option(w90_fptr, keyword, text)
   end subroutine
 
-#ifdef MPI
+#ifdef W90_MPI
   subroutine w90_set_comm_f(w90_obj, comm) bind(c)
-#ifdef MPI08
+#ifdef W90_MPI08
     use mpi_f08
 #endif
     implicit none
-#ifdef MPIH
+#ifdef W90_MPIH
     include 'mpif.h'
 #endif
     integer(kind=c_int), intent(in) :: comm
-#ifdef MPI08
+#ifdef W90_MPI08
     type(mpi_comm) :: comm08
 #endif
     type(w90_data), intent(in), value :: w90_obj
@@ -486,7 +486,7 @@ contains
 
     call c_f_pointer(w90_obj%caddr, w90_fptr)
 
-#ifdef MPI08
+#ifdef W90_MPI08
     ! Manually assign the integer to the type's internal handle
     comm08%MPI_VAL = comm
     call w90_set_comm_ff(w90_fptr, comm08)

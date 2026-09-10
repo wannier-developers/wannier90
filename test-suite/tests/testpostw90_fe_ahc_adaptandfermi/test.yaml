@@ -1,0 +1,10 @@
+# testpostw90_fe_ahc_adaptandfermi
+
+description: Test of AHC for bcc iron with adaptive mesh refinement and Fermi scan
+profile: postw90_fermiscan
+runs:
+  - input: Fe.win
+    output: Fe-ahc-fermiscan.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"

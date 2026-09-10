@@ -1,0 +1,9 @@
+# testw90_example03_optmem
+
+description: "Silicon, 4 valence bands + 4 conduction bands - opt=0"
+profile: wannier90_wout
+runs:
+  - input: silicon.win
+    output: silicon.wout
+prepare:
+  - bunzip2: "*.mmn.bz2"

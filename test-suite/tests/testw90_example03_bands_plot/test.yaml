@@ -1,0 +1,9 @@
+# testw90_example03_bands_plot
+
+description: "Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure only, checking the band.dat file"
+profile: wannier90_bands_plot
+runs:
+  - input: silicon.win
+    output: silicon_band.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"

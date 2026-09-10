@@ -1,0 +1,7 @@
+# testw90_bvec
+
+description: "Lead, 4 lowest states; Fermi surface, print bvec"
+profile: wannier90_bvec
+runs:
+  - input: lead.win
+    output: lead.bvec

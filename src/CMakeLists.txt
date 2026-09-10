@@ -81,19 +81,19 @@ target_sources(Wannier90_lib
 		${CMAKE_Fortran_MODULE_DIRECTORY}/w90_library.mod
 )
 if (WANNIER90_MPI)
-	set(_wannier90_mpi_interface MPI90)
+	set(_wannier90_mpi_interface W90_MPI90)
 	if (WANNIER90_MPIH)
-		set(_wannier90_mpi_interface MPIH)
+		set(_wannier90_mpi_interface W90_MPIH)
 	endif ()
 
 	target_link_libraries(Wannier90_lib PUBLIC MPI::MPI_Fortran)
 	target_compile_definitions(Wannier90_lib PRIVATE
 			# TODO: Use mpi_f08 instead. Tests are not adapted yet
-			MPI ${_wannier90_mpi_interface}
+			W90_MPI ${_wannier90_mpi_interface}
 	)
 	target_compile_definitions(Wannier90_exe PRIVATE
 			# TODO: Use mpi_f08 instead. Tests are not adapted yet
-			MPI ${_wannier90_mpi_interface}
+			W90_MPI ${_wannier90_mpi_interface}
 	)
 	if (WANNIER90_MPIH AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(Wannier90_lib PRIVATE -fallow-argument-mismatch)

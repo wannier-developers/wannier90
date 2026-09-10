@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.25...3.29)
 
 list(APPEND CMAKE_MESSAGE_CONTEXT Wannier90)
 project(Wannier90
-		VERSION 4.0.0
+		VERSION 4.0.3
 		DESCRIPTION "Compute maximally-localised Wannier functions."
 		HOMEPAGE_URL https://www.wannier90.org
 		LANGUAGES Fortran C
@@ -31,10 +31,8 @@ option(WANNIER90_SHARED_LIBS "Wannier90: Build library as a shared library" ${PR
 option(WANNIER90_INSTALL "Wannier90: Install files" ${PROJECT_IS_TOP_LEVEL})
 option(WANNIER90_TEST "Wannier90: Build test-suite" ${PROJECT_IS_TOP_LEVEL})
 
+# the library name is the same for MPI and serial builds
 set(WANNIER90_LIBRARY_NAME wannier90)
-if (WANNIER90_MPI)
-	set(WANNIER90_LIBRARY_NAME wannier90_mpi)
-endif ()
 
 #[=============================================================================[
 #                            Project configuration                            #
