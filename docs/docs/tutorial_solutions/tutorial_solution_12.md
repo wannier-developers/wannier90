@@ -2,21 +2,30 @@
 
 <figure markdown="span">
 ![Image title](img/ex12_benzene.webp){ width="250" }
-<figcaption markdown="span"  id="fig12-1">Benzene molecule in periodic cell plotted with the XCrySDen program.</figcaption>
+<figcaption markdown="span"  id="fig12-1">Benzene molecule in
+periodic cell plotted with the XCrySDen program.</figcaption>
 </figure>
 
 ## Valence States
 
 - Outline: *Obtain MLWFs for the valence bands of benzene.*
 
-- Items 1-4: *Inspect the output file benzene.wout. The total spread converges to its minimum value after just a few iterations.*
+- Items 1-4: *Inspect the output file benzene.wout. The total spread converges
+    to its minimum value after just a few iterations.*
 
-    Convergence of total spread $\Omega$ is shown in [Figure 2](#fig12-2). The spread converges very quickly, and after only 15 iterations the $|\Delta\Omega|$ is already below $10^{-8}$.
+    Convergence of total spread $\Omega$ is shown in [Figure 2](#fig12-2). The
+    spread converges very quickly, and after only 15 iterations the
+    $|\Delta\Omega|$ is already below $10^{-8}$.
 
-<figure markdown="span">
-![Image title](img/ex12_spread_convergence.webp){ width="550" }
-<figcaption markdown="span"  id="fig12-2">Convergence of total spread $\Omega$. The red curve refers to the left y-axis, i.e. the actual value of the total spread at each iteration. The blue curve refers to the right y-axis, i.e. the absolute difference between between the spread functional at iteration $i$ and $i-1$, i.e. $\Delta\Omega$.</figcaption>
-</figure>
+    <figure markdown="span">
+    ![Image title](img/ex12_spread_convergence.webp){ width="550" }
+    <figcaption markdown="span"  id="fig12-2">Convergence of total
+    spread $\Omega$. The red curve refers to the left y-axis, i.e.
+    the actual value of the total spread at each iteration. The
+    blue curve refers to the right y-axis, i.e. the absolute
+    difference between between the spread functional at iteration
+    $i$ and $i-1$, i.e. $\Delta\Omega$.</figcaption>
+    </figure>
 
     Below is shown the final state of the minimization, after 22 iterations:
 
@@ -50,22 +59,26 @@
 
     MLWFs are shown in [Figure 3](#fig12-3).
 
-<figure markdown="span">
-<div class="grid-figure" markdown="1">
-![Valence MLWF 2](img/ex12_benzene_valence_2.webp){ width="220" }
-![Valence MLWF 3](img/ex12_benzene_valence_3.webp){ width="220" }
-![Valence MLWF 4](img/ex12_benzene_valence_4.webp){ width="220" }
-</div>
-<figcaption markdown="span"  id="fig12-3">MLWFs 2, 3 and 4, with Vesta from `cube` format.</figcaption>
-</figure>
+    <figure markdown="1">
+
+    |  |  |  |
+    |:-:|:-:|:-:|
+    | ![Valence MLWF 2](img/ex12_benzene_valence_2.webp){ width="220" } | ![Valence MLWF 3](img/ex12_benzene_valence_3.webp){ width="220" } | ![Valence MLWF 4](img/ex12_benzene_valence_4.webp){ width="220" } |
+
+    <figcaption markdown="span"  id="fig12-3">MLWFs 2, 3 and 4, with
+    Vesta from `cube` format.</figcaption>
+    </figure>
 
 ## Valence + Conduction States
 
-- Outline: *Obtain MLWFs for the valence and low-lying conduction states of benzene.*
+- Outline: *Obtain MLWFs for the valence and low-lying conduction states of
+    benzene.*
 
-- Item 1: *First, we minimise $\Omega_I$. Then, we minimise $\Omega_D + \Omega_{OD}$.*
+- Item 1: *First, we minimise $\Omega_I$. Then, we minimise
+    $\Omega_D + \Omega_{OD}$.*
 
-    Extract from the `.wout` output file for the disentanglement procedure with initial and final value of $\Omega_I$
+    Extract from the `.wout` output file for the disentanglement procedure with
+    initial and final value of $\Omega_I$
 
     ```text title="Output file"
                        Extraction of optimally-connected subspace
@@ -74,8 +87,8 @@
      |  Iter     Omega_I(i-1)      Omega_I(i)      Delta (frac.)    Time   |<-- DIS
      +---------------------------------------------------------------------+<-- DIS
            1      14.77292507      14.36793746       2.819E-02      0.06    <-- DIS
-           .		.					.				.			 .
-           .		.					.				.			 .
+           .  .     .    .    .
+           .  .     .    .    .
           76      14.26979011      14.26979011       7.234E-11      0.34    <-- DIS
 
                  <<<      Delta < 1.000E-10  over  3 iterations     >>>
@@ -86,7 +99,8 @@
      +----------------------------------------------------------------------------+
     ```
 
-    Below a snippet from the `.wout` output file, showing the finale state of the minimisation of $\Omega_D$ and $\Omega_{OD}$.
+    Below a snippet from the `.wout` output file, showing the finale state of
+    the minimisation of $\Omega_D$ and $\Omega_{OD}$.
 
     ```text title="Output file"
      Final State
@@ -121,11 +135,12 @@
 
     MLWFs are shown in [Figure 4](#fig12-4).
 
-<figure markdown="span">
-<div class="grid-figure" markdown="1">
-![Valence MLWF 1](img/ex12_benzene_v+c_1.webp){ width="220" }
-![Valence MLWF 7](img/ex12_benzene_v+c_7.webp){ width="220" }
-![Conduction MLWF 13](img/ex12_benzene_v+c_13.webp){ width="220" }
-</div>
-<figcaption markdown="span"  id="fig12-4">MLWFs 1, 7 and 13 with Vesta from `cube` format.</figcaption>
-</figure>
+    <figure markdown="1">
+
+    |  |  |  |
+    |:-:|:-:|:-:|
+    | ![Valence MLWF 1](img/ex12_benzene_v+c_1.webp){ width="220" } | ![Valence MLWF 7](img/ex12_benzene_v+c_7.webp){ width="220" } | ![Conduction MLWF 13](img/ex12_benzene_v+c_13.webp){ width="220" } |
+
+    <figcaption markdown="span"  id="fig12-4">MLWFs 1, 7 and 13 with
+    Vesta from `cube` format.</figcaption>
+    </figure>

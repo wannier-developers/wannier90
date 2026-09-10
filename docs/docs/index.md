@@ -20,6 +20,5 @@ This documentation contains the following sections:
 - [Tutorials](tutorials/preliminaries.md)
 - [Tutorial solutions](tutorial_solutions/index.md)
 
-
 For historical reference, the old latex PDF documentation of Wannier90 v3.1
 can be found on the [Wannier90 website](https://wannier.org/support/).

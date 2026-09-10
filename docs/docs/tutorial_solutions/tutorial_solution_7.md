@@ -4,10 +4,14 @@
 
 <figure markdown="span">
 ![Image title](img/ex7_silane.webp){ width="250" }
-<figcaption markdown="span"  id="fig7-1">Silane molecule in a periodic cell plotted with the XCrySDen program.</figcaption>
+<figcaption markdown="span"  id="fig7-1">Silane molecule in a
+periodic cell plotted with the XCrySDen program.</figcaption>
 </figure>
 
-1. Convergence of the self-consistent field calculation in Quantum Espresso can be checked at the end of the `scf.out` file. At the very end of the file one should find the line confirming that the job has finished without crashing, e.g.
+1. Convergence of the self-consistent field calculation in Quantum Espresso can
+    be checked at the end of the `scf.out` file. At the very end of the file one
+    should find the line confirming that the job has finished without crashing,
+    e.g.
 
     ```text title="Output file"
     =------------------------------------------------------------------------------=
@@ -15,7 +19,9 @@
     =------------------------------------------------------------------------------=
     ```
 
-    Just above the block reporting the info about WALL times, if present, one may find the info about the convergence of the SCF loop, such as the scf accuracy and the number of iterations required to achieve it:
+    Just above the block reporting the info about WALL times, if present, one
+    may find the info about the convergence of the SCF loop, such as the scf
+    accuracy and the number of iterations required to achieve it:
 
     ```text title="Output file"
     !    total energy              =     -12.25602944 Ry
@@ -32,13 +38,18 @@
              convergence has been achieved in   9 iterations
     ```
 
-2. Similarly for the non-scf calculation one can check that the calculation has been carried out without crashing by looking at the last three line of the `nscf.out` file. A useful information to check is the value of the highest eigenvalue (for insulators and semiconductors) or the value of the Fermi level (for metals). In the diamond we case, we find:
+2. Similarly for the non-scf calculation one can check that the calculation has
+    been carried out without crashing by looking at the last three line of the
+    `nscf.out` file. A useful information to check is the value of the highest
+    eigenvalue (for insulators and semiconductors) or the value of the Fermi
+    level (for metals). In the diamond we case, we find:
 
     ```text title="Output file"
     highest occupied level (ev):    -6.5316
     ```
 
-**5.** The result of the wannierisation, after 20 iterations, may be found at the end of `silane.wout` file:
+**5.** The result of the wannierisation, after 20 iterations, may be found at
+the end of `silane.wout` file:
 
 ```text title="Output file"
  Final State
