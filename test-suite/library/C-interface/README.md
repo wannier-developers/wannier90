@@ -7,9 +7,9 @@ Other variables in the .win file are also read and used (via the call to cinput_
 
 This executable can be invoked in various of the test directories, taking the name of the .win as the only argument (not all features and functions of the real wannier90.x have been duplicated in this demo, of course), eg:
 
-(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example01; eval $EXE gaas.win )
-(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example02; eval $EXE lead.win )
-(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example03; eval $EXE silicon.win )
-(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example04; eval $EXE copper.win )
-(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example05; eval $EXE diamond.win )
-(export EXE=`pwd`/wannier_c.x; cd ../tests/testw90_example07; eval $EXE silane.win )
+(export EXE=`pwd`/wannier_c.x; cd ../../tests/testw90_example01; eval $EXE gaas.win )
+(export EXE=`pwd`/wannier_c.x; cd ../../tests/testw90_example02; eval $EXE lead.win )
+(export EXE=`pwd`/wannier_c.x; cd ../../tests/testw90_example03; eval $EXE silicon.win )
+(export EXE=`pwd`/wannier_c.x; cd ../../tests/testw90_example04; eval $EXE copper.win )
+(export EXE=`pwd`/wannier_c.x; cd ../../tests/testw90_example05; eval $EXE diamond.win )
+(export EXE=`pwd`/wannier_c.x; cd ../../tests/testw90_example07; eval $EXE silane.win )
