@@ -88,6 +88,46 @@ INPUT. Written by the underlying electronic structure code. See
 Chapter [Post-processing](postproc.md)
 for details.
 
+## `seedname.spn`
+
+INPUT. Written by the underlying electronic structure code (e.g. by
+`pw2wannier90.x` if `write_spn = .true.`), and read by `postw90` when
+the matrix elements of the spin operator are needed (non-collinear spin
+calculations only). See Chapter [Post-processing](postproc.md) for
+details.
+
+The file contains the matrix elements
+$\langle\psi_{n\mathbf{k}}|\sigma_{i}|\psi_{m\mathbf{k}}\rangle$ of the
+three Pauli matrices between the *ab initio* eigenstates. It is
+unformatted by default; a formatted version is read instead if
+`spn_formatted = .true.`. The two forms contain the same data:
+
+- a comment line (a 60-character string, typically the date and time at
+    which the file was written);
+
+- a line with the number of bands `num_bands` and the number of
+    k-points `num_kpts`;
+
+- for each k-point, in the order in which the k-points are listed in
+    `seedname.win`, the elements
+    $\langle\psi_{n\mathbf{k}}|\sigma_{i}|\psi_{m\mathbf{k}}\rangle$ for
+    $m=1,\ldots,$ `num_bands`, $n=1,\ldots,m$ and $i=x,y,z$, with $i$
+    running fastest, then $n$, then $m$. Only the upper triangle is
+    stored: the remaining elements follow from the fact that the
+    matrices are Hermitian.
+
+In the unformatted file the whole block of
+$3\times$`num_bands`$($`num_bands`$+1)/2$ complex numbers of a given
+k-point is written as a single record. In the formatted file each
+complex number is written on its own line, as a real and an imaginary
+part in the format `2es26.16`.
+
+Since the unformatted file is machine-dependent, the utility
+`w90spn2spn.x` can be used to convert it to and from a portable
+formatted file `seedname.spn.fmt`, which has the layout described above;
+see Section
+[`w90spn2spn.x`](../appendices/utilities.md#w90spn2spnx).
+
 ## `seedname.nnkp` {#sec:old-nnkp}
 
 OUTPUT. Written by `wannier90` when `postproc_setup=.TRUE.` (or,
@@ -593,6 +633,23 @@ the `timing_level` input parameter (set to 1 by default).
  All done: wannier90 exiting
 ```
 
+## `seedname.werr`
+
+OUTPUT. Written only if the run does not complete successfully.
+`wannier90` creates this file at the beginning of the run and deletes it
+when it exits normally, so its presence after a run signals that
+something went wrong. The first line records the date and time at which
+the run started. If an error is trapped, the error message and the MPI
+rank on which the error occurred are appended (the same message is also
+written to `seedname.wout`).
+
+```vi title="Error file"
+ Wannier90: Execution started on  4Mar2022 at 11:12:35
+ Exiting.......
+ Input parameter nnkpts_block is allowed only if postproc_setup = .true.
+ (rank: 0)
+```
+
 ## `seedname.chk`
 
 INPUT/OUTPUT. Information required to restart the calculation or enter
@@ -614,6 +671,17 @@ interpolated band structure.
 OUTPUT. Written if `bands_plot=.TRUE.` and `bands_plot_format=gnuplot`;
 A `gnuplot` script to plot the interpolated band structure.
 
+## `seedname_band_proj.gnu`
+
+OUTPUT. Written if `bands_plot=.TRUE.`, `bands_plot_format=gnuplot` and
+`bands_plot_project` is given; a `gnuplot` script to plot the
+interpolated band structure as a colour map. The colour of each point is
+taken from the third column of `seedname_band.dat`, which contains the
+projection of the corresponding interpolated state onto the WF selected
+by `bands_plot_project` (a number between 0 and 1). The script also
+contains a few commented-out lines that may be uncommented to produce a
+figure in encapsulated PostScript format.
+
 ## `seedname_band.agr`
 
 OUTPUT. Written if `bands_plot=.TRUE.` and `bands_plot_format=xmgrace`;
@@ -625,6 +693,41 @@ OUTPUT. Written if `bands_plot=.TRUE.`; The k-points used for the
 interpolated band structure, in units of the reciprocal lattice vectors.
 This file can be used to generate a comparison band structure from a
 first-principles code.
+
+## `seedname_band.labelinfo.dat`
+
+OUTPUT. Written if `bands_plot=.TRUE.`; it says where the high-symmetry
+points of the k-point path fall in `seedname_band.kpt` and
+`seedname_band.dat`, so that the band structure can be labelled by an
+external plotting script. There is one line per high-symmetry point,
+with (in this order): the label of the point; its position in the list of
+k-points of `seedname_band.kpt` (counting from 1); its coordinate along
+the horizontal axis of the band plot (that is, the value found in the
+first column of `seedname_band.dat`); and the three coordinates of the
+point in units of the reciprocal lattice vectors.
+
+Where the path is discontinuous, the two points on either side of the
+jump are both listed, on consecutive lines and with the same
+horizontal-axis coordinate.
+Plotting tools should therefore consider two consective lines, both
+with a k-point label, as indicating a discontinuity; it should plot
+them at the same x-axis coordinate, with an appropriate tick label to
+indicate that the energies from both k-points is shown (e.g., if L
+and X are the k-point labels of two consecutive lines, the tick
+labels on the x axis could be `L|X`).
+
+<!-- markdownlint-disable MD013 -->
+```vi title="Output file"
+L                               1         0.0000000000      0.5000000000      0.5000000000      0.5000000000
+G                              11         1.0081143643      0.0000000000      0.0000000000      0.0000000000
+X                              23         2.1721845635      0.5000000000      0.0000000000      0.5000000000
+X                              24         2.1721845635      0.5000000000     -0.5000000000      0.0000000000
+K                              28         2.5837455293      0.3750000000     -0.3750000000      0.0000000000
+G                              40         3.8184284267      0.0000000000      0.0000000000      0.0000000000
+X                              41         3.8184284267      0.5000000000      0.0000000000      0.5000000000
+L                              51         4.8265427910      0.5000000000      0.5000000000      0.5000000000
+```
+<!-- markdownlint-enable MD013 -->
 
 ## `seedname.bxsf`
 
@@ -807,6 +910,33 @@ and 8 for $\langle m\mathbf{0}|\mathbf{r}_z|n\mathbf{R}\rangle$), e.g.
     .
     .
     .
+```
+
+## `seedname.kshell`
+
+INPUT. Read if `kmesh_shell_from_file = .TRUE.`; it specifies by hand
+which b-vectors enter the finite-difference formulas, and how they are
+grouped into shells, instead of letting `wannier90` select the shells
+automatically. This is useful when the automatic search fails, which
+typically happens when the k-point mesh has accidentally degenerate
+shells of neighbours.
+
+Each non-empty line of the file defines one shell and contains the
+indices of the b-vectors belonging to it, separated by spaces; the
+number of such lines therefore sets the number of shells. Blank lines
+and lines beginning with `!` or `#` are ignored. The b-vectors are
+numbered by their position in the list of all b-vectors of the first
+`search_shells` shells of neighbours, in the order in which `wannier90`
+generates them; this numbered list, together with the distance of each
+shell, is printed in `seedname.wout` when the automatic search fails.
+One weight $w_{b}$ is determined for each shell, so that b-vectors that
+should carry the same weight must be put on the same line.
+
+In the following example a single shell is defined, containing twelve
+b-vectors picked out of the first few shells of neighbours:
+
+```vi title="Input file"
+1 2 3 4 5 6 7 8 9 11 13 14
 ```
 
 ## `seedname.bvec`
@@ -1142,8 +1272,8 @@ columns). There is an empty line between each block of data.
 OUTPUT. Written if `write_u_matrices = .TRUE.` and
 disentanglement is enabled. The first line gives the date and time at
 which the file was created. The second line states the number of kpoints
-`num_kpts`, the number of wannier functions `num_bands` and the number
-of `num_bands`. The third line is empty. Then there are `num_kpts`
+`num_kpts`, the number of wannier functions `num_wann` and the number
+of bands `num_bands`. The third line is empty. Then there are `num_kpts`
 blocks of data, each of which starts with a line containing the kpoint
 (in fractional coordinates of the reciprocal lattice vectors) followed
 by `num_wann * num_bands` lines containing the matrix elements (real and
@@ -1173,3 +1303,82 @@ columns). There is an empty line between each block of data.
    .
    .
 ```
+
+## `seedname_v.mat`
+
+OUTPUT. Written if `write_u_matrices = .TRUE.` and disentanglement is
+enabled. The format is identical to that of `seedname_u_dis.mat`: the
+first line gives the date and time at which the file was created, the
+second line states the number of kpoints `num_kpts`, the number of
+wannier functions `num_wann` and the number of bands `num_bands`, the
+third line is empty, and there follow `num_kpts` blocks of data, each
+starting with a line containing the kpoint (in fractional coordinates of
+the reciprocal lattice vectors) followed by `num_wann * num_bands` lines
+containing the matrix elements (real and imaginary parts) in
+column-major order, with an empty line between blocks.
+
+What this file contains is the product
+
+$$
+\mathbf{V}^{(\mathbf{k})} =
+\mathbf{U}^{\mathrm{dis}(\mathbf{k})}\ \mathbf{U}^{(\mathbf{k})},
+$$
+
+that is, the `num_bands`$\times$`num_wann` matrix that transforms the
+original Bloch states directly into the MLWFs, without going through the
+optimally-connected subspace. It is therefore the combination of
+`seedname_u_dis.mat` and `seedname_u.mat` that is needed in most
+post-processing steps, and is provided here for convenience.
+
+## `seedname.vdw`
+
+OUTPUT. Written if `write_vdw_data = .TRUE.`, which requires
+Brillouin-zone sampling at the Gamma point only. It contains the Wannier
+centres, spreads and occupancies needed by the `w90vdw` utility to
+compute van der Waals energies; see Section
+[`w90vdw`](../appendices/utilities.md#w90vdw) and the documentation in
+`utility/w90vdw/doc/`.
+
+The file is read line by line by `w90vdw`, so the order of the keywords
+and of the values matters. After a set of keyword lines it contains a
+`centres_spreads_occ` block: a line with the units of the data (`ang`,
+as written by `wannier90`) followed by one line per MLWF, giving the
+three Cartesian coordinates of the centre, the quadratic spread, and the
+occupancy. Centres are translated into the home unit cell. If
+disentanglement was used, the occupancies are the diagonal elements of
+$\mathbf{V}^{\dagger}\mathbf{V}$, with
+$\mathbf{V} = \mathbf{U}^{\mathrm{dis}}\mathbf{U}$ restricted to the
+`num_valence_bands` occupied states (which must then be set in
+`seedname.win`); otherwise they are all equal to one.
+
+```vi title="Output file"
+disentangle F
+amalgamate F
+degeneracy  2
+num_frag 2
+num_wann
+ 15  15
+tol_occ 0.9
+pxyz
+F F F
+F F F
+tol_dist 0.05
+centres_spreads_occ
+ang
+ 6.8742130969  9.1647361906  7.9381392067  0.6114182868   1.00000000
+ 7.8203233235  8.4839104790  8.2232988115  1.1955763722   1.00000000
+ 7.8182901655  7.3925794877 12.4610823959  1.2061444591   1.00000000
+ .
+ .
+ .
+```
+
+!!! note
+    `wannier90` can only write a template. Several of the entries
+    describe the way the system is partitioned into molecular fragments,
+    which the code does not know about: `amalgamate`, `num_frag`,
+    `num_wann`, `tol_occ`, `pxyz`, `tol_dist` and the ordering of the
+    `centres_spreads_occ` block must be checked, and usually corrected,
+    by hand before running `w90vdw`. In particular the number of
+    fragments is always written as two, with the MLWFs split evenly
+    between them.

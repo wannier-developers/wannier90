@@ -126,6 +126,16 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>kmesh_shell_from_file</name>
+    <type>L</type>
+    <description>Read the b-vectors of each shell from the seedname.kshell file</description>
+    <groups>
+      <group>system</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>search_shells</name>
     <type>I</type>
     <description>The number of shells to search when determining finite difference formula</description>
