@@ -548,8 +548,8 @@ directory test-suite/library/C-interface/
 
 ## Python interface
 
-The directory `test-suite/library/py-f90wrap/` in the sources contains an Python wrapping of the Fortran
-library.  It is constructed using the [f90wrap
+The directory `test-suite/library/py-f90wrap/` in the sources contains an
+Python wrapping of the Fortran library.  It is constructed using the [f90wrap
 package](https://github.com/jameskermode/f90wrap) (See also DOI
 10.1088/1361-648X/ab82d2).  Specifiy `F90WRAP` in the build configuration.
 
