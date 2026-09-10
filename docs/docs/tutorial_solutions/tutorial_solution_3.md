@@ -1,15 +1,22 @@
 # 3: Silicon &#151; Disentangled MLWFs
 
-- Outline: *Obtain disentangled MLWFs for the valence and low-lying conduction states of Si. Plot the interpolated bandstructure.*
+- Outline: *Obtain disentangled MLWFs for the valence and low-lying conduction
+    states of Si. Plot the interpolated bandstructure.*
 
 <figure markdown="span">
 ![Image title](img/ex3_silicon.webp){ width="250" }
-<figcaption markdown="span"  id="fig3-1">Unit cell of Silicon crystal plotted with the XCrySDen program.</figcaption>
+<figcaption markdown="span"  id="fig3-1">Unit cell of Silicon
+crystal plotted with the XCrySDen program.</figcaption>
 </figure>
 
 1. *Inspect the output file `silicon.wout`.*
 
-    Starting from 4 $sp3$ orbitals on each Silicon atom we obtain two sets of 4 WFs, all with the same spread, that show the $sp3$ character one would expect from symmetry considerations. A summary of the wannierisation is given in [Table 1](#tab3-1). At the end of the `.wout` file you should find the info on the final state of the minimization, here we show an extract of the output file
+    Starting from 4 $sp3$ orbitals on each Silicon atom we obtain two sets of 4
+    WFs, all with the same spread, that show the $sp3$ character one would
+    expect from symmetry considerations. A summary of the wannierisation is
+    given in [Table 1](#tab3-1). At the end of the `.wout` file you should find
+    the info on the final state of the minimization, here we show an extract of
+    the output file
 
     ```text title="Output file"
      Final State
@@ -31,7 +38,8 @@
     ```
 
     <a id="tab3-1"></a>
-    **Table 1.** Converged values of the components of spread functional and their sum, given in Å$^2$.
+    **Table 1.** Converged values of the components of spread functional and
+    their sum, given in Å$^2$.
 
     | MP mesh | $\Omega$ | $\Omega_{\text{I}}$ | $\Omega_{\text{OD}}$ | $\Omega_{\text{D}}$ |
     |---|---|---|---|---|
@@ -39,9 +47,15 @@
 
 2. *Plot the energy bands.*
 
-    As can be seen from DFT bandstructure plot in the `wannier90` tutorial, that we report here, cf. [Figure 2](#fig3-2), the four lower valence bands are separated in energy from the higher conduction states (there is however an indirect band gap). The Fermi level lies inside the gap, making crystalline Silicon a semiconductor.
+    As can be seen from DFT bandstructure plot in the `wannier90` tutorial, that
+    we report here, cf. [Figure 2](#fig3-2), the four lower valence bands are
+    separated in energy from the higher conduction states (there is however an
+    indirect band gap). The Fermi level lies inside the gap, making crystalline
+    Silicon a semiconductor.
 
-    The path in $\mathbf{k}$-space given in the tutorial (L-$\Gamma$-X-K-$\Gamma$) and shown in [Figure 3](#fig3-3)-a-top is the following
+    The path in $\mathbf{k}$-space given in the tutorial
+    (L-$\Gamma$-X-K-$\Gamma$) and shown in [Figure 3](#fig3-3)-a-top is the
+    following
 
     ```text
     begin kpoint_path
@@ -61,7 +75,10 @@
 
     Extra: *Try plotting along different paths.*
 
-    Another path usually used for Silicon is W-$\Gamma$-X-W-L-$\Gamma$ shown in [Figure 2](#fig3-2)-b-top and the corresponding bands are shown in [Figure 3](#fig3-3)-b-bottom. To obtain this path you need to replace the previous `kpoint_path` block with the following block
+    Another path usually used for Silicon is W-$\Gamma$-X-W-L-$\Gamma$ shown in
+    [Figure 2](#fig3-2)-b-top and the corresponding bands are shown in
+    [Figure 3](#fig3-3)-b-bottom. To obtain this path you need to replace the
+    previous `kpoint_path` block with the following block
 
     ```text
     begin kpoint_path
@@ -79,19 +96,30 @@
     end kpoint_path
     ```
 
-<figure markdown="span">
-![Image title](img/ex3_si.webp){ width="600" }
-<figcaption markdown="span"  id="fig3-2">Bandstructure of Silicon showing the position of the Fermi level and of the inner and outer windows. Both the 4 valence bands and the 4 low-lying conduction bands are included in the calculation.</figcaption>
-</figure>
+    <figure markdown="span">
+    ![Image title](img/ex3_si.webp){ width="600" }
+    <figcaption markdown="span"  id="fig3-2">Bandstructure of Silicon
+    showing the position of the Fermi level and of the inner and outer
+    windows. Both the 4 valence bands and the 4 low-lying conduction
+    bands are included in the calculation.</figcaption>
+    </figure>
 
-<figure markdown="span">
-<div class="grid-figure" markdown="1">
-![a. k-path](img/ex3_silicon_bs1_nopts.webp){ width="200" }
-![a. bandstructure](img/ex3_silicon_DFT_W90_bs_path1.webp){ width="450" }
-</div>
-<div class="grid-figure" markdown="1">
-![b. k-path](img/ex3_silicon_bs2_nopts.webp){ width="200" }
-![b. bandstructure](img/ex3_silicon_DFT_W90_bs_path2.webp){ width="450" }
-</div>
-<figcaption markdown="span"  id="fig3-3">Bandstructure of Silicon showing the position of the Fermi level and of both the inner and outer windows. The 4 valence bands together with the 4 low-lying conduction bands are included in the calculation. a. Interpolation with Wannier90 on the L-$\Gamma$-X-K-$\Gamma$ path in $\mathbf{k}$ space (red dots) and DFT reference bandstructure (solid black), with the corresponding $\mathbf{k}$-path shown in the Brillouin zone above. b. Interpolation with Wannier90 on the W-$\Gamma$-X-W-L-$\Gamma$ path in $\mathbf{k}$ space (red dots) and DFT reference bandstructure (solid black), with the corresponding $\mathbf{k}$-path shown in the Brillouin zone above.</figcaption>
-</figure>
+    <figure markdown="1">
+
+    |  |  |
+    |:-:|:-:|
+    | ![a. k-path](img/ex3_silicon_bs1_nopts.webp){ width="200" } | ![a. bandstructure](img/ex3_silicon_DFT_W90_bs_path1.webp){ width="450" } |
+    | ![b. k-path](img/ex3_silicon_bs2_nopts.webp){ width="200" } | ![b. bandstructure](img/ex3_silicon_DFT_W90_bs_path2.webp){ width="450" } |
+
+    <figcaption markdown="span"  id="fig3-3">Bandstructure of Silicon
+    showing the position of the Fermi level and of both the inner and
+    outer windows. The 4 valence bands together with the 4 low-lying
+    conduction bands are included in the calculation. a. Interpolation
+    with Wannier90 on the L-$\Gamma$-X-K-$\Gamma$ path in $\mathbf{k}$
+    space (red dots) and DFT reference bandstructure (solid black),
+    with the corresponding $\mathbf{k}$-path shown in the Brillouin
+    zone above. b. Interpolation with Wannier90 on the
+    W-$\Gamma$-X-W-L-$\Gamma$ path in $\mathbf{k}$ space (red dots) and
+    DFT reference bandstructure (solid black), with the corresponding
+    $\mathbf{k}$-path shown in the Brillouin zone above.</figcaption>
+    </figure>

@@ -1,18 +1,25 @@
 # 13: (5,5) Carbon Nanotube &#151; Transport properties
 
-- Outline: *Obtain the bandstructure, quantum conductance and density of states of a metallic (5,5) carbon nanotube.*
+- Outline: *Obtain the bandstructure, quantum conductance and density of states
+    of a metallic (5,5) carbon nanotube.*
 
-<figure markdown="span">
-<div class="grid-figure" markdown="1">
-![side view](img/ex13_cnt55_1.webp){ width="220" }
-![prospective top view](img/ex13_cnt55_2.webp){ width="220" }
-</div>
-<figcaption markdown="span"  id="fig13-1">5 unit cells for the carbon nanotube system from a. side view and b. prospective top view plotted with the XCrySDen program.</figcaption>
+<figure markdown="1">
+
+|  |  |
+|:-:|:-:|
+| ![side view](img/ex13_cnt55_1.webp){ width="220" } | ![prospective top view](img/ex13_cnt55_2.webp){ width="220" } |
+
+<figcaption markdown="span"  id="fig13-1">5 unit cells for the
+carbon nanotube system from a. side view and b. prospective top
+view plotted with the XCrySDen program.</figcaption>
 </figure>
 
-1. *Run pwscf and `wannier90`. Inspect the output file `cnt55.wout`. The minimisation of the spread occurs in a two-step procedure. First, we minimise $\Omega_I$. Then, we minimise $\Omega_D + \Omega_{OD}$.*
+1. *Run pwscf and `wannier90`. Inspect the output file `cnt55.wout`. The
+    minimisation of the spread occurs in a two-step procedure. First, we
+    minimise $\Omega_I$. Then, we minimise $\Omega_D + \Omega_{OD}$.*
 
-    Below, an extract from the `.wout` file showing a summary of the disentanglement procedure (minimisation of $\Omega_I$)
+    Below, an extract from the `.wout` file showing a summary of the
+    disentanglement procedure (minimisation of $\Omega_I$)
 
     ```text title="Output file"
                        Extraction of optimally-connected subspace
@@ -36,7 +43,8 @@
      +----------------------------------------------------------------------------+
     ```
 
-    Below, an extract from the `.wout` file showing the final state for the minimisation of $\Omega_D + \Omega_{OD}$
+    Below, an extract from the `.wout` file showing the final state for the
+    minimisation of $\Omega_D + \Omega_{OD}$
 
     ```text title="Output file"
          Final State
@@ -64,7 +72,8 @@
      ------------------------------------------------------------------------------
     ```
 
-2. *Note that the initial $p_z$ projections on the carbon atoms are oriented in the radial direction with respect to the nanotube axis.*
+2. *Note that the initial $p_z$ projections on the carbon atoms are oriented in
+    the radial direction with respect to the nanotube axis.*
 
     ```vi title="Input file"
     Begin Projections
@@ -76,44 +85,57 @@
 
 3. *The interpolated bandstructure is written to `cnt55_band.agr`*
 
-    To plot the interpolated bands, the quantum conductance and the Density of States as shown in Fig. 6 in the `wannier90` tutorial, one can use the `xmgrace` program.
+    To plot the interpolated bands, the quantum conductance and the Density of
+    States as shown in Fig. 6 in the `wannier90` tutorial, one can use the
+    `xmgrace` program.
 
-!!! note "XMGRACE tutorial"
-    Run the `xmgrace` plotting program from command line as
+## XMGRACE tutorial
 
-    ```text
-    $ > xmgrace
-    ```
+Run the `xmgrace` plotting program from command line as
 
-    Before importing the data to be plotted, we have to reorganize the layout by selecting
+```text
+> xmgrace
+```
 
-    ```text
-    Edit &rarr; Arrange graphs...
-    ```
+Before importing the data to be plotted, we have to reorganize the layout by
+selecting
 
-    here we can generate a grid of graphs by selecting the number of columns and rows from the drop menus. For this particular example, we want to increase the number of columns to 3, i.e. `Cols: 3` and leave the number of rows to 1 in the `Matrix` section. Moreover, we don't want any gap between the graphs so we also need to modify the value of `Hgap/width` in the bottom `Spacing` section, i.e `Hgap/width 0`. Once we have generated the three graphs we need to import the data. This can be achieved by
+```text
+Edit &rarr; Arrange graphs...
+```
 
-    ```text
-    Data &rarr; Import &rarr; ASCII...
-    ```
+here we can generate a grid of graphs by selecting the number of columns and
+rows from the drop menus. For this particular example, we want to increase the
+number of columns to 3, i.e. `Cols: 3` and leave the number of rows to 1 in the
+`Matrix` section. Moreover, we don't want any gap between the graphs so we also
+need to modify the value of `Hgap/width` in the bottom `Spacing` section, i.e
+`Hgap/width 0`. Once we have generated the three graphs we need to import the
+data. This can be achieved by
 
-    The three files to import are `cnt_band.agr`, `cnt_qc.dat` and `cnt_dos.dat`, respectively. For each file we need to select the graph in the `Read to graph:` section, i.e. `G(0), G(1)` and `G(2)`, respectively.
+```text
+Data &rarr; Import &rarr; ASCII...
+```
 
-    In order to flip the x-axis with the y-axis, one need to perform the following
+The three files to import are `cnt_band.agr`, `cnt_qc.dat` and `cnt_dos.dat`,
+respectively. For each file we need to select the graph in the `Read to graph:`
+section, i.e. `G(0), G(1)` and `G(2)`, respectively.
 
-    ```text
-    Data &rarr; Transformations &rarr; Evaluate expressions...
-    ```
+In order to flip the x-axis with the y-axis, one need to perform the following
 
-    In the `Formula:` section write
+```text
+Data &rarr; Transformations &rarr; Evaluate expressions...
+```
 
-    ```text
-    s1.x=s0.y; s1.y=s0.x
-    ```
+In the `Formula:` section write
 
-    and then click `apply`.
+```text
+s1.x=s0.y; s1.y=s0.x
+```
+
+and then click `apply`.
 
 <figure markdown="span">
 ![Image title](img/ex13_cnt55_band.webp){ width="600" }
-<figcaption markdown="span"  id="fig13-2">Reproduction of Fig. 6 in the `wannier90` tutorial.</figcaption>
+<figcaption markdown="span"  id="fig13-2">Reproduction of Fig. 6 in
+the `wannier90` tutorial.</figcaption>
 </figure>

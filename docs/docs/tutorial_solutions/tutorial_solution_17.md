@@ -1,13 +1,16 @@
 # 17: Iron &#151; Spin-orbit-coupled bands and Fermi-surface contours
 
-- Outline: *Plot the spin-orbit-coupled bands of ferromagnetic bcc Fe. Plot the Fermi-surface contours on a plane in the Brillouin zone.*
+- Outline: *Plot the spin-orbit-coupled bands of ferromagnetic bcc Fe. Plot the
+    Fermi-surface contours on a plane in the Brillouin zone.*
 
 <figure markdown="span">
 ![Image title](img/ex8_iron.webp){ width="250" }
-<figcaption markdown="span" id="fig17-1">Unit cell of Iron crystal plotted with the XCrySDen program.</figcaption>
+<figcaption markdown="span" id="fig17-1">Unit cell of Iron crystal
+plotted with the XCrySDen program.</figcaption>
 </figure>
 
-**1-6.** Compute the MLWFs and compute the energy eigenvalues and spin expectation values.
+**1-6.** Compute the MLWFs and compute the energy eigenvalues and spin
+expectation values.
 
 The final state for all the 18 MLWFs is
 
@@ -40,41 +43,57 @@ The final state for all the 18 MLWFs is
  ------------------------------------------------------------------------------
 ```
 
-*To plot the bands using `python`*
+*To plot the bands using `python`.*
 
 ```bash title="Terminal"
-$> python Fe-bands.py
+> python Fe-bands.py
 ```
 
-The interpolated band structure of Fe with spin-orbit interaction using the module `kpath` is shown in [Figure 2](#fig17-2). The color scheme is used to show the expectation value of the spin operator $\hat{S}_z$ in units of $\hbar/2$.
+The interpolated band structure of Fe with spin-orbit interaction using the
+module `kpath` is shown in [Figure 2](#fig17-2). The color scheme is used to
+show the expectation value of the spin operator $\hat{S}_z$ in units of
+$\hbar/2$.
 
 <figure markdown="span">
 ![Image title](img/ex17_Fe_bandstructure.webp){ width="550" }
-<figcaption markdown="span" id="fig17-2">`wannier90` interpolated bands of Fe computed from a DFT calculation with spin-orbit interaction. Colour-scheme shows the expectation value $\langle \hat{S}_z \rangle$ in units of $\hbar/2$.</figcaption>
+<figcaption markdown="span" id="fig17-2">`wannier90` interpolated
+bands of Fe computed from a DFT calculation with spin-orbit
+interaction. Colour-scheme shows the expectation value
+$\langle \hat{S}_z \rangle$ in units of $\hbar/2$.</figcaption>
 </figure>
 
-*Next we plot the Fermi-surface contours on the (010) plane $k_y = 0$, using the `kslice` module.*
+*Next we plot the Fermi-surface contours on the (010) plane $k_y = 0$, using the
+`kslice` module.*
 
-<figure markdown="span">
-<div class="grid-figure" markdown="1">
-![spin-orbit kslice](img/ex17_Fe-kslice-fermi_lines_lowres.webp){ width="320" }
-![no spin-orbit](img/ex17_Fe_Fermi_surface.webp){ width="240" }
-</div>
-<figcaption markdown="span" id="fig17-3">Fermi-surface contours on the (010) plane ($k_y=0$): a. with spin-orbit coupling (`kslice` module); b. without spin-orbit coupling.</figcaption>
+<figure markdown="1">
+
+|  |  |
+|:-:|:-:|
+| ![spin-orbit kslice](img/ex17_Fe-kslice-fermi_lines_lowres.webp){ width="320" } | ![no spin-orbit](img/ex17_Fe_Fermi_surface.webp){ width="240" } |
+
+<figcaption markdown="span" id="fig17-3">Fermi-surface contours on
+the (010) plane ($k_y=0$): a. with spin-orbit coupling (`kslice`
+module); b. without spin-orbit coupling.</figcaption>
 </figure>
 
 ## Further ideas
 
-- *Redraw the Fermi surface contours on the (010) plane starting from a calculation without spin-orbit coupling (SOC), by adding to the input files `iron_{up,down}.win` in [Example 8](tutorial_solution_8.md).*
+- *Redraw the Fermi surface contours on the (010) plane starting from a
+    calculation without spin-orbit coupling (SOC), by adding to the input files
+    `iron_{up,down}.win` in [Example 8](tutorial_solution_8.md).*
 
-    The Fermi surface contours on the (010) plane without SOC are shown in [Figure 3](#fig17-3)-b.
+    The Fermi surface contours on the (010) plane without SOC are shown in
+    [Figure 3](#fig17-3)-b.
 
 - *For a spinor calculation we can still spin-decompose the DOS.*
 
-<figure markdown="span">
-<div class="grid-figure" markdown="1">
-![spin-decomposed](img/ex17_DOS_Fe_bcc.webp){ width="320" }
-![projected](img/ex17_DOS_Fe_bcc_projected.webp){ width="320" }
-</div>
-<figcaption markdown="span" id="fig17-4">Spin-decomposed DOS (panel a) with spin-up (red) and spin-down (blue) components. Projected DOS on odd-indexed MLWFs (red) and even-indexed (blue).</figcaption>
-</figure>
+    <figure markdown="1">
+
+    |  |  |
+    |:-:|:-:|
+    | ![spin-decomposed](img/ex17_DOS_Fe_bcc.webp){ width="320" } | ![projected](img/ex17_DOS_Fe_bcc_projected.webp){ width="320" } |
+
+    <figcaption markdown="span" id="fig17-4">Spin-decomposed DOS (panel
+    a) with spin-up (red) and spin-down (blue) components. Projected
+    DOS on odd-indexed MLWFs (red) and even-indexed (blue).</figcaption>
+    </figure>

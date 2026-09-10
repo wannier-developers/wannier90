@@ -21,15 +21,27 @@
     /* --md-primary-fg-color--dark:  #90030C; */
 }
 
-/* Row of sub-panels for multi-panel figures (former LaTeX \subfloat groups) */
-.grid-figure {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 0.6em;
+/* Multi-panel figures (former LaTeX \subfloat groups) use a plain markdown
+   table purely to lay images out side by side. Material's default table
+   style (border, border-radius, cell borders, hover highlight) makes these
+   look like a bordered data table, unlike single-image figures -- strip
+   that chrome so they read as a plain row of images instead. */
+.md-typeset figure table:not([class]) {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    display: table;
+    margin: 0 auto;
 }
 
-.grid-figure img {
-    display: block;
+.md-typeset figure table:not([class]) td,
+.md-typeset figure table:not([class]) th {
+    border: none;
+    padding: 0.3em 0.5em;
+    vertical-align: bottom;
+}
+
+.md-typeset figure table:not([class]) tbody tr:hover {
+    background-color: transparent;
+    box-shadow: none;
 }
