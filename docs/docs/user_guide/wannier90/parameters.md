@@ -312,6 +312,18 @@ and $\alpha$ and $\beta$ run over the three Cartesian indices.
 difference expression. If this keyword is absent, the shells are chosen
 automatically.
 
+### `logical :: kmesh_shell_from_file`
+
+If set to `.true.`, the b-vectors of each shell, and their grouping into
+shells, are read from the file `seedname.kshell` (see
+Section [`seedname.kshell`](files.md#seednamekshell)) rather than being
+determined automatically. This is useful when the automatic search
+fails, which typically happens when the k-point mesh has accidentally
+degenerate shells of neighbours. The weights $w_s$ are then computed
+from the shells given in the file, one weight per shell.
+
+The default value is `.false.`.
+
 ### `integer :: search_shells`
 
 Specifies the number of shells of neighbours over which to search in
@@ -1253,8 +1265,8 @@ options for this parameter are:
 If present `wannier90` will compute the contribution of this set of WF
 to the states at each point of the interpolated band structure. The WF
 are numbered according to the seedname.wout file. The result is written
-in the `seedname_band.dat` file, and a corresponding gnuplot script to
-`seedname_band_proj.dat` .
+as a third column in the `seedname_band.dat` file, and a corresponding
+gnuplot script to `seedname_band_proj.gnu`.
 
 For example, to project on to WFs 2, 6, 7, 8 and 12:
 
