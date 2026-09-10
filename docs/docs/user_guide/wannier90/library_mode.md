@@ -120,6 +120,8 @@ parse the .win projector string into a site,l,m,zaxis configuration)
     in order to test convergence)
 16. obtain centres and spreads with [w90_get_centres](#w90_get_centres) and
     [w90_get_spreads](#w90_get_spreads)
+17. to deallocate (free) memory used by the library (allowing its reuse),
+    call [w90_free](#w90_free)
 
 ### lib_common_type
 
@@ -493,6 +495,15 @@ optimisation returns ierr zero.
     integer, intent(in) :: istdout, istderr
     integer, intent(out) :: ierr
     type(lib_common_type), intent(inout) :: common_data
+```
+
+### w90_free
+
+Deallocates all memory used by the library object and nullifies pointers to
+external matrices.  Call this function to re-use a library data object.
+
+```fortran title="Fortran"
+  subroutine w90_free(common_data)
 ```
 
 ## Compiling and Linking
