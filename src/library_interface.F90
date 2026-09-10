@@ -1247,7 +1247,7 @@ contains
     ! adopt latter condition here--iprint irrelevant when this function is explicitly requested
     if (mpirank(common_data%comm) == 0) then
       call io_print_timings(common_data%timer, istdout)
-    endif
+    end if
   end subroutine w90_print_timings
 
   subroutine w90_set_option_text(common_data, keyword, text)

@@ -162,11 +162,11 @@ program ok
   call w90_print_timings(w90main, stdout) ! print timing information
 
   if (mpirank == 0) then
-    open(newunit=ifu, file="results.dat")
+    open (newunit=ifu, file="results.dat")
     do ib = 1, nw
       write (ifu, '(4f20.10)') (w90main%wannier_data%centres(ic, ib), ic=1, 3), w90main%wannier_data%spreads(ib)
     end do
-    close(ifu)
+    close (ifu)
   end if
   call mpi_finalize(ierr)
 end program

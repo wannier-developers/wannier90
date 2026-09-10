@@ -76,9 +76,37 @@ if (WANNIER90_WITH_C)
 			wannier90.h
 	)
 endif ()
+# Every module in the dependency closure of w90_library is installed: ifx needs
+# all of them present to compile a `use w90_library`, gfortran only the top one.
+set(_wannier90_library_modules
+		w90_comms
+		w90_constants
+		w90_disentangle_mod
+		w90_error
+		w90_error_base
+		w90_hamiltonian
+		w90_io
+		w90_kmesh
+		w90_library
+		w90_library_extra
+		w90_overlap
+		w90_plot_mod
+		w90_readwrite
+		w90_sitesym
+		w90_transport_mod
+		w90_types
+		w90_utility
+		w90_wannier90_readwrite
+		w90_wannier90_types
+		w90_wannierise_mod
+		w90_ws_distance
+)
+list(TRANSFORM _wannier90_library_modules
+		PREPEND "${CMAKE_Fortran_MODULE_DIRECTORY}/")
+list(TRANSFORM _wannier90_library_modules APPEND ".mod")
 target_sources(Wannier90_lib
 		INTERFACE FILE_SET wannier90_Fortran_Headers TYPE HEADERS BASE_DIRS ${CMAKE_Fortran_MODULE_DIRECTORY} FILES
-		${CMAKE_Fortran_MODULE_DIRECTORY}/w90_library.mod
+		${_wannier90_library_modules}
 )
 if (WANNIER90_MPI)
 	set(_wannier90_mpi_interface W90_MPI90)

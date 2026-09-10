@@ -31,7 +31,7 @@ install: default
 	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -m755 "utility/w90vdw/w90vdw.x" "$(DESTDIR)$(PREFIX)/bin/w90vdw.x"; fi;
 
 	install -d $(DESTDIR)$(PREFIX)/include/
-	for m in src/obj/w90_library.mod src/obj/w90_library_extra.mod; do \
+	for m in $(addprefix src/obj/,$(LIBMODS)); do \
 		if [ -f "$$m" ]; then install -m644 "$$m" "$(DESTDIR)$(PREFIX)/include/"; fi; \
 	done
 	install -d $(DESTDIR)$(PREFIX)/lib/
