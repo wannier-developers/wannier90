@@ -26,7 +26,7 @@ if sys.version_info < (3, 10):
         returncode=2,
     )
 
-
+import pytest
 
 from w90testlib.case import discover_cases
 from w90testlib.executables import resolve as resolve_executables
