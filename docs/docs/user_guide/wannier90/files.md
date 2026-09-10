@@ -102,8 +102,8 @@ three Pauli matrices between the *ab initio* eigenstates. It is
 unformatted by default; a formatted version is read instead if
 `spn_formatted = .true.`. The two forms contain the same data:
 
-- a comment line (a 60-character string, typically the date and time at
-    which the file was written);
+- a comment line, a 60-character string; `pw2wannier90.x` writes
+    `Created on <date> at <time>`;
 
 - a line with the number of bands `num_bands` and the number of
     k-points `num_kpts`;
@@ -119,8 +119,10 @@ unformatted by default; a formatted version is read instead if
 In the unformatted file the whole block of
 $3\times$`num_bands`$($`num_bands`$+1)/2$ complex numbers of a given
 k-point is written as a single record. In the formatted file each
-complex number is written on its own line, as a real and an imaginary
-part in the format `2es26.16`.
+complex number is written on its own line, as a real part followed by an
+imaginary part. `wannier90` reads these with a list-directed read, so the
+exact spacing does not matter: `pw2wannier90.x` writes them with the
+format `2ES20.10`, while `w90spn2spn.x` uses `2es26.16`.
 
 Since the unformatted file is machine-dependent, the utility
 `w90spn2spn.x` can be used to convert it to and from a portable
