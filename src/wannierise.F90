@@ -222,11 +222,6 @@ contains
       call set_error_alloc(error, 'Error allocating history in wann_main', comm)
       return
     end if
-    allocate (ln_tmp(num_wann, kmesh_info%nntot, num_kpts), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating ln_tmp in wann_main', comm)
-      return
-    end if
     if (wann_control%constrain%selective_loc) then
       allocate (rnr0n2(wann_control%constrain%slwf_num), stat=ierr)
       if (ierr /= 0) then
@@ -1041,11 +1036,6 @@ contains
         call set_error_dealloc(error, 'Error in deallocating rnr0n2 in wann_main', comm)
         return
       end if
-    end if
-    deallocate (ln_tmp, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating ln_tmp in wann_main', comm)
-      return
     end if
     deallocate (u0_loc, stat=ierr)
     if (ierr /= 0) then
