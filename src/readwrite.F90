@@ -160,12 +160,10 @@ contains
     if (allocated(error)) return
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(settings, lenconfac, length_unit, energy_unit, bohr, error, &
+  subroutine w90_readwrite_read_units(settings, lenconfac, length_unit, bohr, error, &
                                       comm)
-    !! reads the "energy_unit" and "length_unit" (valid: "ang" or "bohr") variables
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    character(len=*), intent(inout) :: energy_unit
     character(len=*), intent(inout) :: length_unit
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: lenconfac
@@ -175,9 +173,6 @@ contains
 
     integer :: ic
     logical :: found
-
-    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm, c_value=energy_unit)
-    if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm, c_value=length_unit)
     if (allocated(error)) return
@@ -1389,7 +1384,6 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'cp_pp', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'devel_flag', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm)
@@ -1408,7 +1402,6 @@ contains
     call w90_readwrite_get_keyword(settings, 'dist_cutoff_mode', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'fermi_energy', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm)
@@ -1679,7 +1672,6 @@ contains
     call w90_readwrite_get_keyword(settings, 'spin_moment', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'spn_formatted', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_avoid_degeneracy', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tetrahedron_correction', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_cutoff', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_higher_correction', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'tetrahedron_method', found, error, comm)

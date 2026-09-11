@@ -414,7 +414,6 @@ contains
       write (stdout, '(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
       write (stdout, '(1x,a)') '|                        -----   --------------------                        |'
     end if
-    !if (index(print_output%devel_flag, 'kmesh_degen') == 0) then
     !
     ! Standard routine
     !
