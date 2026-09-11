@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### More digits in the `M_orb` summary printed by `postw90.x`
+
+The `berry_task = morb` summary is printed with `f16.10` instead of `f10.4`; in bohr
+magneton/cell these values are often 1e-3 or smaller, so four decimals showed almost no
+significant digits. Test tolerances for `morb_x/y/z` become `{abs: 1.0e-4, rel: null}`,
+since the components that are zero by symmetry now print their cancellation residual and a
+relative check against a zero reference is undefined.
+
 ### `wannier90.x`, `postw90.x` and the utilities now exit nonzero on a fatal error
 
 Previously a fatal error ended in a bare Fortran `stop`, which exits with status **0**. A
