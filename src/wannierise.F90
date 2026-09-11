@@ -825,7 +825,6 @@ contains
                                        conv_count, noise_count, lconverged, lrandom, lfirst, &
                                        wann_control, error, comm)
         if (allocated(error)) return
-
       end if
 
       if (lconverged) then
@@ -1089,97 +1088,6 @@ contains
 1001 format(2x, 'Sum of centres and spreads', 1x, '(', f10.6, ',', f10.6, ',', f10.6, ' )', f15.8)
 
   contains
-
-    !================================================!
-    subroutine internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
-                                         conv_count, noise_count, lconverged, lrandom, lfirst, &
-                                         wann_control, error, comm)
-      !================================================!
-      !
-      !! Determine whether minimisation of non-gauge
-      !! invariant spread is converged
-      !
-      !================================================!
-
-      use w90_wannier90_types, only: wann_control_type
-
-      implicit none
-
-      ! arguments
-      type(localisation_vars_type), intent(in) :: old_spread
-      type(localisation_vars_type), intent(in) :: wann_spread
-      type(w90_error_type), allocatable, intent(out) :: error
-      type(w90_comm_type), intent(in) :: comm
-      type(wann_control_type), intent(in) :: wann_control
-      real(kind=dp), intent(inout) :: history(:)
-      real(kind=dp), intent(inout) :: save_spread
-      integer, intent(in) :: iter
-      integer, intent(inout) :: conv_count
-      integer, intent(inout) :: noise_count
-      logical, intent(inout) :: lconverged, lrandom, lfirst
-
-      ! local
-      integer :: j, ierr
-      real(kind=dp), allocatable :: temp_hist(:)
-      real(kind=dp) :: delta_omega
-
-      allocate (temp_hist(wann_control%conv_window), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating temp_hist in wann_main: test_convergence', comm)
-        return
-      end if
-
-      delta_omega = wann_spread%om_tot - old_spread%om_tot
-
-      if (iter .le. wann_control%conv_window) then
-        history(iter) = delta_omega
-      else
-        temp_hist = eoshift(history, 1, delta_omega)
-        history = temp_hist
-      end if
-
-      conv_count = conv_count + 1
-
-      if (conv_count .lt. wann_control%conv_window) then
-        return
-      else
-        do j = 1, wann_control%conv_window
-          if (abs(history(j)) .gt. wann_control%conv_tol) return
-        end do
-      end if
-
-      if ((wann_control%conv_noise_amp .gt. 0.0_dp) .and. &
-          (noise_count .lt. wann_control%conv_noise_num)) then
-        if (lfirst) then
-          lfirst = .false.
-          save_spread = wann_spread%om_tot
-          lrandom = .true.
-          conv_count = 0
-        else
-          if (abs(save_spread - wann_spread%om_tot) .lt. wann_control%conv_tol) then
-            lconverged = .true.
-            return
-          else
-            save_spread = wann_spread%om_tot
-            lrandom = .true.
-            conv_count = 0
-          end if
-        end if
-      else
-        lconverged = .true.
-      end if
-
-      if (lrandom) noise_count = noise_count + 1
-
-      deallocate (temp_hist, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main: test_convergence', comm)
-        return
-      end if
-
-      return
-
-    end subroutine internal_test_convergence
 
     !================================================!
     subroutine internal_random_noise(conv_noise_amp, num_wann, nkrank, cdq_loc)
@@ -2963,7 +2871,9 @@ contains
     integer :: tnntot
     logical :: lprint, ldump
     real(kind=dp), allocatable :: history(:)
-    logical :: lconverged
+    logical :: lconverged, lrandom, lfirst
+    real(kind=dp) :: save_spread
+    integer :: conv_count, noise_count
 
     if (mpirank(comm) > 0) then
       ! this cannot happen under ordinary circumstances
@@ -3232,9 +3142,10 @@ contains
 !      endif
 
       if (wann_control%conv_window .gt. 1) then
-        call internal_test_convergence_gamma(wann_spread, old_spread, history, &
-                                             iter, lconverged, wann_control%conv_window, &
-                                             wann_control%conv_tol)
+        call internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
+                                       conv_count, noise_count, lconverged, lrandom, lfirst, &
+                                       wann_control, error, comm)
+        if (allocated(error)) return
       end if
 
       if (lconverged) then
@@ -3446,66 +3357,6 @@ contains
 
     end subroutine internal_new_u_and_m_gamma
 
-    !================================================!
-    subroutine internal_test_convergence_gamma(wann_spread, old_spread, history, iter, lconverged, &
-                                               conv_window, conv_tol)
-      !================================================!
-      !
-      ! Determine whether minimisation of non-gauge-
-      ! invariant spread is converged
-      !
-      !================================================!
-
-      implicit none
-
-      ! arguments
-      type(localisation_vars_type), intent(in) :: wann_spread
-      type(localisation_vars_type), intent(in) :: old_spread
-      integer, intent(in) :: conv_window
-      integer, intent(in) :: iter
-      real(kind=dp), intent(in) :: conv_tol
-      real(kind=dp), intent(inout) :: history(:)
-      logical, intent(out) :: lconverged
-
-      ! local
-      real(kind=dp) :: delta_omega
-      integer :: j, ierr
-      real(kind=dp), allocatable :: temp_hist(:)
-
-      allocate (temp_hist(conv_window), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error allocating temp_hist in wann_main: test_convergence_gamma', comm)
-        return
-      end if
-
-      delta_omega = wann_spread%om_tot - old_spread%om_tot
-
-      if (iter .le. conv_window) then
-        history(iter) = delta_omega
-      else
-        temp_hist = eoshift(history, 1, delta_omega)
-        history = temp_hist
-      end if
-
-      lconverged = .false.
-
-      if (iter .ge. conv_window) then
-        do j = 1, conv_window
-          if (abs(history(j)) .gt. conv_tol) exit
-          lconverged = .true.
-        end do
-      end if
-
-      deallocate (temp_hist, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main_gamma: test_convergence_gamma', comm)
-        return
-      end if
-
-      return
-
-    end subroutine internal_test_convergence_gamma
-
   end subroutine wann_main_gamma
 
   !================================================!
@@ -3651,5 +3502,96 @@ contains
     return
 
   end subroutine wann_omega_gamma
+
+  !================================================!
+  subroutine internal_test_convergence(old_spread, wann_spread, history, save_spread, iter, &
+                                       conv_count, noise_count, lconverged, lrandom, lfirst, &
+                                       wann_control, error, comm)
+    !================================================!
+    !
+    !! Determine whether minimisation of non-gauge
+    !! invariant spread is converged
+    !
+    !================================================!
+
+    use w90_wannier90_types, only: wann_control_type
+
+    implicit none
+
+    ! arguments
+    type(localisation_vars_type), intent(in) :: old_spread
+    type(localisation_vars_type), intent(in) :: wann_spread
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+    type(wann_control_type), intent(in) :: wann_control
+    real(kind=dp), intent(inout) :: history(:)
+    real(kind=dp), intent(inout) :: save_spread
+    integer, intent(in) :: iter
+    integer, intent(inout) :: conv_count
+    integer, intent(inout) :: noise_count
+    logical, intent(inout) :: lconverged, lrandom, lfirst
+
+    ! local
+    integer :: j, ierr
+    real(kind=dp), allocatable :: temp_hist(:)
+    real(kind=dp) :: delta_omega
+
+    allocate (temp_hist(wann_control%conv_window), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error allocating temp_hist in wann_main: test_convergence', comm)
+      return
+    end if
+
+    delta_omega = wann_spread%om_tot - old_spread%om_tot
+
+    if (iter .le. wann_control%conv_window) then
+      history(iter) = delta_omega
+    else
+      temp_hist = eoshift(history, 1, delta_omega)
+      history = temp_hist
+    end if
+
+    conv_count = conv_count + 1
+
+    if (conv_count .lt. wann_control%conv_window) then
+      return
+    else
+      do j = 1, wann_control%conv_window
+        if (abs(history(j)) .gt. wann_control%conv_tol) return
+      end do
+    end if
+
+    if ((wann_control%conv_noise_amp .gt. 0.0_dp) .and. &
+        (noise_count .lt. wann_control%conv_noise_num)) then
+      if (lfirst) then
+        lfirst = .false.
+        save_spread = wann_spread%om_tot
+        lrandom = .true.
+        conv_count = 0
+      else
+        if (abs(save_spread - wann_spread%om_tot) .lt. wann_control%conv_tol) then
+          lconverged = .true.
+          return
+        else
+          save_spread = wann_spread%om_tot
+          lrandom = .true.
+          conv_count = 0
+        end if
+      end if
+    else
+      lconverged = .true.
+    end if
+
+    if (lrandom) noise_count = noise_count + 1
+
+    deallocate (temp_hist, stat=ierr)
+    if (ierr /= 0) then
+      call set_error_dealloc(error, 'Error deallocating temp_hist in wann_main: test_convergence', comm)
+      return
+    end if
+
+    return
+
+  end subroutine internal_test_convergence
 
 end module w90_wannierise_mod
