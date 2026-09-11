@@ -540,11 +540,6 @@ contains
     if (allocated(error)) return
     call comms_bcast(pw90_berry%tetrahedron_avoid_degeneracy, 1, error, comm)
     if (allocated(error)) return
-! ----------------------------------------------
-!
-! New input variables in development
-!
-    !call comms_bcast(print_output%devel_flag, len(print_output%devel_flag), error, comm)
     call comms_bcast(pw90_calculation%spin_moment, 1, error, comm)
     if (allocated(error)) return
     call comms_bcast(pw90_spin%axis_polar, 1, error, comm)

@@ -1384,7 +1384,6 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'cp_pp', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'devel_flag', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm)
