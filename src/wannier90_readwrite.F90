@@ -642,8 +642,8 @@ contains
                                    i_value=wann_control%num_print_cycles)
     if (allocated(error)) return
 
-    if (wann_control%num_print_cycles < 0) then
-      call set_error_input(error, 'Error: num_print_cycles must be positive', comm)
+    if (wann_control%num_print_cycles < 1) then
+      call set_error_input(error, 'Error: num_print_cycles must be >= 1', comm)
       return
     end if
 
@@ -716,8 +716,8 @@ contains
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return
 
-    if (wann_control%guiding_centres%num_guide_cycles < 0) then
-      call set_error_input(error, 'Error: num_guide_cycles must be >= 0', comm)
+    if (wann_control%guiding_centres%num_guide_cycles < 1) then
+      call set_error_input(error, 'Error: num_guide_cycles must be >= 1', comm)
       return
     end if
 
