@@ -156,7 +156,6 @@ contains
     logical :: dos_plot
     logical :: found_fermi_energy
     logical :: disentanglement, ok, svd_omega
-    character(len=20) :: energy_unit
 
     pw90_kslice%corner = 0.0_dp
     pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
@@ -173,7 +172,7 @@ contains
     call w90_wannier90_readwrite_read_effective_model(settings, effective_model, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_units(settings, print_output%lenconfac, print_output%length_unit, &
-                                  energy_unit, bohr, error, comm)
+                                  bohr, error, comm)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(settings, pw90_oper_read, error, comm)
     if (allocated(error)) return
@@ -340,9 +339,6 @@ contains
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_effective_model(settings, effective_model, error, comm)
     if (allocated(error)) return
-    !call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
-    !                              bohr, error, comm)
-    !if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(settings, pw90_oper_read, error, comm)
     if (allocated(error)) return
     if (allocated(error)) return
