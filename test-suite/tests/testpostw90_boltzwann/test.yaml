@@ -1,0 +1,10 @@
+# testpostw90_boltzwann
+
+description: Test of the electrical conductivity in BoltzWann
+profile: postw90_boltzwann_elcond
+runs:
+  - input: silicon.win
+    output: silicon_elcond.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"

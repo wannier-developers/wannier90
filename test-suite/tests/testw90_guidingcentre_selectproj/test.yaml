@@ -1,0 +1,7 @@
+# testw90_guidingcentre_selectproj
+
+description: Test combination of guiding centres and select projections
+profile: wannier90_wout
+runs:
+  - input: silicon.win
+    output: silicon.wout

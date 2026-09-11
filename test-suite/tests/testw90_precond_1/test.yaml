@@ -1,0 +1,7 @@
+# testw90_precond_1
+
+description: Testing preconditioner
+profile: wannier90_wout
+runs:
+  - input: gaas1.win
+    output: gaas1.wout

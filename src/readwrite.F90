@@ -100,6 +100,14 @@ contains
     !! read verbosity "iprint" and timing "timing_level" variables
     !! if iprint>2 svd_omega printing is enabled
     !! printing is supressed on all non-root MPI ranks
+    !!
+    !! Also reads the developer-only keyword "unlucky", which is not part of the
+    !! user interface and is deliberately absent from the user guide. Its value
+    !! is the MPI rank that must raise an error, and it exists purely to exercise
+    !! the parallel error-handling path (see the partestw90_mpierr test). The
+    !! rank is smuggled to the main program in "timing_level", stored negated so
+    !! that it cannot be confused with a genuine timing level; wannier_prog.F90
+    !! then calls set_error_input on that rank.
     use w90_error, only: w90_error_type
     use w90_comms, only: mpirank
     implicit none
@@ -118,7 +126,8 @@ contains
     if (allocated(error)) return
 
     ! special test case; use the timing_level variable to
-    ! communicate a kill to remote process, testing error handling
+    ! communicate a kill to remote process, testing error handling.
+    ! Developer-only, not documented in the user guide; see the header above.
     call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm, i_value=unlucky_rank)
     if (found) then
       if (unlucky_rank > 0) then
@@ -2072,7 +2081,7 @@ contains
 
     ! show parallel/serial execution
     if (mpi_size == 1) then
-#ifdef MPI
+#ifdef W90_MPI
       write (stdout, '(/,1x,a)') 'Running in serial (with parallel executable)'
 #else
       write (stdout, '(/,1x,a)') 'Running in serial (with serial executable)'

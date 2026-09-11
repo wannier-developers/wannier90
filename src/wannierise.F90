@@ -2123,7 +2123,7 @@ contains
         return
       end if
 
-    else ! not Stengel-Spalding
+    else ! not Stengel-Spaldin
       do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)
         do nn = 1, kmesh_info%nntot
@@ -2174,7 +2174,7 @@ contains
       if (allocated(error)) return
 
       r2ave = r2ave/real(num_kpts, dp)
-    end if ! not Stengel-Spalding
+    end if ! not Stengel-Spaldin
 
 !~    wann_spread%om_1 = 0.0_dp
 !~    do nkp = 1, num_kpts
@@ -2385,7 +2385,7 @@ contains
             wann_spread%om_d = wann_spread%om_d + kmesh_info%wb(nn)*summ
           end do
         end do
-      else ! not Stengel-Spalding
+      else ! not Stengel-Spaldin
         wann_spread%om_d = 0.0_dp
         do nkp_loc = 1, nkrank
           nkp = global_k(nkp_loc)
@@ -2586,7 +2586,7 @@ contains
         return
       end if
 
-    else ! not Stengel-Spalding
+    else ! not Stengel-Spaldin
 
       do nkp_loc = 1, nkrank
         nkp = global_k(nkp_loc)

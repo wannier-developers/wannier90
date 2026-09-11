@@ -1,0 +1,8 @@
+# testw90_example07
+
+description: "Silane, valence states, Gamma only"
+profile: wannier90_wout
+runs:
+  - input: silane.win
+    output: silane.wout
+serial_only: true

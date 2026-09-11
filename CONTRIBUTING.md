@@ -23,7 +23,7 @@ There are a number of different types of documentation associated with the distr
 * `/doc/user_guide/` is the main User Guide for the code, where new variables, input parameters, functionality and file formats should be described
 * `/doc/tutorial/` is the tutorial guide for the examples in /examples/ and should be updated whenever a new example is added
 * `/examples/README` provides a very brief description of each example and the associated functionality that it covers
-FORD annotations should be included in all code that is developed
+FORD annotations should be included in all code that is developed; the resulting documentation is published at <https://wannier-developers.github.io/wannier90/>
 
 ## Test suite
 A set of tests is provided with Wannier90, in the folder `test-suite`.
@@ -33,7 +33,14 @@ Try to add only tests that run within a few seconds. In most cases, this is poss
 
 Before committing, please check that the code compiles and that the tests run for you. To know how to write a test, and how to run them, read the README file inside the `test-suite` folder.
 
-Also, when you create a pull request, Travis-CI will run the same tests and show a green tick or a red cross depending on whether all the tests (that do not require the interface) pass. This typically takes just a few minutes, so after you create a pull request please check that all tests have passed.
+The tests are run with [pytest](https://docs.pytest.org/) and need Python 3.10 or newer:
+
+```bash
+pip install -r test-suite/requirements.txt
+cd test-suite && pytest
+```
+
+Also, when you create a pull request, GitHub Actions will run the same tests and show a green tick or a red cross depending on whether all the tests (that do not require the interface) pass. This typically takes just a few minutes, so after you create a pull request please check that all tests have passed.
 
 # GitHub repository and management of pull requests
 
@@ -66,7 +73,9 @@ Pull requests made on the `develop` branch will go to the Wannier Developers' Gr
 * A test case has been added to `/test-suite/` (e.g., if new functionality has been added)
 * The code compiles and passes the set of tests in the test suite (which runs automatically when a pull request is made)
 
-Whilst we expect to accept the majority of pull requests, it is possible that we will not accept all pull requests. In such cases we will always endeavour to explain to the developer our reasons for not doing so.
+## Pull requests for major new functionality
+
+Whilst we are keen to expand the functionality of Wannier90, we must also be mindful of the longer-term sustainability and maintenance of the code. If you are planning to make a pull request for major new functionality, which might include the calculation of a new property, or the development of a new method for projection, disentanglement or wannierisation, please contact a member of the [Wannier Developers Group](https://wannier.org/people/) in advance to discuss.
 
 ## List of contributors
 Prior to each release of the code, the Wannier Developers’ Group will update the list of contributors in the `README` file in the root of the distribution so that contributions are appropriately attributed and contributors receive due recognition for their contributions.

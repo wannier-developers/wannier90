@@ -1,0 +1,7 @@
+# testw90_basic2
+
+description: Basic wannier disentanglement
+profile: wannier90_wout
+runs:
+  - input: wannier.win
+    output: wannier.wout

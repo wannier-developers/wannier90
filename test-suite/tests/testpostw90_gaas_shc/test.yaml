@@ -1,0 +1,12 @@
+# testpostw90_gaas_shc
+
+description: Test of ac SHC for GaAs
+profile: postw90_shc_freq_dat
+runs:
+  - input: GaAs.win
+    output: GaAs-shc-freqscan.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.amn.bz2"
+  - bunzip2: "*.spn.bz2"

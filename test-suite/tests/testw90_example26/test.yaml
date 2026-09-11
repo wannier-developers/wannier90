@@ -1,0 +1,7 @@
+# testw90_example26
+
+description: Test of selective localization and constrained centres
+profile: wannier90_slwfc_wout
+runs:
+  - input: gaas.win
+    output: gaas.wout

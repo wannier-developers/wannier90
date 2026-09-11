@@ -1,0 +1,1 @@
+The library is called in a loop, calling w90_free(); the resident memory is checked for growth, each pass must reproduce the first, and the final pass is compared with the reference.

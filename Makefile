@@ -31,7 +31,7 @@ install: default
 	if [ -f "utility/w90vdw/w90vdw.x" ]; then install -m755 "utility/w90vdw/w90vdw.x" "$(DESTDIR)$(PREFIX)/bin/w90vdw.x"; fi;
 
 	install -d $(DESTDIR)$(PREFIX)/include/
-	for m in src/obj/w90_library.mod src/obj/w90_library_extra.mod; do \
+	for m in $(addprefix src/obj/,$(LIBMODS)); do \
 		if [ -f "$$m" ]; then install -m644 "$$m" "$(DESTDIR)$(PREFIX)/include/"; fi; \
 	done
 	install -d $(DESTDIR)$(PREFIX)/lib/
@@ -71,7 +71,7 @@ w90vdw:
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw
 
 w90py: libs
-	$(MAKE) -C $(ROOTDIR)/wrap
+	$(MAKE) -C $(ROOTDIR)/test-suite/library/py-f90wrap
 
 libs: staticlib dynlib
 
@@ -104,118 +104,30 @@ clean:
 	cd $(ROOTDIR) && $(MAKE) -C src/obj clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90pov clean
 	$(MAKE) -C $(ROOTDIR)/utility/w90vdw clean
-	cd $(ROOTDIR)/test-suite && ./clean_tests
 
 # Note: .x.dSYM are directories (hence the -r option to rm) and are only created on macOS (when compiling with certain flags, e.g. debug), so they are not always present
 veryclean: clean
 	cd $(ROOTDIR) && rm -rf wannier90.x postw90.x w90chk2chk.x w90spn2spn.x libwannier90.{a,so.4} libwannier90.{a,so.4} *.{gcda,gcno} *.x.dSYM
-	cd $(ROOTDIR)/test-suite && ./clean_tests -i
 
 thedoc:
 	@(echo "The latex user_guide and tutorials have been migrated to markdown \
 	format, for more details see 'docs/README.md' file.")
 
-# For now hardcoded to 3.1.0, and using HEAD
-# Better to get the version from the io.F90 file and use
-# the tag (e.g. v3.1.0) instead of HEAD
+# Create a tarball of the current repo without git files (useful to distribute the code outside of git)
 dist:
-	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-3.1.0/ -o wannier90-3.1.0.tar.gz
+	cd $(ROOTDIR) && git archive HEAD --prefix=wannier90-current/ -o wannier90-current.tar.gz
 
-dist-legacy:
-	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90-3.1/,' -f wannier90-3.1.tar.gz \
-		./src/*.?90 \
-		./src/postw90/*.?90 \
-		./autodoc/README.txt \
-		./autodoc/*.md \
-		./autodoc/media/favicon*png \
-		./examples/README \
-		./examples/example01/UNK* \
-		./examples/*/*.win \
-		./examples/example0[2-4]/*.eig \
-                ./examples/example0[1-4]/*.*mn \
-		./examples/example0[5-9]/*.scf \
-		./examples/example1[0-3]/*.scf \
-		./examples/example0[5-9]/*.nscf \
-		./examples/example1[0-3]/*.nscf \
-		./examples/example0[5-9]/*.pw2wan \
-		./examples/example1[0-3]/*.pw2wan \
-		./examples/example1[4-5]/defected/*.scf \
-		./examples/example1[4-5]/defected/*.nscf \
-		./examples/example1[4-5]/defected/*.win \
-		./examples/example1[4-5]/defected/*.pw2wan \
-                ./examples/example1[4-5]/periodic/*.scf \
-                ./examples/example1[4-5]/periodic/*.nscf \
-                ./examples/example1[4-5]/periodic/*.win \
-                ./examples/example1[4-5]/periodic/*.pw2wan \
-                ./examples/example16-noqe/Si.amn \
-                ./examples/example16-noqe/Si.mmn \
-                ./examples/example16-noqe/Si.eig \
-                ./examples/example16-withqe/Si.scf \
-                ./examples/example16-withqe/Si.nscf \
-                ./examples/example16-withqe/Si.pw2wan \
-		./examples/example1[7-9]/*.scf \
-		./examples/example1[7-9]/*.nscf \
-		./examples/example1[7-9]/*.pw2wan \
-		./examples/example20/*.scf \
-		./examples/example20/*.nscf \
-		./examples/example20/*.pw2wan \
-		./examples/example20/SrMnO3/SrMnO3-d.pw2wan \
-		./examples/example20/SrMnO3/SrMnO3-d.win \
-		./examples/example20/SrMnO3/SrMnO3-eg.pw2wan \
-		./examples/example20/SrMnO3/SrMnO3-eg.win \
-		./examples/example20/SrMnO3/SrMnO3.nscf \
-		./examples/example20/SrMnO3/SrMnO3.scf \
-		./examples/example20/SrMnO3/SrMnO3-t2g.pw2wan \
-		./examples/example20/SrMnO3/SrMnO3-t2g.win \
-		./examples/example2[1-2]/README \
-		./examples/example2[1-2]/*/*.scf \
-		./examples/example2[1-2]/*/*.nscf \
-		./examples/example2[1-2]/*/*.win \
-		./examples/example2[1-2]/*/*.sym \
-		./examples/example2[1-2]/*/*.pw2wan \
-		./pseudo/*.UPF \
-		./config/make.inc* \
-		./utility/*.pl \
-		./utility/PL_assessment/*.f90 \
-		./utility/PL_assessment/README \
-		./utility/w90vdw/w90vdw.f90 \
-		./utility/w90vdw/README \
-		./utility/w90vdw/doc/Makefile \
-		./utility/w90vdw/doc/w90vdw.tex \
-		./utility/w90vdw/examples/benzene_s_val/benzene_s_val.* \
-                ./utility/w90vdw/examples/benzene_s_val/ref/benzene_s_val.* \
-                ./utility/w90vdw/examples/benzene_s_cond/benzene_s_cond.* \
-                ./utility/w90vdw/examples/benzene_s_cond/ref/benzene_s_cond.* \
-		./utility/w90pov/doc/*.tex \
-		./utility/w90pov/doc/*.pdf \
-		./utility/w90pov/doc/figs/*.png \
-		./utility/w90pov/src/*.f90 \
-		./utility/w90pov/src/*.c \
-		./utility/w90pov/examples/*/*.gz \
-		./utility/w90pov/examples/*/*.inp \
-		./utility/w90pov/examples/*/*.inc \
-		./utility/w90pov/examples/*/*.pov \
-		./utility/w90pov/examples/*/ref/*.png \
-		./utility/w90pov/README \
-		./utility/w90chk2chk/README \
-                ./doc/*/*.tex \
-                ./doc/*/*.eps \
-                ./doc/*/*.fig \
-		./doc/wannier90.bib \
-		./*/Makefile \
-		./*/Makefile.2 \
-		./*/*/Makefile \
-		./Makefile \
-		./LICENSE \
-		./README* \
-		./CHANGE.log \
-	)
+# The test suite is driven by pytest; see test-suite/README.md.
+# Requires Python >= 3.10 with pytest and PyYAML:
+#   pip install -r test-suite/requirements.txt
+PYTHON ?= python3
 
 test-serial: w90chk2chk wannier post
-	(cd $(ROOTDIR)/test-suite && ./run_tests --category=default )
+	(cd $(ROOTDIR)/test-suite && $(PYTHON) -m pytest tests )
 
 test-parallel: w90chk2chk wannier post
-	(cd $(ROOTDIR)/test-suite && ./run_tests --category=par --numprocs=4 )
+	(cd $(ROOTDIR)/test-suite && $(PYTHON) -m pytest tests --nprocs=4 \
+		-m "wannier90 or postw90 or checkpoint or parallel" )
 
 # Alias
 ifdef COMMS

@@ -8,20 +8,20 @@ POSTDIR = postw90/
 
 ifeq ($(COMMS),mpi08)
 USEMPI=y
-TEMP1 = -DMPI -DMPI08
+TEMP1 = -DW90_MPI -DW90_MPI08
 TEMP2 = $(MPIF90)
 else ifeq ($(COMMS),mpih)
 USEMPI=y
-TEMP1 = -DMPI -DMPIH
+TEMP1 = -DW90_MPI -DW90_MPIH
 TEMP2 = $(MPIF90)
 else ifeq ($(COMMS),mpi90)
 USEMPI=y
-TEMP1 = -DMPI -DMPI90
+TEMP1 = -DW90_MPI -DW90_MPI90
 TEMP2 = $(MPIF90)
 else ifeq ($(COMMS),mpi)
 USEMPI=y
 # default to f90 style "use mpi"
-TEMP1 = -DMPI -DMPI90
+TEMP1 = -DW90_MPI -DW90_MPI90
 TEMP2 = $(MPIF90)
 else
 TEMP1 =
@@ -53,3 +53,9 @@ endif
 DYNLIBBASE = wannier90
 STATICLIBRARY = lib$(DYNLIBBASE).a
 DYNLIBRARY = lib$(DYNLIBBASE).so.4
+# Module files to install (ifx requires all, gcc only w90_library.mod)
+LIBMODS = $(addprefix w90_,$(addsuffix .mod, \
+	comms constants disentangle_mod error error_base hamiltonian io kmesh \
+	library library_extra overlap plot_mod readwrite sitesym transport_mod \
+	types utility wannier90_readwrite wannier90_types wannierise_mod ws_distance \
+	library_c))

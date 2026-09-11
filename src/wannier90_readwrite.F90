@@ -280,7 +280,7 @@ contains
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                   stdout, error, comm)
+                                                   stdout, print_output%iprint, error, comm)
       if (allocated(error)) return
 
       call w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
@@ -609,7 +609,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                     stdout, error, comm)
+                                                     stdout, iprint, error, comm)
     !================================================!
     ! Wannierise
     !================================================!
@@ -619,6 +619,7 @@ contains
     ! arguments
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: iprint
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
@@ -664,15 +665,6 @@ contains
       return
     end if
 
-    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
-                                   r_value=wann_control%conv_tol)
-    if (allocated(error)) return
-
-    if (wann_control%conv_tol < 0.0_dp) then
-      call set_error_input(error, 'Error: conv_tol must be positive', comm)
-      return
-    end if
-
     call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm, &
                                    r_value=wann_control%conv_noise_amp)
     if (allocated(error)) return
@@ -683,6 +675,25 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm, &
                                    i_value=wann_control%conv_window)
     if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
+                                   r_value=wann_control%conv_tol)
+    if (allocated(error)) return
+
+    if (wann_control%conv_tol < 0.0_dp) then
+      call set_error_input(error, 'Error: conv_tol must be positive', comm)
+      return
+    end if
+
+    if (found .and. wann_control%conv_window .le. 1) then
+      if (iprint > 0) then
+        write (stdout, '(a)') ' Warning: conv_window is not set to a value greater than 1, &
+          &so conv_tol is ignored and wannierisation will always run for num_iter iterations.&
+          &Set conv_window to a value greater than 1 if you want the minimisation &
+          &to stop early once the spread change is below conv_tol for that many &
+          &consecutive iterations.'
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm, &
                                    i_value=wann_control%conv_noise_num)
@@ -1841,7 +1852,7 @@ contains
     logical, intent(in) :: spinors
 
     ! local variables
-    character(len=1) :: one_dim_axis
+    character(len=4) :: one_dim_axis
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     logical :: disentanglement
     real(kind=dp) :: ccentres_frac(3)
@@ -1850,6 +1861,11 @@ contains
 
     disentanglement = (num_bands > num_wann)
 
+    ! `one_dim_axis` is only meaningful when the system is treated as reduced-
+    ! dimensional, but it is printed unconditionally below (for any run with
+    ! transport enabled or iprint > 2). Without a default it would be written
+    ! while undefined whenever the input does not set `one_dim_axis`.
+    one_dim_axis = 'none'
     if (real_space_ham%one_dim_dir == 1) one_dim_axis = 'x'
     if (real_space_ham%one_dim_dir == 2) one_dim_axis = 'y'
     if (real_space_ham%one_dim_dir == 3) one_dim_axis = 'z'
@@ -2183,9 +2199,11 @@ contains
             write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
               real_space_ham%system_dim, '|'
             if (real_space_ham%system_dim .eq. 1) &
-              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', one_dim_axis, '|'
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+              adjustr(one_dim_axis), '|'
             if (real_space_ham%system_dim .eq. 2) &
-              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', one_dim_axis, '|'
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
+              adjustr(one_dim_axis), '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
               real_space_ham%hr_cutoff, '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
@@ -2248,7 +2266,8 @@ contains
         !
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :', 'F', '|'
 
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', one_dim_axis, '|'
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+          adjustr(one_dim_axis), '|'
         !
       end if
 

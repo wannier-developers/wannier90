@@ -1,0 +1,9 @@
+# testw90_example02_restart
+
+description: "Lead, 4 lowest states - test the restart feature"
+profile: wannier90_wout
+runs:
+  - input: lead.win
+    output: lead.wout
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"

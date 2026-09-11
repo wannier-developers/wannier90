@@ -377,7 +377,7 @@ contains
       !if (allocated(error)) return
 
     else
-
+      au_matrix = cmplx_0
       do n = 1, num_kpts
         do m = 1, num_wann
           au_matrix(m, m, n) = cmplx_1
@@ -949,6 +949,7 @@ contains
         !
         ! SINGULAR VALUE DECOMPOSITION
         !
+
         call zgesvd('A', 'A', num_bands, num_bands, u_matrix(1, 1, nkp), num_bands, svals, cz, &
                     num_bands, cvdag, num_bands, cwork, 4*num_bands, rwork, info)
         if (info .ne. 0) then

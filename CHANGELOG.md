@@ -1,5 +1,56 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+### `wannier90.x`, `postw90.x` and the utilities now exit nonzero on a fatal error
+
+Previously a fatal error ended in a bare Fortran `stop`, which exits with status **0**. A
+failed run was therefore indistinguishable from a successful one to any caller: shell
+scripts, Makefiles and CI steps all saw success. Fatal errors now exit with status 1 (an
+MPI abort still yields the MPI runtime's own status, typically 2). Successful runs, including
+the `-pp` postprocessing-setup path, still exit 0.
+
+This affects `wannier90.x`, `postw90.x`, `w90chk2chk.x` and `w90spn2spn.x`. **Scripts that
+relied on Wannier90 always returning 0 will now see a failure reported.** That is the point
+of the change, but it may surface in existing pipelines.
+
+Relatedly, `prterr` now broadcasts the failure code from the root rank, so every MPI rank
+reports the same error. A non-root rank whose own error code was `code_remote` previously
+returned 0, meaning a library caller saw rank 0 fail while the other ranks reported success.
+
+### Test suite migrated from testcode to pytest
+
+The functional/regression test suite is now driven by [pytest](https://docs.pytest.org/)
+instead of the vendored copy of `testcode2` that had been carried in `test-suite/testcode/`
+since 2017. What this means for developers:
+
+- **Python 3.10 or newer is now required to run the tests**, along with `pytest` and
+  `PyYAML`: `pip install -r test-suite/requirements.txt`.
+- `./run_tests` and `./clean_tests` are gone. Run `pytest` from `test-suite/`, or
+  `make tests` from the repository root, or `ctest` as before. `clean_tests` is obsolete
+  because tests no longer run in the source tree.
+- Tests now run in a work directory **outside the source tree**, so a test run no longer
+  leaves generated files behind and `git status` stays clean.
+- `tests/jobconfig` and `tests/userconfig` are replaced by one `tests/<name>/test.yaml` per
+  test plus a shared `test-suite/profiles.yaml`. Adding a test no longer means registering
+  it in three places: CMake discovers tests by globbing `tests/*/test.yaml`.
+- The per-test `Makefile`s are replaced by a declarative `prepare:` key.
+- Reference files are renamed from `benchmark.out.default.inp=<input>.win[.args=…]` to
+  `benchmark/<output filename>`. Contents are unchanged.
+- New `pytest --update-benchmarks` regenerates reference files, for the whole suite or any
+  subset, refusing to write one when the parser extracts nothing.
+- `expect_failure` tests are now checked strictly: a test declared to abort must actually
+  exit nonzero. testcode's `can_fail` merely tolerated a nonzero exit, so a test that
+  silently stopped failing went unnoticed. This relies on the exit-code fix above.
+- An output that parses to nothing is now a **failure**. Previously testcode reported "no
+  data extracted" as a pass, which let a test keep passing after a parser stopped matching
+  its output format.
+- The test-suite CMake no longer copies ~240 MB of test data into the build directory on
+  every configure.
+
+The core of the test suite previously used `testcode` by J. Spencer
+(<https://github.com/jsspencer/testcode>), which we gratefully acknowledge.
+
 ## v4.0.2 (27 August 2026)
 
 ### New features
@@ -25,7 +76,7 @@
 
 - Spin Hall conductivity according to Ji Hoon Ryoo's method (Phys. Rev. B 99, 235113) [[#353]](https://github.com/wannier-developers/wannier90/pull/353)
 
-- Stengel-Spalding spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
+- Stengel-Spaldin spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
 
 - Tetrahedron integration for calculating spin Hall conductivity [[#431]](https://github.com/wannier-developers/wannier90/pull/431)
 

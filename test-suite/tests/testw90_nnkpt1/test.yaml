@@ -1,0 +1,8 @@
+# testw90_nnkpt1
+
+description: Test for the nnkpt file
+profile: wannier90_nnkp
+runs:
+  - input: wannier.win
+    args: [-pp]
+    output: wannier.nnkp
