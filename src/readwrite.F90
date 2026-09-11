@@ -1411,7 +1411,7 @@ contains
                                            'spin_axis_polar', 'spin_decomp', 'spin_kmesh_spacing', 'spin_moment', 'spn_formatted', &
                                                   'tetrahedron_avoid_degeneracy', 'tetrahedron_correction', 'tetrahedron_cutoff', &
                                            'tetrahedron_higher_correction', 'tetrahedron_method', 'transl_inv', 'transl_inv_full', &
-                                                  'uhu_formatted', 'use_degen_pert', 'wanint_kpoint_file']
+                                                  'uhu_formatted', 'use_degen_pert', 'wanint_kpoint_file', 'kmesh_shell_from_file']
 
     character(len=*), parameter :: vectors(*) = [character(len=32) :: &
                                         'kmesh', 'mp_grid', 'translation_centre_frac', 'wannier_plot_supercell', 'ws_search_size', &
