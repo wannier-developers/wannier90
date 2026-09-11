@@ -136,7 +136,7 @@ crystal plotted with the XCrySDen program.</figcaption>
     |:-:|:-:|
     | ![a](img/ex4_copper_bs_qe_w90_5_38.webp){ width="320" } | ![b](img/ex4_copper_bs_qe_w90_9-5_38.webp){ width="320" } |
     | ![c](img/ex4_copper_bs_qe_w90_13_38.webp){ width="320" } | ![d](img/ex4_copper_bs_qe_w90_15_38.webp){ width="320" } |
-    | ![e](img/ex4_copper_bs_qe_w90_no_38.webp){ width="320" } | ![f](img/ex4_copper_bs_qe_w90_no_45.webp){ width="320" } |
+    | ![e](img/ex4_copper_bs_qe_w90_no_38.webp){ width="320" } | ![f](img/ex4_copper_bs_qe_w90_no_45.webp){ width="325" } |
 
     <figcaption markdown="span"  id="fig4-5">Interpolated
     bandstructure of Copper (solid red) with DFT reference (solid
