@@ -665,15 +665,6 @@ contains
       return
     end if
 
-    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
-                                   r_value=wann_control%conv_tol)
-    if (allocated(error)) return
-
-    if (wann_control%conv_tol < 0.0_dp) then
-      call set_error_input(error, 'Error: conv_tol must be positive', comm)
-      return
-    end if
-
     call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm, &
                                    r_value=wann_control%conv_noise_amp)
     if (allocated(error)) return
@@ -685,12 +676,22 @@ contains
                                    i_value=wann_control%conv_window)
     if (allocated(error)) return
 
-    if (.not. found .and. wann_control%conv_noise_amp <= 0.0_dp) then
+    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
+                                   r_value=wann_control%conv_tol)
+    if (allocated(error)) return
+
+    if (wann_control%conv_tol < 0.0_dp) then
+      call set_error_input(error, 'Error: conv_tol must be positive', comm)
+      return
+    end if
+
+    if (found .and. wann_control%conv_window .le. 1) then
       if (iprint > 0) then
-        write (stdout, '(a)') ' Warning: conv_window is not set, so conv_tol is ignored and &
-          &wannierisation will always run for num_iter iterations. Set conv_window (e.g. to 3) &
-          &if you want the minimisation to stop early once the spread change is below conv_tol &
-          &for that many consecutive iterations.'
+        write (stdout, '(a)') ' Warning: conv_window is not set to a value greater than 1, &
+          &so conv_tol is ignored and wannierisation will always run for num_iter iterations.&
+          &Set conv_window to a value greater than 1 if you want the minimisation &
+          &to stop early once the spread change is below conv_tol for that many &
+          &consecutive iterations.'
       end if
     end if
 
