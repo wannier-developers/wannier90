@@ -126,6 +126,16 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>kmesh_shell_from_file</name>
+    <type>L</type>
+    <description>Read the b-vectors of each shell from the seedname.kshell file</description>
+    <groups>
+      <group>system</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>search_shells</name>
     <type>I</type>
     <description>The number of shells to search when determining finite difference formula</description>
@@ -620,6 +630,16 @@
     <name>write_r2mn</name>
     <type>L</type>
     <description>Write matrix elements of $r^2$ between WF to file</description>
+    <groups>
+      <group>wannierise</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>write_proj</name>
+    <type>L</type>
+    <description>Write projection of Bloch states in the outer window onto the WF space</description>
     <groups>
       <group>wannierise</group>
     </groups>
@@ -1131,6 +1151,15 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>dist_cutoff_hc</name>
+    <type units="Ang">P</type>
+    <description>Cut-off on distance between WF, used when building the conductor Hamiltonian hC</description>
+    <groups>
+      <group>transport</group>
+    </groups>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>dist_cutoff_mode</name>
     <type>S</type>
     <choices>
@@ -1365,6 +1394,16 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>tran_easy_fix</name>
+    <type>L</type>
+    <description>Fix the parity of the WF by switching the sign of those with a negative signature</description>
+    <groups>
+      <group>transport</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>tran_use_same_lead</name>
     <type>L</type>
     <description>Left and right leads are the same</description>
@@ -1415,6 +1454,24 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
+    <name>effective_model</name>
+    <type>L</type>
+    <description>Start from the operators in the Wannier basis in the `seedname_*_R.dat` files, rather than from a Wannierisation run</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>False</default>
+  </parameter>
+  <parameter tool="postw90">
+    <name>wanint_kpoint_file</name>
+    <type>L</type>
+    <description>Read the interpolation \\(k\\) points and their weights from the file `kpoint.dat`</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>False</default>
+  </parameter>
+  <parameter tool="postw90">
     <name>adpt_smr</name>
     <type>L</type>
     <description>Use adaptive smearing</description>
@@ -1453,6 +1510,15 @@
     <groups>
       <group>global</group>
     </groups>
+  </parameter>
+  <parameter tool="postw90">
+    <name>smr_max_arg</name>
+    <type>R</type>
+    <description>Cut-off on the argument of the broadened delta function</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>5.0</default>
   </parameter>
   <parameter tool="postw90">
     <name>num_elec_per_state</name>
@@ -1507,6 +1573,22 @@
     <type>L</type>
     <description>Determines whether to evaluate the spin magnetic moment per cell</description>
     <note>*</note>
+    <groups>
+      <group>global</group>
+    </groups>
+  </parameter>
+  <parameter tool="postw90">
+    <name>spin_kmesh</name>
+    <type>I</type>
+    <description>Dimensions of the uniform interpolation \\(k\\)-mesh used for the spin moment (one or three integers)</description>
+    <groups>
+      <group>global</group>
+    </groups>
+  </parameter>
+  <parameter tool="postw90">
+    <name>spin_kmesh_spacing</name>
+    <type>R</type>
+    <description>Minimum spacing between \\(k\\) points used for the spin moment, in Å\\(^{-1}\\)</description>
     <groups>
       <group>global</group>
     </groups>
@@ -1765,6 +1847,33 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
+    <name>tetrahedron_method</name>
+    <type>L</type>
+    <description>Use the tetrahedron method for the Brillouin-zone integral of the spin Hall conductivity</description>
+    <groups>
+      <group>berry</group>
+    </groups>
+    <default>False</default>
+  </parameter>
+  <parameter tool="postw90">
+    <name>tetrahedron_cutoff</name>
+    <type>R</type>
+    <description>Relative threshold used to regularise the analytic integral over a tetrahedron</description>
+    <groups>
+      <group>berry</group>
+    </groups>
+    <default>1e-04</default>
+  </parameter>
+  <parameter tool="postw90">
+    <name>tetrahedron_avoid_degeneracy</name>
+    <type units="eV">P</type>
+    <description>Band splitting below which a degeneracy is taken to be accidental in the tetrahedron method</description>
+    <groups>
+      <group>berry</group>
+    </groups>
+    <default>3e-04</default>
+  </parameter>
+  <parameter tool="postw90">
     <name>kdotp_kpoint</name>
     <type>R</type>
     <description>\\(k\\) point for \\(k\\cdot p\\) expansion (\\(2\\pi/a\\), with \\(a\\) lattice constant in Å)</description>
@@ -1983,14 +2092,6 @@
     </groups>
   </parameter>
   <parameter tool="postw90">
-    <name>kslice_fermi_level</name>
-    <type units="eV">P</type>
-    <description>This parameter is not used anymore. Use fermi_energy instead</description>
-    <groups>
-      <group>kslice</group>
-    </groups>
-  </parameter>
-  <parameter tool="postw90">
     <name>kslice_fermi_lines_colour</name>
     <type>S</type>
     <choices>
@@ -2087,6 +2188,14 @@
     <name optional_prefix="gyrotropic_">smr_fixed_en_width</name>
     <type units="eV">P</type>
     <description>Energy smearing</description>
+    <groups>
+      <group>gyrotropic</group>
+    </groups>
+  </parameter>
+  <parameter tool="postw90">
+    <name optional_prefix="gyrotropic_">smr_max_arg</name>
+    <type>R</type>
+    <description>Cut-off on the argument of the broadened delta function</description>
     <groups>
       <group>gyrotropic</group>
     </groups>
@@ -2387,6 +2496,24 @@
       <group>global</group>
     </groups>
     <default>False</default>
+  </parameter>
+  <parameter tool="postw90">
+    <name>use_degen_pert</name>
+    <type>L</type>
+    <description>Use degenerate perturbation theory to evaluate the band gradients</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>False</default>
+  </parameter>
+  <parameter tool="postw90">
+    <name>degen_thr</name>
+    <type units="eV">P</type>
+    <description>Energy difference below which two bands are treated as degenerate by `use_degen_pert`</description>
+    <groups>
+      <group>global</group>
+    </groups>
+    <default>1e-04</default>
   </parameter>
   <parameter tool="w90">
     <name>use_ss_functional</name>
