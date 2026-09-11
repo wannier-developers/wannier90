@@ -2962,7 +2962,7 @@ contains
     !! Keyword data
     type(settings_type), intent(inout) :: settings
 
-    integer           :: kl, in, loop, i
+    integer :: kl, in, loop, i, itmp
     character(len=maxlen) :: dummy
 
     kl = len_trim(keyword)
@@ -2998,6 +2998,10 @@ contains
 
       do loop = 1, settings%num_lines
         in = index(settings%in_data(loop), trim(keyword))
+        itmp = in + len(trim(keyword))
+        if (settings%in_data(loop) (itmp:itmp) /= '=' &
+            .and. settings%in_data(loop) (itmp:itmp) /= ':' &
+            .and. settings%in_data(loop) (itmp:itmp) /= ' ') cycle
         if (in == 0 .or. in > 1) cycle
         if (found) then
           call set_error_input(error, 'Error: Found keyword '//trim(keyword)//' more than once in input file', comm)
