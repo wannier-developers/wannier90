@@ -1241,6 +1241,10 @@ contains
     call w90_readwrite_get_keyword(settings, 'dos_task', found, error, comm, c_value=pw90_dos%task)
     if (allocated(error)) return
     if (pw90_calculation%dos) then
+      if (index(pw90_dos%task, 'find_fermi_energy') > 0) then
+        call set_error_input(error, 'Error: find_fermi_energy not currently implemented', comm) ! see dos.F90
+        return
+      end if
       if (index(pw90_dos%task, 'dos_plot') == 0 .and. &
           index(pw90_dos%task, 'find_fermi_energy') == 0) then
         call set_error_input(error, 'Error: value of dos_task not recognised in w90_wannier90_readwrite_read', comm)
