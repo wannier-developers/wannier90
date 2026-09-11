@@ -1336,422 +1336,130 @@ contains
     end if
   end subroutine w90_readwrite_read_atoms
 
-  subroutine w90_readwrite_clear_keywords(settings, comm)
-    ! wannier90.x and postw90.x now only read their own subset of the valid tokens in the ctrl file
-    ! checking of the ctrl file is by testing for the presence of any remaining strings in the file
-    ! after removing all valid keys.
+  subroutine w90_readwrite_clear_keywords(settings, error, comm)
+    ! wannier90.x and postw90.x each read only their own subset of the valid tokens in the .win file;
+    ! the file is validated by checking that nothing remains in the input stream once every valid
+    ! token has been removed.  This routine removes the tokens of the other program by reading them
+    ! into nothing: the w90_readwrite_get_* readers assign only to optional arguments and clear the
+    ! matched lines from the stream as a side effect.  A token found more than once is an input
+    ! error and is reported as such, not as an unrecognised keyword.
     !
-    ! this routine hoovers up any remaining keys by scanning the ctrl file for (the union of) all
-    ! wannier90.x and postw90.x keywords.  The w90_readwrite_get_keyword* functions only assign to optional
-    ! arguments: here we call without any, which has the side effect of clearing the input stream.
-    !
-    ! these lists have been populated using a grep command on the source; it needs to be updated by
-    ! hand when the code changes.  There are a lot of keywords; it's not an ideal solution.
-    !
-    ! (for _vector: just specify zero length)
-    ! (for _block: small modification to skip checking/failure when rows=0 )
-    !use w90_io, only: io_error
+    ! The lists below are the union of wannier90.x and postw90.x tokens and are maintained by hand.
     use w90_error, only: w90_error_type, set_error_dealloc, set_error_alloc
 
     implicit none
 
     type(w90_comm_type), intent(in) :: comm
     type(settings_type), intent(inout) :: settings
+    type(w90_error_type), allocatable, intent(out) :: error
 
-    ! this error is never returned (i.e. errors here are discarded)
-    type(w90_error_type), allocatable :: error
+    character(len=*), parameter :: blocks(*) = [character(len=32) :: &
+                                                'atoms_cart', 'atoms_frac', 'dis_spheres', 'kpoint_path', 'kpoints', &
+                                               'explicit_kpath_labels', 'explicit_kpath', 'nnkpts', 'projections', 'slwf_centres', &
+                                                'unit_cell_cart']
+
+    character(len=*), parameter :: keywords(*) = [character(len=32) :: &
+                                                  'auto_projections', 'bands_num_points', 'bands_plot_dim', 'bands_plot_format', &
+                                               'bands_plot', 'bands_plot_mode', 'calc_only_A', 'conv_noise_amp', 'conv_noise_num', &
+                                              'conv_tol', 'conv_window', 'cp_pp', 'devel_flag', 'dis_conv_tol', 'dis_conv_window', &
+                                                  'dis_froz_max', 'dis_froz_min', 'dis_froz_proj', 'dis_proj_min', 'dis_proj_max', &
+                                                  'dis_proj_auto', 'dis_proj_auto_num_classes', 'dis_mix_ratio', 'dis_num_iter', &
+                                                  'dis_spheres_first_wann', 'dis_spheres_num', 'dist_cutoff', 'dist_cutoff_hc', &
+                                                  'dist_cutoff_mode', 'dis_win_max', 'dis_win_min', 'energy_unit', 'fermi_energy', &
+                                          'fermi_energy_max', 'fermi_energy_min', 'fermi_energy_step', 'fermi_surface_num_points', &
+                                                  'fermi_surface_plot_format', 'fermi_surface_plot', 'fixed_step', 'gamma_only', &
+                                       'guiding_centres', 'higher_order_n', 'higher_order_nearest_shells', 'hr_cutoff', 'hr_plot', &
+                                               'iprint', 'kmesh_spacing', 'kmesh_tol', 'length_unit', 'num_bands', 'num_cg_steps', &
+                                                  'num_dump_cycles', 'num_elec_per_state', 'num_guide_cycles', 'num_iter', &
+                                           'num_no_guide_iter', 'num_print_cycles', 'num_shells', 'num_valence_bands', 'num_wann', &
+                                                 'use_ss_functional', 'one_dim_axis', 'optimisation', 'postproc_setup', 'precond', &
+                                              'restart', 'search_shells', 'search_supcell_size', 'site_symmetry', 'skip_b1_tests', &
+                                 'slwf_constrain', 'slwf_lambda', 'slwf_num', 'spin', 'spinors', 'symmetrize_eps', 'timing_level', &
+                                                  'total_bands', 'tran_easy_fix', 'tran_energy_step', 'tran_group_threshold', &
+                                           'tran_num_bandc', 'tran_num_bb', 'tran_num_cc', 'tran_num_cell_ll', 'tran_num_cell_rr', &
+                                                  'tran_num_cr', 'tran_num_lc', 'tran_num_ll', 'tran_num_rr', 'tran_read_ht', &
+                                       'translate_home_cell', 'transport', 'transport_mode', 'tran_use_same_lead', 'tran_win_max', &
+                                                  'tran_win_min', 'tran_write_ht', 'trial_step', 'unlucky', 'use_bloch_phases', &
+                                                  'use_ws_distance', 'wannier_plot_format', 'wannier_plot', 'wannier_plot_mode', &
+                                                  'wannier_plot_radius', 'wannier_plot_scale', 'wannier_plot_spinor_mode', &
+                                             'wannier_plot_spinor_phase', 'write_bvec', 'write_hr_diag', 'write_hr', 'write_proj', &
+                                         'write_r2mn', 'write_rmn', 'write_tb', 'write_u_matrices', 'write_vdw_data', 'write_xyz', &
+                                                  'ws_distance_tol', 'wvfn_formatted', 'adpt_smr_fac', 'adpt_smr', 'adpt_smr_max', &
+                                              'berry_curv_adpt_kmesh', 'berry_curv_adpt_kmesh_thresh', 'berry_curv_unit', 'berry', &
+                                               'berry_kmesh_spacing', 'berry_task', 'boltz_2d_dir', 'boltz_bandshift_energyshift', &
+                                                  'boltz_bandshift_firstband', 'boltz_bandshift', 'boltz_calc_also_dos', &
+                                                  'boltz_dos_adpt_smr_fac', 'boltz_dos_adpt_smr', 'boltz_dos_adpt_smr_max', &
+                                                  'boltz_dos_energy_max', 'boltz_dos_energy_min', 'boltz_dos_energy_step', &
+                                                  'boltz_dos_smr_fixed_en_width', 'boltz_dos_smr_type', 'boltz_kmesh_spacing', &
+                                                  'boltz_mu_max', 'boltz_mu_min', 'boltz_mu_step', 'boltz_relax_time', &
+                                                  'boltz_tdf_energy_step', 'boltz_tdf_smr_fixed_en_width', 'boltz_tdf_smr_type', &
+                                                  'boltz_temp_max', 'boltz_temp_min', 'boltz_temp_step', 'boltzwann', 'degen_thr', &
+                                       'dos_adpt_smr_fac', 'dos_adpt_smr', 'dos_adpt_smr_max', 'dos_energy_max', 'dos_energy_min', &
+                                          'dos_energy_step', 'dos', 'dos_kmesh_spacing', 'dos_smr_fixed_en_width', 'dos_smr_type', &
+                                                  'dos_task', 'effective_model', 'geninterp_alsofirstder', 'geninterp', &
+                                        'geninterp_single_file', 'gyrotropic_degen_thresh', 'gyrotropic_eigval_max', 'gyrotropic', &
+                                                  'gyrotropic_freq_max', 'gyrotropic_freq_min', 'gyrotropic_freq_step', &
+                                            'gyrotropic_kmesh_spacing', 'gyrotropic_smr_fixed_en_width', 'gyrotropic_smr_max_arg', &
+                                                  'gyrotropic_smr_type', 'gyrotropic_task', 'kpath_bands_colour', 'kpath', &
+                                           'kpath_num_points', 'kpath_task', 'kslice_fermi_lines_colour', 'kslice', 'kslice_task', &
+                                                  'kdotp_num_bands', 'kubo_adpt_smr_fac', 'kubo_adpt_smr', 'kubo_adpt_smr_max', &
+                                                  'kubo_eigval_max', 'kubo_freq_max', 'kubo_freq_min', 'kubo_freq_step', &
+                                          'kubo_smr_fixed_en_width', 'kubo_smr_type', 'sc_eta', 'scissors_shift', 'sc_phase_conv', &
+                                                  'sc_use_eta_corr', 'sc_w_thr', 'shc_alpha', 'shc_bandshift_energyshift', &
+                                             'shc_bandshift_firstband', 'shc_bandshift', 'shc_beta', 'shc_freq_scan', 'shc_gamma', &
+                                               'shc_method', 'smr_fixed_en_width', 'smr_max_arg', 'smr_type', 'spin_axis_azimuth', &
+                                           'spin_axis_polar', 'spin_decomp', 'spin_kmesh_spacing', 'spin_moment', 'spn_formatted', &
+                                                  'tetrahedron_avoid_degeneracy', 'tetrahedron_correction', 'tetrahedron_cutoff', &
+                                           'tetrahedron_higher_correction', 'tetrahedron_method', 'transl_inv', 'transl_inv_full', &
+                                                  'uhu_formatted', 'use_degen_pert', 'wanint_kpoint_file']
+
+    character(len=*), parameter :: vectors(*) = [character(len=32) :: &
+                                        'kmesh', 'mp_grid', 'translation_centre_frac', 'wannier_plot_supercell', 'ws_search_size', &
+                                              'berry_kmesh', 'boltz_kmesh', 'dos_kmesh', 'gyrotropic_box_b1', 'gyrotropic_box_b2', &
+                                                 'gyrotropic_box_b3', 'gyrotropic_box_center', 'gyrotropic_kmesh', 'kdotp_kpoint', &
+                                                 'kslice_2dkmesh', 'kslice_b1', 'kslice_b2', 'kslice_corner', 'spin_kmesh']
+
+    character(len=*), parameter :: ranges(*) = [character(len=32) :: &
+                                                'bands_plot_project', 'wannier_plot_list', 'select_projections', 'shell_list', &
+                                                'exclude_bands', 'gyrotropic_band_list', 'kdotp_bands', 'dos_project']
 
     logical :: found
-    integer :: lx, ierr
+    integer :: i, lx, ierr
     integer, allocatable :: lxa(:)
 
-    ! keywords for wannier.x
-    call clear_block(settings, 'atoms_cart', error, comm)
-    call clear_block(settings, 'atoms_frac', error, comm)
-    call clear_block(settings, 'dis_spheres', error, comm)
-    call clear_block(settings, 'kpoint_path', error, comm)
-    call clear_block(settings, 'kpoints', error, comm)
-    call clear_block(settings, 'explicit_kpath_labels', error, comm)
-    call clear_block(settings, 'explicit_kpath', error, comm)
-    call clear_block(settings, 'nnkpts', error, comm)
-    call clear_block(settings, 'projections', error, comm)
-    call clear_block(settings, 'slwf_centres', error, comm)
-    call clear_block(settings, 'unit_cell_cart', error, comm)
-    call w90_readwrite_get_keyword(settings, 'auto_projections', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'bands_plot_dim', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'bands_plot_format', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'bands_plot', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'bands_plot_mode', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'calc_only_A', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'cp_pp', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'devel_flag', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_conv_tol', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_conv_window', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_froz_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_froz_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_froz_proj', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_proj_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_proj_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_proj_auto', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_proj_auto_num_classes', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_mix_ratio', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_num_iter', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_spheres_first_wann', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_spheres_num', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dist_cutoff', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dist_cutoff_hc', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dist_cutoff_mode', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_win_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dis_win_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_energy', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_energy_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_energy_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_surface_num_points', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_surface_plot_format', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fermi_surface_plot', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'fixed_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gamma_only', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'guiding_centres', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'higher_order_n', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'higher_order_nearest_shells', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'hr_cutoff', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'hr_plot', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'iprint', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kmesh_tol', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_bands', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_cg_steps', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_dump_cycles', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_elec_per_state', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_guide_cycles', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_iter', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_no_guide_iter', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_print_cycles', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_shells', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_valence_bands', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'num_wann', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'use_ss_functional', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'one_dim_axis', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'optimisation', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'postproc_setup', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'precond', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'restart', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'site_symmetry', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'skip_b1_tests', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'slwf_constrain', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'slwf_lambda', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'slwf_num', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spin', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spinors', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'symmetrize_eps', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'timing_level', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'total_bands', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_easy_fix', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_group_threshold', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_bandc', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_bb', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_cc', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_cell_ll', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_cell_rr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_cr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_lc', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_ll', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_num_rr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_read_ht', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'translate_home_cell', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'transport', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'transport_mode', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_use_same_lead', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_win_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_win_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tran_write_ht', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'trial_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'unlucky', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'use_bloch_phases', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'use_ws_distance', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot_format', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot_mode', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot_radius', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot_scale', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot_spinor_mode', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wannier_plot_spinor_phase', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_bvec', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_hr_diag', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_hr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_proj', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_r2mn', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_rmn', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_tb', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_u_matrices', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_vdw_data', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'write_xyz', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'ws_distance_tol', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wvfn_formatted', found, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'kmesh', found, 0, error, comm) ! the absent arrays have zero length ;-)
-    call w90_readwrite_get_keyword_vector(settings, 'mp_grid', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'translation_centre_frac', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'wannier_plot_supercell', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'ws_search_size', found, 0, error, comm)
-    call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'bands_plot_project', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'wannier_plot_list', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'select_projections', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'shell_list', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'exclude_bands', found, lx, .false., error, comm, lxa)
+    do i = 1, size(blocks)
+      call clear_block(settings, trim(blocks(i)), error, comm)
+      if (allocated(error)) return
+    end do
 
-    !call w90_readwrite_read_exclude_bands(settings, lxa, lx, error, comm)
-    ! ends list of wannier.x keywords
+    do i = 1, size(keywords)
+      call w90_readwrite_get_keyword(settings, trim(keywords(i)), found, error, comm)
+      if (allocated(error)) return
+    end do
 
-    ! keywords for postw90.x
-    call w90_readwrite_get_keyword(settings, 'adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'berry_curv_adpt_kmesh_thresh', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'berry_curv_unit', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'berry', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'berry_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'berry_task', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_2d_dir', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_bandshift_energyshift', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_bandshift_firstband', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_bandshift', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_calc_also_dos', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_dos_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_mu_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_mu_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_mu_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_relax_time', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_tdf_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_tdf_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_tdf_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_temp_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_temp_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltz_temp_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'boltzwann', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'degen_thr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_energy_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_energy_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_energy_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'dos_task', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'effective_model', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'geninterp_alsofirstder', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'geninterp', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'geninterp_single_file', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_degen_thresh', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_eigval_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_freq_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_max_arg', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'gyrotropic_task', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kpath_bands_colour', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kpath', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kpath_num_points', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kpath_task', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kslice_fermi_lines_colour', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kslice', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kslice_task', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kdotp_num_bands', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_fac', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_adpt_smr_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_eigval_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_freq_max', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_freq_min', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_freq_step', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'kubo_smr_type', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'sc_eta', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'scissors_shift', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'sc_phase_conv', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'sc_use_eta_corr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'sc_w_thr', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_alpha', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_bandshift_energyshift', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_bandshift_firstband', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_bandshift', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_beta', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_freq_scan', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_gamma', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'shc_method', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'smr_fixed_en_width', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'smr_max_arg', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'smr_type', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spin_axis_azimuth', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spin_axis_polar', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spin_decomp', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spin_kmesh_spacing', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spin_moment', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'spn_formatted', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tetrahedron_avoid_degeneracy', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tetrahedron_correction', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tetrahedron_cutoff', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tetrahedron_higher_correction', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'tetrahedron_method', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'transl_inv', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'transl_inv_full', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'uhu_formatted', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'use_degen_pert', found, error, comm)
-    call w90_readwrite_get_keyword(settings, 'wanint_kpoint_file', found, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'berry_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'boltz_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'dos_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b1', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b2', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_b3', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_box_center', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'gyrotropic_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'kdotp_kpoint', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'kslice_2dkmesh', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'kslice_b1', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'kslice_b2', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'kslice_corner', found, 0, error, comm)
-    call w90_readwrite_get_keyword_vector(settings, 'spin_kmesh', found, 0, error, comm)
-    call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'gyrotropic_band_list', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'kdotp_bands', found, lx, .false., error, comm, lxa)
-    call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .true., error, comm)
-    if (allocated(lxa)) then
-      deallocate (lxa, stat=ierr)
-      if (ierr /= 0) then
-        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-        return
-      end if
-    end if
-    allocate (lxa(lx), stat=ierr)
-    if (ierr /= 0) then
-      call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    call w90_readwrite_get_range_vector(settings, 'dos_project', found, lx, .false., error, comm, lxa)
-    deallocate (lxa, stat=ierr)
-    if (ierr /= 0) then
-      call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
-      return
-    end if
-    ! ends list of postw90 keywords
-    if (allocated(error)) deallocate (error)
+    do i = 1, size(vectors)
+      call w90_readwrite_get_keyword_vector(settings, trim(vectors(i)), found, 0, error, comm)
+      if (allocated(error)) return
+    end do
 
+    do i = 1, size(ranges)
+      ! the counting pass leaves the line in the stream; a second pass with a target consumes it
+      call w90_readwrite_get_range_vector(settings, trim(ranges(i)), found, lx, .true., error, comm)
+      if (allocated(error)) return
+      if (.not. found) cycle
+      allocate (lxa(lx), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+      call w90_readwrite_get_range_vector(settings, trim(ranges(i)), found, lx, .false., error, comm, lxa)
+      if (allocated(error)) return
+      deallocate (lxa, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating lxa in w90_readwrite_clear_keywords', comm)
+        return
+      end if
+    end do
   end subroutine w90_readwrite_clear_keywords
 
   subroutine w90_readwrite_clean_infile(settings, stdout, seedname, error, comm)
@@ -1767,7 +1475,8 @@ contains
 
     ! filter out any remaining accepted keywords from both wannier90.x and postw90.x sets
     ! assumes settings%in_data is allocated
-    call w90_readwrite_clear_keywords(settings, comm)
+    call w90_readwrite_clear_keywords(settings, error, comm)
+    if (allocated(error)) return
 
     if (any(len_trim(settings%in_data(:)) > 0)) then
       write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
@@ -4945,7 +4654,7 @@ contains
     type(settings_type), intent(inout) :: settings
 
     ! local variables
-    integer :: in, ins, ine, loop, line_e, line_s
+    integer :: loop, line_e, line_s
     logical :: found_e, found_s
     character(len=maxlen) :: end_st, start_st
 
@@ -4955,11 +4664,11 @@ contains
     start_st = 'begin '//trim(keyword)
     end_st = 'end '//trim(keyword)
 
+    ! input lines are lower-cased and left-adjusted; the tag is 'begin'/'end', blank(s), the
+    ! keyword and nothing else, so that e.g. 'kpoints' does not match 'begin explicit_kpoints'
     do loop = 1, settings%num_lines
-      ins = index(settings%in_data(loop), trim(keyword))
-      if (ins == 0) cycle
-      in = index(settings%in_data(loop), 'begin')
-      if (in == 0 .or. in > 1) cycle
+      if (settings%in_data(loop) (1:6) /= 'begin ') cycle
+      if (trim(adjustl(settings%in_data(loop) (7:))) /= trim(keyword)) cycle
       line_s = loop
       if (found_s) then
         call set_error_input(error, 'Error: Found '//trim(start_st)//' more than once in input file', comm)
@@ -4969,10 +4678,8 @@ contains
     end do
 
     do loop = 1, settings%num_lines
-      ine = index(settings%in_data(loop), trim(keyword))
-      if (ine == 0) cycle
-      in = index(settings%in_data(loop), 'end')
-      if (in == 0 .or. in > 1) cycle
+      if (settings%in_data(loop) (1:4) /= 'end ') cycle
+      if (trim(adjustl(settings%in_data(loop) (5:))) /= trim(keyword)) cycle
       line_e = loop
       if (found_e) then
         call set_error_input(error, 'Error: Found '//trim(end_st)//' more than once in input file', comm)
