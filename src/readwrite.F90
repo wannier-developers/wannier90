@@ -1445,6 +1445,7 @@ contains
     call w90_readwrite_get_keyword(settings, 'precond', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'restart', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'search_shells', found, error, comm)
+    call w90_readwrite_get_keyword(settings, 'search_supcell_size', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'site_symmetry', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'skip_b1_tests', found, error, comm)
     call w90_readwrite_get_keyword(settings, 'slwf_constrain', found, error, comm)
