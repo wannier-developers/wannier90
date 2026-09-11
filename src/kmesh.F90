@@ -1599,9 +1599,9 @@ contains
             write (stdout, '(1x,a)') 'If your cell is very long, or you have an irregular MP grid'
             write (stdout, '(1x,a)') 'Try increasing the parameter search_shells in the win file (default=30)'
             write (stdout, *) ' '
-            call set_error_fatal(error, 'kmesh_shell_automatic: unable to satisfy the higher-order version of B1', comm)
-            return
           end if
+          call set_error_fatal(error, 'kmesh_shell_automatic: unable to satisfy the higher-order version of B1', comm)
+          return
 
         end if
       end if
