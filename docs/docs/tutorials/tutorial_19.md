@@ -137,3 +137,7 @@ python Fe-kslice-morb_z+fermi_lines.py
 $M_z^{\rm orb}({\bf k})$ is much more evenly distributed in $k$-space
 than the Berry curvature (see Tutorial [18](tutorial_18.md)). As a result, the integrated
 orbital magnetization converges more rapidly with the BZ sampling.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_19.md).

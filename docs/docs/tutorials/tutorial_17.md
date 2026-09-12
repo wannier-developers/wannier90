@@ -248,3 +248,7 @@ may want to increase `kslice_2dkmesh`.)
 
 [^2]: Please note the following counterintuitive feature in `pwscf`: in order to obtain a ground state with magnetization
 along the positive z-axis, one should use a negative value for the variable `starting_magnetization`.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_17.md).

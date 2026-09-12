@@ -83,3 +83,7 @@
         mesh with $n$ divisions in the $i^{\mathrm{th}}$ direction in the
         Brillouin zone, the MLWFs "live" in a supercell $n$ times the unit
         cell.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_1.md).

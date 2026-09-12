@@ -61,3 +61,7 @@ interface.
 
 Each directory creates different kind of symmetry-adapted Wannier
 function. See more detail in `tree/develop/tutorials/tutorial21/README`.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_21.md).
