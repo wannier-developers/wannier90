@@ -96,3 +96,7 @@ appropriately.
     ```
 
     and re-running `wannier90`. Visualise them using, e.g., `XCrySDen`.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_12.md).

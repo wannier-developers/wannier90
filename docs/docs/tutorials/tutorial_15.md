@@ -83,3 +83,7 @@ with principal layers set to be two unit cells long.
 - Does one unit cell either side of the defected unit cell shield the
     disorder so that the leads are ideal? Does the quantum conductance
     change if these 'buffer' regions are increased?
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_15.md).

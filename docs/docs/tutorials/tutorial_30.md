@@ -149,3 +149,7 @@ Solution Booklet.
     num_valence_bands = 8
     scissors_shift = 1.117
     ```
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_30.md).

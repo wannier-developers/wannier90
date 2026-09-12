@@ -140,3 +140,7 @@ position of the inner and outer energy windows are shown in
 
 - Compute four MLWFs spanning the low-lying conduction states (see
     Ref. [@souza-prb01]).
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_11.md).
