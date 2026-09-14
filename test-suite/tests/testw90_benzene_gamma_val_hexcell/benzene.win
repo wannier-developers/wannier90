@@ -82,7 +82,7 @@ bohr
   20.000   0.00000000   0.000
  -10.000  17.32050807   0.000
    0.000   0.00000000  20.000
-end_unit_cell_cart
+end unit_cell_cart
 #begin unit_cell_cart
 #bohr
 #  30.000   0.00000000   0.000
