@@ -739,7 +739,7 @@ contains
             ' O_TOT=', wann_spread%om_tot*print_output%lenconfac**2, ' <-- SPRD'
           write (stdout, '(a,E15.7,a,E15.7,a,E15.7,a)') &
             'Delta: O_IOD=', ((wann_spread%om_iod + wann_spread%om_nu) - &
-                              (old_spread%om_iod + wann_spread%om_nu))*print_output%lenconfac**2, &
+                              (old_spread%om_iod + old_spread%om_nu))*print_output%lenconfac**2, &
             ' O_D=', (wann_spread%om_d - old_spread%om_d)*print_output%lenconfac**2, &
             ' O_TOT=', (wann_spread%om_tot - old_spread%om_tot)*print_output%lenconfac**2, ' <-- DLTA'
           write (stdout, '(1x,a78)') repeat('-', 78)
