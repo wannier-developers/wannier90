@@ -65,9 +65,6 @@ module w90_kmesh
   public :: kmesh_get
   public :: kmesh_write
 
-  integer, parameter :: nsupcell = 5
-  !! Size of supercell (of recip cell) in which to search for k-point shells
-
 contains
 
   !================================================
@@ -155,7 +152,8 @@ contains
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(print_output, recip_lattice, lmn, timer)
+    call kmesh_supercell_sort(print_output, recip_lattice, lmn, &
+                              kmesh_input%search_supcell_size, timer)
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -1214,7 +1212,7 @@ contains
   end subroutine kmesh_dealloc
 
   !================================================
-  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, timer)
+  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, nsupcell, timer)
     !================================================
     !! We look for kpoint neighbours in a large supercell of reciprocal
     !! unit cells. Done sequentially this is very slow.
@@ -1229,6 +1227,8 @@ contains
 
     type(print_output_type), intent(in) :: print_output
     integer, intent(inout) :: lmn(:, :)
+    integer, intent(in) :: nsupcell
+    !! Size of supercell (of recip cell) in which to search for k-point shells
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(timer_list_type), intent(inout) :: timer
 
