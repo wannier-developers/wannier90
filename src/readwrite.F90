@@ -1356,7 +1356,7 @@ contains
     character(len=*), parameter :: keywords(*) = [character(len=32) :: &
                                                   'auto_projections', 'bands_num_points', 'bands_plot_dim', 'bands_plot_format', &
                                                'bands_plot', 'bands_plot_mode', 'calc_only_A', 'conv_noise_amp', 'conv_noise_num', &
-                                              'conv_tol', 'conv_window', 'cp_pp', 'dis_conv_tol', 'dis_conv_window', &
+                                                  'conv_tol', 'conv_window', 'cp_pp', 'dis_conv_tol', 'dis_conv_window', &
                                                   'dis_froz_max', 'dis_froz_min', 'dis_froz_proj', 'dis_proj_min', 'dis_proj_max', &
                                                   'dis_proj_auto', 'dis_proj_auto_num_classes', 'dis_mix_ratio', 'dis_num_iter', &
                                                   'dis_spheres_first_wann', 'dis_spheres_num', 'dist_cutoff', 'dist_cutoff_hc', &
