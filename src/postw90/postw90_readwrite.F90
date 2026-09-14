@@ -156,7 +156,6 @@ contains
     logical :: dos_plot
     logical :: found_fermi_energy
     logical :: disentanglement, ok, svd_omega
-    character(len=20) :: energy_unit
 
     pw90_kslice%corner = 0.0_dp
     pw90_kslice%b1 = [1.0_dp, 0.0_dp, 0.0_dp]
@@ -173,7 +172,7 @@ contains
     call w90_wannier90_readwrite_read_effective_model(settings, effective_model, error, comm)
     if (allocated(error)) return
     call w90_readwrite_read_units(settings, print_output%lenconfac, print_output%length_unit, &
-                                  energy_unit, bohr, error, comm)
+                                  bohr, error, comm)
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(settings, pw90_oper_read, error, comm)
     if (allocated(error)) return
@@ -340,9 +339,6 @@ contains
     if (allocated(error)) return
     call w90_wannier90_readwrite_read_effective_model(settings, effective_model, error, comm)
     if (allocated(error)) return
-    !call w90_readwrite_read_units(print_output%lenconfac, print_output%length_unit, energy_unit, &
-    !                              bohr, error, comm)
-    !if (allocated(error)) return
     call w90_wannier90_readwrite_read_oper(settings, pw90_oper_read, error, comm)
     if (allocated(error)) return
     if (allocated(error)) return
@@ -981,7 +977,7 @@ contains
     pw90_berry%tetrahedron_higher_correction = .true.
     call w90_readwrite_get_keyword(settings, 'tetrahedron_higher_correction', found, error, comm, &
                                    l_value=pw90_berry%tetrahedron_higher_correction)
-    if (.not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
+    if (pw90_berry%tetrahedron_method .and. .not. pw90_berry%tetrahedron_higher_correction) call set_error_input &
       (error, 'Error: Set tetrahedron_higher_correction = .true., tetrahedron_method works only with correction', comm)
     if (allocated(error)) return
 
@@ -1245,6 +1241,10 @@ contains
     call w90_readwrite_get_keyword(settings, 'dos_task', found, error, comm, c_value=pw90_dos%task)
     if (allocated(error)) return
     if (pw90_calculation%dos) then
+      if (index(pw90_dos%task, 'find_fermi_energy') > 0) then
+        call set_error_input(error, 'Error: find_fermi_energy not currently implemented', comm) ! see dos.F90
+        return
+      end if
       if (index(pw90_dos%task, 'dos_plot') == 0 .and. &
           index(pw90_dos%task, 'find_fermi_energy') == 0) then
         call set_error_input(error, 'Error: value of dos_task not recognised in w90_wannier90_readwrite_read', comm)

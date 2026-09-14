@@ -2203,7 +2203,6 @@ contains
         ! checking their orthogonality to the frozen states.
         ! === For version 1.0.1 we make this the default ===
 
-        !if (index(devel_flag, 'no-orth-fix') == 0) then
         nzero = 0; goods = 0
         do j = ndimwin(nkp), ndimwin(nkp) - (num_wann - ndimfroz(nkp)) + 1, -1
           if (w(j) < eps8) then

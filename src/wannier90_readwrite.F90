@@ -251,8 +251,6 @@ contains
 !    integer :: num_exclude_bands
     logical :: found_fermi_energy
     logical :: disentanglement
-    character(len=20) :: energy_unit  ! is this not used???
-    !! Units for energy
 
     disentanglement = .false.
     call w90_wannier90_readwrite_read_sym(settings, symmetrize_eps, lsitesymmetry, error, comm)
@@ -276,7 +274,7 @@ contains
 
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_units(settings, print_output%lenconfac, print_output%length_unit, &
-                                    energy_unit, bohr, error, comm)
+                                    bohr, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
