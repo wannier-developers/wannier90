@@ -160,12 +160,10 @@ contains
     if (allocated(error)) return
   end subroutine w90_readwrite_read_algorithm_control
 
-  subroutine w90_readwrite_read_units(settings, lenconfac, length_unit, energy_unit, bohr, error, &
+  subroutine w90_readwrite_read_units(settings, lenconfac, length_unit, bohr, error, &
                                       comm)
-    !! reads the "energy_unit" and "length_unit" (valid: "ang" or "bohr") variables
     use w90_error, only: w90_error_type, set_error_input
     implicit none
-    character(len=*), intent(inout) :: energy_unit
     character(len=*), intent(inout) :: length_unit
     real(kind=dp), intent(in) :: bohr
     real(kind=dp), intent(inout) :: lenconfac
@@ -175,9 +173,6 @@ contains
 
     integer :: ic
     logical :: found
-
-    call w90_readwrite_get_keyword(settings, 'energy_unit', found, error, comm, c_value=energy_unit)
-    if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'length_unit', found, error, comm, c_value=length_unit)
     if (allocated(error)) return
@@ -1361,11 +1356,11 @@ contains
     character(len=*), parameter :: keywords(*) = [character(len=32) :: &
                                                   'auto_projections', 'bands_num_points', 'bands_plot_dim', 'bands_plot_format', &
                                                'bands_plot', 'bands_plot_mode', 'calc_only_A', 'conv_noise_amp', 'conv_noise_num', &
-                                              'conv_tol', 'conv_window', 'cp_pp', 'devel_flag', 'dis_conv_tol', 'dis_conv_window', &
+                                                  'conv_tol', 'conv_window', 'cp_pp', 'dis_conv_tol', 'dis_conv_window', &
                                                   'dis_froz_max', 'dis_froz_min', 'dis_froz_proj', 'dis_proj_min', 'dis_proj_max', &
                                                   'dis_proj_auto', 'dis_proj_auto_num_classes', 'dis_mix_ratio', 'dis_num_iter', &
                                                   'dis_spheres_first_wann', 'dis_spheres_num', 'dist_cutoff', 'dist_cutoff_hc', &
-                                                  'dist_cutoff_mode', 'dis_win_max', 'dis_win_min', 'energy_unit', 'fermi_energy', &
+                                                  'dist_cutoff_mode', 'dis_win_max', 'dis_win_min', 'fermi_energy', &
                                           'fermi_energy_max', 'fermi_energy_min', 'fermi_energy_step', 'fermi_surface_num_points', &
                                                   'fermi_surface_plot_format', 'fermi_surface_plot', 'fixed_step', 'gamma_only', &
                                        'guiding_centres', 'higher_order_n', 'higher_order_nearest_shells', 'hr_cutoff', 'hr_plot', &
@@ -1409,7 +1404,7 @@ contains
                                              'shc_bandshift_firstband', 'shc_bandshift', 'shc_beta', 'shc_freq_scan', 'shc_gamma', &
                                                'shc_method', 'smr_fixed_en_width', 'smr_max_arg', 'smr_type', 'spin_axis_azimuth', &
                                            'spin_axis_polar', 'spin_decomp', 'spin_kmesh_spacing', 'spin_moment', 'spn_formatted', &
-                                                  'tetrahedron_avoid_degeneracy', 'tetrahedron_correction', 'tetrahedron_cutoff', &
+                                                  'tetrahedron_avoid_degeneracy', 'tetrahedron_cutoff', &
                                            'tetrahedron_higher_correction', 'tetrahedron_method', 'transl_inv', 'transl_inv_full', &
                                                   'uhu_formatted', 'use_degen_pert', 'wanint_kpoint_file', 'kmesh_shell_from_file']
 
