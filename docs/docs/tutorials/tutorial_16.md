@@ -148,3 +148,7 @@ coefficient as a function of the chemical potential $\mu$, at $T=300$ K.
     have to write a small program/script to interpolate the output of
     `BoltzWann`, that you should have run on a suitable grid of
     $(\mu,T)$ points.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_16.md).
