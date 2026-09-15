@@ -1,0 +1,10 @@
+# testw90_read_ibz_reread
+
+description: "Copper from the full-BZ files written by testw90_read_ibz_write; must reproduce the read_ibz result"
+profile: wannier90_wout
+runs:
+  - input: copper.win
+    output: copper.wout
+depends_on: [testw90_read_ibz_write]
+prepare:
+  - copy_from_dependency: {test: testw90_read_ibz_write, files: [copper.mmn, copper.amn, copper.eig]}

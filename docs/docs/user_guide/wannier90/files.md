@@ -130,6 +130,19 @@ formatted file `seedname.spn.fmt`, which has the layout described above;
 see Section
 [`w90spn2spn.x`](../appendices/utilities.md#w90spn2spnx).
 
+## `seedname.isym`, `seedname.immn`, `seedname.iamn`, `seedname.ieig`
+
+INPUT. Read if `read_ibz = .true.`. Written by `pw2wannier90.x` when it is
+run with `irr_bz = .true.` (Quantum ESPRESSO 7.3 or later). `seedname.isym`
+holds the symmetry operations of the crystal, the irreducible k-points, the
+representation matrices of the little group of each irreducible k-point and
+the rotation matrices of the projections; the other three files hold the
+same quantities as `seedname.mmn`, `seedname.amn` and `seedname.eig`, but
+for the irreducible k-points only. `wannier90` expands them onto the full
+Monkhorst-Pack mesh, so that `seedname.mmn`, `seedname.amn` and
+`seedname.eig` are not needed by `wannier90.x`. See `read_ibz` in Chapter
+[Parameters](parameters.md) and Ref. [@koretsune2023].
+
 ## `seedname.nnkp` {#sec:old-nnkp}
 
 OUTPUT. Written by `wannier90` when `postproc_setup=.TRUE.` (or,

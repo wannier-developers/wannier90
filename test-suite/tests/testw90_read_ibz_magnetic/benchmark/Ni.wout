@@ -1,0 +1,473 @@
+Note: no parallel distribution provided (option distk missing)
+Note: all k-points handled by MPI rank 0
+
+             +---------------------------------------------------+
+             |                                                   |
+             |                   WANNIER90                       |
+             |                                                   |
+             +---------------------------------------------------+
+             |                                                   |
+             |        Welcome to the Maximally-Localized         |
+             |        Generalized Wannier Functions code         |
+             |            http://www.wannier.org                 |
+             |                                                   |
+             |                                                   |
+             |  Wannier90 Developer Group:                       |
+             |    Giovanni Pizzi    (Paul Scherrer Institute)    |
+             |    Valerio Vitale    (University of Trieste)      |
+             |    David Vanderbilt  (Rutgers University)         |
+             |    Nicola Marzari    (EPFL)                       |
+             |    Ivo Souza         (Universidad del Pais Vasco) |
+             |    Arash A. Mostofi  (Imperial College London)    |
+             |    Jonathan R. Yates (University of Oxford)       |
+             |                                                   |
+             |  For the full list of Wannier90 3.x authors,      |
+             |  please check the code documentation and the      |
+             |  README on the GitHub page of the code            |
+             |                                                   |
+             |                                                   |
+             |  Please cite                                      |
+             |                                                   |
+             |  [ref] "Wannier90 as a community code:            |
+             |        new features and applications",            |
+             |        G. Pizzi et al., J. Phys. Cond. Matt. 32,  |
+             |        165902 (2020).                             |
+             |        http://doi.org/10.1088/1361-648X/ab51ff    |
+             |                                                   |
+             |  in any publications arising from the use of      |
+             |  this code. For the method please cite            |
+             |                                                   |
+             |  [ref] "Maximally Localized Generalised Wannier   |
+             |         Functions for Composite Energy Bands"     |
+             |         N. Marzari and D. Vanderbilt              |
+             |         Phys. Rev. B 56 12847 (1997)              |
+             |                                                   |
+             |  [ref] "Maximally Localized Wannier Functions     |
+             |         for Entangled Energy Bands"               |
+             |         I. Souza, N. Marzari and D. Vanderbilt    |
+             |         Phys. Rev. B 65 035109 (2001)             |
+             |                                                   |
+             |                                                   |
+             | Copyright (c) 1996-2026                           |
+             |        The Wannier90 Developer Group and          |
+             |        individual contributors                    |
+             |                                                   |
+             |      Release: 4.0.3        27th July    2026      |
+             |                                                   |
+             | This program is free software; you can            |
+             | redistribute it and/or modify it under the terms  |
+             | of the GNU Lesser General Public License, version |
+             | 2.1 as published by the Free Software Foundation. |
+             |                                                   |
+             | This program is distributed in the hope that it   |
+             | will be useful, but WITHOUT ANY WARRANTY; without |
+             | even the implied warranty of MERCHANTABILITY or   |
+             | FITNESS FOR A PARTICULAR PURPOSE. See the GNU     |
+             | General Public License for more details.          |
+             |                                                   |
+             | You should have received a copy of the GNU Lesser |
+             | General Public License along with this program;   |
+             | if not, write to the Free Software Foundation,    |
+             | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
+             |                                                   |
+             +---------------------------------------------------+
+             |    Execution started on 12Sep2026 at 21:50:23     |
+             +---------------------------------------------------+
+
+ ******************************************************************************
+ * -> Using CODATA 2022 constant values                                       *
+ *    (http://physics.nist.gov/cuu/Constants/index.html)                      *
+ * -> Using Bohr value from CODATA                                            *
+ ******************************************************************************
+
+ Running in serial (with parallel executable)
+
+                                    ------
+                                    SYSTEM
+                                    ------
+
+                              Lattice Vectors (Ang)
+                    a_1    -1.759514   0.000000   1.759514
+                    a_2     0.000000   1.759514   1.759514
+                    a_3    -1.759514   1.759514   0.000000
+
+                   Unit Cell Volume:      10.89453  (Ang^3)
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1    -1.785489  -1.785489   1.785489
+                    b_2     1.785489   1.785489   1.785489
+                    b_3    -1.785489   1.785489  -1.785489
+
+ *----------------------------------------------------------------------------*
+ |   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |
+ +----------------------------------------------------------------------------+
+ | ni   1   0.00000   0.00000   0.00000   |    0.00000   0.00000   0.00000    |
+ *----------------------------------------------------------------------------*
+                                ------------
+                                K-POINT GRID
+                                ------------
+
+             Grid size =  4 x  4 x  4      Total points =   64
+
+
+ *---------------------------------- MAIN ------------------------------------*
+ |  Number of Wannier Functions               :                10             |
+ |  Number of Objective Wannier Functions     :                10             |
+ |  Number of input Bloch states              :                18             |
+ |  Output verbosity (1=low, 5=high)          :                 1             |
+ |  Timing Level (1=low, 5=high)              :                 1             |
+ |  Optimisation (0=memory, 3=speed)          :                 3             |
+ |  Length Unit                               :               Ang             |
+ |  Post-processing setup (write *.nnkp)      :                 F             |
+ |  Using Gamma-only branch of algorithms     :                 F             |
+ |  Reading IBZ data (*.isym,*.i{mmn,amn,eig}):                 T             |
+ *----------------------------------------------------------------------------*
+ *------------------------------- WANNIERISE ---------------------------------*
+ |  Total number of iterations                :              3000             |
+ |  Number of CG steps before reset           :                 5             |
+ |  Trial step length for line search         :             2.000             |
+ |  Convergence tolerence                     :         0.100E-08             |
+ |  Convergence window                        :                 5             |
+ |  Iterations between writing output         :                 1             |
+ |  Iterations between backing up to disk     :               100             |
+ |  Write r^2_nm to file                      :                 F             |
+ |  Write xyz WF centres to file              :                 F             |
+ |  Write on-site energies <0n|H|0n> to file  :                 F             |
+ |  Use guiding centre to control phases      :                 F             |
+ |  Use phases for initial projections        :                 F             |
+ *----------------------------------------------------------------------------*
+ *------------------------------- DISENTANGLE --------------------------------*
+ |  Using band disentanglement                :                 T             |
+ |  Total number of iterations                :                 0             |
+ |  Mixing ratio                              :             0.500             |
+ |  Convergence tolerence                     :         1.000E-10             |
+ |  Convergence window                        :                 3             |
+ *----------------------------------------------------------------------------*
+
+ *---------------------------------- K-MESH ----------------------------------*
+ +----------------------------------------------------------------------------+
+ |                    Distance to Nearest-Neighbour Shells                    |
+ |                    ------------------------------------                    |
+ |          Shell             Distance (Ang^-1)          Multiplicity         |
+ |          -----             -----------------          ------------         |
+ |             1                   0.773139                      8            |
+ |             2                   0.892744                      6            |
+ |             3                   1.262531                     12            |
+ |             4                   1.480449                     24            |
+ |             5                   1.546279                      8            |
+ |             6                   1.785489                      6            |
+ |             7                   1.945691                     24            |
+ |             8                   1.996237                     24            |
+ |             9                   2.186768                     24            |
+ |            10                   2.319418                     32            |
+ |            11                   2.525062                     12            |
+ |            12                   2.640773                     48            |
+ |            13                   2.678233                     30            |
+ |            14                   2.823105                     24            |
+ |            15                   2.927058                     24            |
+ |            16                   2.960898                     24            |
+ |            17                   3.092557                      8            |
+ |            18                   3.187735                     48            |
+ |            19                   3.218835                     24            |
+ |            20                   3.340343                     48            |
+ |            21                   3.428650                     72            |
+ |            22                   3.570977                      6            |
+ |            23                   3.653714                     24            |
+ |            24                   3.680879                     48            |
+ |            25                   3.787593                     36            |
+ |            26                   3.865696                     56            |
+ |            27                   3.891382                     24            |
+ |            28                   3.992474                     24            |
+ |            29                   4.066644                     72            |
+ |            30                   4.091068                     48            |
+ |            31                   4.187342                     24            |
+ |            32                   4.258119                     48            |
+ |            33                   4.373536                     24            |
+ |            34                   4.441347                     72            |
+ |            35                   4.463722                     30            |
+ |            36                   4.552121                     72            |
+ +----------------------------------------------------------------------------+
+ | The b-vectors are chosen automatically                                     |
+ | The following shells are used:                       1                     |
+ +----------------------------------------------------------------------------+
+ |                        Shell   # Nearest-Neighbours                        |
+ |                        -----   --------------------                        |
+ |                          1               8                                 |
+ +----------------------------------------------------------------------------+
+ | Completeness relation is fully satisfied [Eq. (B1), PRB 56, 12847 (1997)]  |
+ +----------------------------------------------------------------------------+
+ |                  b_k Vectors (Ang^-1) and Weights (Ang^2)                  |
+ |                  ----------------------------------------                  |
+ |            No.         b_k(x)      b_k(y)      b_k(z)        w_b           |
+ |            ---        --------------------------------     --------        |
+ |             1        -0.446372    0.446372   -0.446372     0.627359        |
+ |             2         0.446372    0.446372    0.446372     0.627359        |
+ |             3        -0.446372   -0.446372    0.446372     0.627359        |
+ |             4        -0.446372    0.446372    0.446372     0.627359        |
+ |             5         0.446372   -0.446372    0.446372     0.627359        |
+ |             6        -0.446372   -0.446372   -0.446372     0.627359        |
+ |             7         0.446372    0.446372   -0.446372     0.627359        |
+ |             8         0.446372   -0.446372   -0.446372     0.627359        |
+ +----------------------------------------------------------------------------+
+ |                           b_k Directions (Ang^-1)                          |
+ |                           -----------------------                          |
+ |            No.           x           y           z                         |
+ |            ---        --------------------------------                     |
+ |             1        -0.446372    0.446372   -0.446372                     |
+ |             2         0.446372    0.446372    0.446372                     |
+ |             3        -0.446372   -0.446372    0.446372                     |
+ |             4        -0.446372    0.446372    0.446372                     |
+ +----------------------------------------------------------------------------+
+
+ Starting a new Wannier90 calculation ...
+
+ Symmetry information created on  12Sep2026 at 20:52: 4
+ Symmetry from Ni.isym: 16 operations, 13 irreducible k-points
+ Reading eigenvalues from Ni.ieig
+ Reading overlaps from Ni.immn
+ Reading projections from Ni.iamn
+
+ *------------------------------- DISENTANGLE --------------------------------*
+ +----------------------------------------------------------------------------+
+ |                              Energy  Windows                               |
+ |                              ---------------                               |
+ |                   Outer:    8.83830  to   45.49673  (eV)                   |
+ |                   No frozen states were specified                          |
+ +----------------------------------------------------------------------------+
+   Number of target bands to extract:   10
+
+                   Unitarised projection of Wannier functions
+                   ------------------------------------------
+   A_mn = <psi_m|g_n> --> S = A.A^+ --> U = S^-1/2.A
+   In dis_project... done
+   No inner window (linner = F)
+
+                   Extraction of optimally-connected subspace
+                   ------------------------------------------
+ +---------------------------------------------------------------------+<-- DIS
+ |  Iter     Omega_I(i-1)      Omega_I(i)      Delta (frac.)    Time   |<-- DIS
+ +---------------------------------------------------------------------+<-- DIS
+
+     <<< Warning: Maximum number of disentanglement iterations reached >>>
+          <<< Disentanglement convergence criteria not satisfied >>>
+
+        Final Omega_I     0.00000000 (Ang^2)
+
+ +----------------------------------------------------------------------------+
+
+
+ Writing checkpoint file Ni.chk... done
+
+
+ *------------------------------- WANNIERISE ---------------------------------*
+ +--------------------------------------------------------------------+<-- CONV
+ | Iter  Delta Spread     RMS Gradient      Spread (Ang^2)      Time  |<-- CONV
+ +--------------------------------------------------------------------+<-- CONV
+
+ ------------------------------------------------------------------------------
+ Initial State
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45154519
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45464992
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44694574
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45236773
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44694574
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45236773
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45154381
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45465554
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44694471
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45237049
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51033661
+
+      0     0.451E+01     0.0000000000        4.5103366138       0.00  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793742 O_TOT=      4.5103366 <-- SPRD
+ ------------------------------------------------------------------------------
+ Cycle:      1
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45142571
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45454889
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44701864
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45243053
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44701864
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45243053
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45142008
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45455007
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44701079
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45242651
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51028039
+
+      1    -0.562E-04     0.0045643079        4.5102803919       0.02  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793180 O_TOT=      4.5102804 <-- SPRD
+ Delta: O_D= -0.1720601E-07 O_OD= -0.5620475E-04 O_TOT= -0.5622195E-04 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      2
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139343
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45452104
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704022
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45244925
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704022
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45244925
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138694
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45452136
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703009
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244293
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027472
+
+      2    -0.567E-05     0.0016724420        4.5102747186       0.04  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793123 O_TOT=      4.5102747 <-- SPRD
+ Delta: O_D= -0.3781358E-08 O_OD= -0.5669492E-05 O_TOT= -0.5673273E-05 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      3
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139081
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451878
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704199
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245076
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704199
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245076
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138434
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451912
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703165
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244425
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      3    -0.279E-06     0.0004640620        4.5102744396       0.05  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D= -0.5111022E-09 O_OD= -0.2784928E-06 O_TOT= -0.2790039E-06 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      4
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139079
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451875
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704200
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245078
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704200
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245078
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138432
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451909
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703166
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244426
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      4    -0.244E-08     0.0000511162        4.5102744372       0.05  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D= -0.8609808E-11 O_OD= -0.2435283E-08 O_TOT= -0.2443892E-08 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      5
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139082
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451875
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704198
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245078
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704198
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245078
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138436
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451910
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703163
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244425
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      5    -0.140E-09     0.0000076951        4.5102744370       0.06  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D= -0.1711924E-11 O_OD= -0.1382692E-09 O_TOT= -0.1399814E-09 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      6
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139084
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451876
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704196
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245078
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704196
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245078
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138439
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451912
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703161
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244424
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      6    -0.229E-10     0.0000030764        4.5102744370       0.06  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D= -0.1136452E-11 O_OD= -0.2173375E-10 O_TOT= -0.2286971E-10 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      7
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139084
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451876
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704196
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245078
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704196
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245078
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138439
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451912
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703161
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244424
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      7    -0.155E-12     0.0000012497        4.5102744370       0.07  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D= -0.8174004E-14 O_OD= -0.1463829E-12 O_TOT= -0.1554312E-12 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      8
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139084
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451877
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704196
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245078
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704196
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245078
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138439
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451912
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703161
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244423
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      8    -0.495E-11     0.0000012304        4.5102744370       0.07  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D=  0.2430395E-11 O_OD= -0.7383455E-11 O_TOT= -0.4952483E-11 <-- DLTA
+ ------------------------------------------------------------------------------
+ Cycle:      9
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139085
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451877
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704196
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245077
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704196
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245077
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138440
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451913
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703160
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244423
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+      9    -0.256E-11     0.0000016467        4.5102744370       0.07  <-- CONV
+        O_D=      0.0000003 O_OD=      0.0793121 O_TOT=      4.5102744 <-- SPRD
+ Delta: O_D=  0.1344359E-10 O_OD= -0.1600753E-10 O_TOT= -0.2564171E-11 <-- DLTA
+ ------------------------------------------------------------------------------
+
+             <<<     Delta < 1.000E-09  over  5 iterations     >>>
+             <<< Wannierisation convergence criteria satisfied >>>
+
+ Final State
+  WF centre and spread    1  ( -0.000000, -0.000000, -0.000000 )     0.45139085
+  WF centre and spread    2  (  0.000000, -0.000000,  0.000000 )     0.45451877
+  WF centre and spread    3  ( -0.000000,  0.000000,  0.000000 )     0.44704196
+  WF centre and spread    4  (  0.000000, -0.000000,  0.000000 )     0.45245077
+  WF centre and spread    5  (  0.000000,  0.000000, -0.000000 )     0.44704196
+  WF centre and spread    6  ( -0.000000,  0.000000, -0.000000 )     0.45245077
+  WF centre and spread    7  (  0.000000,  0.000000,  0.000000 )     0.45138440
+  WF centre and spread    8  (  0.000000,  0.000000, -0.000000 )     0.45451913
+  WF centre and spread    9  ( -0.000000, -0.000000,  0.000000 )     0.44703160
+  WF centre and spread   10  ( -0.000000, -0.000000, -0.000000 )     0.45244423
+  Sum of centres and spreads (  0.000000, -0.000000,  0.000000 )     4.51027444
+
+         Spreads (Ang^2)       Omega I      =     4.430962100
+        ================       Omega D      =     0.000000269
+                               Omega OD     =     0.079312068
+    Final Spread (Ang^2)       Omega Total  =     4.510274437
+ ------------------------------------------------------------------------------
+
+ Writing checkpoint file Ni.chk... done
+
+
+ *===========================================================================*
+ |                             TIMING INFORMATION                            |
+ *===========================================================================*
+ |    Tag                                                Ncalls      Time (s)|
+ |---------------------------------------------------------------------------|
+ |kmesh: get                                        :         1         0.016|
+ |dis: main                                         :         1         0.249|
+ |wann: main                                        :         1         1.193|
+ |plot: main                                        :         1         0.000|
+ *---------------------------------------------------------------------------*
+ All done: wannier90 exiting
