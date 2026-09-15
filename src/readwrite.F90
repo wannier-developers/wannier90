@@ -1693,13 +1693,14 @@ contains
   subroutine w90_readwrite_write_header(bohr_version_str, constants_version_str1, &
                                         constants_version_str2, mpi_size, stdout)
     !! Write a suitable header for the calculation - version authors etc
-    use w90_io, only: io_date, w90_version
+    use w90_io, only: io_date, w90_version, w90_version_date
 
     implicit none
 
     integer, intent(in) :: stdout, mpi_size
     character(len=*), intent(in) :: bohr_version_str, constants_version_str1, constants_version_str2
     character(len=9) :: cdate, ctime
+    character(len=51) :: release_line
 
     call io_date(cdate, ctime)
 
@@ -1756,7 +1757,8 @@ contains
     write (stdout, *) '            |        The Wannier90 Developer Group and          |'
     write (stdout, *) '            |        individual contributors                    |'
     write (stdout, *) '            |                                                   |'
-    write (stdout, *) '            |      Release: ', adjustl(w90_version), '   27th July    2026      |'
+    release_line = '      Release: '//trim(w90_version)//'   '//trim(w90_version_date)
+    write (stdout, *) '            |'//release_line//'|'
     write (stdout, *) '            |                                                   |'
     write (stdout, *) '            | This program is free software; you can            |'
     write (stdout, *) '            | redistribute it and/or modify it under the terms  |'
