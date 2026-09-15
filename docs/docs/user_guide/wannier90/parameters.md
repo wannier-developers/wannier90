@@ -312,6 +312,18 @@ and $\alpha$ and $\beta$ run over the three Cartesian indices.
 difference expression. If this keyword is absent, the shells are chosen
 automatically.
 
+### `logical :: kmesh_shell_from_file`
+
+If set to `.true.`, the b-vectors of each shell, and their grouping into
+shells, are read from the file `seedname.kshell` (see
+Section [`seedname.kshell`](files.md#seednamekshell)) rather than being
+determined automatically. This is useful when the automatic search
+fails, which typically happens when the k-point mesh has accidentally
+degenerate shells of neighbours. The weights $w_s$ are then computed
+from the shells given in the file, one weight per shell.
+
+The default value is `.false.`.
+
 ### `integer :: search_shells`
 
 Specifies the number of shells of neighbours over which to search in
@@ -853,6 +865,20 @@ file `seedname.r2mn` at the end of the Wannierisation procedure.
 
 The default value of this parameter is `false`.
 
+### `logical :: write_proj`
+
+If `write_proj = true`, then the projection of each of the
+original Bloch states lying in the outer energy window onto the space
+spanned by the WFs,
+$\sum_{n} |U^{\mathrm{dis}(\mathbf{k})}_{mn}|^{2}$, is written to the
+master output file `seedname.wout`, together with the corresponding
+k-point, band index and eigenvalue. This is only meaningful, and is only
+done, if disentanglement is used, that is if
+`num_bands` > `num_wann`. Note that nothing is written if
+`iprint = 0`.
+
+The default value of this parameter is `false`.
+
 ### `logical :: guiding_centres`
 
 Use guiding centres during the minimisation, in order to avoid local
@@ -1253,8 +1279,8 @@ options for this parameter are:
 If present `wannier90` will compute the contribution of this set of WF
 to the states at each point of the interpolated band structure. The WF
 are numbered according to the seedname.wout file. The result is written
-in the `seedname_band.dat` file, and a corresponding gnuplot script to
-`seedname_band_proj.dat` .
+as a third column in the `seedname_band.dat` file, and a corresponding
+gnuplot script to `seedname_band_proj.gnu`.
 
 For example, to project on to WFs 2, 6, 7, 8 and 12:
 
@@ -1547,6 +1573,19 @@ calculations (see Section
 
 The default value is `false`.
 
+### `logical :: tran_easy_fix`
+
+Only used in automated lcr transport calculations. When the parities of
+the WFs are enforced, `wannier90` compares the signature of each WF with
+that of the corresponding WF in the first principal layer. If
+`tran_easy_fix = true`, any WF whose first signature
+component is found to be negative has its sign switched, and the
+signature and the corresponding row and column of the Hamiltonian are
+updated accordingly. This is a simple fix that is often enough to make
+the signatures of equivalent WFs match.
+
+The default value is `false`.
+
 ### `logical :: tran_use_same_lead`
 
 If `tran_use_same_lead = true`, then the left and the right
@@ -1650,6 +1689,17 @@ element is retained and used in the band interpolation (when
 Units are Å.
 
 The default value is 1000.0.
+
+### `real(kind=dp) :: dist_cutoff_hc`
+
+As `dist_cutoff`, but applied only when building the Hamiltonian of the
+conductor region `hC` in an automated lcr transport calculation (see
+Section
+[Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#automated-lcr-transport-calculations-the-2c2-geometry)).
+This makes it possible to keep longer-range matrix elements inside the
+conductor than in the leads. Units are Å.
+
+The default value is the value of `dist_cutoff`.
 
 ### `character(len=20) :: dist_cutoff_mode`
 

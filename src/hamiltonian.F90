@@ -982,6 +982,7 @@ contains
             ik_rank = ik_rank + 1
           end do
           call comms_reduce(pos_r(1), 3, 'SUM', error, comm)
+          if (allocated(error)) return
           if (on_root) write (file_unit, '(2I5,3x,6(E15.8,1x))') j, i, pos_r(:)
         end do
       end do

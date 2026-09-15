@@ -66,3 +66,7 @@ interpolated bands.
 <figcaption>Bandstructure of copper showing the position of the outer
 and inner energy windows.</figcaption>
 </figure>
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_4.md).

@@ -201,3 +201,7 @@ minority (spin-up) bands of
 bcc Fe during the iterative minimization of $\widetilde{\Omega}$, starting from
 s, p and d-type trial orbitals.</figcaption>
 </figure>
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_8.md).

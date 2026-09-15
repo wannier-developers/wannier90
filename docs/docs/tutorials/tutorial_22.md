@@ -70,3 +70,7 @@ interface.
 Each directory creates $s$-like symmetry-adapted Wannier function
 centered at different position on top of atomic centered $d$-like
 Wannier functions. See more detail in `tutorials/tutorial22/README`.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_22.md).

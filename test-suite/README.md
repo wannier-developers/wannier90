@@ -258,7 +258,7 @@ failure rather than a pass.
 
 ## Running the library-mode tests
 
-`library-mode-test*/` are self-contained CMake projects, not part of the pytest suite. They
+`library/*/` are self-contained CMake projects, not part of the pytest suite. They
 are built and run by CTest as part of a normal `cmake`/`ctest` cycle.
 
 ## Acknowledgements

@@ -76,3 +76,7 @@ transport properties can be found in the User Guide.
     data-reference-type="ref"
     data-reference="fig:cnt.win">plot</a>.</figcaption>
     </figure>
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_13.md).

@@ -251,8 +251,6 @@ contains
 !    integer :: num_exclude_bands
     logical :: found_fermi_energy
     logical :: disentanglement
-    character(len=20) :: energy_unit  ! is this not used???
-    !! Units for energy
 
     disentanglement = .false.
     call w90_wannier90_readwrite_read_sym(settings, symmetrize_eps, lsitesymmetry, error, comm)
@@ -276,11 +274,11 @@ contains
 
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_units(settings, print_output%lenconfac, print_output%length_unit, &
-                                    energy_unit, bohr, error, comm)
+                                    bohr, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                   stdout, error, comm)
+                                                   stdout, print_output%iprint, error, comm)
       if (allocated(error)) return
 
       call w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
@@ -609,7 +607,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                     stdout, error, comm)
+                                                     stdout, iprint, error, comm)
     !================================================!
     ! Wannierise
     !================================================!
@@ -619,6 +617,7 @@ contains
     ! arguments
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: iprint
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
@@ -641,8 +640,8 @@ contains
                                    i_value=wann_control%num_print_cycles)
     if (allocated(error)) return
 
-    if (wann_control%num_print_cycles < 0) then
-      call set_error_input(error, 'Error: num_print_cycles must be positive', comm)
+    if (wann_control%num_print_cycles < 1) then
+      call set_error_input(error, 'Error: num_print_cycles must be >= 1', comm)
       return
     end if
 
@@ -664,15 +663,6 @@ contains
       return
     end if
 
-    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
-                                   r_value=wann_control%conv_tol)
-    if (allocated(error)) return
-
-    if (wann_control%conv_tol < 0.0_dp) then
-      call set_error_input(error, 'Error: conv_tol must be positive', comm)
-      return
-    end if
-
     call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm, &
                                    r_value=wann_control%conv_noise_amp)
     if (allocated(error)) return
@@ -683,6 +673,25 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm, &
                                    i_value=wann_control%conv_window)
     if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
+                                   r_value=wann_control%conv_tol)
+    if (allocated(error)) return
+
+    if (wann_control%conv_tol < 0.0_dp) then
+      call set_error_input(error, 'Error: conv_tol must be positive', comm)
+      return
+    end if
+
+    if (found .and. wann_control%conv_window .le. 1) then
+      if (iprint > 0) then
+        write (stdout, '(a)') ' Warning: conv_window is not set to a value greater than 1, &
+          &so conv_tol is ignored and wannierisation will always run for num_iter iterations.&
+          &Set conv_window to a value greater than 1 if you want the minimisation &
+          &to stop early once the spread change is below conv_tol for that many &
+          &consecutive iterations.'
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm, &
                                    i_value=wann_control%conv_noise_num)
@@ -705,8 +714,8 @@ contains
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return
 
-    if (wann_control%guiding_centres%num_guide_cycles < 0) then
-      call set_error_input(error, 'Error: num_guide_cycles must be >= 0', comm)
+    if (wann_control%guiding_centres%num_guide_cycles < 1) then
+      call set_error_input(error, 'Error: num_guide_cycles must be >= 1', comm)
       return
     end if
 

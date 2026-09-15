@@ -860,7 +860,9 @@ contains
     end do
 
     call comms_reduce(eig_int(1, 1), num_wann*total_pts, 'SUM', error, comm)
+    if (allocated(error)) return
     call comms_reduce(bands_proj(1, 1), num_wann*total_pts, 'SUM', error, comm)
+    if (allocated(error)) return
 
     if (on_root .and. print_output%timing_level > 2) then
       call io_stopwatch_stop('plot: interpolate_bands: loop_kpoints', timer)
@@ -2877,6 +2879,7 @@ contains
           nkp_rank = nkp_rank + 1
         end do ! global k list
         call comms_reduce(r2ave_mn, 1, 'SUM', error, comm)
+        if (allocated(error)) return
         r2ave_mn = r2ave_mn/real(num_kpts, dp)
         if (on_root) write (r2mnunit, '(2i6,f20.12)') nw1, nw2, r2ave_mn
       end do
@@ -3224,8 +3227,11 @@ contains
       end do
     end do
     call comms_allreduce(omt1, 1, 'SUM', error, comm)
+    if (allocated(error)) return
     call comms_allreduce(omt2, 1, 'SUM', error, comm)
+    if (allocated(error)) return
     call comms_allreduce(omt3, 1, 'SUM', error, comm)
+    if (allocated(error)) return
     omt1 = omt1/real(num_kpts, dp)
     omt2 = omt2/real(num_kpts, dp)
     omt3 = omt3/real(num_kpts, dp)
