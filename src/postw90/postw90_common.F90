@@ -1804,6 +1804,7 @@ contains
     use w90_types, only: ws_region_type, ws_distance_type
     use w90_comms, only: w90_comm_type
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_ws_distance, only: ws_expand_rvec
 
     implicit none
 
@@ -1816,149 +1817,24 @@ contains
     real(kind=dp), intent(in) :: real_lattice(3, 3)
     integer, intent(in) :: num_wann
     integer, intent(in) :: nrpts
-    logical :: found
-    integer :: i, j, ideg, ir, jr, ierr, nrpts_found, max_ndeg, ivdum(3)
-    integer, allocatable :: irvec_found(:, :), irvec_temp(:, :)
 
-    if (ws_region%use_ws_distance) then
+    integer :: ir, ierr, ir_origin
 
-      max_ndeg = maxval(ws_distance%ndeg)
-      allocate (wigner_seitz%ir_ind_ws_to_pw90(max_ndeg, num_wann, num_wann, nrpts), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating ir_ind_ws_to_pw90 in wigner_seitz_opt_setup', comm)
-        return
-      end if
-      wigner_seitz%ir_ind_ws_to_pw90 = -1
+    call ws_expand_rvec(ws_distance, ws_region%use_ws_distance, num_wann, nrpts, &
+                        wigner_seitz%irvec, wigner_seitz%ndegen, wigner_seitz%irvec_pw90, &
+                        wigner_seitz%nrpts_pw90, wigner_seitz%ir_ind_ws_to_pw90, ir_origin, &
+                        error, comm)
+    if (allocated(error)) return
 
-      ! find the set of R vectors from irdist_ws, removing duplicates
-      nrpts_found = 0
-      do ir = 1, nrpts
-        do j = 1, num_wann
-          do i = 1, num_wann
-            do ideg = 1, ws_distance%ndeg(i, j, ir)
-              ivdum = ws_distance%irdist(:, ideg, i, j, ir)
-
-              if (nrpts_found == 0) then
-                nrpts_found = 1
-                allocate (irvec_found(3, 1), stat=ierr)
-                if (ierr /= 0) then
-                  call set_error_alloc(error, 'Error in allocating irvec_found in wigner_seitz_opt_setup', comm)
-                  return
-                end if
-                irvec_found(:, 1) = ivdum
-
-                wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir) = 1
-
-              else
-                ! find if ivdum is already found
-                found = .false.
-                do jr = 1, nrpts_found
-                  if (all(ivdum == irvec_found(:, jr))) then
-                    wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir) = jr
-                    found = .true.
-                    exit
-                  end if
-                end do
-
-                ! if not found, add ivdum to irvec_found
-                if (.not. found) then
-
-                  ! copy irvec_found to irvec_temp
-                  allocate (irvec_temp(3, nrpts_found), stat=ierr)
-                  if (ierr /= 0) then
-                    call set_error_alloc(error, 'Error in allocating irvec_temp in wigner_seitz_opt_setup', comm)
-                    return
-                  end if
-                  irvec_temp = irvec_found
-                  deallocate (irvec_found, stat=ierr)
-                  if (ierr /= 0) then
-                    call set_error_dealloc(error, 'Error in deallocating irvec_found in wigner_seitz_opt_setup', comm)
-                    return
-                  end if
-
-                  allocate (irvec_found(3, nrpts_found + 1), stat=ierr)
-                  if (ierr /= 0) then
-                    call set_error_alloc(error, 'Error in allocating irvec_found in wigner_seitz_opt_setup', comm)
-                    return
-                  end if
-                  irvec_found(:, 1:nrpts_found) = irvec_temp
-                  irvec_found(:, nrpts_found + 1) = ivdum
-                  deallocate (irvec_temp, stat=ierr)
-                  if (ierr /= 0) then
-                    call set_error_dealloc(error, 'Error in deallocating irvec_temp in wigner_seitz_opt_setup', comm)
-                    return
-                  end if
-
-                  nrpts_found = nrpts_found + 1
-
-                  wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir) = nrpts_found
-
-                end if ! found
-              end if ! nrpts_found == 0
-
-            end do
-          end do
-        end do
-      end do
-
-      wigner_seitz%nrpts_pw90 = nrpts_found
-
-      allocate (wigner_seitz%irvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating irvec_pw90 in wigner_seitz_opt_setup', comm)
-        return
-      end if
-      allocate (wigner_seitz%crvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating crvec_pw90 in wigner_seitz_opt_setup', comm)
-        return
-      end if
-
-      wigner_seitz%irvec_pw90 = irvec_found
-      do ir = 1, wigner_seitz%nrpts_pw90
-        wigner_seitz%crvec_pw90(:, ir) = matmul(transpose(real_lattice), real(wigner_seitz%irvec_pw90(:, ir), dp))
-      end do
-
-    else ! .not. use_ws_distance
-      allocate (wigner_seitz%irvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating irvec_pw90 in wigner_seitz_opt_setup', comm)
-        return
-      end if
-      allocate (wigner_seitz%crvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
-      if (ierr /= 0) then
-        call set_error_alloc(error, 'Error in allocating crvec_pw90 in wigner_seitz_opt_setup', comm)
-        return
-      end if
-
-      wigner_seitz%irvec_pw90 = wigner_seitz%irvec
-      wigner_seitz%crvec_pw90 = wigner_seitz%crvec
-      wigner_seitz%nrpts_pw90 = wigner_seitz%nrpts
-    end if ! use_ws_distance
-
-    ! Check degeneracy factor ndegen for R = 0 is 1
-    if (wigner_seitz%ndegen(wigner_seitz%rpt_origin) /= 1) then
-      call set_error_fatal(error, 'ndegen for R=0 is not 1.', comm)
+    allocate (wigner_seitz%crvec_pw90(3, wigner_seitz%nrpts_pw90), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating crvec_pw90 in wigner_seitz_opt_setup', comm)
       return
     end if
-
-    ! Check degeneracy factor ws_distance%ndeg for a Wannier function with itself,
-    ! i.e. R = 0 and i = j, is 1.
-    if (ws_region%use_ws_distance) then
-      do ir = 1, nrpts
-        do i = 1, num_wann
-          do ideg = 1, ws_distance%ndeg(i, i, ir)
-            ivdum = ws_distance%irdist(:, ideg, i, i, ir)
-            if (all(ivdum == 0)) then
-              if (ws_distance%ndeg(i, i, ir) /= 1) then
-                call set_error_fatal(error, 'ws_distance%ndeg for R=0 and i=j is not 1.', comm)
-                return
-              end if
-            end if
-          end do
-        end do
-      end do
-    end if
+    do ir = 1, wigner_seitz%nrpts_pw90
+      wigner_seitz%crvec_pw90(:, ir) = matmul(transpose(real_lattice), &
+                                              real(wigner_seitz%irvec_pw90(:, ir), dp))
+    end do
 
   end subroutine wigner_seitz_opt_setup
 

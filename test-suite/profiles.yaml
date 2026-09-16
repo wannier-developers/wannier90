@@ -236,6 +236,21 @@ wannier90_proj_auto_wout:
     completeness_z: {abs: 1.0e-6, rel: 1.0e-6}
     completeness_weight: {abs: 1.0e-6, rel: 1.0e-6}
 
+wannier90_hr:
+  program: wannier90
+  parser: parse_hr
+  tolerances:
+    num_wann: {abs: 1.0e-10, rel: 1.0e-10}
+    nrpts: {abs: 1.0e-10, rel: 1.0e-10}
+    ndegen: {abs: 1.0e-10, rel: 1.0e-10}
+    irvec_a: {abs: 1.0e-10, rel: 1.0e-10}
+    irvec_b: {abs: 1.0e-10, rel: 1.0e-10}
+    irvec_c: {abs: 1.0e-10, rel: 1.0e-10}
+    index_i: {abs: 1.0e-10, rel: 1.0e-10}
+    index_j: {abs: 1.0e-10, rel: 1.0e-10}
+    real_h: {abs: 2.0e-6, rel: 1.0}
+    imag_h: {abs: 2.0e-6, rel: 1.0}
+
 wannier90_rmn:
   program: wannier90
   parser: parse_rmn

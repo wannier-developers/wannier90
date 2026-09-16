@@ -835,6 +835,19 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
     .
 ```
 
+If `write_ndegen_applied = true`, the $\mathbf{R}$ list is the expanded one ---
+every $\mathbf{R}+\mathbf{T}$ produced by the Wigner-Seitz mapping of
+`use_ws_distance` --- and every matrix element has already been divided by its
+degeneracy weights, so that
+
+$$
+H_{mn}(\mathbf{k}) = \sum_{\mathbf{R}} e^{i\mathbf{k}\cdot\mathbf{R}}\,
+H_{mn}^{(\mathbf{R})} .
+$$
+
+The degeneracy block is still present, written as all `1`s, so a reader that
+divides by it is unaffected. `seedname_wsvec.dat` must **not** be applied on top.
+
 ## `seedname_r.dat`
 
 OUTPUT. Written if `write_rmn = true`. The matrix elements
@@ -848,6 +861,18 @@ contain, respectively, the components of the vector $\mathbf{R}$ in
 terms of the lattice vectors $\{\mathbf{A}_{i}\}$, the indices $m$ and
 $n$, and the real and imaginary parts of the position matrix element in
 the WF basis.
+
+Unlike `seedname_hr.dat`, this file carries no degeneracy block, so by itself it
+does not say how to weight the $\mathbf{R}$ sum: the weights have to be taken
+from `seedname_hr.dat` or `seedname_wsvec.dat`. With
+`write_ndegen_applied = true` the file is written on the expanded $\mathbf{R}$
+list with the weights already applied and is self-contained,
+
+$$
+\langle m\mathbf{0}|\mathbf{r}|n\mathbf{R}\rangle \;\longrightarrow\;
+\mathbf{A}_{mn}(\mathbf{k}) = \sum_{\mathbf{R}}
+e^{i\mathbf{k}\cdot\mathbf{R}}\, \mathbf{A}_{mn}^{(\mathbf{R})} .
+$$
 
 ## `seedname_tb.dat`
 
@@ -893,6 +918,11 @@ $H_{mn}^{(\mathbf{R})}$ in the WF basis, e.g.,
     .
     .
 ```
+
+If `write_ndegen_applied = true`, both blocks are written on the expanded
+$\mathbf{R}$ list with the degeneracy weights already applied, exactly as
+described for `seedname_hr.dat` and `seedname_r.dat` above, and both interpolate
+with a plain $\sum_{\mathbf{R}} e^{i\mathbf{k}\cdot\mathbf{R}}$.
 
 Finally, the last part is the same as `seedname_r.dat`. The
 `num_wann`$^2 \times$ `nrpts` lines each contain, respectively, the
@@ -966,6 +996,15 @@ $\mathbf{T}$ should be added to the $\mathbf{R}$ vector to obtain the
 correct centre of the Wannier function that underlies a given matrix
 element (e.g. the Hamiltonian matrix elements in `seedname_hr.dat`) in
 order to correctly interpolate in reciprocal space.
+
+!!! warning "With `write_ndegen_applied = true` this file is informational only"
+
+The header then also carries `write_ndegen_applied=.true.`. The shifts are
+still the true ones, and remain useful for operators that Wannier90 does not
+itself write, but they have **already been folded into**
+`seedname_hr.dat`, `seedname_r.dat` and `seedname_tb.dat`, whose
+$\mathbf{R}$ list no longer matches the one listed here. Applying them a
+second time gives a wrong result.
 
 ```vi title="Output file"
 ## written on 20Sep2016 at 18:12:37  with use_ws_distance=.true.

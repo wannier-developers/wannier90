@@ -1,0 +1,7 @@
+# testw90_rmn_ndegen_applied
+
+description: "Diamond, valence states - R_mn printout on the expanded R list (write_ndegen_applied)"
+profile: wannier90_rmn
+runs:
+  - input: diamond.win
+    output: diamond_r.dat

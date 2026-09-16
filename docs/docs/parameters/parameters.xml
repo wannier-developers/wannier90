@@ -1129,6 +1129,16 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>write_ndegen_applied</name>
+    <type>L</type>
+    <description>Write the real-space output files on the expanded R list, with the degeneracy weights already applied</description>
+    <groups>
+      <group>plot</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>hr_cutoff</name>
     <type units="eV">P</type>
     <description>Cut-off for the absolute value of the Hamiltonian</description>
