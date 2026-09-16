@@ -1,5 +1,3 @@
-Note: no parallel distribution provided (option distk missing)
-Note: all k-points handled by MPI rank 0
 
              +---------------------------------------------------+
              |                                                   |
@@ -15,6 +13,7 @@ Note: all k-points handled by MPI rank 0
              |  Wannier90 Developer Group:                       |
              |    Giovanni Pizzi    (Paul Scherrer Institute)    |
              |    Valerio Vitale    (University of Trieste)      |
+             |    Jerome Jackson    (STFC Daresbury Laboratory)  |
              |    David Vanderbilt  (Rutgers University)         |
              |    Nicola Marzari    (EPFL)                       |
              |    Ivo Souza         (Universidad del Pais Vasco) |
@@ -48,11 +47,11 @@ Note: all k-points handled by MPI rank 0
              |         Phys. Rev. B 65 035109 (2001)             |
              |                                                   |
              |                                                   |
-             | Copyright (c) 1996-2020                           |
+             | Copyright (c) 1996-2026                           |
              |        The Wannier90 Developer Group and          |
              |        individual contributors                    |
              |                                                   |
-             |      Release: 3.1.0        5th March    2020      |
+             |      Release: 4.0.3   17th September 2026         |
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
@@ -71,7 +70,7 @@ Note: all k-points handled by MPI rank 0
              | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 10Jul2026 at 15:52:10     |
+             |    Execution started on 17Sep2026 at 12:26:25     |
              +---------------------------------------------------+
 
  ******************************************************************************
@@ -228,25 +227,25 @@ Note: all k-points handled by MPI rank 0
 
  ------------------------------------------------------------------------------
  Initial State
-  WF centre and spread    1  (  2.564572, -0.624701, -2.215992 )     1.16683164
-  WF centre and spread    2  (  1.501598, -0.628118,  7.841216 )     1.86591243
-  WF centre and spread    3  ( -3.088645,  9.183771,  7.859230 )     1.63997305
+  WF centre and spread    1  ( 13.148116, -0.624701, -2.215992 )     1.16683169
+  WF centre and spread    2  ( -3.790174,  8.537500,  7.841216 )     1.86591241
+  WF centre and spread    3  (  7.494899,  9.183771,  7.859230 )     1.63997306
   WF centre and spread    4  (  6.013849,  6.367220,  7.886981 )     1.43730968
-  WF centre and spread    5  (  6.083730,  3.155483,  7.889899 )    20.65178862
-  WF centre and spread    6  (  7.805909,  6.595787, -2.730695 )     1.75084889
-  WF centre and spread    7  (  2.247191, -1.546673,  7.907647 )     1.96312849
-  WF centre and spread    8  (  6.007768,  2.001873,  7.874516 )    21.12035914
-  WF centre and spread    9  ( -4.515074,  9.005076, -2.358372 )     1.89911522
+  WF centre and spread    5  (  6.083730,  9.265896,  7.889899 )     1.92504867
+  WF centre and spread    6  (  2.514137, -2.569832, -2.730695 )     1.75084889
+  WF centre and spread    7  (  7.538964,  7.618945,  7.907647 )     1.96312849
+  WF centre and spread    8  (  6.007768,  8.112285,  7.874516 )     2.51593759
+  WF centre and spread    9  (  0.776698, -0.160542, -2.358372 )     1.89911524
   WF centre and spread   10  ( -2.119877,  7.493615,  7.675130 )     1.35380325
-  WF centre and spread   11  (  1.482664,  4.329727,  7.899030 )    20.23428165
+  WF centre and spread   11  (  1.482664,  4.329727, -2.684515 )    20.23428165
   WF centre and spread   12  ( -3.081011,  8.196222,  7.778473 )     1.77011624
   WF centre and spread   13  (  6.398952,  6.970098, -2.349551 )     1.75931699
-  WF centre and spread   14  (  5.479288,  1.808233,  7.932886 )    20.11401575
-  WF centre and spread   15  (  6.298596,  1.822030, -2.719742 )    20.05034645
-  Sum of centres and spreads ( 39.079510, 64.129644, 66.170656 )   118.77714747
+  WF centre and spread   14  ( -5.104256,  7.918645,  7.932886 )     1.75253434
+  WF centre and spread   15  (  1.006824, -1.233176,  7.863802 )     1.61244226
+  Sum of centres and spreads ( 44.371282, 79.405674, 66.170656 )    44.64660043
 
-      0     0.119E+03                       118.7771475092       0.00  <-- CONV
-        O_D=     92.6280523 O_OD=     16.4057749 O_TOT=    118.7771475 <-- SPRD
+      0     0.446E+02                        44.6466004833       0.00  <-- CONV
+        O_D=     18.4975053 O_OD=     16.4057749 O_TOT=     44.6466005 <-- SPRD
  ------------------------------------------------------------------------------
  Cycle:      1
   WF centre and spread    1  (  2.646439, -0.825234, -2.331796 )     1.30631765
@@ -266,9 +265,9 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread   15  (  0.682902, -1.495381, -2.888245 )     1.05438643
   Sum of centres and spreads ( 23.663766,-18.506746,-39.658972 )    15.53920315
 
-      1    -0.103E+03                        15.5392031476       0.00  <-- CONV
+      1    -0.291E+02                        15.5392031476       0.00  <-- CONV
         O_D=      0.0009839 O_OD=      5.7948989 O_TOT=     15.5392031 <-- SPRD
- Delta: O_D= -0.9262707E+02 O_OD= -0.1061088E+02 O_TOT= -0.1032379E+03 <-- DLTA
+ Delta: O_D= -0.1849652E+02 O_OD= -0.1061088E+02 O_TOT= -0.2910740E+02 <-- DLTA
  ------------------------------------------------------------------------------
  Cycle:      2
   WF centre and spread    1  (  2.584725, -0.770050, -2.344503 )     1.11177032
@@ -768,9 +767,9 @@ Note: all k-points handled by MPI rank 0
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.003|
- |overlap: read                                     :         1         0.001|
- |wann: main_gamma                                  :         1         0.002|
+ |kmesh: get                                        :         1         0.011|
+ |overlap: read                                     :         1         0.002|
+ |wann: main_gamma                                  :         1         0.005|
  |plot: main                                        :         1         0.000|
  *---------------------------------------------------------------------------*
  All done: wannier90 exiting
