@@ -50,10 +50,10 @@ and link to the Wannier90 library, including the names of the library files.
 
 Section [Examples](#examples) documents some minimal Fortran examples that use
 the library in serial and parallel.  These examples are distributed in the
-directory `test-suite/library-mode-test`.
+directory `test-suite/library/fortran`.
 
 Section [C-interface](#c-interface) lists the C interface functions and shows
-how to use them.  A test is available in `test-suite/library-mode-test-C-interface`.
+how to use them.  A test is available in `test-suite/library/C-interface`.
 
 $M_{mn}^{(\mathbf{k,b})}$ overlaps (Ref. [@marzari-prb97], Eq. (25)) and
 $A_{mn}^{(\mathbf{k})}=\left\langle \psi_{m\mathbf{k}}|g_{n}\right\rangle$
@@ -120,6 +120,8 @@ parse the .win projector string into a site,l,m,zaxis configuration)
     in order to test convergence)
 16. obtain centres and spreads with [w90_get_centres](#w90_get_centres) and
     [w90_get_spreads](#w90_get_spreads)
+17. to deallocate (free) memory used by the library (allowing its reuse),
+    call [w90_free](#w90_free)
 
 ### lib_common_type
 
@@ -495,21 +497,28 @@ optimisation returns ierr zero.
     type(lib_common_type), intent(inout) :: common_data
 ```
 
+### w90_free
+
+Deallocates all memory used by the library object and nullifies pointers to
+external matrices.  Call this function to re-use a library data object.
+
+A demonstration of repeated use is in test_suite/library/fortran-free/.
+
+```fortran title="Fortran"
+  subroutine w90_free(common_data)
+```
+
 ## Compiling and Linking
 
 Depending on whether a serial or MPI compilation has happened, different
 library files are produced:
 
-| filename              | description               |
-|-----------------------|---------------------------|
-| libwannier90.a        | static library, serial    |
-| libwannier90_mpi.a    | static library, parallel  |
-| libwannier90.so.4     | dynamic library, serial   |
-| libwannier90_mpi.so.4 | dynamic library, parallel |
-| w90_library.mod       | fortran module            |
+| filename              | description                                 |
+|-----------------------|---------------------------------------------|
+| libwannier90.a        | static library                              |
+| libwannier90.so.4     | dynamic library                             |
+| w90_library.mod       | fortran module                              |
 | wannier90.h           | C header (compile with WANNIER90_WITH_C=ON) |
-
-MPI operations are only supported by "libwannier90_mpi".
 
 To generate dynamic libraries using GNU make, you need to build the target
 "dynlib"
@@ -534,7 +543,7 @@ invalid communicator, exiting.  Use w90_set_comm()!" )
 
 ## Examples
 
-See directory: test-suite/library-mode-test/
+See directory: test-suite/library/fortran/
 
 ## C Interface
 
@@ -544,19 +553,19 @@ fortran interface except for the passing of multi-dimensional arrays as options,
 where different functions must be called for 1-d and 2-d data.
 
 An example that re-implements the main wannier90 executable is given in
-directory test-suite/library-mode-test-C-interface/
+directory test-suite/library/C-interface/
 
 ## Python interface
 
-The directory `wrap/` in the sources contains an Python wrapping of the Fortran
-library.  It is constructed using the [f90wrap
+The directory `test-suite/library/py-f90wrap/` in the sources contains an
+Python wrapping of the Fortran library.  It is constructed using the [f90wrap
 package](https://github.com/jameskermode/f90wrap) (See also DOI
 10.1088/1361-648X/ab82d2).  Specifiy `F90WRAP` in the build configuration.
 
 ### Build instructions
 
 - Make sure f90wrap is installed
-- cd wrap
+- cd test-suite/library/py-f90wrap
 - make -f Makefile
 
 Edit the makefiles as appropriate.
@@ -564,10 +573,10 @@ Edit the makefiles as appropriate.
 ### Use
 
 - if wannier90 is installed in e.g. W90DIR then export
-  PYTHONPATH=$(W90DIR)/wrap
+  PYTHONPATH=$(W90DIR)/test-suite/library/py-f90wrap
 
 - since the wannier90 wrapper is built as a separate shared lib, also export
-  LD_LIBRARY_PATH=$(W90DIR)/wrap
+  LD_LIBRARY_PATH=$(W90DIR)/test-suite/library/py-f90wrap
 
 - run python3 and type commands or 'python3 script.py' (the mpi version is
   something like 'mpirun -np n python3 script.py')

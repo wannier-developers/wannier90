@@ -65,9 +65,6 @@ module w90_kmesh
   public :: kmesh_get
   public :: kmesh_write
 
-  integer, parameter :: nsupcell = 5
-  !! Size of supercell (of recip cell) in which to search for k-point shells
-
 contains
 
   !================================================
@@ -155,7 +152,8 @@ contains
       '*---------------------------------- K-MESH ----------------------------------*'
 
     ! Sort the cell neighbours so we loop in order of distance from the home shell
-    call kmesh_supercell_sort(print_output, recip_lattice, lmn, timer)
+    call kmesh_supercell_sort(print_output, recip_lattice, lmn, &
+                              kmesh_input%search_supcell_size, timer)
 
     allocate (kpt_cart(3, num_kpts), stat=ierr)
     if (ierr /= 0) then
@@ -414,7 +412,6 @@ contains
       write (stdout, '(1x,a)') '|                        Shell   # Nearest-Neighbours                        |'
       write (stdout, '(1x,a)') '|                        -----   --------------------                        |'
     end if
-    !if (index(print_output%devel_flag, 'kmesh_degen') == 0) then
     !
     ! Standard routine
     !
@@ -1214,7 +1211,7 @@ contains
   end subroutine kmesh_dealloc
 
   !================================================
-  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, timer)
+  subroutine kmesh_supercell_sort(print_output, recip_lattice, lmn, nsupcell, timer)
     !================================================
     !! We look for kpoint neighbours in a large supercell of reciprocal
     !! unit cells. Done sequentially this is very slow.
@@ -1229,6 +1226,8 @@ contains
 
     type(print_output_type), intent(in) :: print_output
     integer, intent(inout) :: lmn(:, :)
+    integer, intent(in) :: nsupcell
+    !! Size of supercell (of recip cell) in which to search for k-point shells
     real(kind=dp), intent(in) :: recip_lattice(3, 3)
     type(timer_list_type), intent(inout) :: timer
 
@@ -1349,7 +1348,7 @@ contains
     !
     !================================================
 
-    use w90_constants, only: eps5, eps6
+    use w90_constants, only: eps6, eps8
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_input_type, print_output_type, timer_list_type
 
@@ -1541,7 +1540,7 @@ contains
         return
       end if
 
-      if (any(abs(singv) < eps5)) then
+      if (any(abs(singv) < eps8)) then
         if (kmesh_input%num_shells == 1) then
           call set_error_fatal(error, &
                                'kmesh_shell_automatic: Singular Value Decomposition has found a very small singular value', comm)
@@ -1599,9 +1598,9 @@ contains
             write (stdout, '(1x,a)') 'If your cell is very long, or you have an irregular MP grid'
             write (stdout, '(1x,a)') 'Try increasing the parameter search_shells in the win file (default=30)'
             write (stdout, *) ' '
-            call set_error_fatal(error, 'kmesh_shell_automatic: unable to satisfy the higher-order version of B1', comm)
-            return
           end if
+          call set_error_fatal(error, 'kmesh_shell_automatic: unable to satisfy the higher-order version of B1', comm)
+          return
 
         end if
       end if

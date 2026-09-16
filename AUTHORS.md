@@ -6,6 +6,7 @@ The Wannier Developers Group includes:
 
 * Giovanni Pizzi    (Paul Scherrer Institute, CH)
 * Valerio Vitale    (University of Trieste, IT)
+* Jerome Jackson    (STFC Daresbury Laboratory, GB)
 * David Vanderbilt  (Rutgers University, US)
 * Nicola Marzari    (EPFL, CH and University of Cambridge, GB)
 * Ivo Souza         (Universidad del Pais Vasco, ES)
@@ -14,7 +15,6 @@ The Wannier Developers Group includes:
 
 In addition to the Wannier Developers Group, the other authors of Wannier90 v.4.x are:
 
-* Jerome Jackson    (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
 * Leon Petit        (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
 * Barry G. Searle   (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design, python interface
 

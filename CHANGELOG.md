@@ -15,6 +15,13 @@
 - `transl_inv_full` now also reaches `seedname_tb.dat`, which previously used a second copy
   of the Fourier sum that ignored the flag, and `seedname_wsvec.dat` is now written for
   `write_rmn = .true.` runs as the documentation had always claimed.
+### More digits in the `M_orb` summary printed by `postw90.x`
+
+The `berry_task = morb` summary is printed with `f16.10` instead of `f10.4`; in bohr
+magneton/cell these values are often 1e-3 or smaller, so four decimals showed almost no
+significant digits. Test tolerances for `morb_x/y/z` become `{abs: 1.0e-4, rel: null}`,
+since the components that are zero by symmetry now print their cancellation residual and a
+relative check against a zero reference is undefined.
 
 ### `wannier90.x`, `postw90.x` and the utilities now exit nonzero on a fatal error
 

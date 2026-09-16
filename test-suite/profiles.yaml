@@ -159,9 +159,9 @@ postw90_wpout:
     ahc_x: {abs: 0.001, rel: 0.002}
     ahc_y: {abs: 0.001, rel: 0.002}
     ahc_z: {abs: 0.001, rel: 0.002}
-    morb_x: {abs: 0.001, rel: 0.002}
-    morb_y: {abs: 0.001, rel: 0.002}
-    morb_z: {abs: 0.001, rel: 0.002}
+    morb_x: {abs: 1.0e-4, rel: null}
+    morb_y: {abs: 1.0e-4, rel: null}
+    morb_z: {abs: 1.0e-4, rel: null}
     spin_x: {abs: 0.001, rel: 0.002}
     spin_y: {abs: 0.001, rel: 0.002}
     spin_z: {abs: 0.001, rel: 0.002}

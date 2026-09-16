@@ -280,3 +280,7 @@ gnuplot
 ```gnuplot title="Gnuplot shell"
 plot 'Fe-ahc-fermiscan.dat' u 1:4 w lp
 ```
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_18.md).

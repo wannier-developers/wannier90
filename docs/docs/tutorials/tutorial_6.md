@@ -107,3 +107,7 @@ Inspect the output file `copper.wout`.
 - Instead of extracting a subspace of seven states, we could extract a
     nine dimensional space (i.e., with $s$, $p$ and $d$ character).
     Examine this case and compare the interpolated bandstructures.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_6.md).

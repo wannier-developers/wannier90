@@ -48,32 +48,34 @@ def test_regression(case, profiles, executables, run_options, work_dir,
         # This depends on the exit-code fix that accompanied the migration: fatal errors
         # used to end in a bare Fortran `stop`, which exits 0, so a failed run was
         # indistinguishable from a successful one to any caller.
-        if case.expect_failure:
-            assert result.returncode != 0, _describe_run_failure(case, result, True)
-        else:
-            assert result.returncode == 0, _describe_run_failure(case, result, False)
+        if case.expect_failure and result.returncode == 0:
+            pytest.fail(_describe_run_failure(case, result, True), pytrace=False)
+        if not case.expect_failure and result.returncode != 0:
+            pytest.fail(_describe_run_failure(case, result, False), pytrace=False)
 
         output = work_dir / spec.output
-        assert output.is_file(), (
-            f"{case.name}: the run produced no {spec.output!r}\n"
-            f"  command:  {result.command}\n"
-            f"  exit code: {result.returncode}\n"
-            f"  stderr:   {result.stderr_log}\n"
-            f"  work dir: {work_dir}"
-        )
+        if not output.is_file():
+            pytest.fail(
+                f"{case.name}: the run produced no {spec.output!r}\n"
+                f"  command:  {result.command}\n"
+                f"  exit code: {result.returncode}\n"
+                f"  stderr:   {result.stderr_log}\n"
+                f"  work dir: {work_dir}",
+                pytrace=False)
 
         parse = profile.load_parser()
         parsed = parse(str(output))
 
         # Refuse to promote an unparseable output to a reference, and refuse to let an
         # empty parse count as a pass.
-        assert parsed and any(len(v) for v in parsed.values()), (
-            f"{case.name}: parser {profile.parser}.{profile.function} extracted nothing "
-            f"from {spec.output}\n"
-            f"  either the run produced no useful output or the parser no longer matches "
-            f"its format\n"
-            f"  work dir: {work_dir}"
-        )
+        if not (parsed and any(len(v) for v in parsed.values())):
+            pytest.fail(
+                f"{case.name}: parser {profile.parser}.{profile.function} extracted nothing "
+                f"from {spec.output}\n"
+                f"  either the run produced no useful output or the parser no longer matches "
+                f"its format\n"
+                f"  work dir: {work_dir}",
+                pytrace=False)
 
         benchmark_path = case.benchmark_path(spec)
 
@@ -85,17 +87,19 @@ def test_regression(case, profiles, executables, run_options, work_dir,
             pytestconfig.stash.setdefault(UPDATED_BENCHMARKS, {})[case.name] = changed
             continue
 
-        assert benchmark_path.is_file(), (
-            f"{case.name}: no reference file at {benchmark_path}\n"
-            f"  generate one with: pytest --update-benchmarks -k {case.name}"
-        )
+        if not benchmark_path.is_file():
+            pytest.fail(
+                f"{case.name}: no reference file at {benchmark_path}\n"
+                f"  generate one with: pytest --update-benchmarks -k {case.name}",
+                pytrace=False)
         expected = parse(str(benchmark_path))
         result_of_comparison = compare(
             parsed, expected,
             tolerances=profile.tolerances,
             default_tolerance=profile.default_tolerance,
         )
-        assert result_of_comparison.ok, format_failure(
-            result_of_comparison,
-            work_dir=work_dir, output=output, benchmark=benchmark_path,
-        )
+        if not result_of_comparison.ok:
+            pytest.fail(format_failure(
+                result_of_comparison,
+                work_dir=work_dir, output=output, benchmark=benchmark_path,
+            ), pytrace=False)

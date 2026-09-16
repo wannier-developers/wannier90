@@ -1477,20 +1477,20 @@ contains
           if (print_output%iprint > 1) then
             write (stdout, '(1x,a)') &
               '======================'
-            write (stdout, '(1x,a22,2x,3(f10.4,1x))') 'Local circulation :', &
+            write (stdout, '(1x,a22,2x,3(f16.10,1x))') 'Local circulation :', &
               sum(LCtil_list(1:3, 1, if)), sum(LCtil_list(1:3, 2, if)), &
               sum(LCtil_list(1:3, 3, if))
-            write (stdout, '(1x,a22,2x,3(f10.4,1x))') &
+            write (stdout, '(1x,a22,2x,3(f16.10,1x))') &
               'Itinerant circulation:', &
               sum(ICtil_list(1:3, 1, if)), sum(ICtil_list(1:3, 2, if)), &
               sum(ICtil_list(1:3, 3, if))
             write (stdout, '(1x,a)') &
               '--------------------------------------------------------'
-            write (stdout, '(1x,a22,2x,3(f10.4,1x),/)') 'Total   :', &
+            write (stdout, '(1x,a22,2x,3(f16.10,1x),/)') 'Total   :', &
               sum(Morb_list(1:3, 1, if)), sum(Morb_list(1:3, 2, if)), &
               sum(Morb_list(1:3, 3, if))
           else
-            write (stdout, '(1x,a22,2x,3(f10.4,1x),/)') &
+            write (stdout, '(1x,a22,2x,3(f16.10,1x),/)') &
               '======================', &
               sum(Morb_list(1:3, 1, if)), sum(Morb_list(1:3, 2, if)), &
               sum(Morb_list(1:3, 3, if))

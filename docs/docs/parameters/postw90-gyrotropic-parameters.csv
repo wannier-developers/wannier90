@@ -10,6 +10,7 @@ gyrotropic_eigval_max,P,"Maximum energy eigenvalue included when evaluating the 
 gyrotropic_degen_thresh,P,"threshold to exclude degenerate bands from the calculation (eV)"
 [gyrotropic_]smr_type,S,"Analytical form used for the broadened delta function"
 [gyrotropic_]smr_fixed_en_width,P,"Energy smearing (eV)"
+[gyrotropic_]smr_max_arg,R,"Cut-off on the argument of the broadened delta function"
 [gyrotropic_]band_list,I,"list of bands used in the calculation"
 gyrotropic_box_center,R,"Center of the integration box, defined (in reduced coordinates) by three real numbers"
 gyrotropic_box_b1,R,"First basis vector, defined (in reduced coordinates) by three real numbers"
