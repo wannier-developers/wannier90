@@ -1405,7 +1405,7 @@ contains
                                                'shc_method', 'smr_fixed_en_width', 'smr_max_arg', 'smr_type', 'spin_axis_azimuth', &
                                            'spin_axis_polar', 'spin_decomp', 'spin_kmesh_spacing', 'spin_moment', 'spn_formatted', &
                                                   'tetrahedron_avoid_degeneracy', 'tetrahedron_cutoff', &
-                                           'tetrahedron_higher_correction', 'tetrahedron_method', 'transl_inv', 'transl_inv_full', &
+                                           'tetrahedron_higher_correction', 'tetrahedron_method', 'transl_inv', 'transl_inv_full', 'write_ndegen_applied', &
                                                   'uhu_formatted', 'use_degen_pert', 'wanint_kpoint_file', 'kmesh_shell_from_file']
 
     character(len=*), parameter :: vectors(*) = [character(len=32) :: &
