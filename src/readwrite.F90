@@ -232,17 +232,15 @@ contains
     if (allocated(error)) return
   end subroutine w90_readwrite_read_total_bands
 
-  subroutine w90_readwrite_read_distk(settings, distk, nkin, stdout, error, comm)
+  subroutine w90_readwrite_read_distk(settings, distk, nkin, error, comm)
     !! Read MPI distribution of k-points
     !! The array to be read must have num_kpt entries, with each entry being
     !! the MPI rank to which each k-point is assigned
     use w90_error, only: w90_error_type, set_error_input, set_error_alloc, set_error_fatal
-    use w90_comms, only: mpirank
     implicit none
 
     integer, allocatable, intent(inout) :: distk(:)
     integer, intent(in) :: nkin
-    integer, intent(in) :: stdout
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
@@ -280,10 +278,6 @@ contains
         end if
       end do
     else
-      if (mpirank(comm) == 0) then
-        write (stdout, '(a)') 'Note: no parallel distribution provided (option distk missing)'
-        write (stdout, '(a)') 'Note: all k-points handled by MPI rank 0'
-      end if
       allocate (distk(nkin), stat=ierr)
       if (ierr /= 0) then
         call set_error_alloc(error, 'Error in allocating distk in w90_readwrite_read_distk', comm)
