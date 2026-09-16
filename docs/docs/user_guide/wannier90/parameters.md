@@ -1418,7 +1418,7 @@ The default value is `false`.
 ### `logical :: write_ndegen_applied`
 
 If `write_ndegen_applied = true`, then `seedname_hr.dat`, `seedname_r.dat` and
-`seedname_tb.dat` are written on the *expanded* list of lattice vectors --- every
+`seedname_tb.dat` are written on the _expanded_ list of lattice vectors --- every
 $\mathbf{R}+\mathbf{T}$ that occurs in the Wigner-Seitz mapping of
 `use_ws_distance` --- with all degeneracy weights already divided out. The
 matrix elements can then be interpolated with a plain Fourier sum,
