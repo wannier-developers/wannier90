@@ -999,12 +999,12 @@ order to correctly interpolate in reciprocal space.
 
 !!! warning "With `write_ndegen_applied = true` this file is informational only"
 
-    The header then also carries `write_ndegen_applied=.true.`. The shifts are
-    still the true ones, and remain useful for operators that Wannier90 does not
-    itself write, but they have **already been folded into**
-    `seedname_hr.dat`, `seedname_r.dat` and `seedname_tb.dat`, whose
-    $\mathbf{R}$ list no longer matches the one listed here. Applying them a
-    second time gives a wrong result.
+The header then also carries `write_ndegen_applied=.true.`. The shifts are
+still the true ones, and remain useful for operators that Wannier90 does not
+itself write, but they have **already been folded into**
+`seedname_hr.dat`, `seedname_r.dat` and `seedname_tb.dat`, whose
+$\mathbf{R}$ list no longer matches the one listed here. Applying them a
+second time gives a wrong result.
 
 ```vi title="Output file"
 ## written on 20Sep2016 at 18:12:37  with use_ws_distance=.true.
