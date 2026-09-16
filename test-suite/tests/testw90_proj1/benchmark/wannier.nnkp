@@ -1,4 +1,4 @@
-# File written on 16Mar2025 at 18:56:17
+# File written on 17Sep2026 at 12:28:34
 
 calc_only_A  :  F
 
@@ -38,9 +38,9 @@ begin nnkpts
        1       1      1   0   0
        1       1      0   1   0
        1       1      0   0   1
-       1       1     -1   0   0
-       1       1      0  -1   0
        1       1      0   0  -1
+       1       1      0  -1   0
+       1       1     -1   0   0
 end nnkpts
 
 begin exclude_bands

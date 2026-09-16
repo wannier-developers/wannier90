@@ -1,5 +1,3 @@
-Note: no parallel distribution provided (option distk missing)
-Note: all k-points handled by MPI rank 0
 
              +---------------------------------------------------+
              |                                                   |
@@ -15,6 +13,7 @@ Note: all k-points handled by MPI rank 0
              |  Wannier90 Developer Group:                       |
              |    Giovanni Pizzi    (Paul Scherrer Institute)    |
              |    Valerio Vitale    (University of Trieste)      |
+             |    Jerome Jackson    (STFC Daresbury Laboratory)  |
              |    David Vanderbilt  (Rutgers University)         |
              |    Nicola Marzari    (EPFL)                       |
              |    Ivo Souza         (Universidad del Pais Vasco) |
@@ -48,11 +47,11 @@ Note: all k-points handled by MPI rank 0
              |         Phys. Rev. B 65 035109 (2001)             |
              |                                                   |
              |                                                   |
-             | Copyright (c) 1996-2020                           |
+             | Copyright (c) 1996-2026                           |
              |        The Wannier90 Developer Group and          |
              |        individual contributors                    |
              |                                                   |
-             |      Release: 3.1.0        5th March    2020      |
+             |      Release: 4.0.3   17th September 2026         |
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
@@ -71,7 +70,7 @@ Note: all k-points handled by MPI rank 0
              | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 10Jul2026 at 15:52:18     |
+             |    Execution started on 17Sep2026 at 12:26:37     |
              +---------------------------------------------------+
 
  ******************************************************************************
@@ -257,15 +256,15 @@ Note: all k-points handled by MPI rank 0
  |  Iter     Omega_I(i-1)      Omega_I(i)      Delta (frac.)    Time   |<-- DIS
  +---------------------------------------------------------------------+<-- DIS
        1       3.61187071       3.46062475       4.370E-02      0.00    <-- DIS
-       2       3.58098449       3.44855665       3.840E-02      0.23    <-- DIS
-       3       3.55399229       3.43895833       3.345E-02      0.47    <-- DIS
-       4       3.53058216       3.43131536       2.893E-02      0.70    <-- DIS
-       5       3.51040748       3.42522426       2.487E-02      0.93    <-- DIS
-       6       3.49311464       3.42036601       2.127E-02      1.16    <-- DIS
-       7       3.47836059       3.41648816       1.811E-02      1.41    <-- DIS
-       8       3.46582263       3.41338798       1.536E-02      1.66    <-- DIS
-       9       3.45520498       3.41090825       1.299E-02      1.92    <-- DIS
-      10       3.44624101       3.40892360       1.095E-02      2.17    <-- DIS
+       2       3.58098449       3.44855665       3.840E-02      0.67    <-- DIS
+       3       3.55399229       3.43895833       3.345E-02      1.33    <-- DIS
+       4       3.53058216       3.43131536       2.893E-02      1.99    <-- DIS
+       5       3.51040748       3.42522426       2.487E-02      2.65    <-- DIS
+       6       3.49311464       3.42036601       2.127E-02      3.31    <-- DIS
+       7       3.47836059       3.41648816       1.811E-02      4.01    <-- DIS
+       8       3.46582263       3.41338798       1.536E-02      4.70    <-- DIS
+       9       3.45520498       3.41090825       1.299E-02      5.39    <-- DIS
+      10       3.44624101       3.40892360       1.095E-02      6.08    <-- DIS
 
      <<< Warning: Maximum number of disentanglement iterations reached >>>
           <<< Disentanglement convergence criteria not satisfied >>>
@@ -299,7 +298,7 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread   12  (  0.000000, -0.000000,  1.484435 )     0.34241174
   Sum of centres and spreads (  1.484435,  1.484435,  1.484435 )     6.49874584
 
-      0     0.650E+01     0.0000000000        6.4987458352       2.17  <-- CONV
+      0     0.650E+01     0.0000000000        6.4987458352       6.09  <-- CONV
         O_D=      0.0000000 O_OD=      3.0898222 O_TOT=      6.4987458 <-- SPRD
  ------------------------------------------------------------------------------
  Cycle:      1
@@ -317,9 +316,9 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread   12  (  0.000000, -0.000000,  1.484435 )     0.31158362
   Sum of centres and spreads (  1.484435,  1.484435,  1.484435 )     6.37710285
 
-      1    -0.122E+00     0.7381495843        6.3771028457       2.17  <-- CONV
+      1    -0.122E+00     0.7381495843        6.3771028457       6.09  <-- CONV
         O_D=      0.0000000 O_OD=      2.9681792 O_TOT=      6.3771028 <-- SPRD
- Delta: O_D= -0.1181879E-17 O_OD= -0.1216430E+00 O_TOT= -0.1216430E+00 <-- DLTA
+ Delta: O_D= -0.1181896E-17 O_OD= -0.1216430E+00 O_TOT= -0.1216430E+00 <-- DLTA
  ------------------------------------------------------------------------------
  Cycle:     10
   WF centre and spread    1  ( -0.000000, -0.000000,  0.000000 )     0.51280269
@@ -336,9 +335,9 @@ Note: all k-points handled by MPI rank 0
   WF centre and spread   12  (  0.000000, -0.000000,  1.484435 )     0.29068499
   Sum of centres and spreads (  1.484435,  1.484435,  1.484435 )     6.30195736
 
-     10    -0.125E-06     0.0006704967        6.3019573552       2.18  <-- CONV
+     10    -0.125E-06     0.0006704967        6.3019573552       6.12  <-- CONV
         O_D=      0.0000000 O_OD=      2.8930338 O_TOT=      6.3019574 <-- SPRD
- Delta: O_D=  0.1012775E-10 O_OD= -0.1246746E-06 O_TOT= -0.1246645E-06 <-- DLTA
+ Delta: O_D=  0.1012777E-10 O_OD= -0.1246746E-06 O_TOT= -0.1246645E-06 <-- DLTA
  ------------------------------------------------------------------------------
  Final State
   WF centre and spread    1  ( -0.000000, -0.000000,  0.000000 )     0.51280269
@@ -369,10 +368,10 @@ Note: all k-points handled by MPI rank 0
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.007|
- |overlap: read                                     :         1         0.019|
- |dis: main                                         :         1         2.382|
- |wann: main                                        :         1         0.010|
+ |kmesh: get                                        :         1         0.021|
+ |overlap: read                                     :         1         0.052|
+ |dis: main                                         :         1         6.724|
+ |wann: main                                        :         1         0.028|
  |plot: main                                        :         1         0.000|
  *---------------------------------------------------------------------------*
  All done: wannier90 exiting

@@ -9,47 +9,29 @@
              |        Generalized Wannier Functions code         |
              |            http://www.wannier.org                 |
              |                                                   |
-             |  Wannier90 v2.x Authors:                          |
-             |    Arash A. Mostofi  (Imperial College London)    |
-             |    Giovanni Pizzi    (EPFL)                       |
-             |    Ivo Souza         (Universidad del Pais Vasco) |
-             |    Jonathan R. Yates (University of Oxford)       |
              |                                                   |
-             |  Wannier90 Contributors:                          |
-             |    Young-Su Lee       (KIST, S. Korea)            |
-             |    Matthew Shelley    (Imperial College London)   |
-             |    Nicolas Poilvert   (Penn State University)     |
-             |    Raffaello Bianco   (Paris 6 and CNRS)          |
-             |    Gabriele Sclauzero (ETH Zurich)                |
-             |    David Strubbe (MIT, USA)                       |
-             |    Rei Sakuma (Lund University, Sweden)           |
-             |    Yusuke Nomura (U. Tokyo, Japan)                |
-             |    Takashi Koretsune (Riken, Japan)               |
-             |    Yoshiro Nohara (ASMS Co. Ltd., Japan)          |
-             |    Ryotaro Arita (Riken, Japan)                   |
-             |    Lorenzo Paulatto (UPMC Paris)                  |
-             |    Florian Thole (ETH Zurich)                     |
-             |    Pablo Garcia Fernandez (Unican, Spain)         |
-             |    Dominik Gresch (ETH Zurich)                    |
-             |    Samuel Ponce (University of Oxford)            |
-             |    Marco Gibertini (EPFL)                         |
-             |    Christian Stieger (ETHZ, CH)                   |
-             |    Stepan Tsirkin (Universidad del Pais Vasco)    |
-             |                                                   |
-             |  Wannier77 Authors:                               |
+             |  Wannier90 Developer Group:                       |
+             |    Giovanni Pizzi    (Paul Scherrer Institute)    |
+             |    Valerio Vitale    (University of Trieste)      |
+             |    Jerome Jackson    (STFC Daresbury Laboratory)  |
+             |    David Vanderbilt  (Rutgers University)         |
              |    Nicola Marzari    (EPFL)                       |
              |    Ivo Souza         (Universidad del Pais Vasco) |
-             |    David Vanderbilt  (Rutgers University)         |
+             |    Arash A. Mostofi  (Imperial College London)    |
+             |    Jonathan R. Yates (University of Oxford)       |
+             |                                                   |
+             |  For the full list of Wannier90 3.x authors,      |
+             |  please check the code documentation and the      |
+             |  README on the GitHub page of the code            |
+             |                                                   |
              |                                                   |
              |  Please cite                                      |
              |                                                   |
-             |  [ref] "An updated version of Wannier90:          |
-             |        A Tool for Obtaining Maximally Localised   |
-             |        Wannier Functions", A. A. Mostofi,         |
-             |        J. R. Yates, G. Pizzi, Y. S. Lee,          |
-             |        I. Souza, D. Vanderbilt and N. Marzari,    |
-             |        Comput. Phys. Commun. 185, 2309 (2014)     |
-             |        http://dx.doi.org/10.1016/j.cpc.2014.05.003|
+             |  [ref] "Wannier90 as a community code:            |
+             |        new features and applications",            |
+             |        G. Pizzi et al., J. Phys. Cond. Matt. 32,  |
+             |        165902 (2020).                             |
+             |        http://doi.org/10.1088/1361-648X/ab51ff    |
              |                                                   |
              |  in any publications arising from the use of      |
              |  this code. For the method please cite            |
@@ -65,18 +47,16 @@
              |         Phys. Rev. B 65 035109 (2001)             |
              |                                                   |
              |                                                   |
-             | Copyright (c) 1996-2017                           |
-             |        Arash A. Mostofi, Jonathan R. Yates,       |
-             |        Young-Su Lee, Giovanni Pizzi, Ivo Souza,   |
-             |        David Vanderbilt and Nicola Marzari        |
+             | Copyright (c) 1996-2026                           |
+             |        The Wannier90 Developer Group and          |
+             |        individual contributors                    |
              |                                                   |
-             |        Release: 2.1.0   13th January 2017         |
+             |      Release: 4.0.3   17th September 2026         |
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
-             | of the GNU General Public License as published by |
-             | the Free Software Foundation; either version 2 of |
-             | the License, or (at your option) any later version|
+             | of the GNU Lesser General Public License, version |
+             | 2.1 as published by the Free Software Foundation. |
              |                                                   |
              | This program is distributed in the hope that it   |
              | will be useful, but WITHOUT ANY WARRANTY; without |
@@ -84,21 +64,20 @@
              | FITNESS FOR A PARTICULAR PURPOSE. See the GNU     |
              | General Public License for more details.          |
              |                                                   |
-             | You should have received a copy of the GNU General|
-             | Public License along with this program; if not,   |
-             | write to the Free Software Foundation, Inc.,      |
-             | 675 Mass Ave, Cambridge, MA 02139, USA.           |
+             | You should have received a copy of the GNU Lesser |
+             | General Public License along with this program;   |
+             | if not, write to the Free Software Foundation,    |
+             | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on  9Dec2017 at 22:32:52     |
+             |    Execution started on 17Sep2026 at 12:20:23     |
              +---------------------------------------------------+
 
  ******************************************************************************
- * -> Using CODATA 2006 constant values                                       *
+ * -> Using CODATA 2022 constant values                                       *
  *    (http://physics.nist.gov/cuu/Constants/index.html)                      *
  * -> Using Bohr value from CODATA                                            *
  ******************************************************************************
-
 
  Running in serial (with parallel executable)
 
@@ -121,7 +100,7 @@
  *----------------------------------------------------------------------------*
  |   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |
  +----------------------------------------------------------------------------+
- | Fe   1   0.00000   0.00000   0.00000   |    0.00000   0.00000   0.00000    |
+ | fe   1   0.00000   0.00000   0.00000   |    0.00000   0.00000   0.00000    |
  *----------------------------------------------------------------------------*
 
 
@@ -148,16 +127,19 @@
  |  Compute Berry Phase related properties    :                 T             |
  |  Compute Optical Conductivity and JDOS     :                 F             |
  |  Compute Anomalous Hall Conductivity       :                 F             |
- |  Compute Orbital Magnetisation             :                 F             |
- |  Lower frequency for optical conductivity  :             0.000             |
- |  Upper frequency for optical conductivity  :            18.039             |
- |  Step size for optical conductivity        :             0.010             |
- |  Upper eigenvalue for optical conductivity :            30.667             |
+ |  Compute Shift Current                     :                 F             |
+ |  Compute k.p expansion coefficients        :                 F             |
+ |  Compute Orbital Magnetisation             :                 T             |
+ |  Compute Spin Hall Conductivity            :                 F             |
+ |  Lower frequency for optical responses     :             0.000             |
+ |  Upper frequency for optical responses     :            18.039             |
+ |  Step size for optical responses           :             0.010             |
+ |  Upper eigenvalue for optical responses    :            30.667             |
  |  Using global smearing parameters                                          |
  |  Grid size                                 :    10 x  10 x  10             |
  |  Adaptive refinement                       :              none             |
  *----------------------------------------------------------------------------*
- Time to read parameters        0.003 (sec)
+ Time to read parameters        0.007 (sec)
 
  *---------------------------------- K-MESH ----------------------------------*
  +----------------------------------------------------------------------------+
@@ -179,7 +161,7 @@
  |            12                   5.362592                     24            |
  +----------------------------------------------------------------------------+
  | The b-vectors are chosen automatically                                     |
- | The following shells are used:   1                                         |
+ | The following shells are used:                       1                     |
  +----------------------------------------------------------------------------+
  |                        Shell   # Nearest-Neighbours                        |
  |                        -----   --------------------                        |
@@ -221,7 +203,7 @@
  written on  9Dec2017 at 21:01:42 ... done
 
 
- Time to read and process       0.003 (sec)
+ Time to read and process       0.013 (sec)
 
  Reading overlaps from Fe.mmn in get_AA_R   :  Created on 27Mar2017 at 18:44:12
 
@@ -242,10 +224,9 @@
 
 
  M_orb (bohr magn/cell)        x          y          z
- ======================      0.0000     0.0000     0.0431
+ ======================      0.0000013144     0.0000002854     0.0430559492
 
-
- Total Execution Time           2.529 (sec)
+ Total Execution Time           2.117 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
@@ -254,6 +235,5 @@
  |---------------------------------------------------------------------------|
  |kmesh: get                                        :         1         0.014|
  *---------------------------------------------------------------------------*
-
 
  All done: postw90 exiting

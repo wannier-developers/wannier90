@@ -1,4 +1,4 @@
-# Written on 23Jul2019 at 15:49:02
+# Written on 17Sep2026 at 12:25:53
 # Input file comment: Sample points for testing implementation
 #  Kpt_idx  K_x (1/ang)       K_y (1/ang)        K_z (1/ang)       Energy (eV)      EnergyDer_x       EnergyDer_y       EnergyDer_z
          1  0.2328140398      0.2328140398      0.2328140398      -5.272577776       1.382834198       1.493671457       1.371264761
