@@ -13,6 +13,7 @@
              |  Wannier90 Developer Group:                       |
              |    Giovanni Pizzi    (Paul Scherrer Institute)    |
              |    Valerio Vitale    (University of Trieste)      |
+             |    Jerome Jackson    (STFC Daresbury Laboratory)  |
              |    David Vanderbilt  (Rutgers University)         |
              |    Nicola Marzari    (EPFL)                       |
              |    Ivo Souza         (Universidad del Pais Vasco) |
@@ -46,11 +47,11 @@
              |         Phys. Rev. B 65 035109 (2001)             |
              |                                                   |
              |                                                   |
-             | Copyright (c) 1996-2020                           |
+             | Copyright (c) 1996-2026                           |
              |        The Wannier90 Developer Group and          |
              |        individual contributors                    |
              |                                                   |
-             |      Release: 3.1.0        5th March    2020      |
+             |      Release: 4.0.3   17th September 2026         |
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
@@ -69,7 +70,7 @@
              | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 10Jul2026 at 15:59:31     |
+             |    Execution started on 17Sep2026 at 12:20:44     |
              +---------------------------------------------------+
 
  ******************************************************************************
@@ -139,7 +140,7 @@
  |  Using global k-point set for interpolation                                |
  |  Adaptive refinement                       :              none             |
  *----------------------------------------------------------------------------*
- Time to read parameters        0.007 (sec)
+ Time to read parameters        0.006 (sec)
 
  *---------------------------------- K-MESH ----------------------------------*
  +----------------------------------------------------------------------------+
@@ -241,12 +242,12 @@
  |            12         2.190683    2.190683    0.000000                     |
  +----------------------------------------------------------------------------+
 
- Time to get kmesh              0.016 (sec)
+ Time to get kmesh              0.021 (sec)
  Reading restart information from file Fe.chk :
  written on 15Jan2026 at 12:22:22 ... done
 
 
- Time to read and process       0.052 (sec)
+ Time to read and process       0.058 (sec)
 
  Reading overlaps from Fe.mmn in get_AA_R   :  Created on 15Jan2026 at  8:54:19
 
@@ -267,16 +268,16 @@
 
 
  M_orb (bohr magn/cell)        x          y          z
- ======================      0.0000     0.0000    -0.0617
+ ======================      0.0000000029     0.0000000043    -0.0616729285
 
- Total Execution Time           1.725 (sec)
+ Total Execution Time           2.622 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.016|
+ |kmesh: get                                        :         1         0.021|
  *---------------------------------------------------------------------------*
 
  All done: postw90 exiting
