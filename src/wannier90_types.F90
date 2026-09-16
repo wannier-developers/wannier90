@@ -67,6 +67,9 @@ module w90_wannier90_types
     logical :: write_bvec = .false.
     logical :: write_rmn = .false.
     logical :: transl_inv_full = .false. !translation-equivariant position matrix elements
+    logical :: write_ndegen_applied = .false.
+    !! write the real-space output files on the expanded R list, with the
+    !! Wigner-Seitz degeneracy weights already divided out
     logical :: write_tb = .false.
     logical :: write_xyz = .false. !wannierise and transport
     logical :: svd_omega = .false. !print svd omega invormation (if iprint >= 2)

@@ -60,8 +60,8 @@ contains
     !================================================!
 
     use w90_constants, only: eps6, dp
-    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_write_hr, hamiltonian_setup, &
-                               hamiltonian_write_tb
+    use w90_hamiltonian, only: hamiltonian_get_hr, hamiltonian_get_rmn, hamiltonian_setup, &
+                               hamiltonian_write_hr, hamiltonian_write_tb
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_types, only: kmesh_info_type, wannier_data_type, atom_data_type, dis_manifold_type, &
                          kpoint_path_type, print_output_type, ws_region_type, ws_distance_type, timer_list_type, &
@@ -70,8 +70,8 @@ contains
     use w90_wannier90_types, only: w90_calculation_type, wvfn_read_type, output_file_type, &
                                    fermi_surface_plot_type, band_plot_type, wannier_plot_type, real_space_ham_type, &
                                    ham_logical_type
-    use w90_ws_distance, only: ws_translate_dist, ws_write_vec
-    use w90_error, only: w90_error_type
+    use w90_ws_distance, only: ws_apply_ndegen, ws_expand_rvec, ws_translate_dist, ws_write_vec
+    use w90_error, only: w90_error_type, set_error_alloc, set_error_dealloc
 
     implicit none
 
@@ -134,7 +134,10 @@ contains
     ! local variables
     type(ws_distance_type) :: ws_distance
     real(kind=dp) :: recip_lattice(3, 3), volume
-    integer :: nkp, bands_num_spec_points, my_node_id, i
+    integer :: nkp, bands_num_spec_points, my_node_id, i, ir, ierr, nrpts_full, nrpts_out, ir_origin
+    integer, allocatable :: irvec_full(:, :), irvec_out(:, :), ir_map(:, :, :, :), ndegen_out(:)
+    real(kind=dp), allocatable :: crvec_full(:, :)
+    complex(kind=dp), allocatable :: ham_r_out(:, :, :), pos_r(:, :, :, :)
     logical :: have_gamma
     logical :: on_root = .false.
 
@@ -187,6 +190,61 @@ contains
       if (allocated(error)) return
     end if
 
+    ! Wigner-Seitz mapping, the expanded lattice-vector list, and the grid the
+    ! real-space output files are written on: the expanded one under
+    ! write_ndegen_applied, the folded one otherwise. Done on every rank because
+    ! hamiltonian_get_rmn is collective.
+    if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
+      call ws_translate_dist(ws_distance, ws_region, num_wann, &
+                             wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, &
+                             error, comm, force_recompute=.false.)
+      if (allocated(error)) return
+
+      call ws_expand_rvec(ws_distance, ws_region%use_ws_distance, num_wann, nrpts, irvec, &
+                          ndegen, irvec_full, nrpts_full, ir_map, ir_origin, error, comm)
+      if (allocated(error)) return
+
+      allocate (crvec_full(3, nrpts_full), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating crvec_full in plot_main', comm)
+        return
+      end if
+      do ir = 1, nrpts_full
+        crvec_full(:, ir) = matmul(transpose(real_lattice), real(irvec_full(:, ir), dp))
+      end do
+
+      if (output_file%write_ndegen_applied) then
+        nrpts_out = nrpts_full
+      else
+        nrpts_out = nrpts
+      end if
+
+      allocate (irvec_out(3, nrpts_out), ndegen_out(nrpts_out), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating irvec_out in plot_main', comm)
+        return
+      end if
+      if (output_file%write_hr .or. output_file%write_tb) then
+        allocate (ham_r_out(num_wann, num_wann, nrpts_out), stat=ierr)
+        if (ierr /= 0) then
+          call set_error_alloc(error, 'Error in allocating ham_r_out in plot_main', comm)
+          return
+        end if
+      end if
+
+      if (output_file%write_ndegen_applied) then
+        irvec_out = irvec_full
+        ndegen_out = 1
+        if (allocated(ham_r_out)) &
+          call ws_apply_ndegen(ws_distance, ws_region%use_ws_distance, num_wann, nrpts, ndegen, &
+                               nrpts_full, ir_map, ham_r, ham_r_out)
+      else
+        irvec_out = irvec
+        ndegen_out = ndegen
+        if (allocated(ham_r_out)) ham_r_out = ham_r
+      end if
+    end if
+
     if (on_root) then
       if (print_output%timing_level > 0) call io_stopwatch_start('plot: main', timer)
 
@@ -214,14 +272,9 @@ contains
         if (allocated(error)) return
       end if
 
-      if (output_file%write_hr .or. output_file%write_tb) then
-        call ws_translate_dist(ws_distance, ws_region, num_wann, &
-                               wannier_data%centres, real_lattice, mp_grid, nrpts, irvec, &
-                               error, comm, force_recompute=.false.)
-        if (allocated(error)) return
-
+      if (output_file%write_hr .or. output_file%write_rmn .or. output_file%write_tb) then
         call ws_write_vec(ws_distance, nrpts, irvec, num_wann, ws_region%use_ws_distance, &
-                          seedname, error, comm)
+                          output_file%write_ndegen_applied, seedname, error, comm)
         if (allocated(error)) return
       end if
 
@@ -241,7 +294,7 @@ contains
 
       if (output_file%write_hr) then
         ! this is a trivial matrix write; no need to parallelize
-        call hamiltonian_write_hr(ham_r, irvec, ndegen, nrpts, num_wann, &
+        call hamiltonian_write_hr(ham_r_out, irvec_out, ndegen_out, nrpts_out, num_wann, &
                                   print_output%timing_level, seedname, timer, error, comm)
         if (allocated(error)) return
       end if
@@ -279,6 +332,42 @@ contains
       end if
     end if !on_root
 
+    ! <0m|r|Rn> is shared by seedname_r.dat and seedname_tb.dat
+    if (output_file%write_rmn .or. output_file%write_tb) then
+      allocate (pos_r(num_wann, num_wann, nrpts_out, 3), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating pos_r in plot_main', comm)
+        return
+      end if
+
+      call hamiltonian_get_rmn(kmesh_info, ws_distance, m_matrix, kpt_latt, real_lattice, &
+                               wannier_data%centres, irvec, crvec_full, ndegen, nrpts, nrpts_full, &
+                               rpt_origin, ir_origin, ir_map, ws_region%use_ws_distance, &
+                               output_file%transl_inv_full, output_file%write_ndegen_applied, &
+                               num_kpts, num_wann, dist_k, pos_r, error, comm)
+      if (allocated(error)) return
+
+      if (on_root) then
+        if (output_file%write_rmn) then
+          call plot_write_rmn(pos_r, irvec_out, nrpts_out, num_wann, seedname, error, comm)
+          if (allocated(error)) return
+        end if
+
+        if (output_file%write_tb) then
+          call hamiltonian_write_tb(ham_r_out, pos_r, real_lattice, irvec_out, ndegen_out, &
+                                    nrpts_out, num_wann, print_output%timing_level, seedname, &
+                                    timer, error, comm)
+          if (allocated(error)) return
+        end if
+      end if
+
+      deallocate (pos_r, stat=ierr)
+      if (ierr /= 0) then
+        call set_error_dealloc(error, 'Error in deallocating pos_r in plot_main', comm)
+        return
+      end if
+    end if
+
     if (w90_calculation%bands_plot) then
       bands_num_spec_points = 0
       if (allocated(kpoint_path%labels)) bands_num_spec_points = size(kpoint_path%labels)
@@ -297,24 +386,9 @@ contains
       if (allocated(error)) return
     end if
 
-    if (output_file%write_rmn) then
-      ! parallel write_rmn
-      call plot_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, num_wann, &
-                          wannier_data%centres, real_lattice, output_file%transl_inv_full, &
-                          seedname, dist_k, error, comm)
-      if (allocated(error)) return
-    end if
-
     if (output_file%write_r2mn) then
       ! write matrix elements <m|r^2|n> to file
       call plot_write_r2mn(num_kpts, num_wann, kmesh_info, m_matrix, seedname, dist_k, error, comm)
-      if (allocated(error)) return
-    end if
-
-    if (output_file%write_tb) then
-      call hamiltonian_write_tb(kmesh_info, ham_r, m_matrix, kpt_latt, real_lattice, irvec, &
-                                ndegen, nrpts, num_kpts, num_wann, print_output%timing_level, &
-                                seedname, timer, dist_k, error, comm)
       if (allocated(error)) return
     end if
 
@@ -2693,128 +2767,57 @@ contains
   end subroutine plot_bvec
 
   !================================================!
-  subroutine plot_write_rmn(kmesh_info, m_matrix, kpt_latt, irvec, nrpts, num_kpts, &
-                            num_wann, wannier_centres, real_lattice, transl_inv_full, &
-                            seedname, dist_k, error, comm)
+  subroutine plot_write_rmn(pos_r, irvec, nrpts, num_wann, seedname, error, comm)
     !================================================!
     !
     !! Write out the matrix elements of r
-    !! With transl_inv_full, use the centre- and R-dependent overlap phases
-    !! of postw90's get_AA_R, retaining the usual _r.dat Wigner-Seitz layout.
     !
     !================================================!
 
-    use w90_comms, only: comms_reduce, w90_comm_type, mpisize, mpirank
-    use w90_constants, only: twopi, cmplx_i, dp
+    use w90_comms, only: w90_comm_type
+    use w90_constants, only: dp
     use w90_error, only: w90_error_type, set_error_file
     use w90_io, only: io_date
-    use w90_types, only: kmesh_info_type
 
     implicit none
 
     ! arguments
-    type(kmesh_info_type), intent(in) :: kmesh_info
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
     integer, intent(in) :: nrpts
     integer, intent(in) :: irvec(:, :)
     integer, intent(in) :: num_wann
-    integer, intent(in) :: num_kpts
-    integer, intent(in) :: dist_k(:) ! MPI k-point distribution
-    real(kind=dp), intent(in)     :: kpt_latt(:, :)
-    real(kind=dp), intent(in)     :: wannier_centres(3, num_wann), real_lattice(3, 3)
-    logical, intent(in)          :: transl_inv_full
-    complex(kind=dp), intent(in)  :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(in) :: pos_r(:, :, :, :)
     character(len=50), intent(in) :: seedname
 
     ! local variables
-    integer :: loop_rpt, m, n, nkp, ind, nn, file_unit, ierr
-    integer :: my_node_id, nkp_rank
-    ! nkp_rank is the rank-local kpoint index for m_matrix decomposition
-    real(kind=dp) :: rdotk
-    real(kind=dp) :: r_cart(3), phase_origin(3)
-    complex(kind=dp) :: fac, phase
-    complex(kind=dp) :: position(3)
+    integer :: loop_rpt, m, n, file_unit, ierr
     character(len=33) :: header
     character(len=9)  :: cdate, ctime
-    logical :: on_root = .false.
 
-    my_node_id = mpirank(comm)
-
-    if (my_node_id == 0) on_root = .true.
-
-    if (on_root) then
-      open (newunit=file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', &
-            iostat=ierr)
-      if (ierr /= 0) then
-        call set_error_file(error, 'Error: hamiltonian_write_rmn: problem opening file '//trim(seedname)//'_r', comm)
-        return
-      end if
-
-      call io_date(cdate, ctime)
-      header = 'written on '//cdate//' at '//ctime
-      write (file_unit, *) header ! Date and time
-      write (file_unit, *) num_wann
-      write (file_unit, *) nrpts
+    open (newunit=file_unit, file=trim(seedname)//'_r.dat', form='formatted', status='unknown', &
+          iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: plot_write_rmn: problem opening file '//trim(seedname)//'_r.dat', comm)
+      return
     end if
 
+    call io_date(cdate, ctime)
+    header = 'written on '//cdate//' at '//ctime
+    write (file_unit, *) header ! Date and time
+    write (file_unit, *) num_wann
+    write (file_unit, *) nrpts
+
     do loop_rpt = 1, nrpts
-      if (transl_inv_full) r_cart = matmul(real(irvec(:, loop_rpt), dp), real_lattice)
       do m = 1, num_wann
         do n = 1, num_wann
-
-          if (transl_inv_full) then
-            phase_origin = 0.5_dp*(wannier_centres(:, n) + wannier_centres(:, m) - r_cart)
-          end if
-          position(:) = 0._dp
-          nkp_rank = 1
-          do nkp = 1, num_kpts
-            if (dist_k(nkp) /= my_node_id) cycle
-
-            rdotk = twopi*dot_product(kpt_latt(:, nkp), real(irvec(:, loop_rpt), dp))
-            fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
-            if (transl_inv_full) then
-              ! Combine the two phases in get_AA_R: exp(i b.(r_n+r_m-R)/2).
-              ! Use each k-point's actual b vector, so no neighbour reordering is needed.
-              do nn = 1, kmesh_info%nntot
-                phase = exp(cmplx_i*dot_product(kmesh_info%bk(:, nn, nkp), phase_origin))
-                position(:) = position(:) + cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(:, nn, nkp) &
-                              *m_matrix(n, m, nn, nkp_rank)*phase*fac
-              end do
-            else
-              do ind = 1, 3
-                do nn = 1, kmesh_info%nntot
-                  if (m .eq. n) then
-                    ! For loop_rpt==rpt_origin, this reduces to
-                    ! Eq.(32) of Marzari and Vanderbilt PRB 56,
-                    ! 12847 (1997). Otherwise, is is Eq.(44)
-                    ! Wang, Yates, Souza and Vanderbilt PRB 74,
-                    ! 195118 (2006), modified according to
-                    ! Eqs.(27,29) of Marzari and Vanderbilt
-                    position(ind) = position(ind) - kmesh_info%wb(nn)*kmesh_info%bk(ind, nn, nkp) &
-                                    *aimag(log(m_matrix(n, m, nn, nkp_rank)))*fac
-                  else
-                    ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
-                    position(ind) = position(ind) + cmplx_i*kmesh_info%wb(nn) &
-                                    *kmesh_info%bk(ind, nn, nkp)*m_matrix(n, m, nn, nkp_rank)*fac
-                  end if
-                end do
-              end do
-            end if
-            nkp_rank = nkp_rank + 1
-          end do ! global k list
-          call comms_reduce(position(1), 3, 'SUM', error, comm)
-          if (allocated(error)) return
-          if (transl_inv_full .and. m == n .and. all(irvec(:, loop_rpt) == 0)) then
-            position(:) = cmplx(wannier_centres(:, n), 0._dp, kind=dp)
-          end if
-          if (on_root) write (file_unit, '(5I5,6F12.6)') irvec(:, loop_rpt), n, m, position(:)
+          write (file_unit, '(5I5,6F12.6)') irvec(:, loop_rpt), n, m, pos_r(n, m, loop_rpt, :)
         end do
       end do
     end do
 
-    if (on_root) close (file_unit)
+    close (file_unit)
   end subroutine plot_write_rmn
 
   !================================================!

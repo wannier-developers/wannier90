@@ -1415,6 +1415,40 @@ eV.
 
 The default value is `false`.
 
+### `logical :: write_ndegen_applied`
+
+If `write_ndegen_applied = true`, then `seedname_hr.dat`, `seedname_r.dat` and
+`seedname_tb.dat` are written on the *expanded* list of lattice vectors --- every
+$\mathbf{R}+\mathbf{T}$ that occurs in the Wigner-Seitz mapping of
+`use_ws_distance` --- with all degeneracy weights already divided out. The
+matrix elements can then be interpolated with a plain Fourier sum,
+
+$$
+O_{mn}(\mathbf{k}) = \sum_{\mathbf{R}} e^{i\mathbf{k}\cdot\mathbf{R}}\,
+O_{mn}(\mathbf{R}),
+$$
+
+with no degeneracy factors and no reference to `seedname_wsvec.dat`.
+
+The file format does not change: the degeneracy block of `seedname_hr.dat` and
+`seedname_tb.dat` is still written, as all `1`s, so a reader that divides by it
+still gets the right answer. `seedname_wsvec.dat` is still written with its true
+contents, but its $\mathbf{R}$ list no longer matches that of the other files
+and it must **not** be applied on top of them; see
+[`seedname_wsvec.dat`](files.md#seedname_wsvecdat).
+
+With `use_ws_distance = false` the expanded list is the original one and the flag
+only divides out the `ndegen` weights. This makes `seedname_r.dat`, which carries
+no degeneracy block of its own, self-contained.
+
+This is the only way to write correct position matrix elements when
+`transl_inv_full = true` together with `use_ws_distance = true`: the
+$\mathbf{b}$-dependent phase then depends on the Wigner-Seitz shift of each pair
+of Wannier functions, which the folded $\mathbf{R}$ grid cannot represent. That
+combination is rejected unless `write_ndegen_applied = true`.
+
+The default value is `false`.
+
 ### `logical :: transport`
 
 If `transport = true`, then the code will calculate quantum

@@ -338,6 +338,25 @@ contains
     call w90_readwrite_read_ws_data(settings, ws_region, error, comm) !ws_search etc
     if (allocated(error)) return
 
+    ! With transl_inv_full the b-vector phase of <0m|r|Rn> depends on the
+    ! Wigner-Seitz shift of the pair, which the folded R grid of _r.dat/_tb.dat
+    ! cannot represent; write_ndegen_applied moves the output onto the expanded
+    ! grid, where it can.
+    if (output_file%transl_inv_full .and. (output_file%write_rmn .or. output_file%write_tb)) then
+      if (ws_region%use_ws_distance .and. .not. output_file%write_ndegen_applied) then
+        call set_error_input(error, 'transl_inv_full=T with use_ws_distance=T needs '// &
+                             'write_ndegen_applied=T: _r.dat/_tb.dat cannot hold '// &
+                             '<0m|r|Rn> on the folded R grid', comm)
+        return
+      end if
+      ! the expanded path needs the b-vector ordering of kmesh_bvectors_perm
+      if (output_file%write_ndegen_applied .and. gamma_only) then
+        call set_error_input(error, 'transl_inv_full=T with write_ndegen_applied=T is not '// &
+                             'available for a Gamma-only calculation', comm)
+        return
+      end if
+    end if
+
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_dis_manifold(settings, dis_manifold, error, comm)
       if (allocated(error)) return
@@ -1004,6 +1023,10 @@ contains
 
     call w90_readwrite_get_keyword(settings, 'write_tb', found, error, comm, &
                                    l_value=output_file%write_tb)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'write_ndegen_applied', found, error, comm, &
+                                   l_value=output_file%write_ndegen_applied)
     if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'dump_inputs', found, error, comm, &
@@ -2240,6 +2263,11 @@ contains
         !
         if (output_file%write_hr .or. print_output%iprint > 2) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', output_file%write_hr, '|'
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        end if
+        if (output_file%write_ndegen_applied) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Degeneracy weights applied on output      :', &
+            output_file%write_ndegen_applied, '|'
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
         end if
         if (output_file%write_vdw_data .or. print_output%iprint > 2) then

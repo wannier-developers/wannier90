@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### New `write_ndegen_applied` keyword: self-contained real-space output files
+
+- `write_ndegen_applied` (default `.false.`) writes `seedname_hr.dat`, `seedname_r.dat` and
+  `seedname_tb.dat` on the fully expanded list of `R+T` vectors of the `use_ws_distance`
+  mapping, with the degeneracy weights already divided out, so they interpolate with a plain
+  `sum_R exp(i k.R) O(R)`. The file formats are unchanged; `seedname_wsvec.dat` becomes
+  informational only and says so in its header.
+- `transl_inv_full = .true.` with `use_ws_distance = .true.` now requires it when
+  `seedname_r.dat` or `seedname_tb.dat` is written, and is refused otherwise: the folded R
+  grid cannot hold `<0m|r|Rn>`, whose b-vector phase depends on the Wigner-Seitz shift.
+- `transl_inv_full` now also reaches `seedname_tb.dat`, which previously used a second copy
+  of the Fourier sum that ignored the flag, and `seedname_wsvec.dat` is now written for
+  `write_rmn = .true.` runs as the documentation had always claimed.
 ### More digits in the `M_orb` summary printed by `postw90.x`
 
 The `berry_task = morb` summary is printed with `f16.10` instead of `f10.4`; in bohr
