@@ -3047,6 +3047,10 @@ contains
     write (stdout, '(1x,a78)') repeat('-', 78)
 
     lconverged = .false.
+    lfirst = .true.
+    lrandom = .false.
+    conv_count = 0
+    noise_count = 0
 
     ! initialize ur_rot
     ur_rot = 0.0_dp
