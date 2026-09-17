@@ -1745,8 +1745,8 @@ contains
         imap = select_proj%proj2wann_map(loop)
         if (imap < 0) cycle
         if (imap > num_proj) then
-          write (*, *) "logic error, imapping"
-          stop
+          call set_error_fatal(error, 'Logic error in w90_wannier90_readwrite_read_projections', comm)
+          return
         end if
         proj(imap) = proj_input(loop)
       end do
