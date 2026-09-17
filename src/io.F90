@@ -39,7 +39,8 @@ module w90_io
 
   private
 
-  character(len=10), parameter, public :: w90_version = '4.0.3 ' !! Label for this version of wannier90
+  character(len=*), parameter, public :: w90_version = '4.0.3' !! Label for this version of wannier90
+  character(len=*), parameter, public :: w90_version_date = '17th September 2026' !! Date for this version of wannier90
 
   public :: io_stopwatch_start
   public :: io_stopwatch_stop

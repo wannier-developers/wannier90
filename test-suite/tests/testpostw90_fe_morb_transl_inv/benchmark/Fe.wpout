@@ -13,6 +13,7 @@
              |  Wannier90 Developer Group:                       |
              |    Giovanni Pizzi    (Paul Scherrer Institute)    |
              |    Valerio Vitale    (University of Trieste)      |
+             |    Jerome Jackson    (STFC Daresbury Laboratory)  |
              |    David Vanderbilt  (Rutgers University)         |
              |    Nicola Marzari    (EPFL)                       |
              |    Ivo Souza         (Universidad del Pais Vasco) |
@@ -46,17 +47,16 @@
              |         Phys. Rev. B 65 035109 (2001)             |
              |                                                   |
              |                                                   |
-             | Copyright (c) 1996-2020                           |
+             | Copyright (c) 1996-2026                           |
              |        The Wannier90 Developer Group and          |
              |        individual contributors                    |
              |                                                   |
-             |      Release: 3.1.0        5th March    2020      |
+             |      Release: 4.0.3   17th September 2026         |
              |                                                   |
              | This program is free software; you can            |
              | redistribute it and/or modify it under the terms  |
-             | of the GNU General Public License as published by |
-             | the Free Software Foundation; either version 2 of |
-             | the License, or (at your option) any later version|
+             | of the GNU Lesser General Public License, version |
+             | 2.1 as published by the Free Software Foundation. |
              |                                                   |
              | This program is distributed in the hope that it   |
              | will be useful, but WITHOUT ANY WARRANTY; without |
@@ -64,21 +64,20 @@
              | FITNESS FOR A PARTICULAR PURPOSE. See the GNU     |
              | General Public License for more details.          |
              |                                                   |
-             | You should have received a copy of the GNU General|
-             | Public License along with this program; if not,   |
-             | write to the Free Software Foundation, Inc.,      |
-             | 675 Mass Ave, Cambridge, MA 02139, USA.           |
+             | You should have received a copy of the GNU Lesser |
+             | General Public License along with this program;   |
+             | if not, write to the Free Software Foundation,    |
+             | Inc., 675 Mass Ave, Cambridge, MA 02139, USA.     |
              |                                                   |
              +---------------------------------------------------+
-             |    Execution started on 14Jun2024 at 17:33:16     |
+             |    Execution started on 17Sep2026 at 12:20:31     |
              +---------------------------------------------------+
 
  ******************************************************************************
- * -> Using CODATA 2006 constant values                                       *
+ * -> Using CODATA 2022 constant values                                       *
  *    (http://physics.nist.gov/cuu/Constants/index.html)                      *
  * -> Using Bohr value from CODATA                                            *
  ******************************************************************************
-
 
  Running in serial (with parallel executable)
 
@@ -140,7 +139,7 @@
  |  Grid size                                 :    10 x  10 x  10             |
  |  Adaptive refinement                       :              none             |
  *----------------------------------------------------------------------------*
- Time to read parameters        0.005 (sec)
+ Time to read parameters        0.007 (sec)
 
  *---------------------------------- K-MESH ----------------------------------*
  +----------------------------------------------------------------------------+
@@ -162,7 +161,7 @@
  |            12                   5.362592                     24            |
  +----------------------------------------------------------------------------+
  | The b-vectors are chosen automatically                                     |
- | The following shells are used:   1                                         |
+ | The following shells are used:                       1                     |
  +----------------------------------------------------------------------------+
  |                        Shell   # Nearest-Neighbours                        |
  |                        -----   --------------------                        |
@@ -199,12 +198,12 @@
  |             6         1.094634    1.094634    0.000000                     |
  +----------------------------------------------------------------------------+
 
- Time to get kmesh              0.007 (sec)
+ Time to get kmesh              0.014 (sec)
  Reading restart information from file Fe.chk :
  written on  9Dec2017 at 21:01:42 ... done
 
 
- Time to read and process       0.026 (sec)
+ Time to read and process       0.058 (sec)
 
  Reading overlaps from Fe.mmn in get_AA_R   :  Created on 27Mar2017 at 18:44:12
 
@@ -225,16 +224,16 @@
 
 
  M_orb (bohr magn/cell)        x          y          z
- ======================      0.0000    -0.0000     0.0415
+ ======================      0.0000015430    -0.0000009695     0.0415249215
 
- Total Execution Time           1.349 (sec)
+ Total Execution Time           2.442 (sec)
 
  *===========================================================================*
  |                             TIMING INFORMATION                            |
  *===========================================================================*
  |    Tag                                                Ncalls      Time (s)|
  |---------------------------------------------------------------------------|
- |kmesh: get                                        :         1         0.007|
+ |kmesh: get                                        :         1         0.014|
  *---------------------------------------------------------------------------*
 
  All done: postw90 exiting

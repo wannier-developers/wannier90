@@ -12,6 +12,7 @@ abstract: >-
   properties of materials with high efficiency and accuracy.
 type: software
 version: 4.0.3
+date-released: 2026-09-17
 license: LGPL-2.1-or-later
 repository-code: https://github.com/wannier-developers/wannier90
 url: https://www.wannier.org

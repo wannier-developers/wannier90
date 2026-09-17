@@ -3,7 +3,7 @@
 As the community of developers grows, it is important to maintain a degree of consistency in the distribution in terms of coding style, documentation, tutorial examples and tests cases for all aspects of the functionality of the code.
 
 ## Coding style
-* Code should conform to the Fortran 2003 standard, but avoid using new object-oriented programming (OOP) aspects, because some compilers do not yet support them fully
+* Code should conform to the Fortran 2008 standard, but avoid using new object-oriented programming (OOP) aspects, because some compilers do not yet support them fully
 * Any MPI code should conform to version 2.x of the MPI standard
 * `USE` statements should always have the `ONLY` option with an explicit list of variables
 * Static variables should have the `SAVE` attribute
@@ -14,15 +14,15 @@ As the community of developers grows, it is important to maintain a degree of co
   - be declared `PRIVATE` and have a minimal set of public entities
   - start with the Lesser-GPL (LGPL) header that is common to all module files
   - be properly annotated with Fortran Documenter (FORD) comments
-* Subroutines that are public should be named with a common prefix associated with the module in which they sit. E.g., the names of public subroutines in `wannierise_mod.F90` start with `wann_`, etc.
+* Subroutines that are public should be named with a common prefix associated with the module in which they sit. E.g., the names of public subroutines in `wannierise.F90` start with `wann_`, etc.
 * Variable, parameter, function, subroutine and module names should be informative and, in so far as possible, maintain consistency of style with existing names
 
 ## Documentation and tutorial examples
 There are a number of different types of documentation associated with the distribution and all relevant ones should be updated and extended to reflect modifications and additions to the code.
-* `CHANGE.log` in the root directory of the distribution describes the updates with respect to the most recent release
-* `/doc/user_guide/` is the main User Guide for the code, where new variables, input parameters, functionality and file formats should be described
-* `/doc/tutorial/` is the tutorial guide for the examples in /examples/ and should be updated whenever a new example is added
-* `/examples/README` provides a very brief description of each example and the associated functionality that it covers
+* `CHANGELOG.md` in the root directory of the distribution describes the updates with respect to the most recent release
+* `docs/docs/user_guide/` is the main User Guide for the code, where new variables, input parameters, functionality and file formats should be described
+* `docs/docs/tutorials/` is the tutorial guide for the examples in `tutorials/` and should be updated whenever a new example is added
+* `tutorials/README.md` provides a very brief description of each example and the associated functionality that it covers
 FORD annotations should be included in all code that is developed; the resulting documentation is published at <https://wannier-developers.github.io/wannier90/>
 
 ## Test suite
@@ -67,10 +67,10 @@ New official releases of the code will be tagged as `vX.Y` (major releases) or `
 Pull requests made on the `develop` branch will go to the Wannier Developers' Group for consideration. Here is a checklist of necessary conditions that must be met for a pull request to be accepted:
 
 * The coding style has been adopted
-* `CHANGE.log` has been updated
-* `/doc/user_guide/` has been updated (e.g., if new input parameters, new functionality, or a new input/output files have been added)
-* At least an example has been added to the tutorial set in `/examples`, and `/examples/README` and `/doc/tutorial/` have been updated accordingly (e.g., if new functionality has been added)
-* A test case has been added to `/test-suite/` (e.g., if new functionality has been added)
+* `CHANGELOG.md` has been updated
+* `docs/docs/user_guide/` has been updated (e.g., if new input parameters, new functionality, or a new input/output files have been added)
+* At least an example has been added to the tutorial set in `tutorials/`, and `tutorials/README.md` and `docs/docs/tutorials/` have been updated accordingly (e.g., if new functionality has been added)
+* A test case has been added to `test-suite/` (e.g., if new functionality has been added)
 * The code compiles and passes the set of tests in the test suite (which runs automatically when a pull request is made)
 
 ## Pull requests for major new functionality
@@ -78,4 +78,4 @@ Pull requests made on the `develop` branch will go to the Wannier Developers' Gr
 Whilst we are keen to expand the functionality of Wannier90, we must also be mindful of the longer-term sustainability and maintenance of the code. If you are planning to make a pull request for major new functionality, which might include the calculation of a new property, or the development of a new method for projection, disentanglement or wannierisation, please contact a member of the [Wannier Developers Group](https://wannier.org/people/) in advance to discuss.
 
 ## List of contributors
-Prior to each release of the code, the Wannier Developers’ Group will update the list of contributors in the `README` file in the root of the distribution so that contributions are appropriately attributed and contributors receive due recognition for their contributions.
+Prior to each release of the code, the Wannier Developers’ Group will update the list of contributors in the `AUTHORS.md` file in the root of the distribution so that contributions are appropriately attributed and contributors receive due recognition for their contributions.

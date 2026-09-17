@@ -139,7 +139,7 @@ contains
     call w90_readwrite_read_mp_grid(settings, .false., mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_distk(settings, distk, num_kpts, stdout, error, comm)
+    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
     if (allocated(error)) return
 
     call w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
@@ -1745,8 +1745,8 @@ contains
         imap = select_proj%proj2wann_map(loop)
         if (imap < 0) cycle
         if (imap > num_proj) then
-          write (*, *) "logic error, imapping"
-          stop
+          call set_error_fatal(error, 'Logic error in w90_wannier90_readwrite_read_projections', comm)
+          return
         end if
         proj(imap) = proj_input(loop)
       end do
