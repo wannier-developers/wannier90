@@ -1,76 +1,59 @@
 # CHANGELOG of Wannier90
 
-## Unreleased
+## v4.0.3 (17 September 2026)
 
-### New `write_ndegen_applied` keyword: self-contained real-space output files
+### New features
 
-- `write_ndegen_applied` (default `.false.`) writes `seedname_hr.dat`, `seedname_r.dat` and
-  `seedname_tb.dat` on the fully expanded list of `R+T` vectors of the `use_ws_distance`
-  mapping, with the degeneracy weights already divided out, so they interpolate with a plain
-  `sum_R exp(i k.R) O(R)`. The file formats are unchanged; `seedname_wsvec.dat` becomes
-  informational only and says so in its header.
-- `transl_inv_full = .true.` with `use_ws_distance = .true.` now requires it when
-  `seedname_r.dat` or `seedname_tb.dat` is written, and is refused otherwise: the folded R
-  grid cannot hold `<0m|r|Rn>`, whose b-vector phase depends on the Wigner-Seitz shift.
-- `transl_inv_full` now also reaches `seedname_tb.dat`, which previously used a second copy
-  of the Fourier sum that ignored the flag, and `seedname_wsvec.dat` is now written for
-  `write_rmn = .true.` runs as the documentation had always claimed.
-### More digits in the `M_orb` summary printed by `postw90.x`
+- The library is now `libwannier90` for both serial and MPI builds (the prior `_mpi` suffix has been removed) [[#680]](https://github.com/wannier-developers/wannier90/pull/680)
 
-The `berry_task = morb` summary is printed with `f16.10` instead of `f10.4`; in bohr
-magneton/cell these values are often 1e-3 or smaller, so four decimals showed almost no
-significant digits. Test tolerances for `morb_x/y/z` become `{abs: 1.0e-4, rel: null}`,
-since the components that are zero by symmetry now print their cancellation residual and a
-relative check against a zero reference is undefined.
+- `w90_free()` deallocates a library-mode data object; `w90_print_timings()` prints the timing report [[#712]](https://github.com/wannier-developers/wannier90/pull/712) [[#707]](https://github.com/wannier-developers/wannier90/pull/707)
 
-### `wannier90.x`, `postw90.x` and the utilities now exit nonzero on a fatal error
+- New keyword `write_ndegen_applied`: `seedname_hr.dat`, `_r.dat` and `_tb.dat` are written on the expanded (full) Wigner-Seitz R list, allowing interpolation via a plain Fourier sum [[#702]](https://github.com/wannier-developers/wannier90/pull/702)
 
-Previously a fatal error ended in a bare Fortran `stop`, which exits with status **0**. A
-failed run was therefore indistinguishable from a successful one to any caller: shell
-scripts, Makefiles and CI steps all saw success. Fatal errors now exit with status 1 (an
-MPI abort still yields the MPI runtime's own status, typically 2). Successful runs, including
-the `-pp` postprocessing-setup path, still exit 0.
+- `transl_inv_full` (translation-equivariant position matrix elements) now also applies to `seedname_r.dat` and `_tb.dat` outputs; with `use_ws_distance` this requires `write_ndegen_applied` [[#702]](https://github.com/wannier-developers/wannier90/pull/702)
 
-This affects `wannier90.x`, `postw90.x`, `w90chk2chk.x` and `w90spn2spn.x`. **Scripts that
-relied on Wannier90 always returning 0 will now see a failure reported.** That is the point
-of the change, but it may surface in existing pipelines.
+- The tutorial solutions are now part of the online documentation [[#692]](https://github.com/wannier-developers/wannier90/pull/692)
 
-Relatedly, `prterr` now broadcasts the failure code from the root rank, so every MPI rank
-reports the same error. A non-root rank whose own error code was `code_remote` previously
-returned 0, meaning a library caller saw rank 0 fail while the other ranks reported success.
+- The developer (FORD) documentation is built in CI and published at <https://wannier-developers.github.io/wannier90/> [[#697]](https://github.com/wannier-developers/wannier90/pull/697)
 
-### Test suite migrated from testcode to pytest
+- WDG membership update [[#729]](https://github.com/wannier-developers/wannier90/pull/729)
 
-The functional/regression test suite is now driven by [pytest](https://docs.pytest.org/)
-instead of the vendored copy of `testcode2` that had been carried in `test-suite/testcode/`
-since 2017. What this means for developers:
+### Various improvements and bugfixes
 
-- **Python 3.10 or newer is now required to run the tests**, along with `pytest` and
-  `PyYAML`: `pip install -r test-suite/requirements.txt`.
-- `./run_tests` and `./clean_tests` are gone. Run `pytest` from `test-suite/`, or
-  `make tests` from the repository root, or `ctest` as before. `clean_tests` is obsolete
-  because tests no longer run in the source tree.
-- Tests now run in a work directory **outside the source tree**, so a test run no longer
-  leaves generated files behind and `git status` stays clean.
-- `tests/jobconfig` and `tests/userconfig` are replaced by one `tests/<name>/test.yaml` per
-  test plus a shared `test-suite/profiles.yaml`. Adding a test no longer means registering
-  it in three places: CMake discovers tests by globbing `tests/*/test.yaml`.
-- The per-test `Makefile`s are replaced by a declarative `prepare:` key.
-- Reference files are renamed from `benchmark.out.default.inp=<input>.win[.args=…]` to
-  `benchmark/<output filename>`. Contents are unchanged.
-- New `pytest --update-benchmarks` regenerates reference files, for the whole suite or any
-  subset, refusing to write one when the parser extracts nothing.
-- `expect_failure` tests are now checked strictly: a test declared to abort must actually
-  exit nonzero. testcode's `can_fail` merely tolerated a nonzero exit, so a test that
-  silently stopped failing went unnoticed. This relies on the exit-code fix above.
-- An output that parses to nothing is now a **failure**. Previously testcode reported "no
-  data extracted" as a pass, which let a test keep passing after a parser stopped matching
-  its output format.
-- The test-suite CMake no longer copies ~240 MB of test data into the build directory on
-  every configure.
+- The test suite now uses pytest (requires Python 3.10 or newer); see `test-suite/README.md` [[#693]](https://github.com/wannier-developers/wannier90/pull/693)
 
-The core of the test suite previously used `testcode` by J. Spencer
-(<https://github.com/jsspencer/testcode>), which we gratefully acknowledge.
+- `wannier90.x`, `postw90.x` and the utilities exit with nonzero status on a fatal error, and every MPI rank reports the same error code [[#693]](https://github.com/wannier-developers/wannier90/pull/693)
+
+- Silent near-miss keyword substring matching and duplicated keywords error reporting fixed [[#723]](https://github.com/wannier-developers/wannier90/pull/723)
+
+- Removed obsolete keywords `energy_unit`, `devel_flag` and `tetrahedron_correction` [[#716]](https://github.com/wannier-developers/wannier90/pull/716)
+
+- `search_supcell_size` keyword rejected in library mode and accepts its default value [[#719]](https://github.com/wannier-developers/wannier90/pull/719)
+
+- A higher-order B1 failure in the automatic shell search was silently ignored when `iprint = 0` [[#720]](https://github.com/wannier-developers/wannier90/pull/720); the SVD cutoff in the shell search is relaxed from 1e-5 to 1e-8 [[#721]](https://github.com/wannier-developers/wannier90/pull/721)
+
+- `conv_window <= 1` disables `conv_tol` and runs all `num_iter` iterations; a warning now says so [[#713]](https://github.com/wannier-developers/wannier90/pull/713) [[#717]](https://github.com/wannier-developers/wannier90/pull/717)
+
+- Fixed a segfault in `overlap_write` when running in parallel [[#672]](https://github.com/wannier-developers/wannier90/pull/672)
+
+- Fixed a segfault on `-h`, `-v` or a missing command-line argument [[#687]](https://github.com/wannier-developers/wannier90/pull/687)
+
+- Fixed a LAPACK failure with `use_bloch_phases` caused by an uninitialised projection matrix [[#688]](https://github.com/wannier-developers/wannier90/pull/688)
+
+- Fixed the site-symmetry gradient in parallel runs, which used the wrong array [[#681]](https://github.com/wannier-developers/wannier90/pull/681)
+
+- Fixed the printed change in spread for selective localisation [[#730]](https://github.com/wannier-developers/wannier90/pull/730)
+
+- Fixed an undefined value in the "System extended in" line of the parameter report [[#698]](https://github.com/wannier-developers/wannier90/pull/698)
+
+- MPI preprocessor symbols renamed to `W90_MPI`, `W90_MPI08`, `W90_MPI90` and `W90_MPIH` to avoid a clash with mpich [[#689]](https://github.com/wannier-developers/wannier90/pull/689)
+
+- All library module files are installed, as required by ifx [[#707]](https://github.com/wannier-developers/wannier90/pull/707)
+
+- Gamma-only wannierisation uses the same convergence test as the general case [[#723]](https://github.com/wannier-developers/wannier90/pull/723)
+
+- Documentation: ordering of `;`-separated projections [[#706]](https://github.com/wannier-developers/wannier90/pull/706); missing parameters and files [[#708]](https://github.com/wannier-developers/wannier90/pull/708); sign of r-bar in the `transl_inv_full` formula [[#702]](https://github.com/wannier-developers/wannier90/pull/702); corrected figures in the tutorial solutions [[#725]](https://github.com/wannier-developers/wannier90/pull/725) [[#726]](https://github.com/wannier-developers/wannier90/pull/726); README and CONTRIBUTING [[#685]](https://github.com/wannier-developers/wannier90/pull/685) [[#695]](https://github.com/wannier-developers/wannier90/pull/695) [[#696]](https://github.com/wannier-developers/wannier90/pull/696)
+
 
 ## v4.0.2 (27 August 2026)
 
