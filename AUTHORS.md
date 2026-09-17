@@ -18,10 +18,11 @@ In addition to the Wannier Developers Group, the other authors of Wannier90 v.4.
 * Leon Petit        (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design
 * Barry G. Searle   (STFC Daresbury Laboratory, GB): CCP9 code restructuring and parallel library design, python interface
 
-Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Minsu Ghim,
-Marco Gibertini, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang, Dominik Jochym,
-Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm,
-Edward Linscott, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and Stepan Tsirkin.
+Contributors to the code include: Zeeshan Ahmad, Miki Bonacci, Ben Durham, Minsu Ghim,
+Marco Gibertini, Alexander Hampel, Seung-Ju Hong, Julen Ibañez-Azpiroz, Yuhao Jiang,
+Dominik Jochym, Pierre Kestener, Kensuke Korita, Cristian Le, Hyungjun Lee, Jae-Mo Lihm,
+Edward Linscott, Henrique Miranda, Jamal Mustafa, Nataliya Paulish, Junfeng Qiao and
+Stepan Tsirkin.
 
 In addition to the Wannier Developers Group, the other authors of Wannier90 v.3.x are:
 
