@@ -452,13 +452,6 @@ The valid options for this parameter are:
 
 - `Bohr`
 
-### `character(len=50) :: devel_flag`
-
-Not a regular keyword. Its purpose is to allow a developer to pass a
-string into the code to be used inside a new routine as it is developed.
-
-No default.
-
 ### `integer :: exclude_bands(:)`
 
 A k-point independent list of states to exclude from the calculation of
