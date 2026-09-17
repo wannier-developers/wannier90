@@ -1080,7 +1080,8 @@ contains
         OO(:, :) = OO(:, :) + &
                    cmplx_i*wigner_seitz%crvec_pw90(alpha, ir)*phase_fac*OO_R(:, :, ir)
       else
-        stop 'wrong value of alpha in pw90common_fourier_R_to_k'
+        call set_error_fatal(error, 'wrong value of alpha in pw90common_fourier_R_to_k', comm)
+        return
       end if
 
     end do
