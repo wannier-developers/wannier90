@@ -84,11 +84,12 @@ use by standalone executable.
                           w90_get_gkpb, w90_get_proj, w90_get_centres, &
                           w90_get_spreads, w90_plot, w90_set_eigval, &
                           w90_set_u_opt, w90_set_m_local, w90_set_u_matrix, &
-                          w90_input_reader, w90_transport
+                          w90_input_reader, w90_transport, w90_is_mpi_build
 ```
 
 The library exposes a number of functions via a Fortran module that should be
-*use*d.  Use follows these steps:
+*use*d.  You can check if the library is built with MPI using
+`w90_is_mpi_build`.  Use follows these steps:
 
 1. create an instance of the [library data structure](#lib_common_type)
 2. set necessary control parameters/flags/options using
@@ -638,3 +639,17 @@ for gcc/openmpi builds (at pmpi_init() call); similarly ifx/impi builds with
 Parallel libraries cannot be called from serial code because mpi_init() must be
 called before any call to the Wannier90 library when it is built with MPI.
 Recomple a serial version if necessary.
+
+This direction is reported: a parallel build whose communicator was never set
+fails in [w90_input_setopt](#w90_input_setopt) with an invalid-communicator
+error.
+
+### Serial libraries called from parallel code
+
+The converse is *not* detected by the library.  A serial build accepts
+[w90_set_comm](#w90_set_comm), ignores it, and then performs the whole
+calculation on every process using only the data that process holds; on more
+than one rank the results are wrong and no error is raised.  The library cannot
+detect this by itself: with no MPI support compiled in it has no way to ask how
+many ranks the caller has.  A parallel caller should therefore check
+`w90_is_mpi_build` and fail on its own terms.

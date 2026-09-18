@@ -223,6 +223,8 @@ module w90_library
   !! optionally read additional input variables from .win file
   public :: w90_input_setopt
   !! act upon (interpret & setup) options specified by set_option interface
+  public :: w90_is_mpi_build
+  !! whether this build of the library supports MPI
   public :: w90_plot
   !! performs plot functions
   public :: w90_project_overlap
@@ -284,6 +286,24 @@ contains
     character(len=*), intent(in) :: name
     open (newunit=output, file=name, form='formatted', status='unknown')
   end subroutine w90_get_fortran_file
+
+  logical function w90_is_mpi_build()
+    !! Report whether this build of the library supports MPI.
+    !!
+    !! This is a property of how libwannier90 was compiled, not of the communicator passed to
+    !! w90_set_comm and not of the number of ranks in it. A caller running on more than one
+    !! process must check this before anything else: a serial build accepts w90_set_comm and
+    !! then performs the whole calculation on every rank, using only the data that rank holds.
+    !!
+    !! No library data object is needed, so this may be called before any is set up.
+    implicit none
+
+#ifdef W90_MPI
+    w90_is_mpi_build = .true.
+#else
+    w90_is_mpi_build = .false.
+#endif
+  end function w90_is_mpi_build
 
   subroutine w90_input_setopt(common_data, seedname, istdout, istderr, ierr)
     !! mechanism to act upon options supplied to the library
