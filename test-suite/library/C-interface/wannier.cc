@@ -101,6 +101,13 @@ int main(int argc, char* argv[]) {
 
         ///////////// LIBRARY
 
+        // needs no library object; must match the build the cmake package config reported
+#ifdef W90_MPI
+        assert(w90_is_mpi_build());
+#else
+        assert(!w90_is_mpi_build());
+#endif
+
         w90_data w90glob;
         w90_create(&w90glob);
 #ifdef W90_MPI

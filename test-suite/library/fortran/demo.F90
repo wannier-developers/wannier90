@@ -132,6 +132,12 @@ program ok
   call w90_set_option(w90main, 'num_iter', 1000)
   call w90_set_option(w90main, 'num_print_cycles', 40)
 
+  ! this demo hands the library a communicator, so a serial build cannot run it correctly
+  if (.not. w90_is_mpi_build()) then
+    write (stderr, *) 'Error: demo requires a parallel build of the wannier90 library'
+    stop 1
+  end if
+
   call w90_set_comm(w90main, mpi_comm_world)
   call w90_input_setopt(w90main, 'gaas', stdout, stderr, ierr) ! apply settings
 

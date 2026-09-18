@@ -42,7 +42,8 @@ module w90_library_c
                          w90_set_u_matrix_f => w90_set_u_matrix, w90_set_u_opt_f => w90_set_u_opt, &
                          w90_wannierise_f => w90_wannierise, w90_set_option, &
                          w90_set_comm_ff => w90_set_comm, lib_common_type, &
-                         w90_get_fortran_stderr, w90_get_fortran_stdout
+                         w90_get_fortran_stderr, w90_get_fortran_stdout, &
+                         w90_is_mpi_build_f => w90_is_mpi_build
   implicit none
 
   public
@@ -73,6 +74,15 @@ contains
     deallocate (w90_fptr)
     w90_obj%caddr = C_NULL_PTR
   end subroutine
+
+  logical(kind=c_bool) function w90_is_mpi_build() bind(c)
+    ! .true. if this build of the library supports MPI. Its declaration in wannier90.h is
+    ! placed outside the W90_MPI guard there: that guard is evaluated when the calling code
+    ! is compiled, so inside it the declaration would be invisible to exactly the callers
+    ! that do not know how libwannier90 was built
+    implicit none
+    w90_is_mpi_build = w90_is_mpi_build_f()
+  end function
 
   subroutine w90_get_nk(w90_obj, n) bind(c)
     ! return the number of k-points
