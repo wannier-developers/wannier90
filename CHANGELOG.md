@@ -8,7 +8,7 @@
 
 - `w90_free()` deallocates a library-mode data object; `w90_print_timings()` prints the timing report [[#712]](https://github.com/wannier-developers/wannier90/pull/712) [[#707]](https://github.com/wannier-developers/wannier90/pull/707)
 
-- `w90_is_mpi_build()` informs the calling program whether the library is compiled with MPI [[#733]]](https://github.com/wannier-developers/wannier90/pull/733)
+- `w90_is_mpi_build()` informs the calling program whether the library is compiled with MPI [[#733]](https://github.com/wannier-developers/wannier90/pull/733)
 
 - New keyword `write_ndegen_applied`: `seedname_hr.dat`, `_r.dat` and `_tb.dat` are written on the expanded (full) Wigner-Seitz R list, allowing interpolation via a plain Fourier sum [[#702]](https://github.com/wannier-developers/wannier90/pull/702)
 
