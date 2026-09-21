@@ -162,7 +162,7 @@ if (WANNIER90_INSTALL)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Wannier90ConfigVersion.cmake
 			${CMAKE_CURRENT_BINARY_DIR}/Wannier90Config.cmake
 			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Wannier90
-			COMPONENT Spglib_Development
+			COMPONENT Wannier90_Development
 	)
 	install(EXPORT Wannier90Targets
 			FILE Wannier90Targets.cmake
