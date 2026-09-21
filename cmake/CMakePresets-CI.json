@@ -64,6 +64,10 @@
         "CMAKE_Fortran_COMPILER": {
           "type": "FILEPATH",
           "value": "ifx"
+        },
+        "CMAKE_Fortran_FLAGS_RELEASE": {
+          "type": "STRING",
+          "value": "-O2"
         }
       }
     }
