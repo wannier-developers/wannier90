@@ -136,20 +136,4 @@ else
 tests: test-serial
 endif
 
-dist-lite:
-	@(cd $(ROOTDIR) && $(TAR) -cz --transform='s,^\./,wannier90/,' -f wannier90.tar.gz \
-		./src/*.?90 \
-		./src/postw90/*.?90 \
-		./config/* \
-		./*/Makefile \
-		./utility/*.pl \
-		./*/Makefile \
-		./*/Makefile.2 \
-		./*/*/Makefile \
-		./Makefile \
-		./LICENSE \
-		./README.* \
-		./CHANGE.log \
-	)
-
 .PHONY: wannier default all doc libs staticlib dynlib post clean veryclean thedoc dist test-serial test-parallel dist-lite tests w90spn2spn install pkgconfig
