@@ -307,15 +307,6 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
-    <name>devel_flag</name>
-    <type>S</type>
-    <description>Flag for development use</description>
-    <groups>
-      <group>job</group>
-    </groups>
-    <required>False</required>
-  </parameter>
-  <parameter tool="w90">
     <name>timing_level</name>
     <type>I</type>
     <description>Determines amount of timing information written to output</description>
