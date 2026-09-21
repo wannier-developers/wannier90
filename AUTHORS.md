@@ -29,7 +29,7 @@ In addition to the Wannier Developers Group, the other authors of Wannier90 v.3.
 * Ryotaro Arita (Riken and U. Tokyo, JP): Symmetry-adapted Wannier functions
 * Stefan Blügel (FZ  Jülich, DE): Parallelization of the core routines
 * Frank Freimuth (FZ  Jülich, DE): Parallelization of the core routines
-* Guillame Géranton (FZ  Jülich, DE): Parallelization of the core routines
+* Guillaume Géranton (FZ  Jülich, DE): Parallelization of the core routines
 * Marco Gibertini (EPFL and University of Geneva, CH): Improvements to the interpolation routines
 * Dominik Gresch (ETHZ, CH): FORD infrastructure for code documentation, AiiDA-Wannier90 interface
 * Charles Johnson (Imperial College London, GB): Selectively-localised WFs and constrained centres
