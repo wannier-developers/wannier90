@@ -4,8 +4,6 @@
 
 ### New features
 
-- Default CODATA standard is now 2022.
-
 - The library is now named `libwannier90` for both serial and MPI builds (the prior `_mpi` suffix has been removed) [[#680]](https://github.com/wannier-developers/wannier90/pull/680)
 
 - `w90_free()` deallocates a library-mode data object; `w90_print_timings()` prints the timing report [[#712]](https://github.com/wannier-developers/wannier90/pull/712) [[#707]](https://github.com/wannier-developers/wannier90/pull/707)
