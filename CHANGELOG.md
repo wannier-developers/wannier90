@@ -1,6 +1,6 @@
 # CHANGELOG of Wannier90
 
-## v4.0.3 (21 September 2026)
+## v4.0.3 (22 September 2026)
 
 ### New features
 
