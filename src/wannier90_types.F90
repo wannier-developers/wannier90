@@ -54,6 +54,11 @@ module w90_wannier90_types
     logical :: wannier_plot = .false. !plot, wannier_lib
     logical :: fermi_surface_plot = .false. ! plot, wannier_lib!
     logical :: transport = .false. ! also hamiltonian, wannier_prog, wannier_lib
+    logical :: read_ibz = .false.
+    !! read the IBZ files ".isym", ".immn", ".iamn" and ".ieig" and expand them
+    !! internally, instead of reading ".mmn", ".amn" and ".eig"
+    logical :: write_ibz_expanded = .false.
+    !! with read_ibz, also write the expanded full-BZ data to ".mmn", ".amn" and ".eig"
   end type w90_calculation_type
 
   type output_file_type
@@ -285,6 +290,49 @@ module w90_wannier90_types
     complex(kind=dp), allocatable :: d_matrix_band(:, :, :, :)
     complex(kind=dp), allocatable :: d_matrix_wann(:, :, :, :)
   end type sitesym_type
+
+  ! from sym_ibz
+  type sym_ibz_type
+    !!==================================================
+    !! Symmetry information (".isym" file) used to expand the IBZ overlap,
+    !! projection and eigenvalue data (".immn", ".iamn", ".ieig") onto the
+    !! full BZ.  See read_ibz in the user guide.
+    !!==================================================
+    logical :: spinors = .false.
+    logical :: ready = .false.
+    !! set once the ".isym" file has been read and the k-point maps have been built
+    integer :: nsym = 0
+    !! number of symmetry operations
+    integer :: nks = 0
+    !! number of irreducible k-points
+    integer :: nbnd = 0
+    !! number of bands described by the representation matrices
+    integer :: num_wann = 0
+    !! number of projections described by the rotation matrices
+    integer, allocatable :: s(:, :, :)
+    !! (3,3,nsym) rotation matrices in crystal (k-space) coordinates
+    integer, allocatable :: t_rev(:)
+    !! (nsym) time-reversal flag of each operation
+    integer, allocatable :: invs(:)
+    !! (nsym) index of the inverse of each operation
+    real(kind=dp), allocatable :: ft(:, :)
+    !! (3,nsym) fractional translations
+    real(kind=dp), allocatable :: irr_kpt(:, :)
+    !! (3,nks) irreducible k-points in crystal coordinates
+    complex(kind=dp), allocatable :: u_spin(:, :, :)
+    !! (2,2,nsym) spinor rotation matrices
+    complex(kind=dp), allocatable :: repmat(:, :, :, :)
+    !! (nbnd,nbnd,nsym,nks) representation matrices of the little group of each irreducible k
+    complex(kind=dp), allocatable :: rotmat(:, :, :)
+    !! (num_wann,num_wann,nsym) rotation matrices of the projection functions
+    ! the following are derived, not read from file
+    integer, allocatable :: equiv(:)
+    !! (num_kpts) irreducible k-point equivalent to each full-BZ k-point
+    integer, allocatable :: equiv_sym(:)
+    !! (num_kpts) operation mapping irr_kpt(:,equiv(ik)) onto the full-BZ k-point ik
+    integer, allocatable :: iks2ik(:)
+    !! (nks) full-BZ index of each irreducible k-point
+  end type sym_ibz_type
 
   ! from hamiltonian
   type ham_logical_type

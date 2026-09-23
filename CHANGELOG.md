@@ -1,5 +1,11 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+### New features
+
+- New keyword `read_ibz`: read the overlaps, projections and eigenvalues computed by `pw2wannier90.x` (`irr_bz = .true.`) on the irreducible Brillouin zone only (`seedname.isym`, `seedname.immn`, `seedname.iamn`, `seedname.ieig`) and expand them onto the full k-point mesh; `write_ibz_expanded` writes the expanded `seedname.mmn`, `seedname.amn` and `seedname.eig` [[#727]](https://github.com/wannier-developers/wannier90/pull/727)
+
 ## v4.0.3 (22 September 2026)
 
 ### New features
@@ -66,7 +72,6 @@
 ### Various improvements and bugfixes
 
 - CHANGELOG correction/clarification in text relating to v4.0.1 release.
-
 
 ## v4.0.1 (28 July 2026)
 

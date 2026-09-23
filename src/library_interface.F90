@@ -170,6 +170,8 @@ module w90_library
     type(settings_type) :: settings
     !! container for input file (.win) data and options set via library interface
     type(sitesym_type) :: sitesym
+    type(sym_ibz_type) :: sym_ibz
+    !! symmetry data used by read_ibz to expand the IBZ overlaps/projections
     type(timer_list_type) :: timer
     type(transport_type) :: tran
     type(w90_calculation_type) :: w90_calculation
@@ -438,6 +440,7 @@ contains
                                       common_data%fermi_surface_data, common_data%output_file, &
                                       common_data%wvfn_read, common_data%wann_control, &
                                       common_data%real_space_ham, common_data%kpoint_path, &
+                                      common_data%select_proj, &
                                       common_data%w90_system, common_data%tran, &
                                       common_data%print_output, common_data%wann_plot, &
                                       common_data%ws_region, common_data%real_lattice, &
@@ -528,6 +531,7 @@ contains
                                       common_data%fermi_surface_data, common_data%output_file, &
                                       common_data%wvfn_read, common_data%wann_control, &
                                       common_data%real_space_ham, common_data%kpoint_path, &
+                                      common_data%select_proj, &
                                       common_data%w90_system, common_data%tran, &
                                       common_data%print_output, common_data%wann_plot, &
                                       common_data%ws_region, common_data%real_lattice, &

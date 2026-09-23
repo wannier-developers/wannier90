@@ -209,6 +209,26 @@
     <required>False</required>
   </parameter>
   <parameter tool="w90">
+    <name>read_ibz</name>
+    <type>L</type>
+    <description>Read the IBZ data (`seedname.isym`, `seedname.immn`, `seedname.iamn`, `seedname.ieig`) and expand it internally onto the full BZ, instead of reading `seedname.mmn`, `seedname.amn` and `seedname.eig`</description>
+    <groups>
+      <group>job</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
+    <name>write_ibz_expanded</name>
+    <type>L</type>
+    <description>With `read_ibz`, also write the expanded full-BZ data to `seedname.mmn`, `seedname.amn` and `seedname.eig`</description>
+    <groups>
+      <group>job</group>
+    </groups>
+    <default>False</default>
+    <required>False</required>
+  </parameter>
+  <parameter tool="w90">
     <name>exclude_bands</name>
     <type>I</type>
     <description>List of bands to exclude from the calculation</description>

@@ -184,7 +184,7 @@ contains
   subroutine w90_wannier90_readwrite_read(settings, band_plot, dis_control, dis_spheres, &
                                           dis_manifold, fermi_energy_list, fermi_surface_data, &
                                           output_file, wvfn_read, wann_control, real_space_ham, &
-                                          kpoint_path, w90_system, tran, print_output, wann_plot, &
+                                          kpoint_path, select_proj, w90_system, tran, print_output, wann_plot, &
                                           ws_region, real_lattice, w90_calculation, bohr, &
                                           symmetrize_eps, num_bands, num_kpts, num_wann, &
                                           optimisation, calc_only_A, cp_pp, gamma_only, &
@@ -215,6 +215,7 @@ contains
     type(output_file_type), intent(inout) :: output_file
     type(print_output_type), intent(inout) :: print_output
     type(real_space_ham_type), intent(inout) :: real_space_ham
+    type(select_projection_type), intent(in) :: select_proj
     type(settings_type), intent(inout) :: settings
     type(transport_type), intent(inout) :: tran
     type(w90_calculation_type), intent(inout) :: w90_calculation
@@ -283,6 +284,29 @@ contains
 
       call w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
       if (allocated(error)) return
+
+      if (w90_calculation%read_ibz) then
+        if (gamma_only) then
+          call set_error_input(error, 'Error: read_ibz cannot be used together with gamma_only', comm)
+          return
+        end if
+        if (lsitesymmetry) then
+          call set_error_input(error, 'Error: read_ibz cannot be used together with site_symmetry', comm)
+          return
+        end if
+        if (select_proj%lselproj) then
+          call set_error_input(error, 'Error: read_ibz cannot be used together with select_projections', comm)
+          return
+        end if
+        if (select_proj%auto_projections) then
+          call set_error_input(error, 'Error: read_ibz cannot be used together with auto_projections: '// &
+                               'the projections block is needed', comm)
+          return
+        end if
+      else if (w90_calculation%write_ibz_expanded) then
+        call set_error_input(error, 'Error: write_ibz_expanded requires read_ibz', comm)
+        return
+      end if
 
       call w90_wannier90_readwrite_read_post_proc(settings, cp_pp, calc_only_A, &
                                                   w90_calculation%postproc_setup, error, comm)
@@ -438,6 +462,14 @@ contains
 
     call w90_readwrite_get_keyword(settings, 'fermi_surface_plot', found, error, comm, &
                                    l_value=w90_calculation%fermi_surface_plot)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'read_ibz', found, error, comm, &
+                                   l_value=w90_calculation%read_ibz)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'write_ibz_expanded', found, error, comm, &
+                                   l_value=w90_calculation%write_ibz_expanded)
     if (allocated(error)) return
 
   end subroutine w90_wannier90_readwrite_read_w90_calcs
@@ -2057,6 +2089,12 @@ contains
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Post-processing setup (write *.nnkp)      :', &
         w90_calculation%postproc_setup, '|'
       write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using Gamma-only branch of algorithms     :', gamma_only, '|'
+      if (w90_calculation%read_ibz) then
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Reading IBZ data (*.isym,*.i{mmn,amn,eig}):', &
+          w90_calculation%read_ibz, '|'
+        write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing expanded data (*.mmn,*.amn,*.eig) :', &
+          w90_calculation%write_ibz_expanded, '|'
+      end if
       !YN: RS:
       if (lsitesymmetry) then
         write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Using symmetry-adapted WF mode            :', lsitesymmetry, '|'
