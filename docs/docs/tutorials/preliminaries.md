@@ -46,7 +46,7 @@ libraries.
 
 To enable the parallel version to be built, you must specify some flags
 in the `make.inc` file of `wannier90` and `postw90`; for further
-information, please refer to the `README.install` file in the top
+information, please refer to the `INSTALL.md` file in the top
 directory of the `wannier90` distribution.
 
 Then, to run e.g. with 8 processors, you typically need to run a command
