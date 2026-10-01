@@ -1,0 +1,317 @@
+# Wannier90
+
+The Maximally-Localised Generalised Wannier Functions Code
+
+In Wannier90 version 4 there are two supported installation methods,
+GNU Make and CMake.
+
+The executables `wannier90.x` and `postw90.x` and the Wannier90 library support
+parallel execution using MPI.
+
+## Installation using CMake
+
+Requirements:
+
+- cmake version > 3.25
+- Fortran compiler (compliant with 2008 standard)
+- LAPACK and BLAS libraries
+- MPI libraries and headers (optional)
+- Fortran f2018 compiler (optional for C interface)
+
+Cmake will generally attempt to find a suitable configuration using internal defaults
+and search methods to find the necessary compilers and numerical libraries.  On many
+systems this will be sufficient to produce a working installation.
+
+On a linux system, such a build may be accomplished by:
+
+```sh
+mkdir build
+cd build
+cmake ..
+make
+```
+
+The resulting executables can be found in the `build/bin` directory.  System-wide installation
+is achieved with (assuming appropriate privileges, for example using sudo):
+
+```sh
+make install
+```
+
+and you can run the tests using:
+
+```sh
+ctest
+```
+
+The installation directory defaults (on linux) to `/usr/local/`; this can be changed via
+
+```sh
+cmake ../ -DCMAKE_INSTALL_PREFIX=/path
+```
+
+See <https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html>
+
+Some options are available to steer compilation; to enable a parallel build:
+
+```sh
+cmake ../ -DWANNIER90_MPI=ON
+```
+
+If suitable MPI libraries are found, they will be reported in the output in, eg:
+
+```text
+-- Found LAPACK: /usr/lib64/libopenblas.so;-lm;-ldl
+-- Found MPI_Fortran: /usr/lib64/openmpi/lib/libmpi_usempif08.so (found version "3.1")
+```
+
+To choose a specific compiler, eg, the Intel LLVM compiler "ifx":
+
+```sh
+cmake ../ -DCMAKE_Fortran_COMPILER=ifx
+```
+
+This command will fail if the specified compiler is not available in your path.
+
+To choose a specific LAPACK/BLAS library by vendor name:
+
+```sh
+cmake ../ -DBLA_VENDOR=OpenBLAS
+```
+
+The corresponding libraries must be findable in standard system directories, or paths in
+your environment (such as `LD_LIBRARY_PATH` on linux).
+
+Check that the result is what you intend:
+
+```text
+-- Found BLAS: /usr/lib64/libopenblas.so
+-- Found LAPACK: /usr/lib64/libopenblas.so;/usr/lib64/libopenblas.so
+```
+
+A common choice might be `Intel10_64lp_seq`: Intel MKL 64 bit, sequential code, lp64 model.
+See <https://cmake.org/cmake/help/latest/module/FindBLAS.html> for more information.
+
+To use the C interface to the Wannier90 library, it is necessary to have a f2018
+capable compiler and to define `WANNIER90_WITH_C`:
+
+```sh
+cmake ../ -DWANNIER90_WITH_C=ON
+```
+
+## Installation using GNU Make
+
+### Requirements
+
+- A Fortran 2008 compiler (most recent f90 compilers support this standard)
+- LAPACK and BLAS libraries (eg intel MKL, openblas, etc)
+- (Optional) MPI libraries for parallel execution
+- GNU make (see `make -v` to check the make version)
+
+### Configuration
+
+A selection of system dependent parameters (e.g. compiler name) may be found in
+the `./config/` directory.  Choose one that is nearest to your setup and copy
+it to `make.inc` in the project root directory. You should edit the file to
+match the configuration of your machine.
+
+On a linux system with the intel LLVM-based compiler, you might try:
+
+```sh
+cp ./config/make.inc.ifx ./make.inc
+make
+```
+
+The key variables are:
+
+```text
+F90             the fortran compiler (serial build)
+MPIF90          the fortran compiler (parallel build, see below)
+COMMS           one of mpi,mpih,mpi90,mpi08 activates a parallel build
+FCOPTS          fortran compiler options
+LDOPTS          linker options
+```
+
+Make targets are:
+
+```text
+make            build wannier90.x and postw90.x (default)
+make all        build executables, libraries and some utilities[1]
+make wannier    build the wannier90.x executable
+make post       build the postw90.x executable
+make libs       build the wannier90 library[1]
+make w90vdw     build the van der Waals code
+make w90pov     build the ray-tracing code
+make install    install the built binaries and libraries, module files
+make tests      run test cases [2]
+make doc        build the documentation
+make clean      remove object files etc
+make veryclean  remove all non-distribution file
+```
+
+\[1\] Important: the shared library needs position-independent code: add `-fPIC`
+(gfortran, intel, nvidia; consult the manual for others) to both `FCOPTS` and
+`LDOPTS`, and `make clean` before rebuilding.
+
+\[2\] needs Python >= 3.10, pytest and PyYAML:
+`pip install -r test-suite/requirements.txt`
+
+`make -j [NN]` will allow parallel compilation [using NN tasks].
+
+`make install` supports `DESTDIR` and `PREFIX` variables.  Executables will be
+installed into `$(DESTDIR)$(PREFIX)/bin` directory, libraries will be installed
+into `$(DESTDIR)$(PREFIX)/lib` directory.  The default `DESTDIR` is empty, and the
+default `PREFIX` is `/usr`.
+
+### Building the parallel version
+
+In order to compile the `postw90.x` executable in its parallel version, you have
+to specify
+
+```make
+COMMS=mpi
+```
+
+inside the `make.inc` file (some of the example files already contain this line)
+and moreover define the parallel compiler using the `MPIF90` flag, for instance:
+
+```make
+MPIF90=mpiifort
+```
+
+Three levels of Fortran MPI standard are supported by Wannier90: Fortran90
+(which uses a Fortran module), Fortran2008 (which uses a Fortran module that
+includes f2008 types for the different MPI objects) and a legacy Fortran77
+interface.  These interfaces are used differently:
+
+1. `use mpi_f08` uses a complete fortran08 interface with custom types, this
+   allows detailed checking of arguments in MPI function calls.  To build the
+   interface using this style, specify `COMMS=mpi08`.
+2. `use mpi` uses a fortran90 style interface, limited checking.  To build the
+   interface using this style, specify `COMMS=mpi` or `COMMS=mpi90`.
+3. `include 'mpif.h'` uses a legacy interface, no checking at all.  To build the
+   interface using this style, specify `COMMS=mpih`
+
+If you intend to link to libwannier90 from another program, then you must
+ensure that the MPI interface level (style/standard) used in compiling
+Wannier90 matches that of the calling program: this is principally to allow
+consistency in passing a typed (or integer) MPI communicator to the library.
+
+### Linux x86,x86-64
+
+1. `make.inc.ifort`
+   - Compiler: Intel (ifc,ifort,iforte)
+   - Libraries: Intel mkl (ATLAS BLAS is faster for AMD processors)
+
+2. `make.inc.pathscale`
+   - Compiler: Pathscale (pathf90)
+   - Libraries: acml
+
+3. `make.inc.nag`
+   - Compiler: NAG (f95)
+   - Libraries: ATLAS + LAPACK (maybe acml)
+   - Note: in our experience the NAG compiler does not produce well optimised code
+
+4. `make.inc.sun`
+   - Compiler: Sun-studio f90
+   - Libraries: sunperf (ATLAS is faster)
+   - avaible as a free beta for Linux
+
+### Generic: Most architectures
+
+1. `make.inc.g95`
+   - Compiler: g95
+   - Libraries: ATLAS + LAPACK
+
+2. `make.inc.gfort`
+   - Compiler: gfortran
+   - Libraries: ATLAS + LAPACK
+   - (the official gcc f90 compiler - often faster than g95)
+
+### Alpha/HP/Compaq/DEC Tru64 UNIX
+
+1. `make.inc.alpha`
+   - Compiler: f90
+   - Libraries: cxml
+
+### Sun / Solaris  (sparc or x86)
+
+1. `make.inc.sun`
+   - Compiler: f95
+   - Libraries: sunperf
+
+### Mac OS X
+
+1. `make.inc.macosx`
+   - Compiler: gfortran
+   - Libraries: Accelerate library
+   - (check comments in the `make.inc.macosx` file!)
+
+### IBM PowerPC/power series. Linux or AIX
+
+1. `make.inc.xlf`
+   - Compiler: xlf95
+   - Libraries: ESSL + LAPACK
+   - Note: ESSL does not provide a complete lapack installation.
+     If your machine does not have a full LAPACK install,
+     download the netlib LAPACK. You might want to use
+     the essl wrappers from
+     <http://www.netlib.org/lapack/essl/>
+
+### Windows
+
+There are many commercial Fortran compilers for windows.
+We haven't included make.inc files for these as we don't
+have access to them. Wannier90 should compile just fine.
+
+I use cygwin (<http://www.cygwin.com/>) which provides a bash shell.
+
+1. `make.inc.g95`
+   - Compiler: g95  (within cygwin)
+   - Libraries: LAPACK and ATLAS (cygwin comes with a lapack and blas library,
+     but I think they have been compiled with g77. I had problems making
+     a working executable. I suggest building your own)
+
+2. `make.inc.pgf90`
+   - Compiler: Portland Group (pgf90)
+   - Libaries: pg supplied lapack and blas
+
+## Preprocessor flags
+
+To add a preprocessor flag, add it to the `FCOPTS` and `LDOPTS` variables in the
+`make.inc` file.
+For instance, if the flag is called `EXIT_FLAG`, you can simply append
+`-DEXIT_FLAG`
+(note that `-D` is prepended to the name of the flag)
+to the `FCOPTS` variable and `LDOPTS` variable, separating it with a space from
+what is already defined. Example:
+
+```make
+FCOPTS=-O2 -DEXIT_FLAG
+LDOPTS=-O2 -DEXIT_FLAG
+```
+
+Alternatively, after the definition of the `FCOPTS` and `LDOPTS` variables,
+at the end of the `make.inc` file, you can add the lines
+
+```make
+FCOPTS+=-DEXIT_FLAG
+LDOPTS+=-DEXIT_FLAG
+```
+
+### Flags
+
+- `EXIT_FLAG`:
+  If defined (and if your compiler supports it), returns an exit status =/= 0
+  when the code exits due to an error (while it returns 0 on correct
+  completion).
+  By default, when this flag is not present, the value of the exit code is
+  not sensible.
+- `CODATA2006`, `CODATA2010`, `CODATA2018`, `CODATA2022`:
+  Use physical constants from 2006,2010,2018 or 2022 (default) version of CODATA tables
+  (<http://physics.nist.gov/cuu/Constants/index.html>)
+- `USE_WANNIER90_V1_BOHR`:
+  Use the value of the bohr radius (expressed in angstrom) that
+  was adopted in versions 1.x of the Wannier90 code, instead of
+  the values taken from the CODATA database.
+  (This is intended for backward compatibility only)

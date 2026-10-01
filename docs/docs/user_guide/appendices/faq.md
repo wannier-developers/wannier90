@@ -113,7 +113,7 @@ If you are using versions 2.x of the code, cite instead:
 
 ### How do I install `wannier90`?
 
-Follow the instructions in the file `README.install` in the main
+Follow the instructions in the file `INSTALL.md` in the main
 directory of the `wannier90` distribution.
 
 ### Are there `wannier90` binaries available?
