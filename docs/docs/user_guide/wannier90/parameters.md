@@ -28,7 +28,7 @@ administrator.
 
 Note also that this requires that the `wannier90.x` executable has been
 compiled in its parallel version (follow the instructions in the file
-`README.install` in the main directory of the `wannier90` distribution)
+`README.md` in the main directory of the `wannier90` distribution)
 and that the MPI libraries and binaries are installed and correctly
 configured on your machine.
 
