@@ -1,6 +1,6 @@
 # CHANGELOG of Wannier90
 
-## v4.0.3 (22 September 2026)
+## v4.0.3 (5 October 2026)
 
 ### New features
 
@@ -57,6 +57,8 @@
 - Documentation: ordering of `;`-separated projections [[#706]](https://github.com/wannier-developers/wannier90/pull/706); missing parameters and files [[#708]](https://github.com/wannier-developers/wannier90/pull/708); sign of r-bar in the `transl_inv_full` formula [[#702]](https://github.com/wannier-developers/wannier90/pull/702); corrected figures in the tutorial solutions [[#725]](https://github.com/wannier-developers/wannier90/pull/725) [[#726]](https://github.com/wannier-developers/wannier90/pull/726); README and CONTRIBUTING [[#685]](https://github.com/wannier-developers/wannier90/pull/685) [[#695]](https://github.com/wannier-developers/wannier90/pull/695) [[#696]](https://github.com/wannier-developers/wannier90/pull/696)
 
 - `README.install` renamed to `INSTALL.md`
+
+- An alternative function is provided to pass an integer MPI communicator handle (avoiding f08 communicator typing issues) [[#679]](https://github.com/wannier-developers/wannier90/pull/679)
 
 
 ## v4.0.2 (27 August 2026)
