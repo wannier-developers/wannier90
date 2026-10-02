@@ -56,6 +56,8 @@
 
 - Documentation: ordering of `;`-separated projections [[#706]](https://github.com/wannier-developers/wannier90/pull/706); missing parameters and files [[#708]](https://github.com/wannier-developers/wannier90/pull/708); sign of r-bar in the `transl_inv_full` formula [[#702]](https://github.com/wannier-developers/wannier90/pull/702); corrected figures in the tutorial solutions [[#725]](https://github.com/wannier-developers/wannier90/pull/725) [[#726]](https://github.com/wannier-developers/wannier90/pull/726); README and CONTRIBUTING [[#685]](https://github.com/wannier-developers/wannier90/pull/685) [[#695]](https://github.com/wannier-developers/wannier90/pull/695) [[#696]](https://github.com/wannier-developers/wannier90/pull/696)
 
+- `README.install` renamed to `INSTALL.md`
+
 
 ## v4.0.2 (27 August 2026)
 

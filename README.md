@@ -16,7 +16,7 @@ materials with high efficiency and accuracy.**
 | I want to…                | Go to |
 | ------------------------- | --- |
 | Learn what Wannier90 does | [wannier.org](https://www.wannier.org) · [Features](https://wannier.org/features/) |
-| **Install it**            | [README.install](README.install) — CMake or GNU Make |
+| **Install it**            | [INSTALL.md](INSTALL.md) — CMake or GNU Make |
 | **Read the manual**       | [wannier90.readthedocs.io](https://wannier90.readthedocs.io/) |
 | **Follow the tutorials**  | [Tutorial instructions](https://wannier90.readthedocs.io/en/latest/tutorials/preliminaries/) · [Tutorial files](tutorials/) |
 | See what changed          | [CHANGELOG.md](CHANGELOG.md) |
