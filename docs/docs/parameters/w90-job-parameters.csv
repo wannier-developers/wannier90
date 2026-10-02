@@ -1,5 +1,7 @@
 Keyword,Type,Description
 postproc_setup,L,"To output the `seedname.nnkp` file"
+read_ibz,L,"Read the IBZ data (`seedname.isym`, `seedname.immn`, `seedname.iamn`, `seedname.ieig`) and expand it internally onto the full BZ, instead of reading `seedname.mmn`, `seedname.amn` and `seedname.eig`"
+write_ibz_expanded,L,"With `read_ibz`, also write the expanded full-BZ data to `seedname.mmn`, `seedname.amn` and `seedname.eig`"
 exclude_bands,I,"List of bands to exclude from the calculation"
 select_projections,I,"List of projections to use in Wannierisation"
 auto_projections,L,"To automatically generate initial projections"

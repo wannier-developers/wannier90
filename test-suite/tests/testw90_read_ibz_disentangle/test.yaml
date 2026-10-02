@@ -1,0 +1,12 @@
+# testw90_read_ibz_disentangle
+
+description: "Copper, s and d bands via disentanglement, from the IBZ files (read_ibz); same system as testw90_example04"
+profile: wannier90_wout
+runs:
+  - input: copper.win
+    output: copper.wout
+prepare:
+  - bunzip2: "*.isym.bz2"
+  - bunzip2: "*.immn.bz2"
+  - bunzip2: "*.iamn.bz2"
+  - bunzip2: "*.ieig.bz2"

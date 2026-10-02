@@ -223,6 +223,7 @@ contains
     use w90_error_base, only: w90_error_type
     use w90_error, only: set_error_fatal
     use w90_overlap, only: overlap_read
+    use w90_sym_ibz, only: sym_ibz_dealloc, sym_ibz_read, sym_ibz_read_overlaps
 
     implicit none
 
@@ -243,6 +244,42 @@ contains
       return
     end if
 
+    if (common_data%w90_calculation%read_ibz) then
+      ! the overlaps and projections are given in the irreducible BZ only and
+      ! are expanded here onto the full mesh; projections are stored in u_opt
+      call sym_ibz_read(common_data%sym_ibz, common_data%kpt_latt, common_data%mp_grid, &
+                        common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                        common_data%print_output, common_data%seedname, istdout, error, &
+                        common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
+
+      call sym_ibz_read_overlaps(common_data%sym_ibz, common_data%kmesh_info, &
+                                 common_data%kpt_latt, common_data%proj_input, &
+                                 common_data%u_matrix_opt, common_data%m_matrix_local, &
+                                 common_data%num_bands, common_data%num_kpts, &
+                                 common_data%num_proj, common_data%num_wann, &
+                                 common_data%print_output, common_data%use_bloch_phases, &
+                                 common_data%seedname, istdout, common_data%dist_kpoints, &
+                                 common_data%w90_calculation%write_ibz_expanded, error, &
+                                 common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
+
+      ! the representation matrices are the largest array read here and are of
+      ! no further use; sym_ibz_read() will read them again if they are needed
+      call sym_ibz_dealloc(common_data%sym_ibz, error, common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
+      return
+    end if
+
     ! projections are stored in u_opt
     call overlap_read(common_data%kmesh_info, common_data%select_proj, common_data%u_matrix_opt, &
                       common_data%m_matrix_local, common_data%num_bands, common_data%num_kpts, &
@@ -259,6 +296,7 @@ contains
   subroutine read_eigvals(common_data, eigval, istdout, istderr, ierr)
     use w90_error, only: w90_error_type, set_error_fatal
     use w90_readwrite, only: w90_readwrite_read_eigvals
+    use w90_sym_ibz, only: sym_ibz_read, sym_ibz_read_eigvals
 
     implicit none
 
@@ -283,6 +321,29 @@ contains
       call set_error_fatal(error, &
                            'Error: eigval not dimensioned correctly (num_bands,num_kpts) in read_eigvals', common_data%comm)
       call prterr(error, ierr, istdout, istderr, common_data%comm)
+      return
+    end if
+
+    if (common_data%w90_calculation%read_ibz) then
+      ! eigenvalues are given in the irreducible BZ only
+      call sym_ibz_read(common_data%sym_ibz, common_data%kpt_latt, common_data%mp_grid, &
+                        common_data%num_bands, common_data%num_kpts, common_data%num_wann, &
+                        common_data%print_output, common_data%seedname, istdout, error, &
+                        common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
+
+      call sym_ibz_read_eigvals(common_data%sym_ibz, eigval, common_data%num_bands, &
+                                common_data%num_kpts, common_data%print_output, &
+                                common_data%seedname, istdout, &
+                                common_data%w90_calculation%write_ibz_expanded, error, &
+                                common_data%comm)
+      if (allocated(error)) then
+        call prterr(error, ierr, istdout, istderr, common_data%comm)
+        return
+      end if
       return
     end if
 

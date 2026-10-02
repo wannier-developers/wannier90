@@ -422,6 +422,38 @@ the `seedname.win` file.
 
 The default value is `false`.
 
+### `logical :: read_ibz`
+
+If `read_ibz=true`, the overlap, projection and eigenvalue matrices are
+read for the irreducible Brillouin zone only, from `seedname.immn`,
+`seedname.iamn` and `seedname.ieig`, and expanded onto the full
+Monkhorst-Pack mesh using the symmetry information in `seedname.isym`
+[@koretsune2023]. These files are written by `pw2wannier90.x` with
+`irr_bz = .true.` (Quantum ESPRESSO 7.3 or later); `seedname.mmn`,
+`seedname.amn` and `seedname.eig` are then not needed by `wannier90.x`.
+
+The k-points must form a complete, $\Gamma$-centred Monkhorst-Pack mesh,
+and a projections block is required, since the projection centres enter
+the expansion. `read_ibz` cannot be combined with `gamma_only`,
+`site_symmetry`, `select_projections` or `auto_projections`.
+
+`postw90.x` still reads `seedname.eig`, and `seedname.mmn` for the
+Berry-phase tasks; see `write_ibz_expanded`.
+
+The default value is `false`.
+
+### `logical :: write_ibz_expanded`
+
+If `write_ibz_expanded=true` (requires `read_ibz`), the expanded overlap,
+projection and eigenvalue matrices are also written to `seedname.mmn`,
+`seedname.amn` and `seedname.eig` in the `pw2wannier90.x` format,
+overwriting existing files, e.g. for use by `postw90.x`. Each file is
+written when the corresponding IBZ file is read, so a `restart` that skips
+that stage does not write it; `seedname.amn` is not written with
+`use_bloch_phases`.
+
+The default value is `false`.
+
 ### `integer :: iprint`
 
 This indicates the level of verbosity of the output from 0 ("low"), the
