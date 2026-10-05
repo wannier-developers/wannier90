@@ -75,7 +75,22 @@ d$_{x^2-y^2}$
 Specific hybrid orbitals may be specified as follows:
 * `l=-3,mr=1,3` or `sp3-1,sp3-3` -- two specific sp$^{3}$ hybrids
 * Multiple states may be specified by separating with '`;`', e.g.,
-`sp3;l=0` or `l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital
+`sp3;l=0` or `l=-3;l=0` -- four sp$^{3}$ hybrids and one s orbital.
+**Be aware**: When specifying projections for multiple states
+on the same line using '`;`', the ordering might not be preserved
+internally (in the code projections on the same line are
+re-ordered with increasing $l$). If you want to preserve the
+exact ordering of the states, please specify these on
+multiple lines with the order you want.
+
+``` vi title="Example (order not preserved)"
+Fe = p;s
+```
+
+``` vi title="Example (order preserved)"
+Fe = p
+Fe = s
+```
 
 `zaxis` (optional):
 `z=1,1,1` -- set the $z$-axis to be in the (1,1,1) direction. Default is

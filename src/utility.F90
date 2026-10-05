@@ -946,10 +946,10 @@ contains
 
     ! arguments
     real(kind=dp) :: utility_wgauss, x
-    !! output: the value of the function
-    !! input: the argument of the function
+    !! *output*: the value of the function
+    !! *input*: the argument of the function
     integer :: n
-    !! input: the order of the function
+    !! *input*: the order of the function
 
     ! local variables
     real(kind=dp) :: a, hp, arg, hd, xp
@@ -1024,11 +1024,11 @@ contains
 
     ! arguments
     real(kind=dp) :: utility_w0gauss
-    !! output: the value of the function
+    !! *output*: the value of the function
     real(kind=dp), intent(in) :: x
-    !! input: the point where to compute the function
+    !! *input*: the point where to compute the function
     integer, intent(in) :: n
-    !! input: the order of the smearing function
+    !! *input*: the order of the smearing function
     type(w90_error_type), allocatable, intent(out) :: error
     type(w90_comm_type), intent(in) :: comm
 
@@ -1112,10 +1112,10 @@ contains
     type(w90_error_type), allocatable, intent(out) :: error
     real(kind=dp), intent(in) ::  x(:)
     real(kind=dp), allocatable  :: res(:), arg(:)
-    !! output: the value of the function
-    !! input: the point where to compute the function
+    !! *output*: the value of the function
+    !! *input*: the point where to compute the function
     integer :: n
-    !! input: the order of the smearing function
+    !! *input*: the order of the smearing function
     type(w90_comm_type), intent(in) :: comm
     integer :: ierr
 

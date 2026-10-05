@@ -1,0 +1,8 @@
+# testw90_nnkpt8
+
+description: Test that search_supcell_size accepts a non-default value
+profile: wannier90_nnkp
+runs:
+  - input: wannier.win
+    args: [-pp]
+    output: wannier.nnkp

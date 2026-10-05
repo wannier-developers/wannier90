@@ -60,7 +60,8 @@ and
 ## Credits
 
 The Wannier90 Developer Group includes Giovanni Pizzi (Paul Scherrer Institute,
-CH), Valerio Vitale (University of Trieste, IT), David Vanderbilt (Rutgers
+CH), Valerio Vitale (University of Trieste, IT),
+Jerome Jackson (STFC Daresbury Laboratory, GB),  David Vanderbilt (Rutgers
 University, US), Nicola Marzari (EPFL, CH and University of Cambridge, GB),
 Ivo Souza (Universidad del Pais Vasco, ES), Arash A. Mostofi (Imperial College
 London, GB), and Jonathan R. Yates (University of Oxford, GB).

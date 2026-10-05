@@ -43,6 +43,7 @@ module w90_hamiltonian
 
   public :: hamiltonian_dealloc
   public :: hamiltonian_get_hr
+  public :: hamiltonian_get_rmn
   public :: hamiltonian_setup
   public :: hamiltonian_write_hr
   public :: hamiltonian_write_tb
@@ -859,9 +860,261 @@ contains
   end subroutine hamiltonian_wigner_seitz
 
   !================================================!
-  subroutine hamiltonian_write_tb(kmesh_info, ham_r, m_matrix, kpt_latt, real_lattice, irvec, &
-                                  ndegen, nrpts, num_kpts, num_wann, timing_level, seedname, &
-                                  timer, dist_k, error, comm)
+  subroutine hamiltonian_get_rmn(kmesh_info, ws_distance, m_matrix, kpt_latt, real_lattice, &
+                                 wannier_centres, irvec, crvec_full, ndegen, nrpts, nrpts_full, &
+                                 rpt_origin, ir_origin, ir_map, use_ws_distance, transl_inv_full, &
+                                 write_ndegen_applied, num_kpts, num_wann, dist_k, pos_r, error, &
+                                 comm)
+    !================================================!
+    !! Position matrix elements <0i|r|Rj> in the Wannier basis, shared by the
+    !! seedname_r.dat and seedname_tb.dat writers.
+    !!
+    !! With write_ndegen_applied the result is returned on the expanded lattice
+    !! vector list of ws_expand_rvec, with the degeneracy weights already divided
+    !! out, so that it interpolates with a plain sum over exp(i k.R). Otherwise it
+    !! is returned on the folded list irvec and the weights are left to the reader.
+    !! rpt_origin and ir_origin index R = 0 in the folded and the expanded list.
+    !!
+    !! With transl_inv_full the translation-equivariant formula of get_AA_R is
+    !! used: the overlaps carry the phase exp(i b.(r_i + r_j)/2) in k space and
+    !! exp(-i b.R/2) in real space. The latter has to be evaluated at the final
+    !! lattice vector, which is why the expanded case transforms one b vector at
+    !! a time instead of summing over b first.
+    !!
+    !! pos_r is reduced onto the root process and is meaningful only there. It is
+    !! also the reduction buffer, so it is allocated on every rank.
+    !================================================!
+
+    use w90_constants, only: cmplx_0, cmplx_i, twopi
+    use w90_types, only: kmesh_info_type, ws_distance_type
+    use w90_ws_distance, only: ws_apply_ndegen
+
+    implicit none
+
+    ! arguments
+    type(kmesh_info_type), intent(in) :: kmesh_info
+    type(ws_distance_type), intent(in) :: ws_distance
+    type(w90_error_type), allocatable, intent(out) :: error
+    type(w90_comm_type), intent(in) :: comm
+
+    integer, intent(in) :: num_kpts
+    integer, intent(in) :: num_wann
+    integer, intent(in) :: nrpts
+    integer, intent(in) :: nrpts_full
+    integer, intent(in) :: rpt_origin
+    integer, intent(in) :: ir_origin
+    integer, intent(in) :: irvec(:, :)
+    integer, intent(in) :: ndegen(:)
+    integer, intent(in) :: dist_k(:) ! MPI k-point distribution
+    integer, intent(in) :: ir_map(:, :, :, :)
+
+    real(kind=dp), intent(in) :: kpt_latt(:, :)
+    real(kind=dp), intent(in) :: real_lattice(3, 3)
+    real(kind=dp), intent(in) :: wannier_centres(3, num_wann)
+    real(kind=dp), intent(in) :: crvec_full(:, :)
+
+    logical, intent(in) :: use_ws_distance
+    logical, intent(in) :: transl_inv_full
+    logical, intent(in) :: write_ndegen_applied
+
+    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(out) :: pos_r(:, :, :, :)
+    !! (num_wann, num_wann, nrpts_full if write_ndegen_applied else nrpts, 3)
+
+    ! local variables
+    integer :: i, idir, ik, ik_rank, ir, ir0, ierr, nn, nno, rank
+    real(kind=dp) :: bvec(3)
+    complex(kind=dp), allocatable :: contrib(:, :, :), mel(:, :), op_folded(:, :, :, :), &
+                                     op_full(:, :, :)
+    logical :: on_root
+
+    rank = mpirank(comm)
+    on_root = (rank == 0)
+
+    if (transl_inv_full .and. write_ndegen_applied .and. .not. allocated(kmesh_info%nnord)) then
+      call set_error_input(error, 'transl_inv_full with write_ndegen_applied needs the '// &
+                           'b-vector ordering kmesh_info%nnord, which is not allocated', comm)
+      return
+    end if
+
+    allocate (contrib(num_wann, num_wann, 3), mel(num_wann, num_wann), stat=ierr)
+    if (ierr /= 0) then
+      call set_error_alloc(error, 'Error in allocating contrib in hamiltonian_get_rmn', comm)
+      return
+    end if
+    if (write_ndegen_applied) then
+      allocate (op_folded(num_wann, num_wann, nrpts, 3), &
+                op_full(num_wann, num_wann, nrpts_full), stat=ierr)
+      if (ierr /= 0) then
+        call set_error_alloc(error, 'Error in allocating op_folded in hamiltonian_get_rmn', comm)
+        return
+      end if
+    end if
+
+    pos_r = cmplx_0
+
+    if (transl_inv_full) then
+
+      if (write_ndegen_applied) then
+        ! One b vector at a time, so that exp(-i b.R/2) can be applied at the
+        ! expanded R. nno indexes the b vectors of the first k-point, and
+        ! kmesh_info%nnord(nno, ik) is the neighbour of ik carrying that same b.
+        do nno = 1, kmesh_info%nntot
+          op_folded = cmplx_0
+          ik_rank = 0
+          do ik = 1, num_kpts
+            if (dist_k(ik) /= rank) cycle
+            ik_rank = ik_rank + 1
+            nn = kmesh_info%nnord(nno, ik)
+            call accumulate_rmn(op_folded)
+          end do
+
+          call comms_reduce(op_folded(1, 1, 1, 1), num_wann*num_wann*nrpts*3, 'SUM', error, comm)
+          if (allocated(error)) return
+
+          if (on_root) then
+            bvec = kmesh_info%bk(:, nno, 1)
+            do idir = 1, 3
+              call ws_apply_ndegen(ws_distance, use_ws_distance, num_wann, nrpts, ndegen, &
+                                   nrpts_full, ir_map, op_folded(:, :, :, idir), op_full)
+              do ir = 1, nrpts_full
+                pos_r(:, :, ir, idir) = pos_r(:, :, ir, idir) + op_full(:, :, ir) &
+                                        *exp(-cmplx_i*0.5_dp*dot_product(bvec, crvec_full(:, ir)))
+              end do
+            end do
+          end if
+        end do
+
+      else
+        ! On the folded grid there is no Wigner-Seitz shift to account for, see
+        ! the input check in w90_wannier90_readwrite_read, so exp(-i b.R/2) can
+        ! be folded into the Fourier factor and all b summed at once.
+        ik_rank = 0
+        do ik = 1, num_kpts
+          if (dist_k(ik) /= rank) cycle
+          ik_rank = ik_rank + 1
+          do nn = 1, kmesh_info%nntot
+            call accumulate_rmn(pos_r)
+          end do
+        end do
+
+        call comms_reduce(pos_r(1, 1, 1, 1), num_wann*num_wann*nrpts*3, 'SUM', error, comm)
+        if (allocated(error)) return
+      end if
+
+      ! <0i|r|0i> is the Wannier centre; the transl_inv_full formula does not
+      ! produce it, see get_AA_R.
+      if (on_root) then
+        ir0 = rpt_origin
+        if (write_ndegen_applied) ir0 = ir_origin
+        do i = 1, num_wann
+          pos_r(i, i, ir0, :) = cmplx(wannier_centres(:, i), 0.0_dp, kind=dp)
+        end do
+      end if
+
+    else
+
+      ! Sum over b on the folded grid, then divide out the degeneracy weights if
+      ! the output is to carry them.
+      if (write_ndegen_applied) op_folded = cmplx_0
+      ik_rank = 0
+      do ik = 1, num_kpts
+        if (dist_k(ik) /= rank) cycle
+        ik_rank = ik_rank + 1
+        do nn = 1, kmesh_info%nntot
+          if (write_ndegen_applied) then
+            call accumulate_rmn(op_folded)
+          else
+            call accumulate_rmn(pos_r)
+          end if
+        end do
+      end do
+
+      if (write_ndegen_applied) then
+        call comms_reduce(op_folded(1, 1, 1, 1), num_wann*num_wann*nrpts*3, 'SUM', error, comm)
+        if (allocated(error)) return
+        if (on_root) then
+          do idir = 1, 3
+            call ws_apply_ndegen(ws_distance, use_ws_distance, num_wann, nrpts, ndegen, &
+                                 nrpts_full, ir_map, op_folded(:, :, :, idir), op_full)
+            pos_r(:, :, :, idir) = op_full(:, :, :)
+          end do
+        end if
+      else
+        call comms_reduce(pos_r(1, 1, 1, 1), num_wann*num_wann*nrpts*3, 'SUM', error, comm)
+        if (allocated(error)) return
+      end if
+
+    end if
+
+  contains
+
+    subroutine accumulate_rmn(acc)
+      !! Add the contribution of neighbour nn of k-point ik (host variables) to
+      !! the folded accumulator acc.
+
+      implicit none
+
+      complex(kind=dp), intent(inout) :: acc(:, :, :, :)
+
+      integer :: i, j, idir, ir
+      real(kind=dp) :: rdotk, wbk, rvec(3)
+      complex(kind=dp) :: fac
+      logical :: apply_r_phase
+
+      ! the real-space half of the transl_inv_full phase can only be folded in at
+      ! the unshifted R when the output stays on the folded grid
+      apply_r_phase = transl_inv_full .and. .not. write_ndegen_applied
+
+      if (transl_inv_full) then
+        ! k-space half of the get_AA_R phase, exp(i b.(r_i + r_j)/2). m_matrix may
+        ! be dimensioned on num_bands, so index its leading num_wann corner.
+        do j = 1, num_wann
+          do i = 1, num_wann
+            mel(i, j) = m_matrix(i, j, nn, ik_rank) &
+                        *exp(cmplx_i*dot_product(kmesh_info%bk(:, nn, ik), &
+                                                 0.5_dp*(wannier_centres(:, i) &
+                                                         + wannier_centres(:, j))))
+          end do
+        end do
+        do idir = 1, 3
+          contrib(:, :, idir) = cmplx_i*kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)*mel(:, :)
+        end do
+      else
+        mel(:, :) = m_matrix(1:num_wann, 1:num_wann, nn, ik_rank)
+        do idir = 1, 3
+          wbk = kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik)
+          ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
+          contrib(:, :, idir) = cmplx_i*wbk*mel(:, :)
+          do i = 1, num_wann
+            ! For R==0 this reduces to Eq.(32) of Marzari and Vanderbilt PRB 56,
+            ! 12847 (1997); otherwise it is Eq.(44) of WYSV06, modified according
+            ! to Eqs.(27,29) of Marzari and Vanderbilt.
+            contrib(i, i, idir) = cmplx(-wbk*aimag(log(mel(i, i))), 0.0_dp, kind=dp)
+          end do
+        end do
+      end if
+
+      do ir = 1, nrpts
+        rvec = real(irvec(:, ir), dp)
+        rdotk = twopi*dot_product(kpt_latt(:, ik), rvec)
+        fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
+        if (apply_r_phase) &
+          ! real-space half of the get_AA_R phase, exp(-i b.R/2)
+          fac = fac*exp(-cmplx_i*0.5_dp*dot_product(kmesh_info%bk(:, nn, ik), &
+                                                    matmul(rvec, real_lattice)))
+        do idir = 1, 3
+          acc(:, :, ir, idir) = acc(:, :, ir, idir) + contrib(:, :, idir)*fac
+        end do
+      end do
+
+    end subroutine accumulate_rmn
+
+  end subroutine hamiltonian_get_rmn
+
+  !================================================!
+  subroutine hamiltonian_write_tb(ham_r, pos_r, real_lattice, irvec, ndegen, nrpts, num_wann, &
+                                  timing_level, seedname, timer, error, comm)
     !================================================!
     !! Write in a single file all the information
     !! that is needed to set up a Wannier-based
@@ -872,124 +1125,78 @@ contains
     !================================================!
 
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_date
-    use w90_constants, only: twopi, cmplx_i
-    use w90_types, only: kmesh_info_type
 
     ! arguments
-    type(kmesh_info_type), intent(in) :: kmesh_info
     type(timer_list_type), intent(inout) :: timer
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
 
-    integer, intent(in) :: dist_k(:)
     integer, intent(in) :: ndegen(:)
-    integer, intent(in) :: num_kpts
     integer, intent(in) :: num_wann
     integer, intent(in) :: irvec(:, :)
     integer, intent(in) :: nrpts
     integer, intent(in) :: timing_level
 
-    real(kind=dp), intent(in) :: kpt_latt(:, :)
     real(kind=dp), intent(in) :: real_lattice(3, 3)
 
     complex(kind=dp), intent(in) :: ham_r(:, :, :)
-    complex(kind=dp), intent(in) :: m_matrix(:, :, :, :)
+    complex(kind=dp), intent(in) :: pos_r(:, :, :, :)
 
     character(len=50), intent(in)  :: seedname
 
     ! local variables
     integer :: ierr
-    integer :: i, j, irpt, ik, nn, idir, file_unit
-    integer :: rank, ik_rank
-    real(kind=dp) :: rdotk
-    complex(kind=dp) :: fac, pos_r(3)
+    integer :: i, j, irpt, file_unit
     character(len=33) :: header
     character(len=9) :: cdate, ctime
-    logical :: on_root = .false.
 
-    rank = mpirank(comm)
+    if (timing_level > 1) call io_stopwatch_start('hamiltonian: write_tb', timer)
 
-    if (rank == 0) on_root = .true.
+    open (newunit=file_unit, file=trim(seedname)//'_tb.dat', form='formatted', status='unknown', &
+          iostat=ierr)
+    if (ierr /= 0) then
+      call set_error_file(error, 'Error: hamiltonian_write_tb: problem opening file '//trim(seedname)//'_tb.dat', comm)
+      return
+    end if
 
-    if (on_root) then
-      if (timing_level > 1) call io_stopwatch_start('hamiltonian: write_tb', timer)
+    call io_date(cdate, ctime)
+    header = 'written on '//cdate//' at '//ctime
 
-      open (newunit=file_unit, file=trim(seedname)//'_tb.dat', form='formatted', status='unknown', &
-            iostat=ierr)
-      if (ierr /= 0) then
-        call set_error_file(error, 'Error: hamiltonian_write_tb: problem opening file '//trim(seedname)//'_tb.dat', comm)
-        return
-      end if
-
-      call io_date(cdate, ctime)
-      header = 'written on '//cdate//' at '//ctime
-
-      write (file_unit, *) header ! Date and time
-      !
-      ! lattice vectors
-      !
-      write (file_unit, *) real_lattice(1, :) !a_1
-      write (file_unit, *) real_lattice(2, :) !a_2
-      write (file_unit, *) real_lattice(3, :) !a_3
-      !
-      write (file_unit, *) num_wann
-      write (file_unit, *) nrpts
-      write (file_unit, '(15I5)') (ndegen(i), i=1, nrpts)
-      !
-      ! <0n|H|Rm>
-      !
-      do irpt = 1, nrpts
-        write (file_unit, '(/,3I5)') irvec(:, irpt)
-        do i = 1, num_wann
-          do j = 1, num_wann
-            write (file_unit, '(2I5,3x,2(E15.8,1x))') j, i, ham_r(j, i, irpt)
-          end do
+    write (file_unit, *) header ! Date and time
+    !
+    ! lattice vectors
+    !
+    write (file_unit, *) real_lattice(1, :) !a_1
+    write (file_unit, *) real_lattice(2, :) !a_2
+    write (file_unit, *) real_lattice(3, :) !a_3
+    !
+    write (file_unit, *) num_wann
+    write (file_unit, *) nrpts
+    write (file_unit, '(15I5)') (ndegen(i), i=1, nrpts)
+    !
+    ! <0n|H|Rm>
+    !
+    do irpt = 1, nrpts
+      write (file_unit, '(/,3I5)') irvec(:, irpt)
+      do i = 1, num_wann
+        do j = 1, num_wann
+          write (file_unit, '(2I5,3x,2(E15.8,1x))') j, i, ham_r(j, i, irpt)
         end do
       end do
-    end if ! on_root
+    end do
     !
     ! <0n|r|Rm>
     !
     do irpt = 1, nrpts
-      if (on_root) write (file_unit, '(/,3I5)') irvec(:, irpt)
+      write (file_unit, '(/,3I5)') irvec(:, irpt)
       do i = 1, num_wann
         do j = 1, num_wann
-          pos_r(:) = 0._dp
-          ik_rank = 1
-          do ik = 1, num_kpts
-            if (dist_k(ik) /= rank) cycle
-
-            rdotk = twopi*dot_product(kpt_latt(:, ik), real(irvec(:, irpt), dp))
-            fac = exp(-cmplx_i*rdotk)/real(num_kpts, dp)
-            do idir = 1, 3
-              do nn = 1, kmesh_info%nntot
-                if (i == j) then
-                  ! For irpt==rpt_origin, this reduces to
-                  ! Eq.(32) of Marzari and Vanderbilt PRB 56,
-                  ! 12847 (1997). Otherwise, is is Eq.(44)
-                  ! Wang, Yates, Souza and Vanderbilt PRB 74,
-                  ! 195118 (2006), modified according to
-                  ! Eqs.(27,29) of Marzari and Vanderbilt
-                  pos_r(idir) = pos_r(idir) - kmesh_info%wb(nn)*kmesh_info%bk(idir, nn, ik) &
-                                *aimag(log(m_matrix(i, i, nn, ik_rank)))*fac
-                else
-                  ! Eq.(44) Wang, Yates, Souza and Vanderbilt PRB 74, 195118 (2006)
-                  pos_r(idir) = pos_r(idir) + cmplx_i*kmesh_info%wb(nn) &
-                                *kmesh_info%bk(idir, nn, ik)*m_matrix(j, i, nn, ik_rank)*fac
-                end if
-              end do
-            end do
-            ik_rank = ik_rank + 1
-          end do
-          call comms_reduce(pos_r(1), 3, 'SUM', error, comm)
-          if (on_root) write (file_unit, '(2I5,3x,6(E15.8,1x))') j, i, pos_r(:)
+          write (file_unit, '(2I5,3x,6(E15.8,1x))') j, i, pos_r(j, i, irpt, :)
         end do
       end do
     end do
 
-    if (on_root) then
-      close (file_unit)
-      if (timing_level > 1) call io_stopwatch_stop('hamiltonian: write_tb', timer)
-    end if
+    close (file_unit)
+    if (timing_level > 1) call io_stopwatch_stop('hamiltonian: write_tb', timer)
   end subroutine hamiltonian_write_tb
 end module w90_hamiltonian

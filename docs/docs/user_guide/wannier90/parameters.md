@@ -28,7 +28,7 @@ administrator.
 
 Note also that this requires that the `wannier90.x` executable has been
 compiled in its parallel version (follow the instructions in the file
-`README.install` in the main directory of the `wannier90` distribution)
+`README.md` in the main directory of the `wannier90` distribution)
 and that the MPI libraries and binaries are installed and correctly
 configured on your machine.
 
@@ -312,6 +312,18 @@ and $\alpha$ and $\beta$ run over the three Cartesian indices.
 difference expression. If this keyword is absent, the shells are chosen
 automatically.
 
+### `logical :: kmesh_shell_from_file`
+
+If set to `.true.`, the b-vectors of each shell, and their grouping into
+shells, are read from the file `seedname.kshell` (see
+Section [`seedname.kshell`](files.md#seednamekshell)) rather than being
+determined automatically. This is useful when the automatic search
+fails, which typically happens when the k-point mesh has accidentally
+degenerate shells of neighbours. The weights $w_s$ are then computed
+from the shells given in the file, one weight per shell.
+
+The default value is `.false.`.
+
 ### `integer :: search_shells`
 
 Specifies the number of shells of neighbours over which to search in
@@ -439,13 +451,6 @@ The valid options for this parameter are:
 - `Ang` (default)
 
 - `Bohr`
-
-### `character(len=50) :: devel_flag`
-
-Not a regular keyword. Its purpose is to allow a developer to pass a
-string into the code to be used inside a new routine as it is developed.
-
-No default.
 
 ### `integer :: exclude_bands(:)`
 
@@ -853,6 +858,20 @@ file `seedname.r2mn` at the end of the Wannierisation procedure.
 
 The default value of this parameter is `false`.
 
+### `logical :: write_proj`
+
+If `write_proj = true`, then the projection of each of the
+original Bloch states lying in the outer energy window onto the space
+spanned by the WFs,
+$\sum_{n} |U^{\mathrm{dis}(\mathbf{k})}_{mn}|^{2}$, is written to the
+master output file `seedname.wout`, together with the corresponding
+k-point, band index and eigenvalue. This is only meaningful, and is only
+done, if disentanglement is used, that is if
+`num_bands` > `num_wann`. Note that nothing is written if
+`iprint = 0`.
+
+The default value of this parameter is `false`.
+
 ### `logical :: guiding_centres`
 
 Use guiding centres during the minimisation, in order to avoid local
@@ -1253,8 +1272,8 @@ options for this parameter are:
 If present `wannier90` will compute the contribution of this set of WF
 to the states at each point of the interpolated band structure. The WF
 are numbered according to the seedname.wout file. The result is written
-in the `seedname_band.dat` file, and a corresponding gnuplot script to
-`seedname_band_proj.dat` .
+as a third column in the `seedname_band.dat` file, and a corresponding
+gnuplot script to `seedname_band_proj.gnu`.
 
 For example, to project on to WFs 2, 6, 7, 8 and 12:
 
@@ -1386,6 +1405,40 @@ If `write_tb = true`, then the lattice vectors, together
 with the Hamiltonian and position-operator matrices in the WF basis,
 will be written to a file `seedname_tb.dat`, in units of Angstrom and
 eV.
+
+The default value is `false`.
+
+### `logical :: write_ndegen_applied`
+
+If `write_ndegen_applied = true`, then `seedname_hr.dat`, `seedname_r.dat` and
+`seedname_tb.dat` are written on the _expanded_ list of lattice vectors --- every
+$\mathbf{R}+\mathbf{T}$ that occurs in the Wigner-Seitz mapping of
+`use_ws_distance` --- with all degeneracy weights already divided out. The
+matrix elements can then be interpolated with a plain Fourier sum,
+
+$$
+O_{mn}(\mathbf{k}) = \sum_{\mathbf{R}} e^{i\mathbf{k}\cdot\mathbf{R}}\,
+O_{mn}(\mathbf{R}),
+$$
+
+with no degeneracy factors and no reference to `seedname_wsvec.dat`.
+
+The file format does not change: the degeneracy block of `seedname_hr.dat` and
+`seedname_tb.dat` is still written, as all `1`s, so a reader that divides by it
+still gets the right answer. `seedname_wsvec.dat` is still written with its true
+contents, but its $\mathbf{R}$ list no longer matches that of the other files
+and it must **not** be applied on top of them; see
+[`seedname_wsvec.dat`](files.md#seedname_wsvecdat).
+
+With `use_ws_distance = false` the expanded list is the original one and the flag
+only divides out the `ndegen` weights. This makes `seedname_r.dat`, which carries
+no degeneracy block of its own, self-contained.
+
+This is the only way to write correct position matrix elements when
+`transl_inv_full = true` together with `use_ws_distance = true`: the
+$\mathbf{b}$-dependent phase then depends on the Wigner-Seitz shift of each pair
+of Wannier functions, which the folded $\mathbf{R}$ grid cannot represent. That
+combination is rejected unless `write_ndegen_applied = true`.
 
 The default value is `false`.
 
@@ -1547,6 +1600,19 @@ calculations (see Section
 
 The default value is `false`.
 
+### `logical :: tran_easy_fix`
+
+Only used in automated lcr transport calculations. When the parities of
+the WFs are enforced, `wannier90` compares the signature of each WF with
+that of the corresponding WF in the first principal layer. If
+`tran_easy_fix = true`, any WF whose first signature
+component is found to be negative has its sign switched, and the
+signature and the corresponding row and column of the Hamiltonian are
+updated accordingly. This is a simple fix that is often enough to make
+the signatures of equivalent WFs match.
+
+The default value is `false`.
+
 ### `logical :: tran_use_same_lead`
 
 If `tran_use_same_lead = true`, then the left and the right
@@ -1650,6 +1716,17 @@ element is retained and used in the band interpolation (when
 Units are Å.
 
 The default value is 1000.0.
+
+### `real(kind=dp) :: dist_cutoff_hc`
+
+As `dist_cutoff`, but applied only when building the Hamiltonian of the
+conductor region `hC` in an automated lcr transport calculation (see
+Section
+[Automated lcr Transport Calculations: The 2c2 Geometry](transport.md#automated-lcr-transport-calculations-the-2c2-geometry)).
+This makes it possible to keep longer-range matrix elements inside the
+conductor than in the leads. Units are Å.
+
+The default value is the value of `dist_cutoff`.
 
 ### `character(len=20) :: dist_cutoff_mode`
 

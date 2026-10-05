@@ -1,0 +1,7 @@
+# testw90_hr_ndegen_applied
+
+description: "Diamond, valence states - H(R) on the expanded R list (write_ndegen_applied)"
+profile: wannier90_hr
+runs:
+  - input: diamond.win
+    output: diamond_hr.dat

@@ -1,0 +1,10 @@
+# testpostw90_te_gyrotropic_dos
+
+description: testpostw90_te_gyrotropic
+profile: postw90_dos
+runs:
+  - input: Te.win
+    output: Te-gyrotropic-DOS.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.uHu.bz2"

@@ -1,5 +1,66 @@
 # CHANGELOG of Wannier90
 
+## v4.0.3 (5 October 2026)
+
+### New features
+
+- The library is now named `libwannier90` for both serial and MPI builds (the prior `_mpi` suffix has been removed) [[#680]](https://github.com/wannier-developers/wannier90/pull/680)
+
+- `w90_free()` deallocates a library-mode data object; `w90_print_timings()` prints the timing report [[#712]](https://github.com/wannier-developers/wannier90/pull/712) [[#707]](https://github.com/wannier-developers/wannier90/pull/707)
+
+- `w90_is_mpi_build()` informs the calling program whether the library is compiled with MPI [[#733]](https://github.com/wannier-developers/wannier90/pull/733)
+
+- New keyword `write_ndegen_applied`: `seedname_hr.dat`, `_r.dat` and `_tb.dat` are written on the expanded (full) Wigner-Seitz R list, allowing interpolation via a plain Fourier sum [[#702]](https://github.com/wannier-developers/wannier90/pull/702)
+
+- `transl_inv_full` (translation-equivariant position matrix elements) now also applies to `seedname_r.dat` and `_tb.dat` outputs; with `use_ws_distance` this requires `write_ndegen_applied` [[#702]](https://github.com/wannier-developers/wannier90/pull/702)
+
+- The tutorial solutions are now part of the online documentation [[#692]](https://github.com/wannier-developers/wannier90/pull/692)
+
+- The developer (FORD) documentation is built in CI and published at <https://wannier-developers.github.io/wannier90/> [[#697]](https://github.com/wannier-developers/wannier90/pull/697)
+
+- WDG membership update [[#729]](https://github.com/wannier-developers/wannier90/pull/729)
+
+### Various improvements and bugfixes
+
+- The test suite now uses pytest (requires Python 3.10 or newer); see `test-suite/README.md` [[#693]](https://github.com/wannier-developers/wannier90/pull/693)
+
+- `wannier90.x`, `postw90.x` and the utilities exit with nonzero status on a fatal error, and every MPI rank reports the same error code [[#693]](https://github.com/wannier-developers/wannier90/pull/693)
+
+- Silent near-miss keyword substring matching and duplicated keywords error reporting fixed [[#723]](https://github.com/wannier-developers/wannier90/pull/723)
+
+- Removed obsolete keywords `energy_unit`, `devel_flag` and `tetrahedron_correction` [[#716]](https://github.com/wannier-developers/wannier90/pull/716)
+
+- `search_supcell_size` keyword rejected in library mode and accepts its default value [[#719]](https://github.com/wannier-developers/wannier90/pull/719)
+
+- A higher-order B1 failure in the automatic shell search was silently ignored when `iprint = 0` [[#720]](https://github.com/wannier-developers/wannier90/pull/720); the SVD cutoff in the shell search is relaxed from 1e-5 to 1e-8 [[#721]](https://github.com/wannier-developers/wannier90/pull/721)
+
+- `conv_window <= 1` disables `conv_tol` and runs all `num_iter` iterations; a warning now says so [[#713]](https://github.com/wannier-developers/wannier90/pull/713) [[#717]](https://github.com/wannier-developers/wannier90/pull/717)
+
+- Fixed a segfault in `overlap_write` when running in parallel [[#672]](https://github.com/wannier-developers/wannier90/pull/672)
+
+- Fixed a segfault on `-h`, `-v` or a missing command-line argument [[#687]](https://github.com/wannier-developers/wannier90/pull/687)
+
+- Fixed a LAPACK failure with `use_bloch_phases` caused by an uninitialised projection matrix [[#688]](https://github.com/wannier-developers/wannier90/pull/688)
+
+- Fixed the site-symmetry gradient in parallel runs, which used the wrong array [[#681]](https://github.com/wannier-developers/wannier90/pull/681)
+
+- Fixed the printed change in spread for selective localisation [[#730]](https://github.com/wannier-developers/wannier90/pull/730)
+
+- Fixed an undefined value in the "System extended in" line of the parameter report [[#698]](https://github.com/wannier-developers/wannier90/pull/698)
+
+- MPI preprocessor symbols renamed to `W90_MPI`, `W90_MPI08`, `W90_MPI90` and `W90_MPIH` to avoid a clash with mpich [[#689]](https://github.com/wannier-developers/wannier90/pull/689)
+
+- All library module files are installed, as required by ifx [[#707]](https://github.com/wannier-developers/wannier90/pull/707)
+
+- Gamma-only wannierisation uses the same convergence test as the general case [[#723]](https://github.com/wannier-developers/wannier90/pull/723)
+
+- Documentation: ordering of `;`-separated projections [[#706]](https://github.com/wannier-developers/wannier90/pull/706); missing parameters and files [[#708]](https://github.com/wannier-developers/wannier90/pull/708); sign of r-bar in the `transl_inv_full` formula [[#702]](https://github.com/wannier-developers/wannier90/pull/702); corrected figures in the tutorial solutions [[#725]](https://github.com/wannier-developers/wannier90/pull/725) [[#726]](https://github.com/wannier-developers/wannier90/pull/726); README and CONTRIBUTING [[#685]](https://github.com/wannier-developers/wannier90/pull/685) [[#695]](https://github.com/wannier-developers/wannier90/pull/695) [[#696]](https://github.com/wannier-developers/wannier90/pull/696)
+
+- `README.install` renamed to `INSTALL.md`
+
+- An alternative function is provided to pass an integer MPI communicator handle (avoiding f08 communicator typing issues) [[#679]](https://github.com/wannier-developers/wannier90/pull/679)
+
+
 ## v4.0.2 (27 August 2026)
 
 ### New features
@@ -25,7 +86,7 @@
 
 - Spin Hall conductivity according to Ji Hoon Ryoo's method (Phys. Rev. B 99, 235113) [[#353]](https://github.com/wannier-developers/wannier90/pull/353)
 
-- Stengel-Spalding spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
+- Stengel-Spaldin spread functional [[#498]](https://github.com/wannier-developers/wannier90/pull/498)
 
 - Tetrahedron integration for calculating spin Hall conductivity [[#431]](https://github.com/wannier-developers/wannier90/pull/431)
 

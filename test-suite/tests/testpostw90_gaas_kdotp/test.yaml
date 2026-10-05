@@ -1,0 +1,9 @@
+# testpostw90_gaas_kdotp
+
+description: Test of k.p coefficients for GaAs
+profile: postw90_kdotp
+runs:
+  - input: gaas.win
+    output: gaas-kdotp_0.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"

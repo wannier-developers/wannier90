@@ -1,0 +1,14 @@
+# Overrides the repo-wide .markdownlint.yaml for this folder only, while
+# still inheriting everything else from it (MD007, MD033 allowed_elements,
+# etc.) via `extends`.
+#
+# The tutorial-solutions pages are a 1:1 conversion of a LaTeX booklet
+# full of inline math, citations and captions that don't wrap cleanly at
+# any fixed width; MD013 (line-length) is relaxed here rather than
+# littering the source with per-block markdownlint-disable/enable
+# comments. 500 comfortably covers the longest current line (~460 chars)
+# with headroom for future edits.
+extends: ../../../.markdownlint.yaml
+
+MD013:
+  line_length: 500

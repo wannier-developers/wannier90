@@ -1,0 +1,4 @@
+ Wannier90: Execution started on 17Sep2026 at 12:28:20
+ Exiting.......
+ Input parameter nnkpts_block is allowed only if postproc_setup = .true.
+ (rank: 0)

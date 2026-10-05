@@ -1,0 +1,7 @@
+# testw90_lavo3_dissphere
+
+description: Test of disentanglement in spheres in k-space
+profile: wannier90_wout
+runs:
+  - input: LaVO3.win
+    output: LaVO3.wout

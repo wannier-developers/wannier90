@@ -1,0 +1,7 @@
+# testw90_gaas_disentanglement_issue192
+
+description: "GaAs - this test verifies that the bug introduced with the parallel version of W90 is fixed (see issue #192)"
+profile: wannier90_wout
+runs:
+  - input: gaas.win
+    output: gaas.wout

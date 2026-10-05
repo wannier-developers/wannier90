@@ -9,6 +9,8 @@ require:
   - git
   # For test-suite
   - bzip2
+  - python3-pytest
+  - python3-pyyaml
   # For testing FetchContent
   - flexiblas-devel
 framework: beakerlib

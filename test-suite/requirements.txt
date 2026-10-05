@@ -1,0 +1,14 @@
+# Python dependencies for the Wannier90 regression suite.
+# Install with:  pip install -r test-suite/requirements.txt
+#
+# Requires Python 3.10 or newer.
+
+pytest >= 7.0
+PyYAML >= 5.4
+
+# The suite runs without these two; they are installed by default because they are
+# worth having:
+#   pytest-xdist    parallel test execution (pytest -n auto)
+#   pytest-timeout  a backstop wall-clock limit on the whole session
+pytest-xdist >= 3.0
+pytest-timeout >= 2.0

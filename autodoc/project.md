@@ -6,7 +6,6 @@ project:          Wannier90
 author:           The Wannier90 Developer Group
 project_github:   https://github.com/wannier-developers/wannier90
 project_website:  http://wannier.org
-title:            Wannier90 developer documentation
 summary:          Wannier90 is a code that calculates maximally-localised Wannier functions.
 display:          public
                   protected

@@ -1,0 +1,7 @@
+# testw90_example01
+
+description: "Gallium Arsenide, valence bands"
+profile: wannier90_wout
+runs:
+  - input: gaas.win
+    output: gaas.wout

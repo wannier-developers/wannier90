@@ -3291,9 +3291,10 @@ contains
     !
     !==========================================================================
 
-    use w90_constants, only: dp, cmplx_0
+    use w90_constants, only: dp
     use w90_types, only: ws_region_type, ws_distance_type
     use w90_postw90_types, only: wigner_seitz_type
+    use w90_ws_distance, only: ws_apply_ndegen
 
     type(ws_distance_type), intent(in) :: ws_distance
     type(ws_region_type), intent(in) :: ws_region
@@ -3305,31 +3306,9 @@ contains
     complex(kind=dp), intent(inout) :: op_R_opt_ws(num_wann, num_wann, wigner_seitz%nrpts_pw90)
     !! operator in real-space grid, after applying ndegen
 
-    integer :: ir, jr, i, j, ideg
-
-    op_R_opt_ws = cmplx_0
-
-    if (ws_region%use_ws_distance) then
-
-      do ir = 1, wigner_seitz%nrpts
-        do j = 1, num_wann
-          do i = 1, num_wann
-            do ideg = 1, ws_distance%ndeg(i, j, ir)
-              jr = wigner_seitz%ir_ind_ws_to_pw90(ideg, i, j, ir)
-              op_R_opt_ws(i, j, jr) = op_R_opt_ws(i, j, jr) &
-                                      + op_R(i, j, ir)/real(wigner_seitz%ndegen(ir)* &
-                                                            ws_distance%ndeg(i, j, ir), dp)
-            end do
-          end do
-        end do
-      end do
-
-    else ! .not. use_ws_distance
-      ! Note that nrpts_pw90 == nrpts if use_ws_distance == .false.
-      do ir = 1, wigner_seitz%nrpts
-        op_R_opt_ws(:, :, ir) = op_R(:, :, ir)/real(wigner_seitz%ndegen(ir), dp)
-      end do
-    end if ! use_ws_distance
+    call ws_apply_ndegen(ws_distance, ws_region%use_ws_distance, num_wann, wigner_seitz%nrpts, &
+                         wigner_seitz%ndegen, wigner_seitz%nrpts_pw90, &
+                         wigner_seitz%ir_ind_ws_to_pw90, op_R, op_R_opt_ws)
 
   end subroutine operator_wigner_setup
 

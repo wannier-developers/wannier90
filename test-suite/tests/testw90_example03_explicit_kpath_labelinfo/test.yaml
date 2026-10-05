@@ -1,0 +1,9 @@
+# testw90_example03_explicit_kpath_labelinfo
+
+description: "Silicon, 4 valence bands + 4 conduction bands; interpolated bandstructure on the explicitly set kpath, checking the labelinfo.dat file"
+profile: wannier90_labelinfo
+runs:
+  - input: silicon.win
+    output: silicon_band.labelinfo.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"

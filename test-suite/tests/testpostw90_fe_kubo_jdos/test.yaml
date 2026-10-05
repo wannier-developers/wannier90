@@ -1,0 +1,11 @@
+# testpostw90_fe_kubo_jdos
+
+description: Test of Kubo JDOS  for bcc iron
+profile: postw90_jdos
+runs:
+  - input: Fe.win
+    output: Fe-jdos.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.uHu.bz2"

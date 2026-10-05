@@ -54,22 +54,22 @@ program postw90
   use w90_spin
   use w90_types
 
-#ifdef MPI
-#  if !(defined(MPI08) || defined(MPI90) || defined(MPIH))
+#ifdef W90_MPI
+#  if !(defined(W90_MPI08) || defined(W90_MPI90) || defined(W90_MPIH))
 #    error "You need to define which MPI interface you are using"
 #  endif
 #endif
 
-#ifdef MPI08
+#ifdef W90_MPI08
   use mpi_f08 ! use f08 interface if possible
 #endif
-#ifdef MPI90
+#ifdef W90_MPI90
   use mpi ! next best, use fortran90 interface
 #endif
 
   implicit none
 
-#ifdef MPIH
+#ifdef W90_MPIH
   include 'mpif.h' ! worst case, use legacy interface
 #endif
 
@@ -214,7 +214,7 @@ program postw90
   prog = "postw90" ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91442
   seednamedyn = "wannier"
 
-#ifdef MPI
+#ifdef W90_MPI
   comm%comm = MPI_COMM_WORLD
   call mpi_init(ierr)
   if (ierr .ne. 0) then
@@ -347,7 +347,7 @@ program postw90
       close (stdout)
       close (stderr, status='delete') ! this should not be unit 0
     end if
-#ifdef MPI
+#ifdef W90_MPI
     call mpi_finalize(ierr)
 #endif
     stop
@@ -567,7 +567,7 @@ program postw90
     close (stderr, status='delete') ! this should not be unit 0
   end if
 
-#ifdef MPI
+#ifdef W90_MPI
   call mpi_finalize(ierr)
 #endif
 end program postw90

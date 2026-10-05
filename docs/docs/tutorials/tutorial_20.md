@@ -105,3 +105,7 @@ red circles: Wannier-interpolated band structure. The disentanglement
 was performed only for <em>k</em>-points within a sphere of radius
 0.2 &#8491<sup>−1</sup> centered in <em>A</em>.</figcaption>
 </figure>
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_20.md).

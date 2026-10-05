@@ -1,0 +1,11 @@
+# testpostw90_fe_kubo_Szz
+
+description: Test of Kubo Szz  for bcc iron
+profile: postw90_kubo
+runs:
+  - input: Fe.win
+    output: Fe-kubo_S_zz.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"
+  - bunzip2: "*.uHu.bz2"

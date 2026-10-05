@@ -1,0 +1,7 @@
+# testw90_rmn_transl_inv_full
+
+description: "Diamond, valence states - R_mn with transl_inv_full on the expanded R list"
+profile: wannier90_rmn
+runs:
+  - input: diamond.win
+    output: diamond_r.dat

@@ -391,7 +391,7 @@ contains
 !~         dos_max_energy,dos_energy_step,&
 !~         wanint_kpoint_file
 !~
-!~#ifdef MPI
+!~#ifdef W90_MPI
 !~    include 'mpif.h'
 !~#endif
 !~
@@ -423,7 +423,7 @@ contains
 !~          ikp=ikp+1
 !~       end do
 !~       num_int_kpts_on_node(my_node_id)=ikp
-!~#ifdef MPI
+!~#ifdef W90_MPI
 !~       call MPI_reduce(ikp,max_int_kpts_on_node,1,MPI_integer,&
 !~            MPI_MAX,0,MPI_COMM_WORLD,ierr)
 !~#else
@@ -494,7 +494,7 @@ contains
 !~    !
 !~    sum_max_node=count_states(emax,eig_node,levelspacing_node,&
 !~         num_int_kpts_on_node(my_node_id))
-!~#ifdef MPI
+!~#ifdef W90_MPI
 !~    call MPI_reduce(sum_max_node,sum_max_all,1,MPI_DOUBLE_PRECISION,&
 !~         MPI_SUM,0,MPI_COMM_WORLD,ierr)
 !~#else
@@ -517,7 +517,7 @@ contains
 !~       emid=(emin+emax)/2.0_dp
 !~       sum_mid_node=count_states(emid,eig_node,levelspacing_node,&
 !~            num_int_kpts_on_node(my_node_id))
-!~#ifdef MPI
+!~#ifdef W90_MPI
 !~       call MPI_reduce(sum_mid_node,sum_mid_all,1,MPI_DOUBLE_PRECISION,&
 !~            MPI_SUM,0,MPI_COMM_WORLD,ierr)
 !~#else

@@ -1,0 +1,10 @@
+# testpostw90_gaas_sc_xyz_scphase2_ws
+
+description: Test of shift current for GaAs with sc_phase_conv = 2 and use_ws_distance = true
+profile: postw90_sc
+runs:
+  - input: gaas.win
+    output: gaas-sc_xyz.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"
+  - bunzip2: "*.mmn.bz2"

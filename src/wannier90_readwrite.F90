@@ -139,7 +139,7 @@ contains
     call w90_readwrite_read_mp_grid(settings, .false., mp_grid, num_kpts, error, comm)
     if (allocated(error)) return
 
-    call w90_readwrite_read_distk(settings, distk, num_kpts, stdout, error, comm)
+    call w90_readwrite_read_distk(settings, distk, num_kpts, error, comm)
     if (allocated(error)) return
 
     call w90_readwrite_read_kmesh_data(settings, kmesh_input, error, comm)
@@ -251,8 +251,6 @@ contains
 !    integer :: num_exclude_bands
     logical :: found_fermi_energy
     logical :: disentanglement
-    character(len=20) :: energy_unit  ! is this not used???
-    !! Units for energy
 
     disentanglement = .false.
     call w90_wannier90_readwrite_read_sym(settings, symmetrize_eps, lsitesymmetry, error, comm)
@@ -276,11 +274,11 @@ contains
 
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_units(settings, print_output%lenconfac, print_output%length_unit, &
-                                    energy_unit, bohr, error, comm)
+                                    bohr, error, comm)
       if (allocated(error)) return
 
       call w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                   stdout, error, comm)
+                                                   stdout, print_output%iprint, error, comm)
       if (allocated(error)) return
 
       call w90_readwrite_read_gamma_only(settings, gamma_only, num_kpts, error, comm)
@@ -339,6 +337,25 @@ contains
 
     call w90_readwrite_read_ws_data(settings, ws_region, error, comm) !ws_search etc
     if (allocated(error)) return
+
+    ! With transl_inv_full the b-vector phase of <0m|r|Rn> depends on the
+    ! Wigner-Seitz shift of the pair, which the folded R grid of _r.dat/_tb.dat
+    ! cannot represent; write_ndegen_applied moves the output onto the expanded
+    ! grid, where it can.
+    if (output_file%transl_inv_full .and. (output_file%write_rmn .or. output_file%write_tb)) then
+      if (ws_region%use_ws_distance .and. .not. output_file%write_ndegen_applied) then
+        call set_error_input(error, 'transl_inv_full=T with use_ws_distance=T needs '// &
+                             'write_ndegen_applied=T: _r.dat/_tb.dat cannot hold '// &
+                             '<0m|r|Rn> on the folded R grid', comm)
+        return
+      end if
+      ! the expanded path needs the b-vector ordering of kmesh_bvectors_perm
+      if (output_file%write_ndegen_applied .and. gamma_only) then
+        call set_error_input(error, 'transl_inv_full=T with write_ndegen_applied=T is not '// &
+                             'available for a Gamma-only calculation', comm)
+        return
+      end if
+    end if
 
     if (.not. (w90_calculation%transport .and. tran%read_ht)) then
       call w90_readwrite_read_dis_manifold(settings, dis_manifold, error, comm)
@@ -609,7 +626,7 @@ contains
 
   !================================================!
   subroutine w90_wannier90_readwrite_read_wannierise(settings, wann_control, num_wann, &
-                                                     stdout, error, comm)
+                                                     stdout, iprint, error, comm)
     !================================================!
     ! Wannierise
     !================================================!
@@ -619,6 +636,7 @@ contains
     ! arguments
     integer, intent(in) :: num_wann
     integer, intent(in) :: stdout
+    integer, intent(in) :: iprint
     type(settings_type), intent(inout) :: settings
     type(w90_comm_type), intent(in) :: comm
     type(w90_error_type), allocatable, intent(out) :: error
@@ -641,8 +659,8 @@ contains
                                    i_value=wann_control%num_print_cycles)
     if (allocated(error)) return
 
-    if (wann_control%num_print_cycles < 0) then
-      call set_error_input(error, 'Error: num_print_cycles must be positive', comm)
+    if (wann_control%num_print_cycles < 1) then
+      call set_error_input(error, 'Error: num_print_cycles must be >= 1', comm)
       return
     end if
 
@@ -664,15 +682,6 @@ contains
       return
     end if
 
-    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
-                                   r_value=wann_control%conv_tol)
-    if (allocated(error)) return
-
-    if (wann_control%conv_tol < 0.0_dp) then
-      call set_error_input(error, 'Error: conv_tol must be positive', comm)
-      return
-    end if
-
     call w90_readwrite_get_keyword(settings, 'conv_noise_amp', found, error, comm, &
                                    r_value=wann_control%conv_noise_amp)
     if (allocated(error)) return
@@ -683,6 +692,25 @@ contains
     call w90_readwrite_get_keyword(settings, 'conv_window', found, error, comm, &
                                    i_value=wann_control%conv_window)
     if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'conv_tol', found, error, comm, &
+                                   r_value=wann_control%conv_tol)
+    if (allocated(error)) return
+
+    if (wann_control%conv_tol < 0.0_dp) then
+      call set_error_input(error, 'Error: conv_tol must be positive', comm)
+      return
+    end if
+
+    if (found .and. wann_control%conv_window .le. 1) then
+      if (iprint > 0) then
+        write (stdout, '(a)') ' Warning: conv_window is not set to a value greater than 1, &
+          &so conv_tol is ignored and wannierisation will always run for num_iter iterations.&
+          &Set conv_window to a value greater than 1 if you want the minimisation &
+          &to stop early once the spread change is below conv_tol for that many &
+          &consecutive iterations.'
+      end if
+    end if
 
     call w90_readwrite_get_keyword(settings, 'conv_noise_num', found, error, comm, &
                                    i_value=wann_control%conv_noise_num)
@@ -705,8 +733,8 @@ contains
                                    i_value=wann_control%guiding_centres%num_guide_cycles)
     if (allocated(error)) return
 
-    if (wann_control%guiding_centres%num_guide_cycles < 0) then
-      call set_error_input(error, 'Error: num_guide_cycles must be >= 0', comm)
+    if (wann_control%guiding_centres%num_guide_cycles < 1) then
+      call set_error_input(error, 'Error: num_guide_cycles must be >= 1', comm)
       return
     end if
 
@@ -989,8 +1017,16 @@ contains
                                    l_value=output_file%write_rmn)
     if (allocated(error)) return
 
+    call w90_readwrite_get_keyword(settings, 'transl_inv_full', found, error, comm, &
+                                   l_value=output_file%transl_inv_full)
+    if (allocated(error)) return
+
     call w90_readwrite_get_keyword(settings, 'write_tb', found, error, comm, &
                                    l_value=output_file%write_tb)
+    if (allocated(error)) return
+
+    call w90_readwrite_get_keyword(settings, 'write_ndegen_applied', found, error, comm, &
+                                   l_value=output_file%write_ndegen_applied)
     if (allocated(error)) return
 
     call w90_readwrite_get_keyword(settings, 'dump_inputs', found, error, comm, &
@@ -1709,8 +1745,8 @@ contains
         imap = select_proj%proj2wann_map(loop)
         if (imap < 0) cycle
         if (imap > num_proj) then
-          write (*, *) "logic error, imapping"
-          stop
+          call set_error_fatal(error, 'Logic error in w90_wannier90_readwrite_read_projections', comm)
+          return
         end if
         proj(imap) = proj_input(loop)
       end do
@@ -1841,7 +1877,7 @@ contains
     logical, intent(in) :: spinors
 
     ! local variables
-    character(len=1) :: one_dim_axis
+    character(len=4) :: one_dim_axis
     integer :: i, nkp, loop, nat, nsp, bands_num_spec_points
     logical :: disentanglement
     real(kind=dp) :: ccentres_frac(3)
@@ -1850,6 +1886,11 @@ contains
 
     disentanglement = (num_bands > num_wann)
 
+    ! `one_dim_axis` is only meaningful when the system is treated as reduced-
+    ! dimensional, but it is printed unconditionally below (for any run with
+    ! transport enabled or iprint > 2). Without a default it would be written
+    ! while undefined whenever the input does not set `one_dim_axis`.
+    one_dim_axis = 'none'
     if (real_space_ham%one_dim_dir == 1) one_dim_axis = 'x'
     if (real_space_ham%one_dim_dir == 2) one_dim_axis = 'y'
     if (real_space_ham%one_dim_dir == 3) one_dim_axis = 'z'
@@ -2183,9 +2224,11 @@ contains
             write (stdout, '(1x,a46,10x,I8,13x,a1)') '|   Dimension of the system                  :', &
               real_space_ham%system_dim, '|'
             if (real_space_ham%system_dim .eq. 1) &
-              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', one_dim_axis, '|'
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+              adjustr(one_dim_axis), '|'
             if (real_space_ham%system_dim .eq. 2) &
-              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', one_dim_axis, '|'
+              write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System confined in                       :', &
+              adjustr(one_dim_axis), '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off value                :', &
               real_space_ham%hr_cutoff, '|'
             write (stdout, '(1x,a46,10x,F8.3,13x,a1)') '|   Hamiltonian cut-off distance             :', &
@@ -2222,6 +2265,11 @@ contains
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Plotting Hamiltonian in WF basis          :', output_file%write_hr, '|'
           write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
         end if
+        if (output_file%write_ndegen_applied) then
+          write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Degeneracy weights applied on output      :', &
+            output_file%write_ndegen_applied, '|'
+          write (stdout, '(1x,a78)') '*----------------------------------------------------------------------------*'
+        end if
         if (output_file%write_vdw_data .or. print_output%iprint > 2) then
           write (stdout, '(1x,a46,10x,L8,13x,a1)') '|  Writing data for Van der Waals post-proc  :', &
             output_file%write_vdw_data, '|'
@@ -2248,7 +2296,8 @@ contains
         !
         write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   Hamiltonian from external files          :', 'F', '|'
 
-        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', one_dim_axis, '|'
+        write (stdout, '(1x,a46,10x,a8,13x,a1)') '|   System extended in                       :', &
+          adjustr(one_dim_axis), '|'
         !
       end if
 

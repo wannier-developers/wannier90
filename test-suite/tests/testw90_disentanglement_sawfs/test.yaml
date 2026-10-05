@@ -1,0 +1,7 @@
+# testw90_disentanglement_sawfs
+
+description: Test of symmetry adapted WFs with disentnanglement
+profile: wannier90_disentanglement_sawfs
+runs:
+  - input: H3S.win
+    output: H3S.wout

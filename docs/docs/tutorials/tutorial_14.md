@@ -77,3 +77,7 @@ transport properties can be found in the User Guide.
 <figcaption> Quantum conductance of periodic Sodium chain (black)
 compared to that of the defected Sodium chain (red).</figcaption>
 </figure>
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_14.md).

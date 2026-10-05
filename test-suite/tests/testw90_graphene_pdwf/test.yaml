@@ -1,0 +1,7 @@
+# testw90_graphene_pdwf
+
+description: "Graphene, PDWF"
+profile: wannier90_wout
+runs:
+  - input: graphene.win
+    output: graphene.wout

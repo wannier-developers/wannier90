@@ -1,123 +1,65 @@
-## List tests
-set(test_names
-                checkpoint0_write
-                checkpoint1_read
-#               partestw90_mpierr  # Disabled because test intended to fail
-                testpostw90_boltzwann
-                testpostw90_example04_dos
-                testpostw90_example04_pdos
-                testpostw90_fe_ahc
-                testpostw90_fe_ahc_adaptandfermi
-                testpostw90_fe_dos_spin
-                testpostw90_fe_kpathcurv
-                testpostw90_fe_kpathmorbcurv
-                testpostw90_fe_kpathmorbcurv_ws
-                testpostw90_fe_kslicecurv
-                testpostw90_fe_kslicemorb
-                testpostw90_fe_kubo_Axy
-                testpostw90_fe_kubo_jdos
-                testpostw90_fe_kubo_Szz
-                testpostw90_fe_morb
-                testpostw90_fe_morbandahc
-                testpostw90_fe_morb_transl_inv
-                testpostw90_fe_morb_transl_inv_higher
-                testpostw90_fe_spin
-                testpostw90_gaas_kdotp
-                testpostw90_gaas_sc_eta_corr
-                testpostw90_gaas_sc_xyz
-                testpostw90_gaas_sc_xyz_scphase2
-                testpostw90_gaas_sc_xyz_scphase2_ws
-                testpostw90_gaas_sc_xyz_ws
-                testpostw90_gaas_shc
-                testpostw90_pt_kpathbandsshc
-                testpostw90_pt_kpathshc
-                testpostw90_pt_ksliceshc
-                testpostw90_pt_shc
-                testpostw90_pt_shc_higher
-                testpostw90_pt_shc_ryoo
-                testpostw90_pt_shc_ryoo_transl_inv
-                testpostw90_pt_tetra_shcfermi
-                testpostw90_pt_tetra_shcfreq
-                testpostw90_si_geninterp
-                testpostw90_si_geninterp_wsdistance
-                testpostw90_te_gyrotropic
-                testpostw90_te_gyrotropic_C
-                testpostw90_te_gyrotropic_D0
-                testpostw90_te_gyrotropic_dos
-                testpostw90_te_gyrotropic_Dw
-                testpostw90_te_gyrotropic_K
-                testpostw90_te_gyrotropic_NOA
-                testw90_basic1
-                testw90_basic2
-                testw90_benzene_gamma_val
-                testw90_benzene_gamma_valcond
-                testw90_benzene_gamma_val_hexcell
-                testw90_bvec
-                testw90_cube_format
-                testw90_disentanglement_sawfs
-                testw90_example01
-                testw90_example02
-                testw90_example02_restart
-                testw90_example03
-                testw90_example03_bands_plot
-                testw90_example03_explicit_kpath_band_kpt
-                testw90_example03_explicit_kpath_bands_plot
-                testw90_example03_explicit_kpath_labelinfo
-                testw90_example03_labelinfo
-                testw90_example03_optmem
-                testw90_example04
-                testw90_example05
-                testw90_example07
-                testw90_example11_1
-#                testw90_example11_2  # Dropped because CI's old/unfortunate intel/flexiblas versions give too large numerical fuzz
-                testw90_example21_As_sp
-                testw90_example26
-                testw90_example36
-                testw90_gaas_disentanglement_issue192
-                testw90_graphene_dis_proj_auto
-                testw90_graphene_pdwf
-                testw90_guidingcentre_selectproj
-                testw90_knbo3_higher
-                testw90_knbo3_higher_stengel_spaldin
-                testw90_lavo3_dissphere
-#		testw90_na_chain_gamma  # Dropped because flaky
-                testw90_nnkpt1
-                testw90_nnkpt2
-                testw90_nnkpt3
-                testw90_nnkpt6
-                testw90_nnkpt7
-                testw90_precond_1
-                testw90_precond_2
-                testw90_proj1
-                testw90_proj2
-                testw90_proj3
-                testw90_rmn
-                testw90_write_u_matrices
-                testw90_write_u_matrices_disent
-                testw90_readin_b_vec
-                testw90_nnkpt4 # expects to fail MUST BE AT END OF LIST (MPI subsystem left defunct)
-                testw90_nnkpt5 # expects to fail MUST BE AT END OF LIST (MPI subsystem left defunct)
-)
-if (Wannier90_MPI)
-#	list(APPEND test_names
-#			partestw90_mpierr # dropped because intended to fail
-#	)
+## Regression tests
+#
+# Tests are discovered from tests/*/test.yaml -- there is no hand-maintained list to keep
+# in sync. Adding a test means creating a directory with a test.yaml in it, nothing else.
+#
+# Each ctest case runs pytest on one test directory, out of tree, with its own work
+# directory under the build tree.
+
+file(GLOB test_yaml_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*/test.yaml")
+
+if (NOT test_yaml_files)
+	message(WARNING "No tests/*/test.yaml found; no regression tests will be registered")
 endif ()
 
-## Define tests
-foreach (test IN LISTS test_names)
-	set(extra_args)
-	if (Wannier90_MPI)
-		list(APPEND extra_args -n 2)
-		set(num_procs 2)
-	else ()
-		set(num_procs 1)
+set(pytest_extra_args)
+if (Wannier90_MPI)
+	# Matches the previous behaviour: with an MPI build, ctest exercises the parallel path.
+	# Tests marked `serial_only` still run serially; the harness enforces that.
+	list(APPEND pytest_extra_args --nprocs=2)
+	set(num_procs 2)
+else ()
+	set(num_procs 1)
+endif ()
+
+foreach (test_yaml IN LISTS test_yaml_files)
+	get_filename_component(test_dir ${test_yaml} DIRECTORY)
+	get_filename_component(test ${test_dir} NAME)
+
+	# Labels mirror the pytest markers, so `ctest -L postw90` and `pytest -m postw90`
+	# select the same set.
+	set(test_labels "")
+	if (test MATCHES "^partest")
+		set(test_labels parallel)
+	elseif (test MATCHES "^testpostw90_")
+		set(test_labels postw90)
+	elseif (test MATCHES "^testw90_")
+		set(test_labels wannier90)
+	elseif (test MATCHES "^checkpoint")
+		set(test_labels checkpoint)
 	endif ()
+
 	add_test(NAME ${test}
-			COMMAND Python::Interpreter ${CMAKE_CURRENT_BINARY_DIR}/../run_tests -c ${test} ${extra_args}
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/..
+			COMMAND ${Python_EXECUTABLE} -m pytest ${test_dir}
+			--wannier90-exe=$<TARGET_FILE:Wannier90_exe>
+			--postw90-exe=$<TARGET_FILE:Wannier90_post>
+			--w90chk2chk-exe=$<TARGET_FILE:w90chk2chk.x>
+			--workdir=${CMAKE_CURRENT_BINARY_DIR}/work/${test}
+			${pytest_extra_args}
+			-p no:cacheprovider
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
 	)
-	set_tests_properties(${test} PROPERTIES
-			PROCESSORS ${num_procs}
-	)
+	set_tests_properties(${test} PROPERTIES PROCESSORS ${num_procs})
+	if (test_labels)
+		set_tests_properties(${test} PROPERTIES LABELS "${test_labels}")
+	endif ()
+
+	# `status: skip` in test.yaml disables the test in ctest too, so the two agree.
+	file(STRINGS ${test_yaml} status_line REGEX "^status:[ \t]*skip")
+	if (status_line)
+		set_tests_properties(${test} PROPERTIES DISABLED TRUE)
+	endif ()
 endforeach ()
+
+list(LENGTH test_yaml_files num_tests)
+message(STATUS "Registered ${num_tests} Wannier90 regression tests")

@@ -1,0 +1,8 @@
+# testw90_benzene_gamma_val_hexcell
+
+description: "Benzene, valence bands - in hexagonal cell"
+profile: wannier90_wout
+runs:
+  - input: benzene.win
+    output: benzene.wout
+serial_only: true

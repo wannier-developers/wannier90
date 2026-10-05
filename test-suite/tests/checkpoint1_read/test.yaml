@@ -1,0 +1,10 @@
+# checkpoint1_read
+
+description: Test of DOS for Cu as proxy for checkpoint reading/writing from w90
+profile: postw90_dos
+runs:
+  - input: copper.win
+    output: copper-dos.dat
+depends_on: [checkpoint0_write]
+prepare:
+  - copy_from_dependency: {test: checkpoint0_write, files: [copper.chk]}

@@ -1,0 +1,9 @@
+# testw90_nnkpt4
+
+description: Testing crash with respect to nnkpt option
+profile: wannier90_werr
+runs:
+  - input: wannier.win
+    args: [-pp]
+    output: wannier.werr
+expect_failure: true

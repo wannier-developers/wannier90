@@ -329,3 +329,7 @@ current (ac) SHC which will be introduced in the next tutorial.
 Their meanings and usages can be found in the
 [berry_task=shc: spin Hall conductivity](../user_guide/postw90/berry.md#sec:shc)
  chapter of the User Guide.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_29.md).

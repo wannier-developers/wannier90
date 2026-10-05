@@ -188,6 +188,8 @@ module w90_library
 
   public :: w90_print_info
   !! prints a wide variety of simulation parameters to stdout
+  public :: w90_print_timings
+  !! prints a decorative summary of disentanglement/mlwf/plot timings
   public :: w90_create_kmesh
   ! trigers the generation of k-mesh info (as do get_nn*)
   ! this is called by get_nnkp and get_gkpb
@@ -221,12 +223,16 @@ module w90_library
   !! optionally read additional input variables from .win file
   public :: w90_input_setopt
   !! act upon (interpret & setup) options specified by set_option interface
+  public :: w90_is_mpi_build
+  !! whether this build of the library supports MPI
   public :: w90_plot
   !! performs plot functions
   public :: w90_project_overlap
   !! transform overlaps and initial projections
   public :: w90_set_comm
   !! setup MPI communicator in parallel case
+  public :: w90_set_comm_integer
+  !! setup MPI communicator in parallel case via integer handle to MPI comm
   public :: w90_set_constant_bohr_to_ang
   !! set value of Bohr/Angstrom conversion
   public :: w90_set_eigval
@@ -283,6 +289,24 @@ contains
     open (newunit=output, file=name, form='formatted', status='unknown')
   end subroutine w90_get_fortran_file
 
+  logical function w90_is_mpi_build()
+    !! Report whether this build of the library supports MPI.
+    !!
+    !! This is a property of how libwannier90 was compiled, not of the communicator passed to
+    !! w90_set_comm and not of the number of ranks in it. A caller running on more than one
+    !! process must check this before anything else: a serial build accepts w90_set_comm and
+    !! then performs the whole calculation on every rank, using only the data that rank holds.
+    !!
+    !! No library data object is needed, so this may be called before any is set up.
+    implicit none
+
+#ifdef W90_MPI
+    w90_is_mpi_build = .true.
+#else
+    w90_is_mpi_build = .false.
+#endif
+  end function w90_is_mpi_build
+
   subroutine w90_input_setopt(common_data, seedname, istdout, istderr, ierr)
     !! mechanism to act upon options supplied to the library
     !! input is parsed and interpreted (any errors are identified) and
@@ -291,10 +315,10 @@ contains
     ! w90_input_setopt() processes options stored in common_data%settings
     ! w90_input_reader() processes options stored in common_data%in_data (from .win file, should be empty here)
 
-#ifdef MPI08
+#ifdef W90_MPI08
     use mpi_f08
 #endif
-#ifdef MPI90
+#ifdef W90_MPI90
     use mpi
 #endif
 
@@ -308,7 +332,7 @@ contains
 
     implicit none
 
-#ifdef MPIH
+#ifdef W90_MPIH
     include 'mpif.h'
 #endif
 
@@ -585,7 +609,8 @@ contains
       ! for writing input m,a matrices
       call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
                          common_data%eigval, common_data%num_bands, common_data%num_kpts, &
-                         common_data%num_proj, common_data%seedname, error, common_data%comm)
+                         common_data%num_proj, common_data%dist_kpoints, common_data%seedname, error, &
+                         common_data%comm)
       if (allocated(error)) then
         call prterr(error, ierr, istdout, istderr, common_data%comm)
         return
@@ -656,7 +681,8 @@ contains
       ! for writing input m,a matrices
       call overlap_write(common_data%kmesh_info, common_data%u_matrix_opt, common_data%m_matrix_local, &
                          common_data%eigval, common_data%num_bands, common_data%num_kpts, &
-                         common_data%num_proj, common_data%seedname, error, common_data%comm)
+                         common_data%num_proj, common_data%dist_kpoints, common_data%seedname, error, &
+                         common_data%comm)
     end if
 
     if (.not. common_data%have_disentangled) then
@@ -1158,23 +1184,39 @@ contains
   end subroutine w90_get_proj
 
   subroutine w90_set_comm(common_data, comm)
-#ifdef MPI08
+#ifdef W90_MPI08
     use mpi_f08
 #endif
     implicit none
 
-#ifdef MPIH
+#ifdef W90_MPIH
     include 'mpif.h'
 #endif
 
     type(lib_common_type), intent(inout) :: common_data
-#ifdef MPI08
+#ifdef W90_MPI08
     type(mpi_comm), intent(in) :: comm
 #else
     integer, intent(in) :: comm
 #endif
     common_data%comm%comm = comm
   end subroutine w90_set_comm
+
+  subroutine w90_set_comm_integer(common_data, comm)
+    implicit none
+
+    type(lib_common_type), intent(inout) :: common_data
+    integer, intent(in) :: comm
+#ifdef W90_MPI08
+    ! MPI_VAL is the internal integer component used within MPI handle derived types
+    ! This can safely be set by a passed in integer and allows greater freedom in the
+    ! interoperability between a higher level program compiled with any version of
+    ! MPI library support, mpif.h or mpi.f90 or mpif08.
+    common_data%comm%comm%MPI_VAL = comm
+#else
+    common_data%comm%comm = comm
+#endif
+  end subroutine w90_set_comm_integer
 
   subroutine w90_print_info(common_data, istdout, istderr, ierr)
     use w90_error_base, only: w90_error_type
@@ -1228,6 +1270,23 @@ contains
       return
     end if
   end subroutine w90_print_info
+
+  subroutine w90_print_timings(common_data, istdout)
+    use w90_comms, only: mpisize, mpirank
+    use w90_io, only: io_print_timings
+
+    implicit none
+
+    ! arguments
+    integer, intent(in) :: istdout
+    type(lib_common_type), intent(inout) :: common_data
+
+    ! io_print_timings does not test for iprint or rank being root
+    ! adopt latter condition here--iprint irrelevant when this function is explicitly requested
+    if (mpirank(common_data%comm) == 0) then
+      call io_print_timings(common_data%timer, istdout)
+    end if
+  end subroutine w90_print_timings
 
   subroutine w90_set_option_text(common_data, keyword, text)
     use w90_readwrite, only: init_settings, expand_settings
@@ -1463,5 +1522,11 @@ contains
       end if
     end do
   end subroutine w90_distribute_kpts
+
+  subroutine w90_free(common_data)
+    type(lib_common_type), intent(inout) :: common_data
+    type(lib_common_type) :: blank   ! default-initialised, nothing allocated
+    common_data = blank
+  end subroutine
 
 end module w90_library

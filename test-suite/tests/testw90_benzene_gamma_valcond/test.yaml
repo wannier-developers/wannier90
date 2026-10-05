@@ -1,0 +1,8 @@
+# testw90_benzene_gamma_valcond
+
+description: "Benzene, valence and conduction"
+profile: wannier90_wout
+runs:
+  - input: benzene.win
+    output: benzene.wout
+serial_only: true

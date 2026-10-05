@@ -1,0 +1,6 @@
+# testw90_write_u_matrices
+
+profile: wannier90_umat
+runs:
+  - input: gaas.win
+    output: gaas_u.mat

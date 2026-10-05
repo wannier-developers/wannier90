@@ -1,0 +1,7 @@
+# testw90_example05
+
+description: "Diamond, valence states - test of the W90 part"
+profile: wannier90_wout
+runs:
+  - input: diamond.win
+    output: diamond.wout

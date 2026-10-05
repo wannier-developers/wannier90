@@ -94,3 +94,7 @@ in the second MLWF.
 - Following Ref. [@marzari-aip98], compute the Born effective
     charges from the change in Wannier centres under an atomic
     displacement.
+
+!!! note
+    We encourage you to attempt this tutorial on your own first, but a
+    worked solution is available [here](../tutorial_solutions/tutorial_solution_9.md).
