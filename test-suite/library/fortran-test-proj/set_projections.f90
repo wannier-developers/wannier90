@@ -8,6 +8,8 @@ program set_projections
   integer :: mp_grid(3) = [1, 1, 1]
   real(kind=8) :: unit_cell(3, 3), kpoints(3, 1), atoms_frac(3, 2)
   character(len=2) :: symbols(2)
+  real(kind=8) :: kpoint_path(3, 4)
+  character(len=1) :: kpoint_path_labels(4)
   integer :: num_wann
 
   call w90_get_fortran_stdout(stdout)
@@ -24,6 +26,11 @@ program set_projections
   atoms_frac(:, 1) = [0.0d0, 0.0d0, 0.0d0]
   atoms_frac(:, 2) = [0.5d0, 0.0d0, 0.0d0]
   symbols = ['H ', 'H ']
+  kpoint_path(:, 1) = [0.0d0, 0.0d0, 0.0d0]
+  kpoint_path(:, 2) = [0.5d0, 0.0d0, 0.0d0]
+  kpoint_path(:, 3) = [0.5d0, 0.0d0, 0.0d0]
+  kpoint_path(:, 4) = [0.5d0, 0.5d0, 0.0d0]
+  kpoint_path_labels = ['G', 'X', 'X', 'M']
 
   call w90_set_comm(w90, MPI_COMM_WORLD)
   call w90_set_option(w90, 'num_wann', num_wann)
@@ -35,6 +42,10 @@ program set_projections
   call w90_set_option(w90, 'symbols', symbols)
   call w90_set_option(w90, 'projections', 'f=0.0,0.0,0.0:s')
   call w90_set_option(w90, 'projections', 'f=0.5,0.0,0.0:s')
+  call w90_set_option(w90, 'bands_plot', .true.)
+  call w90_set_option(w90, 'kpoint_path', kpoint_path)
+  call w90_set_option(w90, 'kpoint_path_labels', kpoint_path_labels)
+  call w90_set_option(w90, 'dump_inputs', .true.)
 
   call w90_input_setopt(w90, 'wannier90', stdout, stderr, ierr)
 
