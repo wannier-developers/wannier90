@@ -4734,11 +4734,12 @@ contains
 
     ! local variables
     integer :: i, j, l, fu
+    integer :: idx_sym
     type(settings_data), pointer :: entry_ptr
 
     open (newunit=fu, file=trim(seedname)//".win_dump", err=101)
 
-    do l = 1, size(settings%entries, 1)
+    do l = 1, settings%num_entries
 
       entry_ptr => settings%entries(l)
 
@@ -4763,9 +4764,16 @@ contains
       nullify (entry_ptr)
     end do
 
+    ! find the symbols list
+    ! we assume that symbols always present when atoms_* provided?
+    idx_sym = 0
+    do l = 1, settings%num_entries
+      if (settings%entries(l)%keyword == "symbols") idx_sym = l
+    end do
+
     ! same again, to put the long lists (kpoints, etc?) last
     ! 2d "block" data, integer or float
-    do l = 1, size(settings%entries, 1)
+    do l = 1, settings%num_entries
 
       entry_ptr => settings%entries(l)
 
@@ -4782,6 +4790,9 @@ contains
       else if (allocated(entry_ptr%r2d)) then
         write (fu, *) "begin ", entry_ptr%keyword
         do j = 1, size(entry_ptr%r2d, 2)
+          ! special cases
+          if (entry_ptr%keyword == "atoms_frac") write (fu, '(a,1x)', advance='no') trim(settings%entries(idx_sym)%c2d(j))
+          if (entry_ptr%keyword == "atoms_cart") write (fu, '(a,1x)', advance='no') trim(settings%entries(idx_sym)%c2d(j))
           do i = 1, size(entry_ptr%r2d, 1)
             write (fu, '(f20.12)', advance='no') entry_ptr%r2d(i, j)
           end do
