@@ -155,6 +155,41 @@ MPI communicator.
     used to compile the calling code (because it determines the type of the
     communicator variable).
 
+### w90_set_comm_integer
+
+Pass the MPI communicator to the library as an integer handle.
+
+Arguments are an instance of the Wannier90 library datatype and the integer
+handle of an initialised MPI communicator.
+
+```fortran title="Fortran"
+  subroutine w90_set_comm_integer(common_data, comm)
+
+    type(lib_common_type), intent(inout) :: common_data
+    integer, intent(in) :: comm
+```
+
+The argument is an integer whichever MPI inclusion style was used to compile
+Wannier90, so the calling code may use a different style from the library.
+The integer handle is obtained according to the style used by the calling
+code:
+
+```fortran title="Fortran"
+  ! calling code uses the Fortran 2008 module (use mpi_f08)
+  call w90_set_comm_integer(wannier_data, comm%MPI_VAL)
+
+  ! calling code uses the Fortran 90 module or the Fortran 77 header file
+  call w90_set_comm_integer(wannier_data, comm)
+```
+
+Codes written in other languages can pass the Fortran handle of their
+communicator, for example the result of `MPI_Comm_c2f` in C or of `py2f()`
+in mpi4py.
+
+!!! warning
+    The calling code and Wannier90 must still be built with the same MPI
+    library: the integer handle of one MPI library has no meaning to another.
+
 ### w90_disentangle
 
 Perform disentanglement.  Arguments are the Wannier90 library object, integer
@@ -208,6 +243,42 @@ w90_input_setopt must be called after the last call to w90_set_option.
     CALL w90_set_option(w90main, 'spinors', noncolin)   ! logical
     CALL w90_set_option(w90main, 'dis_froz_max', dis_froz_max) ! real scalar
 ```
+
+#### k-point path for band-structure plotting
+
+The `kpoint_path` block of the input file mixes labels and coordinates, so in
+the library the two are set separately: the coordinates under the name of the
+block and the labels under `kpoint_path_labels`.  Both must be set.
+
+For a path of $n$ segments, `kpoint_path` is a real array of dimension
+(3,2n) holding the start and end point of each segment in turn, in fractional
+coordinates, and `kpoint_path_labels` is a character array of dimension (2n)
+holding the corresponding labels.
+
+```fortran title="Fortran"
+    real(kind=dp) :: kpath(3, 4)        ! two segments: G-X and X-M
+    character(len=1) :: klabels(4)
+
+    kpath(:, 1) = [0.0_dp, 0.0_dp, 0.0_dp]; klabels(1) = 'G'
+    kpath(:, 2) = [0.5_dp, 0.0_dp, 0.0_dp]; klabels(2) = 'X'
+    kpath(:, 3) = [0.5_dp, 0.0_dp, 0.0_dp]; klabels(3) = 'X'
+    kpath(:, 4) = [0.5_dp, 0.5_dp, 0.0_dp]; klabels(4) = 'M'
+
+    CALL w90_set_option(w90main, 'bands_plot', .true.)
+    CALL w90_set_option(w90main, 'kpoint_path', kpath)
+    CALL w90_set_option(w90main, 'kpoint_path_labels', klabels)
+```
+
+An explicit list of k-points may be given instead, using three arrays:
+
+| option                   | type and dimension | purpose                       |
+|--------------------------|--------------------|-------------------------------|
+| `explicit_kpath`         | real (3,K)         | the K k-points of the path    |
+| `explicit_kpath_labels`  | real (3,P)         | the P labelled special points |
+| `explicit_kpath_symbols` | character (P)      | labels of the special points  |
+
+Labels are used exactly as given; unlike labels read from the input file,
+they are not converted to upper case.
 
 ### w90_input_setopt
 
