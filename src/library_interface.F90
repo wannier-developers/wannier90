@@ -1207,7 +1207,7 @@ contains
 
     type(lib_common_type), intent(inout) :: common_data
     integer, intent(in) :: comm
-#ifdef MPI08
+#ifdef W90_MPI08
     ! MPI_VAL is the internal integer component used within MPI handle derived types
     ! This can safely be set by a passed in integer and allows greater freedom in the
     ! interoperability between a higher level program compiled with any version of
