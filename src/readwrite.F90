@@ -535,6 +535,27 @@ contains
       if (allocated(error)) return
     end if
 
+    if (allocated(settings%entries)) then
+      ! library mode: (3,2n) segment end points, start and end interleaved, and their 2n labels
+      call w90_readwrite_get_keyword_vector(settings, 'kpoint_path_labels', path_found, 0, error, comm, &
+                                            c2_value=kpoint_path%labels)
+      if (allocated(error)) return
+      call w90_readwrite_get_keyword_vector(settings, 'kpoint_path', found, 0, error, comm, &
+                                            r2_value=kpoint_path%points)
+      if (allocated(error)) return
+      if (path_found .neqv. found) then
+        call set_error_input(error, 'Error: Must specify both kpoint_path and kpoint_path_labels', comm)
+        return
+      end if
+      if (path_found) then
+        if (size(kpoint_path%points, 1) /= 3 .or. size(kpoint_path%points, 2) /= size(kpoint_path%labels) &
+            .or. mod(size(kpoint_path%labels), 2) /= 0) then
+          call set_error_input(error, 'Error: kpoint_path must have shape (3,2n) for the 2n kpoint_path_labels', comm)
+          return
+        end if
+      end if
+    end if
+
     call w90_readwrite_get_keyword(settings, 'bands_num_points', found, error, comm, &
                                    i_value=kpoint_path%num_points_first_segment)
     if (allocated(error)) return
@@ -602,6 +623,30 @@ contains
       if (allocated(error)) return
     else
       ok = .false.
+    end if
+
+    if (allocated(settings%entries)) then
+      ! library mode: (3,n) special points and their n labels
+      call w90_readwrite_get_keyword_vector(settings, 'explicit_kpath_symbols', ok, 0, error, comm, &
+                                            c2_value=kpoint_path%labels)
+      if (allocated(error)) return
+      call w90_readwrite_get_keyword_vector(settings, 'explicit_kpath_labels', found, 0, error, comm, &
+                                            r2_value=kpoint_path%points)
+      if (allocated(error)) return
+      if (ok .neqv. found) then
+        call set_error_input(error, 'Error: Must specify both explicit_kpath_labels and explicit_kpath_symbols', comm)
+        return
+      end if
+      if (ok) then
+        if (size(kpoint_path%points, 1) /= 3 .or. size(kpoint_path%points, 2) /= size(kpoint_path%labels)) then
+          call set_error_input(error, 'Error: explicit_kpath_labels must have shape (3,n) for the n explicit_kpath_symbols', comm)
+          return
+        end if
+        kpoint_path%bands_kpt_explicit = .true.
+        call w90_readwrite_read_explicit_kpath_points(settings, kpoint_path%bands_kpt_frac, bohr, &
+                                                      error, comm)
+        if (allocated(error)) return
+      end if
     end if
     ! if (bands_plot) then
     !   if (kpoint_path%num_points_first_segment < 0) then
@@ -1133,6 +1178,22 @@ contains
 
     ! pw90_effective_model ignores kpt_cart
     ! this routine allocates the intent(out) kpt_latt
+
+    if (allocated(settings%entries)) then
+      ! library mode: the (3,K) entry sizes kpt_latt on assignment
+      call w90_readwrite_get_keyword_vector(settings, 'explicit_kpath', found, 0, error, comm, &
+                                            r2_value=kpt_latt)
+      if (allocated(error)) return
+      if (.not. found) then
+        call set_error_input(error, 'Error: Found explicit_kpath_symbols but there is no explicit_kpath', comm)
+        return
+      end if
+      if (size(kpt_latt, 1) /= 3) then
+        call set_error_input(error, 'Error: explicit_kpath must have shape (3,num_points)', comm)
+        return
+      end if
+      return
+    end if
 
     call w90_readwrite_get_block_length(settings, 'explicit_kpath', found, num_kpts, error, comm)
 
@@ -4734,7 +4795,7 @@ contains
 
     ! local variables
     integer :: i, j, l, fu
-    integer :: idx_sym
+    integer :: idx_sym, idx_kpl, idx_eks
     type(settings_data), pointer :: entry_ptr
 
     open (newunit=fu, file=trim(seedname)//".win_dump", err=101)
@@ -4744,6 +4805,7 @@ contains
       entry_ptr => settings%entries(l)
 
       if (allocated(entry_ptr%txtdata)) then
+        if (entry_ptr%keyword == "projections") cycle ! writing the projections block is not currently supported
         write (fu, *) entry_ptr%keyword, " = ", entry_ptr%txtdata
 
       else if (allocated(entry_ptr%idata)) then
@@ -4767,8 +4829,12 @@ contains
     ! find the symbols list
     ! we assume that symbols always present when atoms_* provided?
     idx_sym = 0
+    idx_kpl = 0
+    idx_eks = 0
     do l = 1, settings%num_entries
       if (settings%entries(l)%keyword == "symbols") idx_sym = l
+      if (settings%entries(l)%keyword == "kpoint_path_labels") idx_kpl = l
+      if (settings%entries(l)%keyword == "explicit_kpath_symbols") idx_eks = l
     end do
 
     ! same again, to put the long lists (kpoints, etc?) last
@@ -4793,9 +4859,14 @@ contains
           ! special cases
           if (entry_ptr%keyword == "atoms_frac") write (fu, '(a,1x)', advance='no') trim(settings%entries(idx_sym)%c2d(j))
           if (entry_ptr%keyword == "atoms_cart") write (fu, '(a,1x)', advance='no') trim(settings%entries(idx_sym)%c2d(j))
+          if (entry_ptr%keyword == "kpoint_path") write (fu, '(1x,a,1x)', advance='no') trim(settings%entries(idx_kpl)%c2d(j))
+          if (entry_ptr%keyword == "explicit_kpath_labels") &
+            write (fu, '(a,1x)', advance='no') trim(settings%entries(idx_eks)%c2d(j))
           do i = 1, size(entry_ptr%r2d, 1)
             write (fu, '(f20.12)', advance='no') entry_ptr%r2d(i, j)
           end do
+          ! a kpoint_path row holds both ends of a segment
+          if (entry_ptr%keyword == "kpoint_path" .and. mod(j, 2) == 1) cycle
           write (fu, *) '' ! EOL
         end do
         write (fu, *) "end ", entry_ptr%keyword
