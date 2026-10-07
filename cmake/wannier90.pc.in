@@ -1,7 +1,7 @@
 prefix=@CMAKE_INSTALL_PREFIX@
-libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
-includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
-moduledir=${prefix}/@CMAKE_INSTALL_MODULEDIR@/Wannier90
+libdir=@pkgconf_libdir@
+includedir=@pkgconf_includedir@
+moduledir=@pkgconf_moduledir@/Wannier90
 
 Name: wannier90
 Version: @PROJECT_VERSION@
