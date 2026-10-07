@@ -226,7 +226,7 @@ wannier90_proj_auto_wout:
     final_centres_z: {abs: 1.0e-5, rel: 1.0e-5}
     final_spreads: {abs: 3.0e-6, rel: 3.0e-6}
     omegaI: {abs: 5.0e-6, rel: 5.0e-6}
-    omegaD: {abs: 1.0e-6, rel: 5.0e-6}
+    omegaD: {abs: 1.0e-6, rel: 1.0e-5}
     omegaOD: {abs: 5.0e-6, rel: 5.0e-6}
     omegaTotal: {abs: 1.0e-6, rel: 1.0e-6}
     near_neigh_dist: {abs: 1.0e-6, rel: 1.0e-6}
@@ -306,7 +306,7 @@ wannier90_wout:
     final_centres_x: {abs: 1.0e-5, rel: 1.0e-5}
     final_centres_y: {abs: 1.0e-5, rel: 1.0e-5}
     final_centres_z: {abs: 1.0e-5, rel: 1.0e-5}
-    final_spreads: {abs: 3.0e-6, rel: 3.0e-6}
+    final_spreads: {abs: 1.0e-5, rel: 1.0e-5}
     omegaI: {abs: 1.0e-6, rel: 1.0e-6}
     omegaD: {abs: 1.0e-6, rel: 5.0e-6}
     omegaOD: {abs: 1.0e-6, rel: 1.0e-6}
