@@ -1667,12 +1667,8 @@ contains
         do nn = 1, kmesh_info%nntot
           nkp2 = kmesh_info%nnlist(nkp, nn)
           ! tmp_cdq = cdq^{dagger} . M
-
-          ! note: m_matrix_loc is dimensioned larger than block copied here
-          ! the striding used here likely incurs some overhead; ideally we should avoid it
-          ! Jerome Jackson Jun 24
-          call utility_zgemm(tmp_cdq, cdq(:, :, nkp), 'C', m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc), 'N', &
-                             num_wann)
+          cmtmp(:, :) = m_matrix_loc(1:num_wann, 1:num_wann, nn, nkp_loc)
+          call utility_zgemm(tmp_cdq, cdq(:, :, nkp), 'C', cmtmp, 'N', num_wann)
           ! cmtmp = tmp_cdq . cdq
           call utility_zgemm(cmtmp, tmp_cdq, 'N', cdq(:, :, nkp2), 'N', num_wann)
           ! note striding
