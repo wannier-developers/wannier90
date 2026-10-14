@@ -171,7 +171,10 @@ module w90_types
     ! regarding defaults: specific flow in readwrite means all values are assigned anyway
     ! using defaults here requires restructuring get_projections() (readwrite.F90)
     ! site, l, m don't have reasonable defaults
-    integer :: l, m, s
+    integer :: l, m
+    ! s is only assigned when spinors = .true.; the default keeps it defined otherwise,
+    ! since w90_get_proj returns it to the caller in library mode
+    integer :: s = 1
     integer :: radial = 1
     real(kind=dp) :: site(3)
     real(kind=dp) :: s_qaxis(3) = (/0.0_dp, 0.0_dp, 1.0_dp/)
