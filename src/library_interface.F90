@@ -1093,6 +1093,7 @@ contains
     !! projectors defined either in .win file or passed (using same syntax) through w90_setopt
     !! array arguments assumed allocated at call
     !! array arguments must have length >= number of projectors (checked here)
+    !! s is +1 or -1 if spinors = .true., and 0 otherwise
     use w90_error, only: w90_error_type, set_error_fatal
     implicit none
     integer, intent(in) :: istdout, istderr
@@ -1173,7 +1174,11 @@ contains
       proj => common_data%proj_input(ip)
       l(ip) = proj%l
       m(ip) = proj%m
-      s(ip) = proj%s
+      if (common_data%w90_system%spinors) then
+        s(ip) = proj%s
+      else
+        s(ip) = 0
+      end if
       site(1:3, ip) = proj%site(1:3)
       sqa(1:3, ip) = proj%s_qaxis(1:3)
       z(1:3, ip) = proj%z(1:3)
