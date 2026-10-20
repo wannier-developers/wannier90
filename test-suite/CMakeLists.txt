@@ -156,4 +156,6 @@ if (WANNIER90_MPI)
 			TEST_NAME library-mode-test)
 	Wannier90_add_test(library/fortran-test-proj
 			TEST_NAME library-mode-test-projections)
+	Wannier90_add_test(library/kblocks
+			TEST_NAME library-mode-test-kblocks)
 endif ()

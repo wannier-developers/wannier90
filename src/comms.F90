@@ -66,6 +66,7 @@ module w90_comms
   integer, parameter :: root_id = 0 ! not arbitrary
 
   public :: comms_allreduce  ! reduce data onto all nodes
+  public :: comms_allgather_kblocks  ! assembles a k-indexed array from the local blocks
   public :: comms_array_split
   public :: comms_barrier    ! puts a barrier so that the code goes on only when all nodes reach the barrier
   public :: comms_bcast      ! send data from the root node
@@ -144,6 +145,10 @@ module w90_comms
     module procedure comms_allreduce_real
     module procedure comms_allreduce_cmplx
   end interface comms_allreduce
+
+  interface comms_allgather_kblocks
+    module procedure comms_allgather_kblocks_cmplx_3
+  end interface comms_allgather_kblocks
 
   interface comms_gatherv
 !     module procedure comms_gatherv_int    ! to be done
@@ -328,6 +333,152 @@ contains
     end do
 
   end subroutine comms_array_split
+
+  subroutine comms_allgather_kblocks_cmplx_3(array_loc, array, global_k, error, comm)
+    !! Assemble an array indexed by k-point on every rank from the local blocks
+    !!
+    !! Each k-point is owned by exactly one rank, so the local blocks are disjoint and
+    !! assembling them is a copy rather than a sum. This gathers the blocks with one
+    !! allgatherv and puts each one where it belongs. The allreduce it replaces has every
+    !! rank reduce the whole array, so its cost grows with the number of ranks while the
+    !! data being moved does not.
+    !!
+    !! The distribution is not assumed to be consecutive. A library caller sets its own
+    !! through w90_set_kpoint_distribution, and a caller that already distributes k-points
+    !! for its own work -- a strided map, say -- is the normal case rather than the
+    !! exception. The blocks are gathered packed in rank order and then placed, which costs
+    !! one copy of the array and no extra communication. Where the packed order already is
+    !! the k order, which is what w90_distribute_kpts produces, the gather writes straight
+    !! into the result and nothing is copied.
+    !!
+    !! Only a map that is not a permutation of 1:num_kpts -- one that leaves a k-point
+    !! unowned, or gives one to two ranks -- falls back to zeroing the global array and
+    !! reducing, which is what the callers did before.
+
+    implicit none
+
+    ! arguments
+    complex(kind=dp), intent(in) :: array_loc(:, :, :)
+    !! this rank's block, dimensioned (:, :, number of k-points on this rank)
+    complex(kind=dp), intent(inout) :: array(:, :, :)
+    !! the assembled array (:, :, num_kpts), identical on every rank on return
+    integer, intent(in) :: global_k(:)
+    !! global index of each local k-point
+    type(w90_comm_type), intent(in) :: comm
+    type(w90_error_type), allocatable, intent(out) :: error
+
+    ! local variables
+    complex(kind=dp), allocatable :: buffer(:, :, :)
+    integer :: blocksize, ik, ikl, ip, my_rank, nkpts, nloc, num_nodes
+    integer, allocatable :: counts(:), displs(:), kcount(:), kdispl(:), kmap(:), owned(:)
+    logical :: lorder, lperm
+#ifdef W90_MPI
+    integer :: ierr
+#endif
+
+    num_nodes = mpisize(comm)
+    my_rank = mpirank(comm)
+    blocksize = size(array, 1)*size(array, 2)
+    nkpts = size(array, 3)
+    nloc = size(global_k)
+
+    if (size(array_loc, 3) /= nloc .or. size(array_loc, 1) /= size(array, 1) &
+        .or. size(array_loc, 2) /= size(array, 2)) then
+      call set_base_error(error, 'Error in comms_allgather_kblocks: shape mismatch', code_mpi)
+      return
+    end if
+
+    allocate (kcount(0:num_nodes - 1), kdispl(0:num_nodes - 1), &
+              counts(0:num_nodes - 1), displs(0:num_nodes - 1))
+
+    ! how many k-points each rank owns, and where its block starts in the packed order
+#ifdef W90_MPI
+    call mpi_allgather(nloc, 1, MPI_INTEGER, kcount, 1, MPI_INTEGER, comm%comm, ierr)
+    if (ierr /= MPI_SUCCESS) then
+      call set_base_error(error, 'Error in comms_allgather_kblocks_cmplx_3', code_mpi)
+      return
+    end if
+#else
+    kcount(0) = nloc
+#endif
+
+    kdispl(0) = 0
+    do ip = 1, num_nodes - 1
+      kdispl(ip) = kdispl(ip - 1) + kcount(ip - 1)
+    end do
+    do ip = 0, num_nodes - 1
+      counts(ip) = kcount(ip)*blocksize
+      displs(ip) = kdispl(ip)*blocksize
+    end do
+
+    ! which k-point each packed slot holds; only a permutation of 1:num_kpts can be placed
+    lperm = (kdispl(num_nodes - 1) + kcount(num_nodes - 1) == nkpts)
+
+    if (lperm) then
+      allocate (kmap(nkpts))
+#ifdef W90_MPI
+      call mpi_allgatherv(global_k, nloc, MPI_INTEGER, kmap, kcount, kdispl, MPI_INTEGER, &
+                          comm%comm, ierr)
+      if (ierr /= MPI_SUCCESS) then
+        call set_base_error(error, 'Error in comms_allgather_kblocks_cmplx_3', code_mpi)
+        return
+      end if
+#else
+      kmap(1:nloc) = global_k(1:nloc)
+#endif
+      ! one pass over the map: every slot in range, every k-point owned exactly once, and
+      ! whether the packed order already is the k order
+      allocate (owned(nkpts))
+      owned = 0
+      lorder = .true.
+      do ik = 1, nkpts
+        if (kmap(ik) < 1 .or. kmap(ik) > nkpts) then
+          lperm = .false.
+          exit
+        end if
+        owned(kmap(ik)) = owned(kmap(ik)) + 1
+        if (kmap(ik) /= ik) lorder = .false.
+      end do
+      if (lperm) lperm = all(owned == 1)
+      deallocate (owned)
+    end if
+
+    if (lperm) then
+#ifdef W90_MPI
+      if (lorder) then
+        call mpi_allgatherv(array_loc, counts(my_rank), MPI_DOUBLE_COMPLEX, array, counts, &
+                            displs, MPI_DOUBLE_COMPLEX, comm%comm, ierr)
+      else
+        allocate (buffer(size(array, 1), size(array, 2), nkpts))
+        call mpi_allgatherv(array_loc, counts(my_rank), MPI_DOUBLE_COMPLEX, buffer, counts, &
+                            displs, MPI_DOUBLE_COMPLEX, comm%comm, ierr)
+      end if
+      if (ierr /= MPI_SUCCESS) then
+        call set_base_error(error, 'Error in comms_allgather_kblocks_cmplx_3', code_mpi)
+        return
+      end if
+      if (.not. lorder) then
+        do ik = 1, nkpts
+          array(:, :, kmap(ik)) = buffer(:, :, ik)
+        end do
+        deallocate (buffer)
+      end if
+#else
+      do ikl = 1, nloc
+        array(:, :, global_k(ikl)) = array_loc(:, :, ikl)
+      end do
+#endif
+    else
+      array = cmplx(0.0_dp, 0.0_dp, dp)
+      do ikl = 1, nloc
+        ik = global_k(ikl)
+        array(:, :, ik) = array_loc(:, :, ikl)
+      end do
+      call comms_allreduce(array(1, 1, 1), blocksize*nkpts, 'SUM', error, comm)
+      if (allocated(error)) return
+    end if
+
+  end subroutine comms_allgather_kblocks_cmplx_3
 
   subroutine comms_no_sync_barrier(comm)
     !! A barrier to synchronise all nodes

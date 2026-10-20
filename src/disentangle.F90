@@ -2429,7 +2429,8 @@ contains
     !                   k-point of the nkp-th k-point vkpt(1:3,nkp) (or its
     !                   periodic image in the "home Brillouin zone")
     ! cm(n,m,nkp,nnx)   Overlap matrix <u_nk|u_{m,k+b}>
-    use w90_comms, only: comms_bcast, comms_allreduce, w90_comm_type, mpirank
+    use w90_comms, only: comms_bcast, comms_allreduce, comms_allgather_kblocks, &
+                         w90_comm_type, mpirank
     use w90_constants, only: dp, cmplx_0, cmplx_1
     use w90_error
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop, io_wallclocktime
@@ -2688,12 +2689,7 @@ contains
         end do
 
         if (lsitesymmetry) then
-          czmat_in = cmplx_0
-          do nkp_loc = 1, ranknk
-            nkp = global_k(nkp_loc)
-            czmat_in(:, :, nkp) = czmat_in_loc(:, :, nkp_loc)
-          end do
-          call comms_allreduce(czmat_in(1, 1, 1), num_bands*num_bands*num_kpts, 'SUM', error, comm)
+          call comms_allgather_kblocks(czmat_in_loc, czmat_in, global_k, error, comm)
           if (allocated(error)) return
           call sitesym_symmetrize_zmatrix(sitesym, czmat_in, num_bands, num_kpts, &
                                           dis_manifold%lwindow)
@@ -2890,12 +2886,7 @@ contains
       call comms_allreduce(womegai1, 1, 'SUM', error, comm)
       if (allocated(error)) return
 
-      u_matrix_opt(:, :, :) = cmplx_0
-      do nkp_loc = 1, ranknk
-        nkp = global_k(nkp_loc)
-        u_matrix_opt(:, :, nkp) = u_matrix_opt_loc(:, :, nkp_loc)
-      end do
-      call comms_allreduce(u_matrix_opt(1, 1, 1), num_bands*num_wann*num_kpts, 'SUM', error, comm)
+      call comms_allgather_kblocks(u_matrix_opt_loc, u_matrix_opt, global_k, error, comm)
       if (allocated(error)) return
 
       if (lsitesymmetry) then
@@ -2999,12 +2990,7 @@ contains
       end do
 
       if (lsitesymmetry) then
-        czmat_out = cmplx_0
-        do nkp_loc = 1, ranknk
-          nkp = global_k(nkp_loc)
-          czmat_out(:, :, nkp) = czmat_out_loc(:, :, nkp_loc)
-        end do
-        call comms_allreduce(czmat_out(1, 1, 1), num_bands*num_bands*num_kpts, 'SUM', error, comm)
+        call comms_allgather_kblocks(czmat_out_loc, czmat_out, global_k, error, comm)
         if (allocated(error)) return
         call sitesym_symmetrize_zmatrix(sitesym, czmat_out, num_bands, num_kpts, dis_manifold%lwindow)
         do nkp_loc = 1, ranknk
