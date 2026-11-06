@@ -139,6 +139,24 @@ endfunction()
 # block duplicated ~240 MB on every configure.
 if (NOT _w90_pytest_missing)
 	add_subdirectory(tests)
+	execute_process(COMMAND ${Python_EXECUTABLE} -c "import numpy, scipy"
+			RESULT_VARIABLE _w90_multistart_missing OUTPUT_QUIET ERROR_QUIET)
+	if (NOT _w90_multistart_missing)
+		set(multistart_mpi_args)
+		if (Wannier90_MPI)
+			list(APPEND multistart_mpi_args --nprocs=2)
+		endif ()
+		add_test(NAME projection-multistart
+				COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/test_multistart.py
+				--wannier90-exe=$<TARGET_FILE:Wannier90_exe> ${multistart_mpi_args}
+				-p no:cacheprovider
+				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+		if (Wannier90_MPI)
+			set_tests_properties(projection-multistart PROPERTIES PROCESSORS 2)
+		endif ()
+	else ()
+		message(WARNING "NumPy/SciPy not found; projection-multistart tests not registered")
+	endif ()
 endif ()
 
 ## Functional tests

@@ -1,5 +1,10 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+- Add an optional NumPy/SciPy utility for mesh-wide projection-column selection
+  and independent localization trials using standard full-mesh matrix files.
+
 ## v4.0.3 (5 October 2026)
 
 ### New features
