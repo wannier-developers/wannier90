@@ -1,0 +1,47 @@
+Distribution test for comms_allgather_kblocks.
+
+The routine assembles an array indexed by the whole k-point set out of the blocks each rank
+owns. Every k-point belongs to exactly one rank, so the assembly is a copy: this test
+therefore demands bit-exact equality rather than a tolerance, and it compares on every rank
+rather than only on the root, because the routine is expected to leave all ranks holding the
+same array. The global array is pre-filled with a sentinel, so a block the routine fails to
+write counts as a failure instead of passing as a plausible value.
+
+Nine distributions are covered, at three mesh sizes derived from the rank count:
+
+  1 contiguous    blocks in rank order, what comms_array_split produces
+  2 unequal       contiguous, but the ranks own different numbers of k-points
+  3 empty-rank    contiguous, with one rank owning nothing at all
+  4 reversed      contiguous blocks handed out in reverse rank order
+  5 round-robin   strided, so nothing is consecutive anywhere
+  6 one-swap      contiguous but for a single pair of k-points exchanged
+  7 gap           every rank consecutive, but one k-point owned by nobody
+  8 malformed     a local leading dimension that disagrees with the global array
+  9 malformed     more local blocks than global_k accounts for
+
+Both the number of wrong elements and the error flag are reduced over the ranks, so a
+failure on a rank that does not print is still counted. A rank that owns no k-point is
+handed a zero-sized block, which is what its shape has to say: padding it to one is a
+shape mismatch, and a guard that fires on one rank alone leaves the others waiting in the
+collective rather than returning an error.
+
+Cases 1 to 7 must assemble the array exactly. Cases 8 and 9 must raise an error rather than
+assemble anything.
+
+Two of them are there for reasons that are easy to miss. Case 6 is contiguous apart from one
+exchanged pair: a routine that mistook it for the identity would write the blocks at the
+wrong offsets and corrupt the array without raising anything. Cases 1 to 3 matter in the
+other direction -- they must not be rejected or handled by the slow path, because a check
+that was merely over-cautious would still produce correct results and no comparison of
+output could reveal it.
+
+Which of the routine's internal paths a given distribution takes is deliberately not
+asserted. It is not observable from outside and it is not part of the contract; what is
+asserted is that every distribution assembles the same correct array.
+
+One mesh size equals the rank count, so that each rank owns exactly one k-point. Several of
+the distributions collapse onto the identity there, which is worth covering precisely because
+it is the case where a test can accidentally expect the wrong thing.
+
+Built without MPI the routine's serial branch reduces the assembly to a local copy; this
+test is registered only in MPI builds, so that branch is covered by the rest of the suite.
