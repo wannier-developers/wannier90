@@ -1,3 +1,5 @@
+%global soversion 4
+
 Name:           wannier90
 Summary:        Maximally-Localised Generalised Wannier Functions Code
 Version:        0.0.0
@@ -6,14 +8,18 @@ License:        LGPL-2.1-or-later
 URL:            https://www.wannier.org/
 
 Source:         https://github.com/wannier-developers/wannier90/archive/refs/tags/v%{version}.tar.gz
+# ix86 because https://fedoraproject.org/wiki/Changes/EncourageI686LeafRemoval
+# s390x because tests fail and unknown if upstream wants to support
+#  https://github.com/wannier-developers/wannier90/issues/731
+ExcludeArch:    %{ix86} s390x
 
-BuildRequires:  ninja-build
 BuildRequires:  cmake
 BuildRequires:  gcc-fortran
 BuildRequires:  flexiblas-devel
 # Required for testing
 BuildRequires:  gcc-c++
-BuildRequires:  python3
+BuildRequires:  python3dist(pytest)
+BuildRequires:  python3dist(pyyaml)
 
 %global _description %{expand:
 Maximally-Localised Generalised Wannier Functions Code.}
@@ -66,37 +72,42 @@ This package contains the development files for the wannier90 (MPICH) library.
 
 # $MPI_SUFFIX will be evaluated in the loops below, set by mpi modules
 %global _vpath_builddir %{_vendor}-%{_target_os}-build${MPI_SUFFIX:-_serial}
-# We are running the module load/unload manually until there is a macro-like way to expand this
-. /etc/profile.d/modules.sh
 
 
-%build
+%conf
 cmake_common_args=(
-  "-G Ninja"
-  "-DWANNIER90_SHARED_LIBS=ON"
-  "-DWANNIER90_TEST=ON"
+  "-DWANNIER90_SHARED_LIBS:BOOL=ON"
+  "-DWANNIER90_TEST:BOOL=ON"
+  "-DWANNIER90_WITH_C:BOOL=ON"
 )
 for mpi in '' mpich openmpi ; do
   if [ -n "$mpi" ]; then
     module load mpi/${mpi}-%{_arch}
     cmake_mpi_args=(
-      "-DCMAKE_INSTALL_PREFIX=${MPI_HOME}"
-      "-DWANNIER90_MPI=ON"
-      "-DCMAKE_INSTALL_MODULEDIR=${MPI_FORTRAN_MOD_DIR}"
-      "-DCMAKE_INSTALL_LIBDIR=lib"
+      "-DCMAKE_INSTALL_PREFIX:PATH=${MPI_HOME}"
+      "-DWANNIER90_MPI:BOOL=ON"
+      "-DCMAKE_INSTALL_MODULEDIR:PATH=${MPI_FORTRAN_MOD_DIR}"
+      "-DCMAKE_INSTALL_LIBDIR:PATH=lib"
     )
   else
     cmake_mpi_args=(
-      "-DWANNIER90_MPI=OFF"
-      "-DCMAKE_INSTALL_MODULEDIR=%{_fmoddir}"
+      "-DWANNIER90_MPI:BOOL=OFF"
+      "-DCMAKE_INSTALL_MODULEDIR:PATH=%{_fmoddir}"
     )
   fi
 
   %cmake \
     ${cmake_common_args[@]} \
     ${cmake_mpi_args[@]}
-  %cmake_build
 
+  [ -n "$mpi" ] && module unload mpi/${mpi}-%{_arch}
+done
+
+
+%build
+for mpi in '' mpich openmpi ; do
+  [ -n "$mpi" ] && module load mpi/${mpi}-%{_arch}
+  %cmake_build
   [ -n "$mpi" ] && module unload mpi/${mpi}-%{_arch}
 done
 
@@ -110,7 +121,7 @@ done
 
 
 %check
-for mpi in '' mpich %{?with_openmpi:openmpi} ; do
+for mpi in '' mpich openmpi ; do
   [ -n "$mpi" ] && module load mpi/${mpi}-%{_arch}
   %ctest
   [ -n "$mpi" ] && module unload mpi/${mpi}-%{_arch}
@@ -118,14 +129,14 @@ done
 
 
 %files
-%doc README.md AUTHORS.md CITATION.cff CHANGELOG.md
+%doc README.md
 %license LICENSE
-%{_libdir}/libwannier90.so.*
+%{_libdir}/libwannier90.so.%{soversion}{,.*}
 %{_bindir}/wannier90.x
 %{_bindir}/postw90.x
 
 %files devel
-%{_includedir}/wannier90.hh
+%{_includedir}/wannier90.h
 %{_libdir}/libwannier90.so
 %{_fmoddir}/Wannier90/
 %{_libdir}/cmake/Wannier90
@@ -134,10 +145,10 @@ done
 %files openmpi
 %{_libdir}/openmpi/bin/wannier90.x
 %{_libdir}/openmpi/bin/postw90.x
-%{_libdir}/openmpi/lib/libwannier90.so.*
+%{_libdir}/openmpi/lib/libwannier90.so.%{soversion}{,.*}
 
 %files openmpi-devel
-%{_libdir}/openmpi/include/wannier90.hh
+%{_libdir}/openmpi/include/wannier90.h
 %{_libdir}/openmpi/lib/libwannier90.so
 %{_fmoddir}/openmpi/Wannier90/
 %{_libdir}/openmpi/lib/cmake/Wannier90
@@ -146,10 +157,10 @@ done
 %files mpich
 %{_libdir}/mpich/bin/wannier90.x
 %{_libdir}/mpich/bin/postw90.x
-%{_libdir}/mpich/lib/libwannier90.so.*
+%{_libdir}/mpich/lib/libwannier90.so.%{soversion}{,.*}
 
 %files mpich-devel
-%{_libdir}/mpich/include/wannier90.hh
+%{_libdir}/mpich/include/wannier90.h
 %{_libdir}/mpich/lib/libwannier90.so
 %{_fmoddir}/mpich/Wannier90/
 %{_libdir}/mpich/lib/cmake/Wannier90
