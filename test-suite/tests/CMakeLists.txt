@@ -41,9 +41,9 @@ foreach (test_yaml IN LISTS test_yaml_files)
 
 	add_test(NAME ${test}
 			COMMAND ${Python_EXECUTABLE} -m pytest ${test_dir}
-			--wannier90-exe=$<TARGET_FILE:Wannier90_exe>
-			--postw90-exe=$<TARGET_FILE:Wannier90_post>
-			--w90chk2chk-exe=$<TARGET_FILE:w90chk2chk.x>
+			--wannier90-exe=$<TARGET_FILE:Wannier90::exe>
+			--postw90-exe=$<TARGET_FILE:Wannier90::post>
+			--w90chk2chk-exe=$<TARGET_FILE:Wannier90::w90chk2chk>
 			--workdir=${CMAKE_CURRENT_BINARY_DIR}/work/${test}
 			${pytest_extra_args}
 			-p no:cacheprovider

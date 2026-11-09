@@ -13,10 +13,12 @@ rlJournalStart
   rlPhaseEnd
 
   rlPhaseStartTest
-    [[ "${MPI_VARIANT}" != "serial" ]] && rlRun "module load mpi/${MPI_VARIANT}" 0 "Load MPI"
-   	rlRun "cmake -B ./build" 0 "CMake configure"
-   	rlRun "cmake --build ./build" 0 "CMake build"
-   	rlRun "ctest --test-dir ./build --output-on-failure" 0 "Run CTest"
+    if [[ "${MPI_VARIANT}" != "serial" ]]; then
+      rlRun "module load mpi/${MPI_VARIANT}" 0 "Load MPI" || rlDie "Could not load MPI"
+    fi
+    rlRun 'cmake -B ./build -DWannier90_ROOT="${MPI_HOME:-/usr}"' 0 "CMake configure" &&
+      rlRun "cmake --build ./build" 0 "CMake build" &&
+      rlRun "ctest --test-dir ./build --output-on-failure" 0 "Run CTest"
   rlPhaseEnd
 
   rlPhaseStartCleanup

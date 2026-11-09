@@ -124,6 +124,7 @@ done
 %{_libdir}/libwannier90.so.*
 %{_bindir}/wannier90.x
 %{_bindir}/postw90.x
+%{_bindir}/w90chk2chk.x
 
 %files devel
 %{_includedir}/wannier90.h
@@ -135,6 +136,7 @@ done
 %files openmpi
 %{_libdir}/openmpi/bin/wannier90.x
 %{_libdir}/openmpi/bin/postw90.x
+%{_libdir}/openmpi/bin/w90chk2chk.x
 %{_libdir}/openmpi/lib/libwannier90.so.*
 
 %files openmpi-devel
@@ -147,6 +149,7 @@ done
 %files mpich
 %{_libdir}/mpich/bin/wannier90.x
 %{_libdir}/mpich/bin/postw90.x
+%{_libdir}/mpich/bin/w90chk2chk.x
 %{_libdir}/mpich/lib/libwannier90.so.*
 
 %files mpich-devel
