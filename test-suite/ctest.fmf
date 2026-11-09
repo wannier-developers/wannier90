@@ -1,7 +1,6 @@
 tag: [ cmake ]
 require:
   - cmake
-  - rsync
   - gcc
   - gcc-c++
   - gcc-fortran
@@ -21,8 +20,12 @@ test: ./ctest.sh
   environment:
     MPI_VARIANT: serial
 /OpenMPI:
+  require+:
+    - openmpi-devel
   environment:
     MPI_VARIANT: openmpi
 /MPICH:
+  require+:
+    - mpich-devel
   environment:
     MPI_VARIANT: mpich
