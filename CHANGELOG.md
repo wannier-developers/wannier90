@@ -1,5 +1,11 @@
 # CHANGELOG of Wannier90
 
+## Unreleased
+
+### Various improvements and bugfixes
+
+- `w90_get_proj` no longer returns an undefined spin for non-spinor runs, sets them to 0 instead [[#748]](https://github.com/wannier-developers/wannier90/issues/748)
+
 ## v4.0.3 (5 October 2026)
 
 ### New features
