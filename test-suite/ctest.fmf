@@ -13,6 +13,7 @@ require:
   # For testing FetchContent
   - flexiblas-devel
 framework: beakerlib
+duration: 30m
 path: /
 test: ./ctest.sh
 
@@ -24,6 +25,8 @@ test: ./ctest.sh
     - openmpi-devel
   environment:
     MPI_VARIANT: openmpi
+    OMPI_ALLOW_RUN_AS_ROOT: "1"
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
 /MPICH:
   require+:
     - mpich-devel
