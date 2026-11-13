@@ -3,6 +3,9 @@
 # shellcheck disable=all
 source /usr/share/beakerlib/beakerlib.sh || exit 1
 
+# MPI supplies the parallelism on the CPU-limited test guests.
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+
 rlJournalStart
   rlPhaseStartSetup
     [[ -z "${MPI_VARIANT}" ]] && rlDie "MPI_VARIANT was not provided"
