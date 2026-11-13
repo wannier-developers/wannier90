@@ -154,11 +154,11 @@ program wannier
 
   ! read key parameters from .win file
   call input_reader_special(common_data, seedname, stdout, stderr, ierr)
-  if (ierr /= 0) stop 1
+  if (ierr /= 0) call abort_input()
 
   ! read all remaining parameters from .win file
   call w90_input_reader(common_data, stdout, stderr, ierr)
-  if (ierr /= 0) stop 1
+  if (ierr /= 0) call abort_input()
 
   ! write useful info (includes jazzy header info)
   call w90_print_info(common_data, stdout, stderr, ierr)
@@ -378,4 +378,18 @@ program wannier
 #ifdef W90_MPI
   call mpi_finalize(ierr)
 #endif
+
+contains
+
+  subroutine abort_input()
+#ifdef W90_MPI
+    integer :: mpi_ierr
+
+    ! Wait for the input diagnostics to be flushed before aborting the MPI job.
+    call mpi_barrier(mpi_comm_world, mpi_ierr)
+    call mpi_abort(mpi_comm_world, 1, mpi_ierr)
+#endif
+    stop 1
+  end subroutine abort_input
+
 end program wannier

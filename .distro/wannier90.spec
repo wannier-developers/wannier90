@@ -75,6 +75,7 @@ cmake_common_args=(
   "-G Ninja"
   "-DWANNIER90_SHARED_LIBS=ON"
   "-DWANNIER90_TEST=ON"
+  "-DWANNIER90_WITH_C=ON"
 )
 for mpi in '' mpich openmpi ; do
   if [ -n "$mpi" ]; then
@@ -123,9 +124,10 @@ done
 %{_libdir}/libwannier90.so.*
 %{_bindir}/wannier90.x
 %{_bindir}/postw90.x
+%{_bindir}/w90chk2chk.x
 
 %files devel
-%{_includedir}/wannier90.hh
+%{_includedir}/wannier90.h
 %{_libdir}/libwannier90.so
 %{_fmoddir}/Wannier90/
 %{_libdir}/cmake/Wannier90
@@ -134,10 +136,11 @@ done
 %files openmpi
 %{_libdir}/openmpi/bin/wannier90.x
 %{_libdir}/openmpi/bin/postw90.x
+%{_libdir}/openmpi/bin/w90chk2chk.x
 %{_libdir}/openmpi/lib/libwannier90.so.*
 
 %files openmpi-devel
-%{_libdir}/openmpi/include/wannier90.hh
+%{_libdir}/openmpi/include/wannier90.h
 %{_libdir}/openmpi/lib/libwannier90.so
 %{_fmoddir}/openmpi/Wannier90/
 %{_libdir}/openmpi/lib/cmake/Wannier90
@@ -146,10 +149,11 @@ done
 %files mpich
 %{_libdir}/mpich/bin/wannier90.x
 %{_libdir}/mpich/bin/postw90.x
+%{_libdir}/mpich/bin/w90chk2chk.x
 %{_libdir}/mpich/lib/libwannier90.so.*
 
 %files mpich-devel
-%{_libdir}/mpich/include/wannier90.hh
+%{_libdir}/mpich/include/wannier90.h
 %{_libdir}/mpich/lib/libwannier90.so
 %{_fmoddir}/mpich/Wannier90/
 %{_libdir}/mpich/lib/cmake/Wannier90

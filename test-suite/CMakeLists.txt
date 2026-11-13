@@ -28,6 +28,15 @@ enable_testing()
 # one-line change.
 find_package(Python 3.10 REQUIRED COMPONENTS Interpreter)
 
+if (PROJECT_IS_TOP_LEVEL)
+	find_package(Wannier90 CONFIG REQUIRED)
+	get_target_property(_w90_headers Wannier90::wannier90 INTERFACE_HEADER_SETS)
+	set(WANNIER90_WITH_C OFF)
+	if ("wannier90_C_Headers" IN_LIST _w90_headers)
+		set(WANNIER90_WITH_C ON)
+	endif ()
+endif ()
+
 # The regression suite is driven by pytest and reads YAML. Rather than failing the whole
 # configure for someone who only wants the binaries, warn and skip registering the tests.
 execute_process(
@@ -111,6 +120,8 @@ function(Wannier90_add_test test)
 				-DWannier90_ROOT=${Wannier90_BINARY_DIR}
 				-DFETCHCONTENT_SOURCE_DIR_WANNIER90=${Wannier90_SOURCE_DIR}
 		)
+	elseif (PROJECT_IS_TOP_LEVEL)
+		list(APPEND extra_args -DWannier90_DIR=${Wannier90_DIR})
 	endif ()
 	set(compiler_args)
 	foreach (lang IN ITEMS CXX Fortran)
@@ -141,6 +152,29 @@ if (NOT _w90_pytest_missing)
 	add_subdirectory(tests)
 endif ()
 
+# The downstream suite tests the installed RPMs. The multistart utility is
+# tested from the source tree, where its Python module is available.
+if (NOT _w90_pytest_missing AND NOT PROJECT_IS_TOP_LEVEL)
+	execute_process(COMMAND ${Python_EXECUTABLE} -c "import numpy, scipy"
+			RESULT_VARIABLE _w90_multistart_missing OUTPUT_QUIET ERROR_QUIET)
+	if (NOT _w90_multistart_missing)
+		set(multistart_mpi_args)
+		if (Wannier90_MPI)
+			list(APPEND multistart_mpi_args --nprocs=2)
+		endif ()
+		add_test(NAME projection-multistart
+				COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/test_multistart.py
+				--wannier90-exe=$<TARGET_FILE:Wannier90::exe> ${multistart_mpi_args}
+				-p no:cacheprovider
+				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+		if (Wannier90_MPI)
+			set_tests_properties(projection-multistart PROPERTIES PROCESSORS 2)
+		endif ()
+	else ()
+		message(WARNING "NumPy/SciPy not found; projection-multistart tests not registered")
+	endif ()
+endif ()
+
 ## Functional tests
 if (WANNIER90_WITH_C)
 	# This test requires that the C interface is built
@@ -148,7 +182,7 @@ if (WANNIER90_WITH_C)
 	Wannier90_add_test(library/C-interface
 			TEST_NAME library-mode-test-C-interface)
 endif ()
-if (WANNIER90_MPI)
+if (Wannier90_MPI)
 	# These tests require MPI interface
 	Wannier90_add_test(library/fortran-test-proj-overflow
 			TEST_NAME library-mode-test-proj-overflow)

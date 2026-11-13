@@ -4,6 +4,14 @@
 #include <stdbool.h>
 #include <ISO_Fortran_binding.h>
 
+#ifdef W90_MPI
+#include <mpi.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* CFI_cdesc_t provides a mechanism for passing variable length char* arrays */
 // see https://community.intel.com/t5/Intel-Fortran-Compiler/C-interoperablilty-and-character-strings/td-p/1084167
 
@@ -78,9 +86,11 @@ void w90_get_spreads(w90_data w90_obj, double* spreads);
 bool w90_is_mpi_build(void);
 
 #ifdef W90_MPI
-#include <mpi.h>
-
 void w90_set_comm_f(w90_data blob, int* comm);
 void w90_set_comm(w90_data blob, MPI_Comm comm);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 #endif

@@ -130,9 +130,14 @@ if (WANNIER90_TEST)
 	## Define compiled support programs
 	# TODO: These should be moved outside of src and hard coded path?
 	add_executable(w90chk2chk.x src/w90chk2chk.F90)
+	set_target_properties(w90chk2chk.x PROPERTIES EXPORT_NAME w90chk2chk)
+	add_executable(Wannier90::w90chk2chk ALIAS w90chk2chk.x)
 	add_executable(w90spn2spn.x src/w90spn2spn.F90)
 	target_link_libraries(w90chk2chk.x PRIVATE Wannier90_lib)
 	target_link_libraries(w90spn2spn.x PRIVATE Wannier90_lib)
+	if (WANNIER90_INSTALL)
+		install(TARGETS w90chk2chk.x EXPORT Wannier90Targets)
+	endif ()
 
 	add_subdirectory(test-suite)
 endif ()

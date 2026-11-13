@@ -1,7 +1,6 @@
 tag: [ cmake ]
 require:
   - cmake
-  - rsync
   - gcc
   - gcc-c++
   - gcc-fortran
@@ -14,6 +13,7 @@ require:
   # For testing FetchContent
   - flexiblas-devel
 framework: beakerlib
+duration: 30m
 path: /
 test: ./ctest.sh
 
@@ -21,8 +21,17 @@ test: ./ctest.sh
   environment:
     MPI_VARIANT: serial
 /OpenMPI:
+  require+:
+    - openmpi-devel
   environment:
     MPI_VARIANT: openmpi
+    OMPI_ALLOW_RUN_AS_ROOT: "1"
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: "1"
+    # The regression tests use two ranks even on single-slot Testing Farm guests.
+    OMPI_MCA_rmaps_base_oversubscribe: "1"
+    PRTE_MCA_rmaps_default_mapping_policy: ":oversubscribe"
 /MPICH:
+  require+:
+    - mpich-devel
   environment:
     MPI_VARIANT: mpich

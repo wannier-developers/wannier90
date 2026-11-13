@@ -39,12 +39,19 @@ foreach (test_yaml IN LISTS test_yaml_files)
 		set(test_labels checkpoint)
 	endif ()
 
+	if (PROJECT_IS_TOP_LEVEL)
+		# Downstream runners cannot retain the decompressed inputs of every passing case.
+		set(pytest_workdir_args -o tmp_path_retention_policy=failed)
+	else ()
+		set(pytest_workdir_args --workdir=${CMAKE_CURRENT_BINARY_DIR}/work/${test})
+	endif ()
+
 	add_test(NAME ${test}
 			COMMAND ${Python_EXECUTABLE} -m pytest ${test_dir}
-			--wannier90-exe=$<TARGET_FILE:Wannier90_exe>
-			--postw90-exe=$<TARGET_FILE:Wannier90_post>
-			--w90chk2chk-exe=$<TARGET_FILE:w90chk2chk.x>
-			--workdir=${CMAKE_CURRENT_BINARY_DIR}/work/${test}
+			--wannier90-exe=$<TARGET_FILE:Wannier90::exe>
+			--postw90-exe=$<TARGET_FILE:Wannier90::post>
+			--w90chk2chk-exe=$<TARGET_FILE:Wannier90::w90chk2chk>
+			${pytest_workdir_args}
 			${pytest_extra_args}
 			-p no:cacheprovider
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
