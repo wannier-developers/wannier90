@@ -24,9 +24,7 @@
 // <https://github.com/wannier-developers/wannier90>
 //
 
-extern "C" {
-        #include "wannier90.h"
-}
+#include "wannier90.h"
 #include <cassert>
 #include <complex>
 #include <filesystem>
