@@ -105,7 +105,7 @@ program wannier
   integer, pointer :: nb, nk, nw, nn
   integer :: stdout, stderr
   logical, pointer :: pp
-  logical :: ld, lovlp, ldsnt, lwann, lplot, ltran, need_eigvals
+  logical :: ld, lovlp, ldsnt, lproj, lwann, lplot, ltran, need_eigvals
   type(lib_common_type), target :: common_data
   type(w90_error_type), allocatable :: error
   character(len=9) :: cdate, ctime
@@ -284,6 +284,9 @@ program wannier
   end if
   ltran = (ltran .or. common_data%w90_calculation%transport)
   ldsnt = (ldsnt .and. (nw < nb)) ! disentanglement only needed if space reduced
+  ! initial projection applies only to freshly read overlaps: a checkpoint
+  ! holds U and M already in the rotated gauge, as does disentanglement output
+  lproj = (lovlp .and. .not. ldsnt)
 
   ! circumstances where eigenvalues are needed are a little overcomplicated
   need_eigvals = .false.
@@ -318,9 +321,12 @@ program wannier
     if (ierr /= 0) stop 1
   end if
 
-  if (lwann) then
+  if (lproj) then
     call w90_project_overlap(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop 1
+  end if
+
+  if (lwann) then
     call w90_wannierise(common_data, stdout, stderr, ierr)
     if (ierr /= 0) stop 1
     call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
