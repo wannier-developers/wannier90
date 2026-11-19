@@ -1959,17 +1959,15 @@ contains
         write (stdout, '(25x,a)') 'No atom positions specified'
       end if
       ! Constrained centres
-      if (wann_control%constrain%selective_loc .and. &
-          wann_control%constrain%constrain) then
+      ! constrain implies selective_loc; see src/wannier90_readwrite.F90:792-804
+      if (wann_control%constrain%constrain) then
         write (stdout, *) ' '
         write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
-        write (stdout, '(1x,a)') '| Wannier#        Original Centres              Constrained centres          |'
+        write (stdout, '(1x,a)') '| Wannier#        Constrained centres (fractional coordinates)               |'
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         do i = 1, wann_control%constrain%slwf_num
           call utility_cart_to_frac(wann_control%constrain%centres(i, :), ccentres_frac, inv_lattice)
-          ! note, this printout is in crystal coordinates; not sure why wannier_centres are printed here??
-          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-    &                    '|', i, ccentres_frac(:), '|', wannier_data%centres(:, i), '|'
+          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1)') '|', i, ccentres_frac(:), '|'
         end do
         write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       end if
