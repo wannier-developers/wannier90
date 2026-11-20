@@ -154,21 +154,21 @@ program wannier
 
   ! read key parameters from .win file
   call input_reader_special(common_data, seedname, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_run()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! read all remaining parameters from .win file
   call w90_input_reader(common_data, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_run()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! write useful info (includes jazzy header info)
   call w90_print_info(common_data, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_run()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! special branch for writing nnkp file
   ! exit immediately after writing the nnkp file
   if (pp) then
     call write_kmesh(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
     if (rank == 0) close (unit=stderr, status='delete')
     if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
@@ -187,7 +187,7 @@ program wannier
   end if
   if (allocated(error)) then ! applies (is t) for all ranks now
     call prterr(error, ierr, stdout, stderr, common_data%comm)
-    call abort_run()
+    call stop_all_ranks()
   end if
   ! end unlucky code
 
@@ -199,11 +199,11 @@ program wannier
   end if
   ! get a basic k-point/rank distribution
   call w90_distribute_kpts(common_data, nk, mpisize, dist_k, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_run()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! copy distribution to library
   call set_kpoint_distribution(common_data, dist_k, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_run()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! setup SAWF data
   if (common_data%lsitesymmetry) then
@@ -252,7 +252,7 @@ program wannier
   else
     cpstatus = ''
     call read_chkpt(common_data, cpstatus, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
 
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
@@ -300,7 +300,7 @@ program wannier
       call abort_run()
     end if
     call read_eigvals(common_data, eigval, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
     call w90_set_eigval(common_data, eigval)
   end if
 
@@ -308,36 +308,36 @@ program wannier
 
   if (lovlp) then
     call overlaps(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (ldsnt) then
     call w90_disentangle(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
     call write_chkpt(common_data, 'postdis', stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (lproj) then
     call w90_project_overlap(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (lwann) then
     call w90_wannierise(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
     call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (lplot) then
     call w90_plot(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (ltran) then
     call w90_transport(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) call abort_run()
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   ! cleanup
@@ -384,10 +384,21 @@ program wannier
 
 contains
 
+  ! A process that exits after mpi_init without mpi_finalize or mpi_abort leaves
+  ! the launcher's exit status undefined (mpich may report success).
+
+  subroutine stop_all_ranks()
+    ! for an error every rank has met together (ierr returned through prterr)
+    integer :: ierr
+#ifdef W90_MPI
+    call mpi_finalize(ierr)
+#endif
+    stop 1
+  end subroutine stop_all_ranks
+
   subroutine abort_run()
-    ! A process that exits after mpi_init without mpi_finalize or mpi_abort leaves
-    ! the launcher's exit status undefined (mpich may report success).  mpi_abort
-    ! serves whether or not the other ranks have met the same error.
+    ! for an error that may be confined to this rank: the other ranks cannot be
+    ! relied upon to reach mpi_finalize, so the whole job is aborted
     integer :: ierr
 #ifdef W90_MPI
     call mpi_abort(mpi_comm_world, 1, ierr)
