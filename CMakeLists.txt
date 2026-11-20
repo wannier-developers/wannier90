@@ -120,6 +120,22 @@ set_target_properties(Wannier90_lib PROPERTIES
 		SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 add_library(Wannier90::wannier90 ALIAS Wannier90_lib)
+add_executable(Wannier90_chk2chk src/w90chk2chk.F90)
+set_target_properties(Wannier90_chk2chk PROPERTIES
+		OUTPUT_NAME w90chk2chk
+		EXPORT_NAME chk2chk
+		SUFFIX .x
+)
+add_executable(Wannier90::chk2chk ALIAS Wannier90_chk2chk)
+add_executable(Wannier90_spn2spn src/w90spn2spn.F90)
+set_target_properties(Wannier90_spn2spn PROPERTIES
+		OUTPUT_NAME w90spn2spn
+		EXPORT_NAME spn2spn
+		SUFFIX .x
+)
+add_executable(Wannier90::spn2spn ALIAS Wannier90_spn2spn)
+target_link_libraries(Wannier90_chk2chk PRIVATE Wannier90_lib)
+target_link_libraries(Wannier90_spn2spn PRIVATE Wannier90_lib)
 
 ## Main implementations
 add_subdirectory(src)
@@ -127,13 +143,6 @@ add_subdirectory(src)
 ## Testing
 if (WANNIER90_TEST)
 	enable_testing()
-	## Define compiled support programs
-	# TODO: These should be moved outside of src and hard coded path?
-	add_executable(w90chk2chk.x src/w90chk2chk.F90)
-	add_executable(w90spn2spn.x src/w90spn2spn.F90)
-	target_link_libraries(w90chk2chk.x PRIVATE Wannier90_lib)
-	target_link_libraries(w90spn2spn.x PRIVATE Wannier90_lib)
-
 	add_subdirectory(test-suite)
 endif ()
 
@@ -178,6 +187,9 @@ if (WANNIER90_INSTALL)
 			${CMAKE_CURRENT_BINARY_DIR}/Wannier90Config.cmake
 			DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Wannier90
 			COMPONENT Wannier90_Development
+	)
+	install(TARGETS Wannier90_chk2chk Wannier90_spn2spn
+			EXPORT Wannier90Targets
 	)
 	install(EXPORT Wannier90Targets
 			FILE Wannier90Targets.cmake
