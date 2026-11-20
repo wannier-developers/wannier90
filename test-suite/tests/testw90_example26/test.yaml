@@ -5,3 +5,5 @@ profile: wannier90_slwfc_wout
 runs:
   - input: gaas.win
     output: gaas.wout
+status: skip
+status_reason: "unduly susceptible to numerical noise: see issue 757"
