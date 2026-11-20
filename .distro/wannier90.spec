@@ -121,6 +121,8 @@ done
 
 
 %check
+echo "builder cores: $(nproc)"
+export OMP_NUM_THREADS=1
 for mpi in '' mpich openmpi ; do
   [ -n "$mpi" ] && module load mpi/${mpi}-%{_arch}
   %ctest
