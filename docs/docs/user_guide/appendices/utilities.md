@@ -3,6 +3,60 @@
 The `wannier90` code is shipped with a few utility programs that may be
 useful in some occasions. In this chapter, we describe their use.
 
+## `wannier_multistart.py`
+
+This optional Python utility selects a common set of projection columns over
+the full k-point mesh and compares independent Wannier90 localizations. It uses
+NumPy and SciPy, without requiring a change to the compiled Wannier90 program.
+
+```bash title="Terminal"
+python -m pip install numpy scipy
+python path/wannier_multistart.py seedname.win --amn candidates.amn \
+    --amn alternatives.amn --output trials
+```
+
+Each candidate bank is a formatted AMN file. Its number of projections may
+exceed `num_wann`. All banks must contain exactly the same ordered Bloch bands
+and k-points, **in the same Bloch gauge as `seedname.mmn`**. Matching dimensions
+alone cannot establish gauge consistency. Supply `seedname.eig` when
+disentangling or selecting energy windows.
+
+Pivoted QR first selects columns using the stacked mesh. The utility checks
+the relative smallest singular value at every k-point, tries individual
+k-point anchors and repairs local rank loss by column exchanges. This is a
+heuristic, not an exhaustive search. An energy mask affects selection only.
+The selected columns retain their original complex values in the output AMN.
+Completely filled frozen windows are also checked in their frozen subspace.
+The default relative rank threshold is `1e-10`, adjustable with `--rank-tol`.
+
+For each admissible bank, the default compares the input conjugate-gradient
+schedule with `num_cg_steps = 0`. Override this with `--cg-steps 5 0`, for
+example. Each run uses a fresh subdirectory and the original convergence
+tolerances. `--max-iter` defaults to 1000 and `--timeout` to 600 seconds per
+run. An input `conv_window` of one or less is replaced by five so that
+convergence can be detected. `--prepare-only` writes inputs without running.
+The `--command` option accepts a launcher such as
+`'mpiexec -n 2 /path/to/wannier90.x'`.
+
+The new output directory must not already exist. `selection.json` identifies
+the converged run with the smallest total spread. A final-state printout
+alone is not accepted as convergence. The winning directory retains its
+optimized checkpoint and U matrices, including the disentanglement matrix
+where applicable. Use that directory for subsequent work, rather than only
+copying its initial AMN. No converged result gives a nonzero exit status.
+The original inputs are not overwritten. Large MMN and EIG inputs are linked
+rather than copied and must remain available.
+
+This utility handles fresh, unconstrained, full-mesh matrix inputs.
+Restart inputs, excluded bands, manual `select_projections`, guiding centres,
+site symmetry, selective localization, `use_bloch_phases` and `read_ibz` are
+not supported. The input projection block is removed from each trial because
+the reduced AMN supplies exactly `num_wann` columns without centre metadata.
+No orbital evaluation or real-space SCDM construction is performed here.
+The utility does not guarantee a global spread minimum or that the smallest
+spread describes the physically desired bands. Inspect the resulting bands
+and centres, particularly when comparing disentangled subspaces.
+
 ## `kmesh.pl`
 
 The `wannier90` code requires the definition of a full Monkhorst--Pack

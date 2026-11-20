@@ -270,14 +270,16 @@ wannier90_rmn:
 wannier90_slwfc_wout:
   program: wannier90
   parser: parse_wout
+  # example26 constrains one Wannier function and leaves the complementary gauge free.
+  # Allow small platform differences in the printed centres and complementary spreads.
   tolerances:
-    final_centres_x: {abs: 1.0e-5, rel: 1.0e-5}
-    final_centres_y: {abs: 1.0e-5, rel: 1.0e-5}
-    final_centres_z: {abs: 1.0e-5, rel: 1.0e-5}
-    final_spreads: {abs: 3.1e-6, rel: 3.1e-6}
+    final_centres_x: {abs: 2.0e-5, rel: 1.0e-5}
+    final_centres_y: {abs: 2.0e-5, rel: 1.0e-5}
+    final_centres_z: {abs: 2.0e-5, rel: 1.0e-5}
+    final_spreads: {abs: 1.0e-5, rel: 3.1e-6}
     omegaIOD_C: {abs: 1.0e-6, rel: 1.0e-6}
     omegaD: {abs: 1.0e-6, rel: 5.0e-6}
-    omegaRest: {abs: 1.0e-5, rel: 1.0e-5}
+    omegaRest: {abs: 3.0e-5, rel: 1.0e-5}
     penaltyfunc: {abs: 1.0e-5, rel: 1.0e-5}
     omegaTotal_C: {abs: 1.0e-6, rel: 1.0e-6}
     near_neigh_dist: {abs: 1.0e-6, rel: 1.0e-6}

@@ -84,6 +84,24 @@
         Brillouin zone, the MLWFs "live" in a supercell $n$ times the unit
         cell.
 
+## Optional comparison of localization schedules
+
+Before enabling plotting, the same GaAs matrices can be used with the
+[projection-selection utility](../user_guide/appendices/utilities.md#wannier_multistartpy).
+From `tutorials/tutorial01`, run
+
+```bash title="Terminal"
+python ../../utility/wannier_multistart.py gaas.win --amn gaas.amn \
+    --output gaas-trials --command ../../wannier90.x
+```
+
+This bank has exactly four trial orbitals, so no orbitals are discarded.
+The two independent runs compare the input conjugate-gradient schedule with
+steepest descent. Inspect `gaas-trials/selection.json` and compare the centres
+and spreads in the retained winning directory. The original tutorial files
+are unchanged. An overcomplete AMN bank from an electronic-structure
+interface can be used instead, provided it shares the MMN Bloch gauge.
+
 !!! note
     We encourage you to attempt this tutorial on your own first, but a
     worked solution is available [here](../tutorial_solutions/tutorial_solution_1.md).

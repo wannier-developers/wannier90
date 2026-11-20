@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add an optional NumPy/SciPy utility for mesh-wide projection-column selection
+  and independent localization trials using standard full-mesh matrix files.
+
 ### Various improvements and bugfixes
 
 - `w90_get_proj` no longer returns an undefined spin for non-spinor runs, sets them to 0 instead [[#748]](https://github.com/wannier-developers/wannier90/issues/748)
