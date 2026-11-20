@@ -20,7 +20,7 @@ Silicon
     diagonalization =  'cg'
 /
 ATOMIC_SPECIES
-Si  28  Si_ONCV_PBE-1.0.upf
+Si  28  Si.pbe-nc.UPF
 ATOMIC_POSITIONS {crystal}
 Si  -0.25   0.75   -0.25
 Si   0.00   0.00    0.00
