@@ -46,6 +46,7 @@ This package contains the OpenMPI parallel version.
 %package openmpi-devel
 Summary:        Development files for wannier90 - OpenMPI version
 Requires:       wannier90-openmpi%{?_isa} = %{version}-%{release}
+Requires:       openmpi-devel%{?_isa}
 
 %description openmpi-devel
 This package contains the development files for the wannier90 (OpenMPI) library.
@@ -62,6 +63,7 @@ This package contains the MPICH parallel version.
 %package mpich-devel
 Summary:        Development files for wannier90 - MPICH version
 Requires:       wannier90-mpich%{?_isa} = %{version}-%{release}
+Requires:       mpich-devel%{?_isa}
 
 %description mpich-devel
 This package contains the development files for the wannier90 (MPICH) library.
