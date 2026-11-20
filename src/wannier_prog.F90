@@ -154,21 +154,21 @@ program wannier
 
   ! read key parameters from .win file
   call input_reader_special(common_data, seedname, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_input()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! read all remaining parameters from .win file
   call w90_input_reader(common_data, stdout, stderr, ierr)
-  if (ierr /= 0) call abort_input()
+  if (ierr /= 0) call stop_all_ranks()
 
   ! write useful info (includes jazzy header info)
   call w90_print_info(common_data, stdout, stderr, ierr)
-  if (ierr /= 0) stop 1
+  if (ierr /= 0) call stop_all_ranks()
 
   ! special branch for writing nnkp file
   ! exit immediately after writing the nnkp file
   if (pp) then
     call write_kmesh(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
     if (rank == 0) close (unit=stderr, status='delete')
     if (rank == 0) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (rank == 0) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
@@ -187,10 +187,7 @@ program wannier
   end if
   if (allocated(error)) then ! applies (is t) for all ranks now
     call prterr(error, ierr, stdout, stderr, common_data%comm)
-#ifdef W90_MPI
-    call mpi_finalize(ierr) ! let's be nice
-#endif
-    stop 1
+    call stop_all_ranks()
   end if
   ! end unlucky code
 
@@ -198,15 +195,15 @@ program wannier
   allocate (dist_k(nk), stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate dist_k array!'
-    stop 1
+    call abort_run()
   end if
   ! get a basic k-point/rank distribution
   call w90_distribute_kpts(common_data, nk, mpisize, dist_k, stdout, stderr, ierr)
-  if (ierr /= 0) stop 1
+  if (ierr /= 0) call stop_all_ranks()
 
   ! copy distribution to library
   call set_kpoint_distribution(common_data, dist_k, stdout, stderr, ierr)
-  if (ierr /= 0) stop 1
+  if (ierr /= 0) call stop_all_ranks()
 
   ! setup SAWF data
   if (common_data%lsitesymmetry) then
@@ -214,7 +211,7 @@ program wannier
     if (allocated(error)) then
       write (stderr, *) 'Wannier90: failed to setup symmetry!'
       deallocate (error)
-      stop 1
+      call abort_run()
     end if
   end if
 
@@ -225,21 +222,21 @@ program wannier
   allocate (m_matrix_loc(nb, nb, nn, nkl), stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate m_matrix_loc!'
-    stop 1
+    call abort_run()
   end if
   call w90_set_m_local(common_data, m_matrix_loc)  ! we don't need global m
 
   allocate (u_matrix(nw, nw, nk), stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate u_matrix!'
-    stop 1
+    call abort_run()
   end if
   call w90_set_u_matrix(common_data, u_matrix)
 
   allocate (u_matrix_opt(nb, nw, nk), stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to allocate u_matrix_opt!'
-    stop 1
+    call abort_run()
   end if
   call w90_set_u_opt(common_data, u_matrix_opt)
 
@@ -255,7 +252,7 @@ program wannier
   else
     cpstatus = ''
     call read_chkpt(common_data, cpstatus, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
 
     if (restart == 'wannierise' .or. (restart == 'default' .and. cpstatus == 'postdis')) then
       if (rank == 0) write (stdout, '(1x,a/)') 'Restarting Wannier90 from wannierisation ...'
@@ -300,10 +297,10 @@ program wannier
     allocate (eigval(nb, nk), stat=ierr)
     if (ierr /= 0) then
       write (stderr, *) 'Wannier90: failed to allocate eigval array!'
-      stop 1
+      call abort_run()
     end if
     call read_eigvals(common_data, eigval, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
     call w90_set_eigval(common_data, eigval)
   end if
 
@@ -311,36 +308,36 @@ program wannier
 
   if (lovlp) then
     call overlaps(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (ldsnt) then
     call w90_disentangle(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
     call write_chkpt(common_data, 'postdis', stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (lproj) then
     call w90_project_overlap(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (lwann) then
     call w90_wannierise(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
     call write_chkpt(common_data, 'postwann', stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (lplot) then
     call w90_plot(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   if (ltran) then
     call w90_transport(common_data, stdout, stderr, ierr)
-    if (ierr /= 0) stop 1
+    if (ierr /= 0) call stop_all_ranks()
   end if
 
   ! cleanup
@@ -349,28 +346,28 @@ program wannier
     deallocate (eigval, stat=ierr)
     if (ierr /= 0) then
       write (stderr, *) 'Wannier90: failed to deallocate eigval array!'
-      stop 1
+      call abort_run()
     end if
   end if
   deallocate (dist_k, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate dist_k array!'
-    stop 1
+    call abort_run()
   end if
   deallocate (m_matrix_loc, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate m_matrix_loc!'
-    stop 1
+    call abort_run()
   end if
   deallocate (u_matrix, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate u_matrix!'
-    stop 1
+    call abort_run()
   end if
   deallocate (u_matrix_opt, stat=ierr)
   if (ierr /= 0) then
     write (stderr, *) 'Wannier90: failed to deallocate u_matrix_opt!'
-    stop 1
+    call abort_run()
   end if
 
   call print_times(common_data, stdout)
@@ -387,15 +384,25 @@ program wannier
 
 contains
 
-  subroutine abort_input()
-#ifdef W90_MPI
-    integer :: mpi_ierr
+  ! A process that exits after mpi_init without mpi_finalize or mpi_abort leaves
+  ! the launcher's exit status undefined (mpich may report success).
 
-    ! Wait for the input diagnostics to be flushed before aborting the MPI job.
-    call mpi_barrier(mpi_comm_world, mpi_ierr)
-    call mpi_abort(mpi_comm_world, 1, mpi_ierr)
+  subroutine stop_all_ranks()
+    ! for an error every rank has met together (ierr returned through prterr)
+    integer :: ierr
+#ifdef W90_MPI
+    call mpi_finalize(ierr)
 #endif
     stop 1
-  end subroutine abort_input
+  end subroutine stop_all_ranks
 
+  subroutine abort_run()
+    ! for an error that may be confined to this rank: the other ranks cannot be
+    ! relied upon to reach mpi_finalize, so the whole job is aborted
+    integer :: ierr
+#ifdef W90_MPI
+    call mpi_abort(mpi_comm_world, 1, ierr)
+#endif
+    stop 1
+  end subroutine abort_run
 end program wannier

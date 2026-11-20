@@ -454,6 +454,11 @@ contains
       write (istderr, '(1x,a,i0,a)') '(rank: ', failrank, ')'
       !write (istderr, '(1x,a)') 'error encountered; check .wout log'
 
+      ! only root's units are known to be connected; flushing before the broadcast
+      ! below puts the message on disk before any other rank can leave this routine
+      flush (istdout)
+      flush (istderr)
+
     else ! non 0 ranks
       je = error%code
       call comms_no_sync_send(je, 1, 0, le, comm)
@@ -468,9 +473,6 @@ contains
     ! code_remote (the error originated elsewhere) leaves ie at 0 above and would
     ! otherwise return "success" to a library caller while root returns the failure.
     call comms_no_sync_bcast(ie, 1, le, comm)
-
-    flush (istdout)
-    flush (istderr)
 
     error%code = code_deactivated
     deallocate (error) ! else allocated error trips uncaught error mechanism (ifdef W90DEV, see io.F90)

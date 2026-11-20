@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <ISO_Fortran_binding.h>
-
 #ifdef W90_MPI
+/* outside the extern "C" block: under C++ mpi.h may supply C++ bindings */
 #include <mpi.h>
 #endif
 

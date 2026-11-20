@@ -28,7 +28,8 @@ enable_testing()
 # one-line change.
 find_package(Python 3.10 REQUIRED COMPONENTS Interpreter)
 
-if (PROJECT_IS_TOP_LEVEL)
+# Configured on its own, the suite tests an installed Wannier90
+if (NOT TARGET Wannier90::exe)
 	find_package(Wannier90 CONFIG REQUIRED)
 	get_target_property(_w90_headers Wannier90::wannier90 INTERFACE_HEADER_SETS)
 	set(WANNIER90_WITH_C OFF)
