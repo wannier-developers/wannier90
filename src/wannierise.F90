@@ -77,7 +77,8 @@ contains
                          timer_list_type
     use w90_utility, only: utility_frac_to_cart, utility_zgemm
     use w90_sitesym, only: sitesym_symmetrize_gradient
-    use w90_comms, only: mpisize, mpirank, comms_allreduce, w90_comm_type
+    use w90_comms, only: mpisize, mpirank, comms_allreduce, comms_allgather_kblocks, &
+                         w90_comm_type
     use w90_hamiltonian, only: hamiltonian_setup
 
     implicit none
@@ -595,12 +596,7 @@ contains
 
       if (lsitesymmetry) then
         ! symmetrize_graident requires all k (IBZ and related FBZ points for each op)
-        cdq(:, :, :) = 0.0_dp
-        do nkp_loc = 1, nkrank
-          nkp = global_k(nkp_loc)
-          cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
-        end do
-        call comms_allreduce(cdq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+        call comms_allgather_kblocks(cdq_loc, cdq, global_k, error, comm)
 
         ! called in parallel; alternatively broadcast
         call sitesym_symmetrize_gradient(sitesym, cdq, 2, num_kpts, num_wann, error, comm)
@@ -835,12 +831,7 @@ contains
     ! end of the minimization loop
 
     ! copy from local u matrix back to full matrix & reduce
-    u_matrix(:, :, :) = 0.0_dp
-    do nkp_loc = 1, nkrank
-      nkp = global_k(nkp_loc)
-      u_matrix(:, :, nkp) = u_matrix_loc(:, :, nkp_loc)
-    end do
-    call comms_allreduce(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+    call comms_allgather_kblocks(u_matrix_loc, u_matrix, global_k, error, comm)
     if (allocated(error)) return
 
     ! Evaluate the penalty functional
@@ -1539,7 +1530,7 @@ contains
       use w90_sitesym, only: sitesym_symmetrize_rotation
       use w90_wannier90_types, only: sitesym_type
       use w90_io, only: io_stopwatch_start, io_stopwatch_stop
-      use w90_comms, only: comms_allreduce, w90_comm_type
+      use w90_comms, only: comms_allgather_kblocks, w90_comm_type
       use w90_utility, only: utility_zgemm
       use w90_types, only: kmesh_info_type, timer_list_type
 
@@ -1619,12 +1610,7 @@ contains
       end do
 
       ! each process communicates its result to other processes
-      cdq(:, :, :) = 0.0_dp
-      do nkp_loc = 1, nkrank
-        nkp = global_k(nkp_loc)
-        cdq(:, :, nkp) = cdq_loc(:, :, nkp_loc)
-      end do
-      call comms_allreduce(cdq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+      call comms_allgather_kblocks(cdq_loc, cdq, global_k, error, comm)
       if (allocated(error)) return
 
 !!$      do nkp = 1, num_kpts
@@ -2320,7 +2306,8 @@ contains
     ! Radu Miron at Imperial College London
     !================================================
 
-    use w90_comms, only: comms_gatherv, comms_allreduce, w90_comm_type, mpirank
+    use w90_comms, only: comms_gatherv, comms_allreduce, comms_allgather_kblocks, &
+                         w90_comm_type, mpirank
     use w90_constants, only: cmplx_0
     use w90_io, only: io_stopwatch_start, io_stopwatch_stop
     use w90_sitesym, only: sitesym_symmetrize_gradient
@@ -2465,12 +2452,7 @@ contains
 
       if (present(cdodq)) then
         ! each process communicates its result to other processes
-        cdodq(:, :, :) = 0.0_dp
-        do nkp_loc = 1, nkrank
-          nkp = global_k(nkp_loc)
-          cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
-        end do
-        call comms_allreduce(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+        call comms_allgather_kblocks(cdodq_loc, cdodq, global_k, error, comm)
         if (allocated(error)) return
       end if
 
@@ -2651,12 +2633,7 @@ contains
 
       if (present(cdodq)) then
         ! each process communicates its result to other processes
-        cdodq(:, :, :) = 0.0_dp
-        do nkp_loc = 1, nkrank
-          nkp = global_k(nkp_loc)
-          cdodq(:, :, nkp) = cdodq_loc(:, :, nkp_loc)
-        end do
-        call comms_allreduce(cdodq(1, 1, 1), num_wann*num_wann*num_kpts, 'SUM', error, comm)
+        call comms_allgather_kblocks(cdodq_loc, cdodq, global_k, error, comm)
         if (allocated(error)) return
 
         if (lsitesymmetry) then
