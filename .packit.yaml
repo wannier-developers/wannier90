@@ -25,9 +25,9 @@ _:
   # Job templates
   - &build-in-packit
     job: copr_build
-  - &build-in-lecris
+  - &build-in-fedora-science
     <<: *build-in-packit
-    owner: lecris
+    owner: "@fedora-science"
   - &tests-downstream
     job: tests
     fmf_path: .distro
@@ -35,15 +35,15 @@ _:
 
 jobs:
   # Upstream jobs
-  - <<: *build-in-lecris
+  - <<: *build-in-fedora-science
     trigger: release
     project: release
   - <<: *tests-downstream
     trigger: release
-  - <<: *build-in-lecris
+  - <<: *build-in-fedora-science
     trigger: commit
     branch: main
-    project: nightly
+    project: latest
   - <<: *tests-downstream
     trigger: commit
     branch: main
