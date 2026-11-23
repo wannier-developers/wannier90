@@ -539,15 +539,14 @@ $$
 \overline{\mathbf{r}}_{n}^{2} \right]
 $$
 
-If adding centre-constraints to the SLWFs, you will find the information
-about the centres of the original projections and the desired centres in
-the `SYSTEM` section
+If adding centre-constraints to the SLWFs, you will find the desired
+centres (in fractional coordinates) in the `SYSTEM` section
 
 ```vi title="Output file"
  *----------------------------------------------------------------------------*
- | Wannier#        Original Centres              Constrained centres          |
+ | Wannier#        Constrained centres (fractional coordinates)               |
  +----------------------------------------------------------------------------+
- |    1     0.25000   0.25000   0.25000   |    0.00000   0.00000   0.00000    |
+ |    1     0.25000   0.25000   0.25000                                       |
  *----------------------------------------------------------------------------*
 ```
 
