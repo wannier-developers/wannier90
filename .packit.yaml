@@ -42,11 +42,11 @@ jobs:
   # Build and test each commit
   - <<: *build-in-fedora-science
     trigger: commit
-    branch: main
+    branch: develop
     project: latest
   - <<: *tests-downstream
     trigger: commit
-    branch: main
+    branch: develop
   # Just build on release
   - <<: *build-in-fedora-science
     trigger: release
