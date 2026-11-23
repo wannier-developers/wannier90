@@ -11,8 +11,8 @@ abstract: >-
   generalised Wannier functions and using them to compute advanced electronic
   properties of materials with high efficiency and accuracy.
 type: software
-version: 4.0.3
-date-released: 2026-10-05
+version: 4.0.4
+date-released: 2026-11-24
 license: LGPL-2.1-or-later
 repository-code: https://github.com/wannier-developers/wannier90
 url: https://www.wannier.org
