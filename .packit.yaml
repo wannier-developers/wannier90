@@ -16,6 +16,8 @@ files_to_sync:
 upstream_package_name: wannier90
 downstream_package_name: wannier90
 upstream_tag_template: v{version}
+version_suffix: "^{PACKIT_PROJECT_SNAPSHOTID}"
+update_release: false
 
 targets:
   - fedora-all-x86_64
@@ -38,6 +40,7 @@ jobs:
   - <<: *build-in-fedora-science
     trigger: release
     project: release
+    version_suffix: null
   - <<: *tests-downstream
     trigger: release
   - <<: *build-in-fedora-science
