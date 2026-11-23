@@ -41,8 +41,6 @@ jobs:
     trigger: release
     project: release
     version_suffix: null
-  - <<: *tests-downstream
-    trigger: release
   - <<: *build-in-fedora-science
     trigger: commit
     branch: main
