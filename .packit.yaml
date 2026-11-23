@@ -8,9 +8,6 @@ files_to_sync:
       - "protect sources"
       - "protect changelog"
       - "protect gating.yaml"
-      # Temporary workaround until
-      # https://github.com/packit/packit/pull/2573
-      - "- wannier90.spec"
   - .packit.yaml
 
 upstream_package_name: wannier90
@@ -36,11 +33,13 @@ _:
     identifier: downstream
 
 jobs:
-  # Upstream jobs
-  - <<: *build-in-fedora-science
-    trigger: release
-    project: release
-    version_suffix: null
+  ## Upstream jobs
+  # Build and test inside PRs
+  - <<: *build-in-packit
+    trigger: pull_request
+  - <<: *tests-downstream
+    trigger: pull_request
+  # Build and test each commit
   - <<: *build-in-fedora-science
     trigger: commit
     branch: main
@@ -48,15 +47,16 @@ jobs:
   - <<: *tests-downstream
     trigger: commit
     branch: main
-  - <<: *build-in-packit
-    trigger: pull_request
-  - <<: *tests-downstream
-    trigger: pull_request
-  # Downstream jobs
+  # Just build on release
+  - <<: *build-in-fedora-science
+    trigger: release
+    project: release
+    version_suffix: null
+  ## Downstream jobs
   - job: propose_downstream
     trigger: release
     dist_git_branches:
-      - fedora-rawhide
+      - fedora-development
   - job: koji_build
     trigger: commit
     dist_git_branches:
