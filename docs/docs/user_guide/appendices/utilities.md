@@ -3,6 +3,29 @@
 The `wannier90` code is shipped with a few utility programs that may be
 useful in some occasions. In this chapter, we describe their use.
 
+## `wannier_multistart.py`
+
+Compare initial projections for an unconstrained localization on a full k-point
+mesh without repeating the electronic-structure calculation. Provide the original
+WIN and MMN files, an EIG file for disentanglement or energy windows, and one or
+more formatted AMN files. Each AMN must use the same band order, k-point order
+and Bloch gauge as the MMN, not just the same dimensions.
+
+```bash
+python -m pip install numpy scipy
+python utility/wannier_multistart.py seedname.win --amn candidates.amn \
+    --amn alternatives.amn --output trials
+```
+
+If a bank has more than `num_wann` columns, pivoted QR proposes a common set
+across the mesh. The tool checks its rank at every k-point within the energy
+windows and writes the selected columns unchanged. For each admissible bank it
+tries the input conjugate-gradient schedule and a steepest-descent start.
+`trials/selection.json` identifies the converged run with the lowest total
+spread. Use that run's checkpoint and U matrices, and inspect its centres and
+bands. The output directory must be new. No converged run yields a nonzero exit
+status. Use `--help` for MPI launch options, iteration limits and input preparation.
+
 ## `kmesh.pl`
 
 The `wannier90` code requires the definition of a full Monkhorst--Pack

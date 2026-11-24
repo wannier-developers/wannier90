@@ -22,6 +22,17 @@ else ()
 	set(num_procs 1)
 endif ()
 
+if (NOT PROJECT_IS_TOP_LEVEL)
+	execute_process(COMMAND ${Python_EXECUTABLE} -c "import numpy, scipy.linalg"
+			RESULT_VARIABLE multistart_deps OUTPUT_QUIET ERROR_QUIET)
+	if (multistart_deps EQUAL 0)
+		add_test(NAME projection-multistart
+				COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/test_multistart.py
+				--wannier90-exe=$<TARGET_FILE:Wannier90::exe> ${pytest_extra_args} -p no:cacheprovider)
+		set_tests_properties(projection-multistart PROPERTIES PROCESSORS ${num_procs} LABELS wannier90)
+	endif ()
+endif ()
+
 foreach (test_yaml IN LISTS test_yaml_files)
 	get_filename_component(test_dir ${test_yaml} DIRECTORY)
 	get_filename_component(test ${test_dir} NAME)
