@@ -1967,7 +1967,7 @@ contains
         write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
         do i = 1, wann_control%constrain%slwf_num
           call utility_cart_to_frac(wann_control%constrain%centres(i, :), ccentres_frac, inv_lattice)
-          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,3x,a1)') '|', i, ccentres_frac(:), '|'
+          write (stdout, '(1x,a1,2x,i3,2x,3F10.5,39x,a1)') '|', i, ccentres_frac(:), '|'
         end do
         write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
       end if

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.25...3.29)
 
 list(APPEND CMAKE_MESSAGE_CONTEXT Wannier90)
 project(Wannier90
-		VERSION 4.0.3
+		VERSION 4.0.4
 		DESCRIPTION "Compute maximally-localised Wannier functions."
 		HOMEPAGE_URL https://www.wannier90.org
 		LANGUAGES Fortran C
