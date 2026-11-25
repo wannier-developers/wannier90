@@ -1,5 +1,32 @@
 # CHANGELOG of Wannier90
 
+## v4.0.4 (24 November 2026)
+
+### Various improvements and bugfixes
+
+- Fixed `restart = wannierise` restart from checkpoint (previously U matrix was incorrectly overwritten) [[#764]](https://github.com/wannier-developers/wannier90/pull/764) [[#759]](https://github.com/wannier-developers/wannier90/issues/759)
+
+- `w90_get_proj` returns default `s = 0` for non-spinor runs [[#749]](https://github.com/wannier-developers/wannier90/pull/749) [[#748]](https://github.com/wannier-developers/wannier90/issues/748)
+
+- In MPI runs `wannier90.x` ends a fatal error through `mpi_finalize` or `mpi_abort`, so that the launcher reports a nonzero exit status (mpich could report success) [[#763]](https://github.com/wannier-developers/wannier90/pull/763) [[#756]](https://github.com/wannier-developers/wannier90/issues/756)
+
+- Fixed segfaults in MPI builds using the `mpif.h` interface (due to incorrect status object sizing) [[#763]](https://github.com/wannier-developers/wannier90/pull/763)
+
+- `wannier90.h` has its own `extern "C"` guards, C++ programs should include it directly (fixes compilation with mpich) [[#763]](https://github.com/wannier-developers/wannier90/pull/763) [[#753]](https://github.com/wannier-developers/wannier90/issues/753)
+
+- The constrained-centres table in `seedname.wout` lists only the constraint targets (fractional coordinates) [[#765]](https://github.com/wannier-developers/wannier90/pull/765)
+
+- Worked around two nvfortran 25.1 bugs at `-O2` and above (internal compiler error in `disentangle.F90`, segfault during wannierisation) [[#745]](https://github.com/wannier-developers/wannier90/pull/745)
+
+- CMake: `w90chk2chk.x` and `w90spn2spn.x` are always built, installed and exported; the regression tests can be configured on their own against an installed Wannier90 [[#763]](https://github.com/wannier-developers/wannier90/pull/763)
+
+- CMake: the pkg-config file is correct for absolute install directories [[#746]](https://github.com/wannier-developers/wannier90/pull/746)
+
+- Tutorial 23 (silicon G0W0): `pseudo/Si_ONCV_PBE-1.0.upf` is replaced by `pseudo/Si.pbe-nc.UPF`, generated with `ld1.x` of Quantum ESPRESSO 7.5; inputs and reference eigenvalues updated [[#768]](https://github.com/wannier-developers/wannier90/pull/768)
+
+- Test suite: `testw90_example26` (selective localisation) is skipped, being sensitive to numerical noise [[#767]](https://github.com/wannier-developers/wannier90/pull/767) [[#757]](https://github.com/wannier-developers/wannier90/issues/757); `final_spreads` and `omegaD` tolerances raised to 1e-5 [[#745]](https://github.com/wannier-developers/wannier90/pull/745); default timeout raised to 3600 s [[#763]](https://github.com/wannier-developers/wannier90/pull/763)
+
+
 ## v4.0.3 (5 October 2026)
 
 ### New features

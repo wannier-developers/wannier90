@@ -402,6 +402,8 @@ adequately sized
 | istderr  | integer                          | Fortran unit number for stderr |
 | ierr     | integer                          | error status, zero on success  |
 
+The spin quantum number s is +1 or -1 if `spinors = .true.`, and 0 otherwise.
+
 Must follow w90_input_setopt.
 
 ### w90_get_centres

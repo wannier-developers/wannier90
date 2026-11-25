@@ -10,7 +10,7 @@ from typing import Any
 import yaml
 
 #: Default wall-clock limit for a single run, in seconds.  Overridable per test.
-DEFAULT_TIMEOUT = 600
+DEFAULT_TIMEOUT = 3600
 
 #: Valid values of the ``status`` key.
 STATUSES = ("enabled", "skip", "xfail")

@@ -8,14 +8,13 @@ files_to_sync:
       - "protect sources"
       - "protect changelog"
       - "protect gating.yaml"
-      # Temporary workaround until
-      # https://github.com/packit/packit/pull/2573
-      - "- wannier90.spec"
   - .packit.yaml
 
 upstream_package_name: wannier90
 downstream_package_name: wannier90
 upstream_tag_template: v{version}
+version_suffix: "^{PACKIT_PROJECT_SNAPSHOTID}"
+update_release: false
 
 targets:
   - fedora-all-x86_64
@@ -25,37 +24,39 @@ _:
   # Job templates
   - &build-in-packit
     job: copr_build
-  - &build-in-lecris
+  - &build-in-fedora-science
     <<: *build-in-packit
-    owner: lecris
+    owner: "@fedora-science"
   - &tests-downstream
     job: tests
     fmf_path: .distro
     identifier: downstream
 
 jobs:
-  # Upstream jobs
-  - <<: *build-in-lecris
-    trigger: release
-    project: release
-  - <<: *tests-downstream
-    trigger: release
-  - <<: *build-in-lecris
-    trigger: commit
-    branch: main
-    project: nightly
-  - <<: *tests-downstream
-    trigger: commit
-    branch: main
+  ## Upstream jobs
+  # Build and test inside PRs
   - <<: *build-in-packit
     trigger: pull_request
   - <<: *tests-downstream
     trigger: pull_request
-  # Downstream jobs
+  # Build and test each commit
+  - <<: *build-in-fedora-science
+    trigger: commit
+    branch: develop
+    project: latest
+  - <<: *tests-downstream
+    trigger: commit
+    branch: develop
+  # Just build on release
+  - <<: *build-in-fedora-science
+    trigger: release
+    project: release
+    version_suffix: null
+  ## Downstream jobs
   - job: propose_downstream
     trigger: release
     dist_git_branches:
-      - fedora-rawhide
+      - fedora-development
   - job: koji_build
     trigger: commit
     dist_git_branches:
