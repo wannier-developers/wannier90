@@ -4421,7 +4421,7 @@ contains
       !! class below cut `level`. Objective = sum of between-class variance over
       !! the class segments; strict > keeps the first ascending maximum.
       integer, intent(in) :: level, lo
-      integer :: idx, seg, aa, bb
+      integer :: idx, seg, aa
       real(kind=dp) :: sigma
 
       if (level <= ncut) then
@@ -4433,8 +4433,7 @@ contains
         sigma = 0.0_dp
         aa = 0
         do seg = 1, ncut
-          bb = cuts(seg)
-          sigma = sigma + hmat(aa, bb)
+          sigma = sigma + hmat(aa, cuts(seg))
           aa = cuts(seg) + 1
         end do
         sigma = sigma + hmat(aa, nbins - 1)

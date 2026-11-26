@@ -1,0 +1,9 @@
+# testw90_example05_restart_hr
+
+description: "Diamond, valence states - restart = wannierise without disentanglement keeps the checkpoint U (H(R) after zero iterations)"
+profile: wannier90_hr
+runs:
+  - input: diamond.win
+    output: diamond_hr.dat
+prepare:
+  - chk_from_bz2: "*.chk.fmt.bz2"

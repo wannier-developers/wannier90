@@ -1,7 +1,8 @@
 # 23: Silicon &#151; $G_0W_0$ bands structure interpolation
 
 Note: This tutorial requires a recent version of the `ypp`
-post-processing code of `yambo`.
+post-processing code of `yambo` (the reference output was generated
+with Quantum ESPRESSO 7.5 and `yambo` 5.3.0).
 
 - Outline: *Interpolate the bands structure of silicon obtained from
     many-body perturbation theory at the $G_0W_0$ level. Using the

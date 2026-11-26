@@ -101,8 +101,8 @@ module w90_comms
   type, private :: w90stat_type
 #ifdef W90_MPI08
     type(mpi_status) :: stat ! f08 mpi interface
-#elif W90_MPI90
-    integer :: stat(MPI_STATUS_SIZE)
+#elif defined(W90_MPI)
+    integer :: stat(MPI_STATUS_SIZE) ! f90 module and mpif.h interfaces
 #else
     integer :: stat ! not used
 #endif

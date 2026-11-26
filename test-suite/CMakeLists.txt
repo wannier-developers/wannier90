@@ -28,6 +28,11 @@ enable_testing()
 # one-line change.
 find_package(Python 3.10 REQUIRED COMPONENTS Interpreter)
 
+# Configured on its own, the suite tests an installed Wannier90
+if (NOT TARGET Wannier90::exe)
+	find_package(Wannier90 REQUIRED)
+endif ()
+
 # The regression suite is driven by pytest and reads YAML. Rather than failing the whole
 # configure for someone who only wants the binaries, warn and skip registering the tests.
 execute_process(
