@@ -1,7 +1,6 @@
 tag: [ cmake ]
 require:
   - cmake
-  - rsync
   - gcc
   - gcc-c++
   - gcc-fortran
@@ -18,11 +17,17 @@ path: /
 test: ./ctest.sh
 
 /serial:
+  require+:
+    - wannier90-devel
   environment:
     MPI_VARIANT: serial
 /OpenMPI:
+  require+:
+    - wannier90-openmpi-devel
   environment:
     MPI_VARIANT: openmpi
 /MPICH:
+  require+:
+    - wannier90-mpich-devel
   environment:
     MPI_VARIANT: mpich

@@ -5,22 +5,22 @@ source /usr/share/beakerlib/beakerlib.sh || exit 1
 
 rlJournalStart
   rlPhaseStartSetup
-    rlRun "tmp=\$(mktemp -d)" 0 "Create tmp directory"
-	  rlRun "rsync -rL ./ $tmp" 0 "Copy test-suite project"
-    rlRun "pushd $tmp"
-    rlRun "set -o pipefail"
-    [[ -z "${MPI_VARIANT}" ]] && rlDie "MPI_VARIANT was not provided"
+    [[ -n "${MPI_VARIANT}" ]] || rlDie "MPI_VARIANT was not provided"
+    rlRun 'tmp=$(mktemp -d)' 0 "Create temporary build directory" || rlDie "mktemp failed"
+    prefix=/usr
+    if [[ "${MPI_VARIANT}" != "serial" ]]; then
+      rlRun 'module load "mpi/${MPI_VARIANT}-$(uname -m)"' 0 "Load MPI" || rlDie "MPI module unavailable"
+      prefix=${MPI_HOME:?MPI module did not set MPI_HOME}
+    fi
   rlPhaseEnd
 
   rlPhaseStartTest
-    [[ "${MPI_VARIANT}" != "serial" ]] && rlRun "module load mpi/${MPI_VARIANT}" 0 "Load MPI"
-   	rlRun "cmake -B ./build" 0 "CMake configure"
-   	rlRun "cmake --build ./build" 0 "CMake build"
-   	rlRun "ctest --test-dir ./build --output-on-failure" 0 "Run CTest"
+    rlRun 'cmake -S . -B "$tmp/build" -DWannier90_ROOT="$prefix" -DWANNIER90_TEST_KEEP_WORKDIR=OFF' 0 "CMake configure" &&
+      rlRun 'cmake --build "$tmp/build"' 0 "CMake build" &&
+      rlRun 'TMPDIR="$tmp" PYTHONDONTWRITEBYTECODE=1 ctest --test-dir "$tmp/build" --output-on-failure' 0 "Run CTest"
   rlPhaseEnd
 
   rlPhaseStartCleanup
-    rlRun "popd"
-    rlRun "rm -r $tmp" 0 "Remove tmp directory"
+    rlRun 'rm -r -- "$tmp"' 0 "Remove temporary build directory"
   rlPhaseEnd
 rlJournalEnd
