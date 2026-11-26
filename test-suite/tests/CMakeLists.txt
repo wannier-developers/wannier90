@@ -22,6 +22,8 @@ else ()
 	set(num_procs 1)
 endif ()
 
+option(WANNIER90_TEST_KEEP_WORKDIR "Retain the per-test regression work directories" ON)
+
 foreach (test_yaml IN LISTS test_yaml_files)
 	get_filename_component(test_dir ${test_yaml} DIRECTORY)
 	get_filename_component(test ${test_dir} NAME)
@@ -39,12 +41,17 @@ foreach (test_yaml IN LISTS test_yaml_files)
 		set(test_labels checkpoint)
 	endif ()
 
+	if (WANNIER90_TEST_KEEP_WORKDIR)
+		set(pytest_workdir_args --workdir=${CMAKE_CURRENT_BINARY_DIR}/work/${test})
+	else ()
+		set(pytest_workdir_args -o tmp_path_retention_policy=failed)
+	endif ()
 	add_test(NAME ${test}
 			COMMAND ${Python_EXECUTABLE} -m pytest ${test_dir}
 			--wannier90-exe=$<TARGET_FILE:Wannier90::exe>
 			--postw90-exe=$<TARGET_FILE:Wannier90::post>
 			--w90chk2chk-exe=$<TARGET_FILE:Wannier90::chk2chk>
-			--workdir=${CMAKE_CURRENT_BINARY_DIR}/work/${test}
+			${pytest_workdir_args}
 			${pytest_extra_args}
 			-p no:cacheprovider
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
